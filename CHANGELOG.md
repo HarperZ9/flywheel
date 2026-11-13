@@ -9,6 +9,7 @@ Writable workspace
 - In `flywheel code`, a `run` command may write in the project folder and its own scratch folder, so installs, builds, formatters and `git commit` work. The rest of the disk stays closed to it, and so do paths reached through `..` or a link.
 - Git hooks, git config lines that start a program, and the session's permission, hook and MCP files are compared before and after each command; a change is put back and the command is reported as failed.
 - `FLYWHEEL_WORKSPACE_WRITES=0` or the machine policy key `allow_workspace_writes: false` keeps the project read-only to commands. Background jobs run with the project read-only. On Linux and macOS a read-only project is now enforced by the sandbox; before, the folder was writable there despite the documentation.
+- `git add` and `git commit` work in a linked worktree (`flywheel code --worktree`): the session opens the worktree's own git folder and the main repository's `objects`, `refs` and `logs`, and nothing else there. A guarded file that cannot be put back puts a hold on the project. A Windows folder the account cannot label runs read-only with the reason, where it used to refuse every command.
 - Tested in the real sandbox on Windows. On Linux and macOS the sandbox arguments are tested; no command was run there for this change.
 
 Output as it arrives

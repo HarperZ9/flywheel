@@ -171,6 +171,7 @@ def test_a_hooks_folder_swapped_for_a_link_is_unlinked_not_followed(tmp_path):
 def test_submodule_hooks_are_guarded_too(tmp_path):
     root = _repo(tmp_path)
     (root / ".git" / "modules" / "lib" / "hooks").mkdir(parents=True)
+    (root / ".git" / "modules" / "lib" / "HEAD").write_text("ref: refs/heads/main\n")
     before = guard.snapshot(root)
     (root / ".git" / "modules" / "lib" / "hooks" / "pre-push").write_bytes(b"evil")
     assert guard.verify(root, before) == [".git/modules/lib/hooks/pre-push: added, removed"]

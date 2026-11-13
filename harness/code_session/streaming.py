@@ -15,8 +15,12 @@ each as chunks while it happens and changes nothing about what is recorded:
 
 Model text streams only from a backend that has `chat_stream`, and which
 backend answers is decided by `send` exactly as before. Today that is the
-Ollama backend; a hosted provider's reply still arrives whole. A streamed
-reply carries no token counts, so `/cost` lists that call as uncounted.
+Ollama backend; a hosted provider's reply still arrives whole.
+
+Token counts are not recorded for a streamed reply. `chat_stream` yields text
+only, so the response has no `x_token_usage` where the same backend's plain
+`chat` would have one, and `/cost` lists the call as uncounted. Everything
+else in the response and the ledger entry is the same.
 """
 from __future__ import annotations
 
@@ -52,21 +56,29 @@ def _streaming_chat(backend, on_chunk, finish):
     def chat(messages, *, system, max_tokens, temperature, seed):
         options = {"system": system, "max_tokens": max_tokens,
                    "temperature": temperature, "seed": seed}
-        full, stream = "", iter(backend.chat_stream(messages, **options))
-        while True:
-            try:
-                piece = next(stream)
-            except StopIteration as completed:
-                ref = completed.value
-                break
-            except BackendError:
+        stream, full, done, dropped = iter(backend.chat_stream(messages, **options)), "", False, False
+        try:
+            while True:
+                try:
+                    piece = next(stream)
+                except StopIteration as completed:
+                    ref = completed.value
+                    break
+                full += piece
+                on_chunk(piece)
+            if not isinstance(ref, str) or not ref:
+                raise MalformedBackendOutput("streaming backend omitted validated model reference")
+            done = True
+        except BackendError as exc:
+            if isinstance(exc, MalformedBackendOutput):
+                raise
+            dropped = True
+        finally:        # an interrupt, a display error and a bad reply all end here
+            getattr(stream, "close", lambda: None)()
+            if not done:
                 finish(None)
-                return type(backend).chat(backend, messages, **options)
-            full += piece
-            on_chunk(piece)
-        if not isinstance(ref, str) or not ref:
-            finish(None)
-            raise MalformedBackendOutput("streaming backend omitted validated model reference")
+        if dropped:
+            return type(backend).chat(backend, messages, **options)
         finish(full)
         return _generation(backend, full, ref, max_tokens, temperature, seed)
     return chat

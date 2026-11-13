@@ -39,11 +39,12 @@ A `run` command may write in the project folder, so a build that writes
 `dist/` works. Look at the last line of the command's output. If it says
 `[workspace read-only: REASON]`, the reason names what keeps the folder closed:
 `FLYWHEEL_WORKSPACE_WRITES=0`, a machine policy, a project folder that contains
-your home or Flywheel's own folder, or a background job. If it says
+your home or Flywheel's own folder, a background job, a hold after a file
+could not be put back, or a Windows folder your account has Modify and not Full
+control of. If it says
 `[refused]`, the command changed a git hook, a git config line that starts a
-program, or one of the session's own files, and the change was put back. In a
-linked git worktree, `git commit` is refused because the repository's data is
-outside the project folder. [CODE-SESSION.md](CODE-SESSION.md) has the full
+program, or one of the session's own files, and the change was put back.
+[CODE-SESSION.md](CODE-SESSION.md) has the full
 list under "What a command may write".
 
 ## "[refused] no OS sandbox on this host"

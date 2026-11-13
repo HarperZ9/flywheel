@@ -288,8 +288,9 @@ program later, outside the sandbox, with your full rights:
 
 | Path | Why it is closed |
 |---|---|
-| `.git/hooks/` (and each submodule's) | git runs these on commit, checkout, merge and push |
-| `.git/config`, `.git/config.worktree` | can name programs git starts: `core.hooksPath`, `core.fsmonitor`, `core.sshCommand`, an alias with `!`, a filter, a credential helper, an include |
+| `hooks/` in `.git` and in every git folder under `.git/modules`, at any depth | git runs these on commit, checkout, merge and push |
+| `config` and `config.worktree` in the same git folders | can name programs git starts: `core.hooksPath`, `core.fsmonitor`, `core.sshCommand`, an alias with `!`, a filter, a credential helper, an include |
+| `.git`, when it is a file | says which repository a linked worktree or submodule checkout uses |
 | `.flywheel/permissions.json` | the session's own allow and deny rules |
 | `.flywheel/hooks.json` | commands the session runs outside the sandbox |
 | `.flywheel/mcp.json`, `.mcp.json` | servers the session starts outside the sandbox |
@@ -304,6 +305,29 @@ writes). Hook folders and the session's own files that already exist are also
 read-only to the command while it runs. To change any of these paths, use the
 agent's file tools, which ask under the permission mode, or do it yourself.
 
+Putting a file back restores its bytes, its permission bits (a hook keeps its
+executable bit), and a link as a link to the same place. A guarded file larger
+than 1 MiB is remembered by its sha256 only, so a change to it is reported and
+cannot be put back. When anything cannot be put back or removed, the session
+puts a hold on the project: commands get a read-only project, the output names
+a hold file under the Flywheel folder, and deleting that file after you have
+checked the project lifts the hold. The check also runs when a command is
+interrupted or the sandbox fails part way.
+
+Two things are not guarded, and you should know them. A hooks folder that
+`core.hooksPath` already points at, such as `.husky/`, is ordinary project
+content: a command can write there, as any build tool or teammate's commit
+can. And git inside the sandbox reads your global git config, so your aliases
+and hooks path apply to the git commands the agent runs; they run inside the
+sandbox.
+
+In a linked git worktree, which is what `flywheel code --worktree` makes, the
+index, objects and refs live in the main repository. The session opens only
+what `git add` and `git commit` write: the worktree's own folder under
+`.git/worktrees/`, and `objects`, `refs` and `logs` of the main repository.
+That repository's `hooks`, `config` and working files stay closed and are
+compared like the rest.
+
 Each command's output ends with one line saying what held:
 `[workspace writable: guarded paths unchanged]`, a `[refused]` line naming the
 paths put back, or `[workspace read-only: REASON]`. That line is part of the
@@ -315,8 +339,8 @@ wins over every mode.
 
 ### Keeping the project read-only
 
-The project folder stays read-only to commands in four cases, and the output
-says which:
+The project folder stays read-only to commands in seven cases, and the output
+says which in one line:
 
 - `FLYWHEEL_WORKSPACE_WRITES=0` is set.
 - An administrator wrote `{"allow_workspace_writes": false}` to the machine
@@ -326,6 +350,17 @@ says which:
 - The project folder contains your home folder or Flywheel's own folder, or is
   a whole drive. Opening it would open the folders the limit protects.
 - The command is a background job (`run_background`).
+- A hold is on the project, because a guarded file could not be put back or
+  Windows could not close the folder after a command.
+- `.git/modules` holds more than 128 git folders or nests deeper than 8
+  levels. The guard reads no further, and a hook folder it did not read is one
+  it could not put back.
+- On Windows, your account has Modify and not Full control of the folder,
+  which is common on a second drive. Opening a folder to the sandbox changes
+  its integrity label, and that needs the WRITE_OWNER right. Modify plus that
+  one right is enough:
+  `icacls <folder> /grant <user>:(OI)(CI)(M,WO)`. Without it commands still
+  run; they cannot write in the project.
 
 `PYTHONDONTWRITEBYTECODE=1` and `PYTEST_ADDOPTS=-p no:cacheprovider` are set for
 every command, so Python tools leave no caches in the tree.
@@ -351,18 +386,16 @@ Limits of this design:
 - `/undo` does not put back what a command wrote. It covers the write tools.
 - On Windows, while a command runs, any other low-integrity process of your
   account can also write in the project, and a background job that is running
-  at that moment can too. A session killed in the middle of a command leaves
-  the project labeled low until the next command runs in it.
-- On Windows the sandbox sets a label on the project folder, which needs full
-  control of it. A folder where your account has Modify only (common on a
-  second drive) is refused with `cannot label execution namespace (windows
-  error 5)`. This was already true of the read-only sandbox.
+  at that moment can too. A session that exits in the middle of a command
+  closes the folder on its way out; one that is killed outright leaves it
+  labeled low until the next Flywheel session starts, which closes it.
 - A git repository nested below the project folder, other than a submodule
   under `.git/modules/`, is not guarded: its hooks and config are ordinary
   project files to the command.
-- In a linked git worktree (`--worktree`, or any checkout whose `.git` is a
-  file) the repository's data lives outside the project folder, so `git add`
-  and `git commit` are refused there. File writes in the worktree work.
+- In a linked worktree a command can write the main repository's `objects`,
+  `refs` and `logs`, so it can move or delete a branch there. On Windows each
+  command relabels those folders, which is slow in a repository with many
+  loose objects. A real commit in a worktree was run on Windows only.
 - If you edit a guarded file yourself while a command is running, the session
   puts your edit back too and reports it.
 - Commands can read the whole disk apart from the protected credential paths.

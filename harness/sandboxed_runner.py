@@ -74,6 +74,13 @@ def sandboxed_run(
                                     extra_env, cancel=cancel, work_hook=work_hook,
                                     workspace=workspace)
 
+    return _windows_sandboxed_run(cmd, root, bindings, timeout_seconds, scratch_home,
+                                  extra_env, cancel, work_hook, workspace)
+
+
+def _windows_sandboxed_run(cmd, root, bindings, timeout_seconds, scratch_home,
+                           extra_env, cancel, work_hook, workspace) -> tuple[bool, str]:
+    """Run `cmd` in the low-integrity namespace, scratch beside the workspace."""
     source = Path(root).resolve()
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_", dir=source.parent))
     stdout_path, stderr_path = work / "stdout.txt", work / "stderr.txt"
@@ -105,35 +112,15 @@ def _posix_sandboxed_run(
 ) -> tuple[bool, str]:
     """Run `cmd` under whichever POSIX backend this host has.
 
-    Network is left reachable unless an operator named the hosts a run may
-    reach. The Windows backend cannot restrict it, so denying it here by
-    default would make one command succeed on one machine and fail on another
-    for a reason no caller asked about. The mechanism defaults the other way,
-    and this line is where the parity argument is made rather than a default
-    nobody can see. `Confinement.network` records what held.
-
-    With `FLYWHEEL_EGRESS_HOSTS` set the run gets a proxy instead, the
-    network is denied around it, and every request the run made is in the
-    output whether it was carried or refused. A policy that was asked for and
-    cannot be routed stops the run. Falling back to the open network there
-    would be the one moment the feature was wanted and the one moment it did
-    nothing.
+    Scratch goes to the system temp rather than beside the workspace: these
+    backends need no sibling, and a folder appearing next to a repo on every
+    command buys nothing. It is resolved, because the policy is matched against
+    the path the kernel canonicalises to (macOS hands out `/var/folders/...`
+    and resolves it to `/private/var/folders/...`). The network and egress
+    rules are in `sandbox_route_run`.
     """
-    from .egress_policy import PolicyRefused, from_env
-    from .egress_route import RouteUnavailable, open_route
-    from .posix_sandbox import backend_for, posix_run
+    from .sandbox_route_run import routed_run
     source = Path(root).resolve()
-    # Scratch goes to the system temp rather than beside the workspace.
-    # The Windows backend needs a sibling for the integrity ACL; these two
-    # do not, and a directory appearing next to an operator's repo every
-    # time a command runs is a cost with nothing bought by it.
-    #
-    # Resolved, because the policy is matched against the path the kernel
-    # canonicalises to. macOS hands out `/var/folders/...` and resolves it to
-    # `/private/var/folders/...`, so an unresolved scratch path would be
-    # written into the profile in a spelling nothing ever matches, and the
-    # directory the run was told to use would be the one directory it could
-    # not write to.
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
     env = _build_posix_env(bindings, work, scratch_home)
     env.update(extra_env or {})
@@ -143,41 +130,15 @@ def _posix_sandboxed_run(
         streaming = make_runner(work, cancel)
         done = work_hook(work) if work_hook is not None else None
     try:
-        policy = from_env()
-    except PolicyRefused as exc:
-        shutil.rmtree(work, ignore_errors=True)
-        return False, f"[denied] egress policy is unreadable: {exc}"
-    route, attempts = None, []
-    try:
-        if policy is not None:
-            backend = backend_for()
-            if backend is None:
-                raise SandboxUnavailable(_no_backend_reason())
-            route = open_route(policy, backend, work)
-        outcome = posix_run(cmd, source, work, env=env,
-                            timeout_seconds=timeout_seconds,
-                            network=policy is None, egress=None if route is
-                            None else route.route, runner=streaming,
-                            **({} if workspace is None else workspace.posix()))
-        if outcome is None:
-            raise SandboxUnavailable(_no_backend_reason())
-        rc, out, plan = outcome
-        if route is not None:
-            attempts = route.record()["attempts"]
-    except RouteUnavailable as exc:
-        return False, f"[denied] no egress route for this run: {exc}"
+        outcome = routed_run(cmd, source, work, env, timeout_seconds, streaming, workspace)
     finally:
-        if route is not None:
-            route.close()
         if callable(done):
             done()
         shutil.rmtree(work, ignore_errors=True)
-    # A run that never started gets no confinement line. The summary states
-    # what the kernel enforced, and a failed exec enforced nothing. The probe
-    # above catches the common case where the host policy denies the
-    # namespace; a backend that starts and then refuses part way through its
-    # own setup still reaches here with its summary attached, which is a
-    # narrower gap than the one this replaces and is not closed.
+    if isinstance(outcome, str):
+        return False, outcome
+    rc, out, plan, attempts = outcome
+    # A run that never started (126) gets no confinement line.
     body = _redact(out, bindings)
     lines = (plan.summary(), _egress_line(attempts))
     header = "\n".join(part for part in lines if part)

@@ -94,6 +94,9 @@ def _runner():
     from harness.workspace_run import workspace_run
     from harness.tool_sandbox_bridge import fallback_from_env, make_unsandboxed_runner
     fallback = fallback_from_env()
+    if os.name == "nt":       # close what a killed session left open to the sandbox
+        from harness.windows_workspace import sweep
+        sweep()
 
     def run(cmd: str, root: str):
         live = {}

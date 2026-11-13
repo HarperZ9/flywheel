@@ -35,7 +35,9 @@ NAMED = {
     "remote": {"url", "fetch", "pushurl"},
     "submodule": {"url", "active"},
 }
-URL_KEYS = frozenset({"url", "pushurl"})
+#: Values git may hand to a transport. `branch.<name>.remote` is one: git
+#: accepts an address there as well as a remote's name.
+URL_KEYS = frozenset({"url", "pushurl", "remote"})
 
 _HEADER = re.compile(r'^\[\s*([A-Za-z0-9.-]+)\s*(?:"((?:[^"\\]|\\.)*)")?\s*\]$')
 _ENTRY = re.compile(r"^([A-Za-z][A-Za-z0-9-]*)\s*(?:=\s*(.*))?$")

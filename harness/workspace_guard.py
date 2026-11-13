@@ -4,22 +4,29 @@ A coding session lets a sandboxed command write inside the project folder.
 The kernel keeps that command inside the folder. It cannot tell an ordinary
 file from one that starts a program later, outside the sandbox, as the user:
 
-  .git/hooks/                 git runs these on commit, checkout, merge, push
-  .git/config                 can name programs git starts (see git_config_guard)
+  <git folder>/hooks/         git runs these on commit, checkout, merge, push
+  <git folder>/config         can name programs git starts (see git_config_guard)
   .flywheel/permissions.json  the session's own allow and deny rules
   .flywheel/hooks.json        commands the session runs outside the sandbox
   .flywheel/mcp.json, .mcp.json   servers the session starts outside it
+  .git, when it is a file     says which repository a linked worktree uses
 
-So those paths are read before the command runs and compared after it. A
-change is put back, byte for byte, and the run is reported as refused. The
-check compares content by path, which is why a command that renames `.git`
-aside and builds a new one in its place gains nothing: the new hooks file is
-still a hooks file that was not there before.
+`workspace_paths.protected` lists them. They are read before the command runs
+and compared after it. A change is put back and the run is reported as
+refused. The check compares content by path, so a command that renames `.git`
+aside and builds a new one in its place gains nothing.
+
+Putting back means the same bytes, the same permission bits (a hook keeps its
+executable bit) and, for a name that was a link, a link to the same target.
+A file larger than MAX_KEEP (1 MiB) is remembered by its sha256 only: a
+change to it is seen and cannot be undone. Anything that cannot be undone is
+listed in `Problems.failed`, and the caller then holds the project read-only.
 
 Two exceptions keep git usable. A new `*.sample` file in a hooks folder is
 allowed, because `git init` writes them and git never runs them. Additions to
 a git config are allowed when every added entry is on the allowlist in
-`git_config_guard`.
+`git_config_guard`. A hooks folder named by `core.hooksPath`, such as
+`.husky/`, is ordinary project content and is not guarded here.
 
 This is a check after the fact. Between the write and the check the changed
 file is on disk, and a git command the user starts in that moment would see
@@ -29,200 +36,252 @@ exist read-only to the command; see `Workspace.kernel_paths`.
 from __future__ import annotations
 
 import hashlib
+import logging
 import os
 import stat
 from pathlib import Path
 
 from .git_config_guard import strip_unsafe, unsafe_additions
+from .workspace_paths import CONTROL_FILES, fold, is_link, merged, protected
 
-__all__ = ["CONTROL_FILES", "protected", "snapshot", "verify"]
+__all__ = ["CONTROL_FILES", "MAX_KEEP", "Problems", "protected", "snapshot", "verify"]
 
-#: Files the session reads to decide what it may run. Any change is put back.
-CONTROL_FILES = (".flywheel/permissions.json", ".flywheel/hooks.json",
-                 ".flywheel/mcp.json", ".mcp.json")
-#: Beyond this size a file is remembered by presence only and cannot be put back.
+log = logging.getLogger(__name__)
+#: Beyond this size a file is remembered by digest and cannot be put back.
 MAX_KEEP = 1 << 20
-MAX_MODULES = 64
+_is_link = is_link
 
 
-def protected(root) -> dict:
-    """The guarded paths under `root`, relative, by kind.
+class Problems(list):
+    """One line per change. `failed` holds the lines for what was not undone."""
 
-    Submodule git folders are included one level down, because a hook in
-    `.git/modules/<name>/hooks` runs the same way the top one does.
-    """
-    hooks, configs = [".git/hooks"], [".git/config", ".git/config.worktree"]
-    modules = Path(root) / ".git" / "modules"
+    def __init__(self):
+        super().__init__()
+        self.failed = []
+
+    def add(self, line: str, failed: bool = False) -> None:
+        self.append(line)
+        if failed:
+            self.failed.append(line)
+
+
+def _key(root: Path, path: Path) -> str:
     try:
-        names = sorted(p.name for p in modules.iterdir() if p.is_dir())[:MAX_MODULES]
-    except OSError:
-        names = []
-    for name in names:
-        hooks.append(f".git/modules/{name}/hooks")
-        configs.append(f".git/modules/{name}/config")
-    return {"hooks": tuple(hooks), "configs": tuple(configs), "control": CONTROL_FILES}
+        return path.relative_to(root).as_posix()
+    except ValueError:
+        return path.as_posix()
 
 
-#: Windows reparse tags for a symbolic link and a junction.
-_LINK_TAGS = frozenset({0xA000000C, 0xA0000003})
-
-
-def _is_link(path: Path) -> bool:
-    """A symlink or a Windows junction: a name whose content lives elsewhere."""
+def _target(path: Path) -> tuple:
     try:
-        info = os.lstat(path)
-    except OSError:
-        return False
-    return stat.S_ISLNK(info.st_mode) or getattr(info, "st_reparse_tag", 0) in _LINK_TAGS
+        return os.readlink(path), os.path.isdir(path)
+    except OSError as exc:
+        return f"?{type(exc).__name__}", False
 
 
-def _links(root: Path, rel: str) -> list:
-    """Each leading part of `rel` that is a link, shortest first."""
-    found, here = [], root
-    for part in rel.split("/"):
+def _entry(path: Path, name: str) -> tuple:
+    """(name, kind, data, mode) for what is at `path` now."""
+    if is_link(path):
+        return name, "link", _target(path), 0
+    try:
+        info = path.stat()
+        mode = stat.S_IMODE(info.st_mode)
+        if info.st_size > MAX_KEEP:
+            with path.open("rb") as handle:
+                return name, "big", hashlib.file_digest(handle, "sha256").hexdigest(), mode
+        return name, "file", path.read_bytes(), mode
+    except OSError as exc:
+        return name, "unreadable", type(exc).__name__, 0
+
+
+def _links(root: Path, rel: str, leaf: bool) -> list:
+    """Each folder on the way to `rel` that is a link, shortest first."""
+    if os.path.isabs(rel):
+        return [rel] if leaf and is_link(Path(rel)) else []
+    found, here, parts = [], root, rel.split("/")
+    for part in parts if leaf else parts[:-1]:
         here = here / part
-        if _is_link(here):
+        if is_link(here):
             found.append(here.relative_to(root).as_posix())
     return found
 
 
-def _read(path: Path):
-    """The file's bytes, or a digest when it is too large to keep."""
-    try:
-        if path.stat().st_size > MAX_KEEP:
-            with path.open("rb") as handle:
-                return ("sha256", hashlib.file_digest(handle, "sha256").hexdigest())
-        return path.read_bytes()
-    except OSError as exc:
-        return ("unreadable", type(exc).__name__)
+def _link_map(root: Path, paths: dict) -> dict:
+    pairs = [(rel, True) for rel in paths["hooks"]]
+    pairs += [(rel, False) for rel in paths["configs"] + paths["control"]]
+    return {fold(name): (name, _target(root / name))
+            for rel, leaf in pairs for name in _links(root, rel, leaf)}
 
 
-def _hook_files(root: Path, rel: str) -> dict:
-    files, base = {}, root / rel
-    for folder, dirs, names in os.walk(base):
-        dirs[:] = [d for d in dirs if not _is_link(Path(folder) / d)]
-        for name in names:
-            path = Path(folder) / name
-            files[path.relative_to(root).as_posix()] = (
-                b"" if _is_link(path) else _read(path))
-    return files
+def _hook_entries(root: Path, rel: str) -> dict:
+    entries = {}
+    for folder, dirs, names in os.walk(root / rel):
+        here = Path(folder)
+        linked = [d for d in dirs if is_link(here / d)]
+        dirs[:] = [d for d in dirs if d not in linked]
+        for name in names + linked:
+            key = _key(root, here / name)
+            entries[fold(key)] = _entry(here / name, key)
+    return entries
 
 
-def snapshot(root) -> dict:
-    """What the guarded paths hold now: file bytes by path, and which are links."""
-    root, paths = Path(root), protected(root)
-    state = {"paths": paths, "links": set(), "hooks": {}, "files": {}}
-    for rel in paths["hooks"] + paths["configs"] + paths["control"]:
-        state["links"].update(_links(root, rel))
+def snapshot(root, paths: "dict | None" = None) -> dict:
+    """What the guarded paths hold now: links, hook files and guarded files."""
+    root = Path(root)
+    paths = protected(root) if paths is None else paths
+    state = {"paths": paths, "links": _link_map(root, paths), "hooks": {}, "files": {}}
     for rel in paths["hooks"]:
-        state["hooks"].update(_hook_files(root, rel))
+        state["hooks"].update(_hook_entries(root, rel))
     for rel in paths["configs"] + paths["control"]:
-        if (root / rel).is_file():
-            state["files"][rel] = _read(root / rel)
+        path = root / rel
+        if os.path.lexists(path) and (is_link(path) or not path.is_dir()):
+            state["files"][fold(rel)] = _entry(path, rel)
     return state
 
 
-def _remove(path: Path) -> None:
-    """Remove a file, link or junction without following it."""
+def _remove(path) -> bool:
+    """Remove a file, link, junction or empty folder without following it."""
+    if not os.path.lexists(path):
+        return True
+    last = None
     for call in (os.unlink, os.rmdir):
-        try:
-            call(path)
-            return
-        except OSError:
-            continue
+        for retry in (False, True):
+            try:
+                call(path)
+                return True
+            except PermissionError as exc:      # a read-only file on Windows
+                last = exc
+                if retry or is_link(path):
+                    break
+                try:
+                    os.chmod(path, stat.S_IWRITE | stat.S_IREAD)
+                except OSError:
+                    break
+            except OSError as exc:
+                last = exc
+                break
+    log.warning("could not remove %s", path, exc_info=last)
+    return False
 
 
-def _put_back(root: Path, rel: str, data: bytes) -> None:
-    """Write `data` at `rel` without following a link left at that name."""
-    path = root / rel
-    _remove(path)
-    if path.parent.exists() and not path.parent.is_dir():
-        _remove(path.parent)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_bytes(data)
-
-
-def _restore(root: Path, rel: str, data, what: str) -> list:
-    """Put the earlier bytes back and name what happened, including a failure."""
-    if not isinstance(data, bytes):      # too large to keep: say so, never guess
-        return [f"{rel}: {what}, too large to put back"]
+def _relink(path: Path, target: tuple) -> None:
+    """Make `path` a link to `target` again: a symlink, or a junction on Windows."""
+    where, is_dir = target
     try:
-        _put_back(root, rel, data)
+        os.symlink(where, path, target_is_directory=is_dir)
+    except OSError:
+        if os.name != "nt" or not is_dir:
+            raise
+        import _winapi
+        _winapi.CreateJunction(where.removeprefix("\\\\?\\"), str(path))
+
+
+def _put(root: Path, entry: tuple) -> str:
+    """Put `entry` back at its path; returns what went wrong, or an empty string."""
+    name, kind, data, mode = entry
+    path = root / name
+    if kind not in ("file", "link"):
+        return "too large to put back" if kind == "big" else "could not be read before the run"
+    if not _remove(path):
+        return "could not remove"
+    try:
+        if os.path.lexists(path.parent) and not path.parent.is_dir() and not _remove(path.parent):
+            return "could not remove"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if kind == "link":
+            _relink(path, data)
+        else:
+            path.write_bytes(data)
+            os.chmod(path, mode)
     except OSError as exc:
-        return [f"{rel}: {what}, could not put back ({type(exc).__name__})"]
-    return [f"{rel}: {what}, put back"]
+        log.warning("could not put back %s", path, exc_info=True)
+        return f"could not put back ({type(exc).__name__})"
+    return ""
 
 
-def _drop_new_links(root: Path, before: dict, paths: dict) -> list:
-    """Remove any link the run planted on the way to a guarded path."""
-    problems = []
-    for rel in paths["hooks"] + paths["configs"] + paths["control"]:
-        for link in _links(root, rel):
-            if link not in before["links"]:
-                _remove(root / link)
-                problems.append(f"{link}: replaced by a link, link removed")
-    return problems
+def _restore(root: Path, old: tuple, what: str, out: Problems) -> None:
+    error = _put(root, old)
+    out.add(f"{old[0]}: {what}, {error or 'put back'}", bool(error))
 
 
-def _check_hooks(root: Path, before: dict, now: dict) -> list:
-    problems = []
-    for rel, data in now["hooks"].items():
-        if rel not in before["hooks"]:
-            if not rel.endswith(".sample"):
-                _remove(root / rel)
-                problems.append(f"{rel}: added, removed")
-        elif data != before["hooks"][rel]:
-            problems += _restore(root, rel, before["hooks"][rel], "changed")
-    for rel, data in before["hooks"].items():
-        if rel not in now["hooks"]:
-            problems += _restore(root, rel, data, "deleted")
-    return problems
+def _drop(root: Path, name: str, what: str, done: str, out: Problems) -> bool:
+    removed = _remove(root / name)
+    out.add(f"{name}: {what}, {done if removed else 'could not remove'}", not removed)
+    return removed
 
 
-def _check_files(root: Path, before: dict, now: dict, paths: dict) -> list:
-    problems = []
+def _check_links(root: Path, before: dict, paths: dict, out: Problems) -> None:
+    """Undo links planted, retargeted or removed on the way to a guarded path."""
+    now = _link_map(root, paths)
+    for key, (name, target) in now.items():
+        old = before["links"].get(key)
+        if old is None:
+            _drop(root, name, "replaced by a link", "link removed", out)
+        elif old[1] != target:
+            _restore(root, (name, "link", old[1], 0), "link changed", out)
+    for key, (name, target) in before["links"].items():
+        if key not in now:
+            _restore(root, (name, "link", target, 0), "link removed", out)
+
+
+def _check_hooks(root: Path, before: dict, now: dict, out: Problems) -> None:
+    for key, entry in now["hooks"].items():
+        old = before["hooks"].get(key)
+        if old is None:
+            if not (key.endswith(".sample") and entry[1] != "link"):
+                _drop(root, entry[0], "added", "removed", out)
+        elif entry[1:] != old[1:]:
+            _restore(root, old, "changed", out)
+    for key, old in before["hooks"].items():
+        if key not in now["hooks"]:
+            _restore(root, old, "deleted", out)
+
+
+def _check_files(root: Path, before: dict, now: dict, paths: dict, out: Problems) -> None:
+    configs = {fold(rel) for rel in paths["configs"]}
     for rel in paths["configs"] + paths["control"]:
-        old, new = before["files"].get(rel), now["files"].get(rel)
-        had, has = rel in before["files"], rel in now["files"]
-        if had and not has:
-            problems += _restore(root, rel, old, "deleted")
-        elif has and rel in paths["configs"]:
-            problems += _check_config(root, rel, old if had else None, new, had)
-        elif has and (not had or new != old):
-            if had:
-                problems += _restore(root, rel, old, "changed")
-            else:
-                _remove(root / rel)
-                problems.append(f"{rel}: added, removed")
-    return problems
+        key = fold(rel)
+        old, new = before["files"].get(key), now["files"].get(key)
+        if old is not None and new is None:
+            _restore(root, old, "deleted", out)
+        elif new is not None and key in configs and new[1] != "link":
+            _check_config(root, old, new, out)
+        elif new is not None and old is None:
+            _drop(root, new[0], "added", "removed", out)
+        elif new is not None and new[1:] != old[1:]:
+            _restore(root, old, "changed", out)
 
 
-def _check_config(root: Path, rel: str, old, new, had: bool) -> list:
-    if new == old:
-        return []
-    if not isinstance(new, bytes):
-        return [f"{rel}: changed, too large to check"]
-    bad = unsafe_additions(old if isinstance(old, bytes) else None, new)
+def _check_config(root: Path, old, new: tuple, out: Problems) -> None:
+    if old is not None and new[1:3] == old[1:3]:
+        return
+    if new[1] != "file":
+        out.add(f"{new[0]}: changed, too large to check", True)
+        return
+    kept = old is not None and old[1] == "file"
+    bad = unsafe_additions(old[2] if kept else None, new[2])
     if not bad:
-        return []
+        return
     names = ", ".join(bad[:6])
-    if had and isinstance(old, bytes):
-        return _restore(root, rel, old, f"added {names}")
-    return _restore(root, rel, strip_unsafe(new), f"added {names}")
+    if kept:
+        _restore(root, old, f"added {names}", out)
+    else:
+        _restore(root, (new[0], "file", strip_unsafe(new[2]), new[3]), f"added {names}", out)
 
 
-def verify(root, before: dict) -> list:
+def verify(root, before: dict) -> Problems:
     """Compare the guarded paths with `before` and put back what changed.
 
-    Returns one line per change. An empty list means the run left every
+    Returns one line per change; an empty result means the run left every
     guarded path as it found it, apart from the two allowed exceptions.
+    `failed` on the result lists what could not be undone.
     """
-    root = Path(root)
-    paths = protected(root)
-    merged = {key: tuple(dict.fromkeys(before["paths"][key] + paths[key]))
-              for key in paths}
-    problems = _drop_new_links(root, before, merged)
-    now = snapshot(root)
-    problems += _check_hooks(root, before, now)
-    problems += _check_files(root, before, now, merged)
-    return problems
+    root, out = Path(root), Problems()
+    paths = merged(before["paths"], protected(root))
+    if paths["capped"] and not before["paths"].get("capped"):
+        out.add(".git/modules: more git folders than the guard reads", True)
+    _check_links(root, before, paths, out)
+    now = snapshot(root, paths)
+    _check_hooks(root, before, now, out)
+    _check_files(root, before, now, paths, out)
+    return out

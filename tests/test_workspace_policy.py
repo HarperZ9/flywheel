@@ -79,14 +79,14 @@ def _open(tmp_path, **kw):
 def test_a_plain_project_is_opened(tmp_path):
     space = _open(tmp_path)
     assert space.writable and space.reason == ""
-    assert space.posix() == {"root_writable": True, "write_protected": ()}
+    assert space.posix() == {"root_writable": True, "write_protected": (), "extra_writable": ()}
 
 
 def test_an_administrator_pin_closes_it_and_outranks_the_environment(tmp_path):
     pinned = Policy(pins={"allow_workspace_writes": False}, path="/etc/flywheel/policy.json")
     space = _open(tmp_path, policy=pinned, environ={WRITES_ENV: "1"})
     assert not space.writable and "machine-wide policy" in space.reason
-    assert space.posix() == {"root_writable": False, "write_protected": ()}
+    assert space.posix() == {"root_writable": False, "write_protected": (), "extra_writable": ()}
 
 
 def test_a_broken_policy_file_pins_writes_closed(tmp_path):

@@ -107,7 +107,7 @@ def backend_for(platform: str | None = None, which=None) -> str | None:
 def bwrap_argv(program: str, root, work, cmd: str, *,
                network: bool = False, entry: list | tuple = (),
                protected=(), root_writable: bool = True,
-               write_protected=()) -> list:
+               write_protected=(), extra_writable=()) -> list:
     """The bubblewrap command line. Order matters: later binds layer on top.
 
     `--ro-bind / /` first, then the workspace bound writable over it, then
@@ -135,6 +135,8 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
              "--bind", scratch, scratch]
     if root_writable:
         argv[-3:-3] = ["--bind", here, here]
+    for path in extra_writable:      # a linked worktree's git folders
+        argv += ["--bind", posix_path(path), posix_path(path)]
     for _kind, path in write_protected:
         argv += ["--ro-bind", posix_path(path), posix_path(path)]
     # After the workspace bind, so a protected path that happens to sit
@@ -158,13 +160,15 @@ def routed(egress, network: bool):
 
 
 def describe(backend: str, root, work, *, network: bool = False,
-             egress=None, protected=(), root_writable: bool = True) -> Confinement:
+             egress=None, protected=(), root_writable: bool = True,
+             extra_writable=()) -> Confinement:
     """What a run under `backend` will have enforced when it finishes."""
     route = routed(egress, network)
     return Confinement(
         backend=backend, program=PROGRAM[backend], root=posix_path(root),
         writable=((posix_path(root),) if root_writable else ())
-        + (posix_path(work),), network=network,
+        + (posix_path(work),) + tuple(posix_path(p) for p in extra_writable),
+        network=network,
         reads_confined=READS_CONFINED[backend],
         processes_isolated=PROCESS_ISOLATED[backend],
         protected=tuple(protected),
@@ -174,7 +178,7 @@ def describe(backend: str, root, work, *, network: bool = False,
 
 def build(backend: str, program: str, root, work, cmd: str, *,
           network: bool = False, egress=None, protected=(),
-          root_writable: bool = True, write_protected=()) -> list:
+          root_writable: bool = True, write_protected=(), extra_writable=()) -> list:
     """The argv for one backend. Pure, so a diff shows what will run.
 
     The route is passed whole rather than as the piece each backend wants.
@@ -188,13 +192,15 @@ def build(backend: str, program: str, root, work, cmd: str, *,
         return bwrap_argv(program, root, work, cmd, network=network,
                           entry=entry, protected=protected,
                           root_writable=root_writable,
-                          write_protected=write_protected)
+                          write_protected=write_protected,
+                          extra_writable=extra_writable)
     if backend == "seatbelt":
         profile = sbpl_profile(root, work, network=network,
                                egress_port=None if route is None
                                else route.port, protected=protected,
                                root_writable=root_writable,
-                               write_protected=write_protected)
+                               write_protected=write_protected,
+                               extra_writable=extra_writable)
         return seatbelt_argv(program, profile, cmd)
     raise ProfileRefused(f"no such backend: {backend}")
 
@@ -202,7 +208,8 @@ def build(backend: str, program: str, root, work, cmd: str, *,
 def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
               network: bool = False, egress=None, platform: str | None = None,
               which=None, runner=None, probe=None, protected=None,
-              root_writable: bool = True, write_protected=()) -> tuple:
+              root_writable: bool = True, write_protected=(),
+              extra_writable=()) -> tuple:
     """Run `cmd` confined. Returns (returncode, output, Confinement).
 
     Returns None for the backend rather than raising when the host has none:
@@ -232,10 +239,11 @@ def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
     hidden = (host_protected_paths(Path.home(), os.environ)
               if protected is None else protected)
     plan = describe(backend, root, work, network=network, egress=egress,
-                    protected=hidden, root_writable=root_writable)
+                    protected=hidden, root_writable=root_writable,
+                    extra_writable=extra_writable)
     argv = build(backend, program, root, work, cmd, network=network,
                  egress=egress, protected=hidden, root_writable=root_writable,
-                 write_protected=write_protected)
+                 write_protected=write_protected, extra_writable=extra_writable)
     call = runner if runner is not None else _spawn
     rc, out = call(argv, root, with_egress(env, egress), timeout_seconds)
     return rc, out, plan

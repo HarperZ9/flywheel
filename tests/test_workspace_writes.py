@@ -61,6 +61,9 @@ def project(tmp_path):
 def _tree_digest(folder: Path) -> str:
     digest = hashlib.sha256()
     for path in sorted(folder.rglob("*")):
+        if path.name == "workspace-open":   # the session's own record, empty between runs
+            assert list(path.iterdir()) == []
+            continue
         digest.update(path.relative_to(folder).as_posix().encode())
         if path.is_file():
             digest.update(path.read_bytes())

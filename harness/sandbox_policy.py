@@ -63,7 +63,8 @@ DEV_WRITES = ('  (literal "/dev/null")',
 
 def sbpl_profile(root, work, *, network: bool = False,
                  egress_port: int | None = None, protected=(),
-                 root_writable: bool = True, write_protected=()) -> str:
+                 root_writable: bool = True, write_protected=(),
+                 extra_writable=()) -> str:
     """The Seatbelt policy confining writes to the workspace.
 
     Reads stay allowed apart from the `protected` denylist. That is a real
@@ -91,6 +92,7 @@ def sbpl_profile(root, work, *, network: bool = False,
     writable = [_policy_path(work)]
     if root_writable:
         writable.insert(0, _policy_path(root))
+    writable += [_policy_path(path) for path in extra_writable]
     lines = ["(version 1)", "(allow default)", "(deny file-write*)",
              "(allow file-write*"]
     lines += [f'  (subpath "{path}")' for path in writable]
