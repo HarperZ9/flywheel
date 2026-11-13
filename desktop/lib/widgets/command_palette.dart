@@ -1,4 +1,4 @@
-// command_palette.dart -- Ctrl+K. Type to filter all forty-three destinations
+// command_palette.dart -- Ctrl+K. Type to filter every destination
 // by label or workflow term; arrows move, Enter opens, Escape dismisses. Fully
 // keyboard-first with semantic roles on every row.
 import 'package:flutter/material.dart';

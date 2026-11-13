@@ -1,4 +1,4 @@
-// The Ctrl+K palette: type filters all thirty destinations, Enter opens
+// The Ctrl+K palette: type filters every destination, Enter opens
 // the highlighted one, Escape closes without navigating.
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';

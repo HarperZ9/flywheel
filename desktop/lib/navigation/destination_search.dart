@@ -49,6 +49,7 @@ List<String> _keywords(DestinationId id) => switch (id) {
           'callable',
         ],
       DestinationId.plugins => ['tools', 'mcp', 'marketplace'],
+      DestinationId.peers => ['codex', 'claude code', 'sessions', 'mailbox'],
       DestinationId.infra => ['engine', 'gateway', 'health'],
       _ => const [],
     };

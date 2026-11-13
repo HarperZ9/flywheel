@@ -22,6 +22,14 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+# Telemetry. The Flutter and Dart CLIs post build metadata to Google on every
+# invocation: tool version, host OS string, locale, session id, and a
+# persistent client id. This suppresses the send for the child tools this
+# script launches. It is a request to cooperative software and withholds no
+# packets. The durable control is reporting=0 in
+# %APPDATA%\.dart-tool\dart-flutter-telemetry.config.
+$env:FLUTTER_SUPPRESS_ANALYTICS = "true"
 $repo = Split-Path -Parent $PSScriptRoot
 Set-Location $repo
 
