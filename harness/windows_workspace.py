@@ -144,12 +144,13 @@ def _close_unless_open(source: Path, label) -> None:
 def sweep(state=None, label=None) -> int:
     """Close folders a dead process left open; returns how many records it read.
 
-    Called when a session starts. A record written by this process is left
-    alone. Another live session's record is closed too: its running command
-    then fails with access denied, which is the safe way to be wrong.
+    Called when a session starts. A record is left alone while the process
+    that wrote it is alive, which is checked by its id and its start time, so
+    another running session keeps its project open and a new process that
+    reused a dead owner's id does not protect a stale record.
     """
     records = [(path, record) for path, record in workspace_marks.left_open(state)
-               if record.get("pid") != os.getpid()]
+               if not workspace_marks.owner_alive(record)]
     if not records:
         return 0
     if label is None:

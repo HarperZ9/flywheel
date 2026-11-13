@@ -10,6 +10,11 @@
 
 Both are one small JSON file per project under the Flywheel home, which no
 sandboxed command can write. A record that cannot be read counts as present.
+
+A hold that cannot be saved is kept in this process's memory instead, and its
+reason says so: it lasts until the session ends. An open record names the
+process that wrote it by id and start time, so a later session can tell a
+dead owner from a live one, and from a new process that reused the id.
 """
 from __future__ import annotations
 
@@ -22,6 +27,58 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 HOLDS, OPEN = "workspace-holds", "workspace-open"
+STILL_ACTIVE = 259
+#: Holds whose file could not be written, by that file's path.
+_UNSAVED: dict = {}
+
+
+def _windows_started(pid: int) -> "int | None":
+    import ctypes
+    from ctypes import wintypes
+    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+    kernel.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+    kernel.OpenProcess.restype = wintypes.HANDLE
+    kernel.CloseHandle.argtypes = (wintypes.HANDLE,)
+    handle = kernel.OpenProcess(0x1000, False, pid)      # query limited information
+    if not handle:
+        return None
+    try:
+        code, times = wintypes.DWORD(), [wintypes.FILETIME() for _ in range(4)]
+        kernel.GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+        kernel.GetProcessTimes.argtypes = (wintypes.HANDLE,) + (ctypes.POINTER(wintypes.FILETIME),) * 4
+        if not kernel.GetExitCodeProcess(handle, ctypes.byref(code)) or code.value != STILL_ACTIVE:
+            return None
+        if not kernel.GetProcessTimes(handle, *(ctypes.byref(t) for t in times)):
+            return None
+        return (times[0].dwHighDateTime << 32) | times[0].dwLowDateTime
+    finally:
+        kernel.CloseHandle(handle)
+
+
+def process_started(pid) -> "int | None":
+    """When the live process `pid` started, or None when no such process runs.
+
+    On Windows this is the creation time. Elsewhere it is 0 for any live
+    process: the open record is only written on Windows, and a start time is
+    what tells a reused id from the original owner.
+    """
+    if not isinstance(pid, int) or isinstance(pid, bool) or pid <= 0:
+        return None
+    if os.name == "nt":
+        return _windows_started(pid)
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return None
+    except OSError:          # it exists and belongs to another account
+        return 0
+    return 0
+
+
+def owner_alive(record: dict) -> bool:
+    """True when the process that wrote an open record is still that process."""
+    started = process_started(record.get("pid"))
+    return started is not None and started == record.get("started")
 
 
 def _folder(kind: str, state=None) -> Path:
@@ -50,7 +107,7 @@ def _write(path: Path, record: dict) -> bool:
 def _read(path: Path) -> "dict | None":
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
-    except FileNotFoundError:
+    except (FileNotFoundError, NotADirectoryError):
         return None
     except (OSError, ValueError):
         log.warning("could not read %s", path, exc_info=True)
@@ -61,7 +118,8 @@ def _read(path: Path) -> "dict | None":
 def hold(root, reason: str, state=None) -> Path:
     """Keep `root` read-only to commands until a person clears the hold."""
     path = _file(HOLDS, root, state)
-    _write(path, {"root": str(root), "reason": reason, "time": int(time.time())})
+    if not _write(path, {"root": str(root), "reason": reason, "time": int(time.time())}):
+        _UNSAVED[str(path)] = reason
     return path
 
 
@@ -69,6 +127,9 @@ def hold_reason(root, state=None) -> str:
     """Why `root` is held, with the file to delete, or an empty string."""
     path = _file(HOLDS, root, state)
     record = _read(path)
+    if record is None and str(path) in _UNSAVED:
+        return (f"{_UNSAVED[str(path)]}. The hold could not be saved to {path}, so it is "
+                "kept in memory and lasts until this session ends")
     if record is None:
         return ""
     return (f"{record.get('reason', 'a guarded file could not be put back')}. Check the "
@@ -76,15 +137,18 @@ def hold_reason(root, state=None) -> str:
 
 
 def clear_hold(root, state=None) -> bool:
+    path = _file(HOLDS, root, state)
+    unsaved = _UNSAVED.pop(str(path), None) is not None
     try:
-        _file(HOLDS, root, state).unlink()
-    except FileNotFoundError:
-        return False
+        path.unlink()
+    except (FileNotFoundError, NotADirectoryError):
+        return unsaved
     return True
 
 
 def mark_open(root, paths, state=None) -> None:
     _write(_file(OPEN, root, state), {"root": str(root), "pid": os.getpid(),
+                                      "started": process_started(os.getpid()),
                                       "paths": [str(path) for path in paths]})
 
 

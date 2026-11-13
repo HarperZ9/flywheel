@@ -326,7 +326,8 @@ index, objects and refs live in the main repository. The session opens only
 what `git add` and `git commit` write: the worktree's own folder under
 `.git/worktrees/`, and `objects`, `refs` and `logs` of the main repository.
 That repository's `hooks`, `config` and working files stay closed and are
-compared like the rest.
+compared like the rest. In a linked worktree a command can move or delete
+branches in the main repository, because it writes that repository's refs.
 
 Each command's output ends with one line saying what held:
 `[workspace writable: guarded paths unchanged]`, a `[refused]` line naming the

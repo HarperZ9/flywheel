@@ -240,3 +240,43 @@ def test_a_folder_without_full_control_runs_read_only_and_says_why(tmp_path):
         assert not ok and not (root / "made.txt").exists()
     finally:
         subprocess.run(["icacls", str(root), "/reset"], capture_output=True)
+
+
+def test_the_sweep_leaves_a_live_owner_alone_and_closes_a_stale_one(tmp_path):
+    import json
+    from harness import windows_workspace as ww
+    state, calls = tmp_path / "state", []
+    live, stale, reused = (tmp_path / name for name in ("live", "stale", "reused"))
+    for folder in (live, stale, reused):
+        folder.mkdir()
+    marks.mark_open(live, [live], state)             # this process: alive, start time right
+    mine = json.loads(marks._file(marks.OPEN, live, state).read_text(encoding="utf-8"))
+    assert mine["pid"] == os.getpid() and mine["started"] == marks.process_started(os.getpid())
+    records = {stale: {"pid": 2 ** 22 + 12345, "started": mine["started"]},      # no such process
+               reused: {"pid": os.getpid(), "started": mine["started"] + 1}}     # id reused
+    for folder, owner in records.items():
+        marks._file(marks.OPEN, folder, state).write_text(json.dumps(
+            {"root": str(folder), "paths": [str(folder)], **owner}), encoding="utf-8")
+    assert ww.sweep(state, lambda path, level: calls.append((str(path), level))) == 2
+    assert sorted(calls) == sorted([(str(stale), "ME"), (str(reused), "ME")])
+    assert [record["root"] for _file, record in marks.left_open(state)] == [str(live)]
+
+
+def test_a_hold_that_cannot_be_saved_lasts_for_the_session_and_says_so(tmp_path):
+    root = _repo(tmp_path)
+    state = tmp_path.resolve() / "state"
+    state.mkdir()
+    (state / marks.HOLDS).write_text("a file where the holds folder belongs", encoding="utf-8")
+    space = _open(root)
+    assert space.writable
+    before = guard.snapshot(root)
+    hook = root / ".git" / "hooks" / "pre-commit"
+    hook.unlink()
+    (hook / "inner").mkdir(parents=True)
+    (hook / "inner" / "keep.sample").write_bytes(b"x")
+    ok, out = workspace_run.finish(space, before, True, "[exit 0]")
+    assert not ok and "could not be saved" in out and "until this session ends" in out
+    assert not marks._file(marks.HOLDS, root, state).exists()
+    held = _open(root)
+    assert not held.writable and "kept in memory" in held.reason
+    assert marks.clear_hold(root, state) and _open(root).writable
