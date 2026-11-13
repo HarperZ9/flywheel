@@ -38,7 +38,7 @@ ROUTES = {
     "anthropic": ("https://api.anthropic.com/v1/models", _anthropic),
     "openai": ("https://api.openai.com/v1/models", _bearer),
     "gemini": ("https://generativelanguage.googleapis.com/v1beta/models", _gemini),
-    "deepseek": ("https://api.deepseek.com/v1/models", _bearer),
+    "deepseek": ("https://api.deepseek.com/models", _bearer),
     "openrouter": ("https://openrouter.ai/api/v1/key", _bearer),
 }
 
