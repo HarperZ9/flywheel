@@ -53,11 +53,16 @@ PROFILES = {
     "openai": OAuthProfile(
         provider="openai", kind="registered",
         keychain_name="CHATGPT_OAUTH_TOKEN",
-        sanction="needs an app registration you own. Set "
-                 "FLYWHEEL_OPENAI_OAUTH_CLIENT_ID, "
-                 "FLYWHEEL_OPENAI_OAUTH_AUTHORIZE_URL, and "
-                 "FLYWHEEL_OPENAI_OAUTH_EXCHANGE_URL in the engine's "
-                 "environment to enable it",
+        sanction="browser sign-in is not set up. Two routes work today: an "
+                 "API key through `flywheel setup --provider openai`, or a "
+                 "ChatGPT subscription through the Codex CLI, which `flywheel "
+                 "code` uses once that CLI is installed and signed in. The "
+                 "browser flow needs an OAuth app you register with OpenAI "
+                 "yourself: set FLYWHEEL_OPENAI_OAUTH_CLIENT_ID, "
+                 "FLYWHEEL_OPENAI_OAUTH_AUTHORIZE_URL and "
+                 "FLYWHEEL_OPENAI_OAUTH_EXCHANGE_URL to that registration's "
+                 "values. Flywheel ships no client id and will not borrow "
+                 "another app's",
         client_id_env="FLYWHEEL_OPENAI_OAUTH_CLIENT_ID",
         wire=WIRE_OAUTH2,
     ),

@@ -98,7 +98,12 @@ flywheel auth login anthropic     # starts Claude Code's own sign-in
                                   # its own and never sees or stores that
                                   # token. `flywheel code` then reaches your
                                   # subscription by calling the `claude` CLI
-flywheel auth login openai        # needs an app registration you own; set
+flywheel auth login openai        # no browser sign-in yet. Use an API key
+                                  # (`flywheel setup --provider openai`) or
+                                  # sign in to the Codex CLI, which
+                                  # `flywheel code` uses for a ChatGPT
+                                  # subscription. The browser flow runs only
+                                  # with an OAuth app you registered: set
                                   # FLYWHEEL_OPENAI_OAUTH_CLIENT_ID plus
                                   # _AUTHORIZE_URL and _EXCHANGE_URL
 ```

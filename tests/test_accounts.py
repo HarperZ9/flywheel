@@ -170,3 +170,16 @@ def test_unknown_auth_verb_is_an_error_with_usage(capsys):
 def test_use_and_remove_need_both_names(capsys):
     assert auth_cli.main(["use", "openai"]) == 2
     assert "usage: flywheel auth use PROVIDER LABEL" in capsys.readouterr().err
+
+
+def test_openai_sign_in_refusal_says_what_works_today(monkeypatch):
+    from harness import oauth_signin
+    for name in ("CLIENT_ID", "AUTHORIZE_URL", "EXCHANGE_URL"):
+        monkeypatch.delenv(f"FLYWHEEL_OPENAI_OAUTH_{name}", raising=False)
+    result = oauth_signin.login("openai")
+    assert result["ok"] is False
+    assert "flywheel setup --provider openai" in result["error"]
+    assert "Codex CLI" in result["error"] and "you register with OpenAI" in result["error"]
+    for name in ("CLIENT_ID", "AUTHORIZE_URL", "EXCHANGE_URL"):
+        assert f"FLYWHEEL_OPENAI_OAUTH_{name}" in result["error"]
+    assert oauth_signin.PROFILES["openai"].client_id == "", "no client id is shipped"
