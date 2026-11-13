@@ -154,6 +154,12 @@ def _isolated_keychain(request, monkeypatch):
     try:
         from harness import keychain
         monkeypatch.setattr(keychain, "keychain_get", lambda _name: None)
+        # Off Windows the store is the system's own tool (`security`,
+        # `secret-tool`). A CI runner or a workstation that has it must not
+        # have its keychain written by a test, so the suite sees no tool; a
+        # test of that path replaces the tool itself.
+        from harness import keychain_posix
+        monkeypatch.setattr(keychain_posix, "available", lambda *a, **k: False)
     except Exception:
         pass  # keychain may be absent in a stripped slice; env path still holds
     yield

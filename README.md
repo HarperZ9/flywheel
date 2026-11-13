@@ -80,7 +80,13 @@ $ flywheel up
 ```
 
 `flywheel code` uses a local model server when one is running, or a provider
-key you have set. `flywheel doctor` reports what is missing.
+key you have set. `flywheel setup --provider anthropic` tests a key and stores
+it, and `flywheel doctor` reports what is missing.
+
+Every gateway request needs a bearer token. The gateway prints the path at
+start: `gateway.token` in the Flywheel home, `~/.flywheel` by default. Send it
+as `Authorization: Bearer <token>`.
+[GETTING-STARTED.md](GETTING-STARTED.md) has a worked example.
 
 ## How it compares
 

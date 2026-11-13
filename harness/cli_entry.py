@@ -95,7 +95,7 @@ _UMBRELLA_USAGE = {
     "lanes": "usage: flywheel lanes [--probe]\nList every lane and whether it is installed; --probe checks each MCP server.",
     "gate": "usage: flywheel gate [OUT_DIR]\nCollect, verify, seal and re-witness one result with no model; exit 0 only on MATCH.",
     "up": "usage: flywheel up [--port 8799] [--probe] [gateway options]\nList the lanes, then start the local gateway and browser shell.",
-    "down": "usage: flywheel down\nHow to stop a gateway started by `flywheel up`.",
+    "down": "usage: flywheel down\nSay whether a gateway is running and how to stop it; it cannot stop one itself.",
     "corpus-export": "usage: flywheel corpus-export <envelopes_dir> <out.jsonl> [verdict_filter]",
     "why": "usage: flywheel why <receipt.json | dir> [claim-digest-prefix]",
 }
@@ -123,7 +123,7 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
         print(lane_report(roster))
         return 0
     if command == "auth":
-        from harness.oauth_signin import cli as _auth_cli
+        from harness.auth_cli import main as _auth_cli
         return _auth_cli(argv)
     if command == "why":
         # Asking must be the cheapest action available: a path, optionally a
@@ -160,10 +160,10 @@ def _dispatch_umbrella(command: str, argv: list[str]) -> int:
     if command == "up":
         return _cmd_up(argv)
     if command == "down":
-        print("`flywheel down` stops a gateway started by `flywheel up`.\n"
-              "On Windows, close the gateway process (Ctrl-C in its console).",
-              file=sys.stderr)
-        return 0
+        from harness.cli_help import down_report
+        code, text = down_report(os.environ)
+        print(text, file=sys.stderr if code else sys.stdout)
+        return code
     if command == "corpus-export":
         import json as _json
         from harness.corpus_export import export_corpus
@@ -245,10 +245,19 @@ def main(argv: list[str] | None = None) -> int:
         gw_args = list(raw)
         gw_args.remove("app")
         return _launch_gateway(gw_args)
-    # Other passthrough commands re-invoke scripts/run_harness_cli.py from the
-    # repo root (its cwd-relative subprocess dispatch needs the checkout). With
-    # no checkout -- a frozen exe or a bare `pip install`, neither of which ships
-    # scripts/ -- report that instead of raising.
+    from harness import cli_help
+    if command in (None, "help"):
+        # Bare `flywheel` or `flywheel --help`, with or without a checkout:
+        # the full command list. Help is a success; a missing command is not.
+        wants_help = command == "help" or any(a in ("-h", "--help") for a in raw)
+        print(cli_help.usage(), file=sys.stdout if wants_help else sys.stderr)
+        return 0 if wants_help else 2
+    if command not in cli_help.CHECKOUT_ONLY:
+        print(cli_help.unknown(command), file=sys.stderr)
+        return 2
+    # The remaining commands re-invoke scripts/run_harness_cli.py from the repo
+    # root (its cwd-relative subprocess dispatch needs the checkout). A frozen
+    # exe or a bare `pip install` ships no scripts/, and says so.
     repo_root = None
     if not getattr(sys, "frozen", False):
         try:
@@ -256,24 +265,7 @@ def main(argv: list[str] | None = None) -> int:
         except FileNotFoundError:
             repo_root = None
     if repo_root is None:
-        if command is None:
-            # Bare `flywheel` or `flywheel --help` with no checkout: show the
-            # umbrella usage. Help is a success; a missing command is an error.
-            wants_help = any(a in ("-h", "--help") for a in raw)
-            print("usage: flywheel <command> [options]\n"
-                  "Umbrella commands (run from a bare install): code, doctor, up, lanes, "
-                  "loop-status, install, corpus-export, gate, why, down, "
-                  "remote, relay, grant, journey, evidence, bulletin-identity,\n"
-                  "cross-harness-execute, check-output, packs, workstream, "
-                  "endpoint-gate, writing, import-inspect, incident-sim, traces\n"
-                  "Passthrough commands need a source checkout "
-                  "(scripts/run_harness_cli.py).",
-                  file=sys.stdout if wants_help else sys.stderr)
-            return 0 if wants_help else 2
-        print(f"`flywheel {command}` requires a source checkout (scripts/run_harness_cli.py).",
-              file=sys.stderr)
-        print("Run from a checkout, or use the umbrella commands "
-              "(up, lanes, loop-status, install, corpus-export, endpoint-gate, writing).", file=sys.stderr)
+        print(cli_help.needs_checkout(command), file=sys.stderr)
         return 2
     os.chdir(repo_root)
     script = repo_root / "scripts" / "run_harness_cli.py"

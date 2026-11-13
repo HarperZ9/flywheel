@@ -62,6 +62,26 @@ pip install "flywheel-verify[monitor]"   # network egress monitoring
 pip install "flywheel-verify[local]"     # the local HF serve/training stack
 ```
 
+## Connect a model with an API key
+
+```bash
+flywheel setup                                    # what is connected
+flywheel setup --provider anthropic               # paste the key; input is hidden
+flywheel setup --provider openai --account work   # a second key under a label
+flywheel auth list                                # labels per provider; * is active
+flywheel auth use openai work                     # switch the active account
+flywheel auth remove openai work                  # delete that account's key
+```
+
+Setup asks the provider whether the key works with one models-list request
+before it stores anything, and prints the provider's reason when it does not.
+`--no-check` stores without asking. Keys go to the OS credential store: Windows
+Credential Manager, the macOS Keychain through `security`, or the Linux Secret
+Service through `secret-tool`. Flywheel does not write a provider key to a
+file; where no store is present it names what is missing and the environment
+variable to set. A key set in the environment wins over every stored account.
+No command prints a key.
+
 ## Sign in with a subscription
 
 A token an authorized login already produced can carry your usage in place of a
@@ -72,13 +92,18 @@ is which, keeping them distinct:
 flywheel auth status              # presence and terms per provider
 flywheel auth login openrouter    # OpenRouter documents this third-party PKCE
                                   # flow; no registration needed
-flywheel auth login anthropic     # guided: the official `claude setup-token`
-                                  # mints the token and you paste it once.
-                                  # flywheel runs no OAuth client of its own
-                                  # and claims no provider sanction; what the
-                                  # token may be used for is governed by
-                                  # Anthropic's terms, which you accept
-flywheel auth login openai        # needs an app registration you own; set
+flywheel auth login anthropic     # starts Claude Code's own sign-in
+                                  # (`claude auth login`); Claude Code must be
+                                  # installed. Flywheel runs no OAuth client of
+                                  # its own and never sees or stores that
+                                  # token. `flywheel code` then reaches your
+                                  # subscription by calling the `claude` CLI
+flywheel auth login openai        # no browser sign-in yet. Use an API key
+                                  # (`flywheel setup --provider openai`) or
+                                  # sign in to the Codex CLI, which
+                                  # `flywheel code` uses for a ChatGPT
+                                  # subscription. The browser flow runs only
+                                  # with an OAuth app you registered: set
                                   # FLYWHEEL_OPENAI_OAUTH_CLIENT_ID plus
                                   # _AUTHORIZE_URL and _EXCHANGE_URL
 ```
@@ -108,6 +133,18 @@ flywheel app --port 8799
 
 The gateway serves on `http://127.0.0.1:8799` (localhost only). The Flutter
 desktop client connects automatically when launched.
+
+Every request needs the gateway's bearer token. The gateway prints the token's
+path when it starts: `gateway.token` in the Flywheel home (`~/.flywheel`, or
+`FLYWHEEL_HOME` when set). Send it as a header:
+
+```bash
+curl -s http://127.0.0.1:8799/v1/models \
+  -H "Authorization: Bearer $(cat ~/.flywheel/gateway.token)"
+```
+
+Stop the gateway with Ctrl-C in its terminal. `flywheel down` reports whether
+one is running and cannot stop it from another terminal.
 
 ## Start the desktop client
 

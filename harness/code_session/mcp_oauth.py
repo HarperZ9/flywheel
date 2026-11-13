@@ -182,8 +182,11 @@ def save_token(home: str, name: str, record: dict) -> str:
     from harness import keychain
     raw = json.dumps(record)
     if keychain.keychain_available():
-        keychain.keychain_set(_key(name), raw)
-        return "the OS credential store"
+        result = keychain.keychain_set(_key(name), raw)
+        if isinstance(result, dict) and result.get("stored"):
+            return "the OS credential store"
+        # A store that refused the write (a Linux session with no Secret
+        # Service running) must not lose the token: fall to the owner-only file.
     path = _file(home, name)
     path.parent.mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)

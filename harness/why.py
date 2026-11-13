@@ -123,7 +123,14 @@ def _what_would_change_it(body: dict, receipt: Receipt) -> list[str]:
 
 def explain(target, *, prefix: str = "") -> dict:
     """Answer from the record. `target` is an envelope file or a directory."""
-    candidates = _envelopes(Path(target))
+    try:
+        candidates = _envelopes(Path(target))
+    except WhyError:
+        from . import why_gate          # the record `flywheel gate` writes
+        gate = why_gate.explain(target)
+        if gate is None:
+            raise
+        return gate
     if prefix:
         matched = [(p, e) for p, e in candidates
                    if str(e["receipt"].get("claim_sha256", "")).split(":", 1)[-1]
@@ -193,6 +200,9 @@ def explain(target, *, prefix: str = "") -> dict:
 def render(e: dict) -> str:
     """Plain text. The verdict first, the levers second, the scope last and
     never omitted."""
+    if e.get("kind") == "gate":
+        from . import why_gate
+        return why_gate.render(e)
     d = e["what_decided_it"]
     cost = e["at_what_cost"]
     lines = [

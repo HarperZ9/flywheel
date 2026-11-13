@@ -2,15 +2,19 @@
 
 Windows Credential Manager over ctypes (zero deps): secrets are written as
 generic credentials under `flywheel/<ENV_NAME>`, read at call time, and
-surfaced everywhere else as presence booleans only. Resolution order is the
-environment first (explicit wins), then the keychain. On platforms without
-a supported store, every call degrades to a named no -- the environment
-path keeps working and nothing pretends."""
+surfaced everywhere else as presence booleans only. On macOS and Linux the
+system's own store is driven through its command-line tool (keychain_posix:
+`security`, `secret-tool`). Resolution order is the environment first
+(explicit wins), then the keychain. Where no store or tool is present, every
+call degrades to a named no -- the environment path keeps working, nothing
+pretends, and no key is ever written to a plain file."""
 from __future__ import annotations
 
 import os
 import sys
 import unicodedata
+
+from harness import keychain_posix
 
 _PREFIX = "flywheel/"
 _IS_WINDOWS = sys.platform == "win32"
@@ -43,7 +47,13 @@ if _IS_WINDOWS:
 
 
 def keychain_available() -> bool:
-    return _IS_WINDOWS
+    return _IS_WINDOWS or keychain_posix.available()
+
+
+def keychain_refusal() -> str:
+    """Why no credential store can be used, naming a missing tool; '' when
+    one can."""
+    return "" if _IS_WINDOWS else keychain_posix.refusal()
 
 
 def keychain_name_error(name: str) -> dict | None:
@@ -60,8 +70,10 @@ def keychain_get(name: str) -> "str | None":
     """The stored secret for `name`, or None. Callers must never log it."""
     if keychain_name_error(name) is not None:
         return None
-    if not _IS_WINDOWS or not name:
+    if not name:
         return None
+    if not _IS_WINDOWS:
+        return keychain_posix.read(name) if keychain_posix.available() else None
     pcred = _PCREDENTIAL()
     ok = _advapi32.CredReadW(_PREFIX + name, _CRED_TYPE_GENERIC, 0,
                              ctypes.byref(pcred))
@@ -85,8 +97,10 @@ def keychain_set(name: str, secret: str) -> dict:
     if out is not None:
         return out
     if not _IS_WINDOWS:
-        return {"error": "no supported OS credential store on this platform; "
-                         "use the environment variable instead"}
+        if not keychain_posix.available():
+            return {"error": f"{keychain_posix.refusal()}; "
+                             "use the environment variable instead"}
+        return keychain_posix.write(name, secret)
     blob = secret.encode("utf-16-le")
     buf = (ctypes.c_ubyte * len(blob)).from_buffer_copy(blob)
     cred = _CREDENTIAL()
@@ -109,7 +123,9 @@ def keychain_delete(name: str) -> dict:
     if out is not None:
         return out
     if not _IS_WINDOWS:
-        return {"error": "no supported OS credential store on this platform"}
+        if not keychain_posix.available():
+            return {"error": keychain_posix.refusal()}
+        return keychain_posix.remove(name)
     if not _advapi32.CredDeleteW(_PREFIX + name, _CRED_TYPE_GENERIC, 0):
         return {"error": f"no stored credential named '{name}'"}
     return {"deleted": name}
