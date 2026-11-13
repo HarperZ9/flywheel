@@ -6,9 +6,9 @@ Only the first write to a path in a turn is snapshotted: that is the state the
 turn started from. `/undo` restores the newest turn that changed anything and
 reports each path with the sha256 it was restored to.
 
-Changes a shell command makes are not tracked. In a session the project folder
-is read-only to commands, so the write tools are the only way files change, and
-those are exactly the calls this module sees.
+Changes a shell command makes are not tracked. A `run` command may write in the
+project folder (harness/workspace_run.py), and `/undo` does not put those
+writes back: this module sees the write tools only.
 """
 from __future__ import annotations
 
