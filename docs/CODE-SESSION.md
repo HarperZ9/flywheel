@@ -47,9 +47,17 @@ The session uses the first model it can reach, in this order: a local server
 `OPENROUTER_API_KEY`, `GLM_API_KEY`), then the `claude` or `codex` CLI on PATH.
 `flywheel setup` shows which of these are connected, and
 `flywheel setup --provider anthropic` (or openai, gemini, deepseek, openrouter)
-reads a key without echo and stores it in the OS credential store on Windows,
-where every backend looks after the environment. Flywheel never writes a key
-to a plain file; elsewhere setup names the environment variable to set.
+reads a key without echo, asks the provider whether it works with one
+models-list request (`--no-check` skips that), and stores it in the OS
+credential store, where every backend looks after the environment. The store is
+Windows Credential Manager, the macOS Keychain through the `security` command,
+or the Linux Secret Service through `secret-tool`. Flywheel never writes a
+provider key to a plain file; where no store or tool is present, setup names
+what is missing and the environment variable to set. A provider can hold more
+than one key: `flywheel setup --provider openai --account work` stores a second
+one, `flywheel auth list` shows the labels, and `flywheel auth use openai work`
+switches. The macOS and Linux stores are tested with the system tool replaced
+and have not been run on those systems.
 Models on Azure OpenAI, Amazon Bedrock and Google Vertex AI turn on when their
 settings are present: `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY` and
 `AZURE_OPENAI_DEPLOYMENT`; `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`,
@@ -111,8 +119,9 @@ An HTTP server that asks for a sign-in takes `flywheel mcp login NAME`, which
 follows the MCP authorization flow: the server's protected-resource metadata,
 the authorization server's metadata, dynamic client registration, and a browser
 sign-in with PKCE and the resource indicator, caught on a one-shot loopback
-listener. The token is kept in the OS credential store on Windows, and in an
-owner-only file under the Flywheel home elsewhere; it is sent only to the
+listener. The token is kept in the OS credential store, and in an owner-only
+file (mode 0600) under the Flywheel home where no store is present or the store
+refuses the write; it is sent only to the
 server it was issued for and refreshed when it expires. `flywheel mcp logout
 NAME` removes it. Servers that need a pre-registered client id are not
 supported yet.

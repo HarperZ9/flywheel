@@ -9,9 +9,11 @@
 The key is read without echo, tested with one models-list request to the
 provider (no completion; skip the test with --no-check), and stored in the OS
 credential store, where every Flywheel backend already looks after the
-environment. Flywheel never writes a provider key to a plain file: on a system
-without a supported credential store, setup prints the environment variable to
-set instead. A stored key is never printed again; `flywheel doctor` reports it
+environment. That store is Windows Credential Manager, the
+macOS Keychain (through `security`) or the Linux Secret Service (through
+`secret-tool`). Flywheel never writes a provider key to a plain file: where no
+store or tool is present, setup names what is missing and prints the
+environment variable to set instead. A stored key is never printed again; `flywheel doctor` reports it
 by name only.
 """
 from __future__ import annotations
@@ -45,7 +47,8 @@ def store(provider: str, read_secret=None, account: str = DEFAULT,
     if accounts.label_error(account):
         return False, accounts.label_error(account)
     if not keychain.keychain_available():
-        return False, (f"this system has no credential store Flywheel can use; set {env} "
+        why = keychain.keychain_refusal() or "this system has no credential store"
+        return False, (f"{why}. Flywheel does not write keys to a file; set {env} "
                        f"in your shell profile instead (export {env}=...)")
     secret = (read_secret or getpass.getpass)(f"{env} (input hidden): ").strip()
     if not secret:
@@ -61,7 +64,7 @@ def store(provider: str, read_secret=None, account: str = DEFAULT,
         done = accounts.add_account(provider, account, secret,
                                     store=store_backend, path=index)
     except AccountsError as exc:
-        return False, str(exc)
+        return False, f"{exc}. Nothing was stored; you can set {env} in the environment instead"
     if done["active"]:
         return True, (f"{tested}stored {env} in the OS credential store as the account "
                       f"'{account}'; `flywheel code` will use it")
