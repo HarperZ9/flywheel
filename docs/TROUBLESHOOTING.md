@@ -35,11 +35,16 @@ denylist still apply in every mode.
 
 ## A build or code generator fails inside a session
 
-Commands run in a sandbox where the project folder is read-only; files change
-only through the agent's write tools, which are gated and recorded. A command
-that writes into the tree, such as a build that writes `dist/`, fails today.
-Run that step yourself, or ask the agent to make the change with its file
-tools.
+A `run` command may write in the project folder, so a build that writes
+`dist/` works. Look at the last line of the command's output. If it says
+`[workspace read-only: REASON]`, the reason names what keeps the folder closed:
+`FLYWHEEL_WORKSPACE_WRITES=0`, a machine policy, a project folder that contains
+your home or Flywheel's own folder, or a background job. If it says
+`[refused]`, the command changed a git hook, a git config line that starts a
+program, or one of the session's own files, and the change was put back. In a
+linked git worktree, `git commit` is refused because the repository's data is
+outside the project folder. [CODE-SESSION.md](CODE-SESSION.md) has the full
+list under "What a command may write".
 
 ## "[refused] no OS sandbox on this host"
 

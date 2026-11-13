@@ -41,9 +41,12 @@ def sandboxed_run(
     timeout_seconds: int = 120,
     scratch_home: bool = False,
     extra_env: "dict[str, str] | None" = None,
-    cancel=None, work_hook=None,
+    cancel=None, work_hook=None, workspace=None,
 ) -> tuple[bool, str]:
     """Run `cmd` under this host's sandbox, rooted at `root`.
+
+    `workspace` (workspace_run.Workspace) says whether the command may write
+    in `root`; None keeps each backend's earlier behaviour.
 
     `cancel` (a threading.Event) stops the command early, exit 130;
     `work_hook(work_dir)` is called before the command starts, so a caller can
@@ -69,7 +72,8 @@ def sandboxed_run(
                        f"{admission.reason_code}")
     if os.name != "nt":
         return _posix_sandboxed_run(cmd, root, bindings, timeout_seconds, scratch_home,
-                                    extra_env, cancel=cancel, work_hook=work_hook)
+                                    extra_env, cancel=cancel, work_hook=work_hook,
+                                    workspace=workspace)
 
     source = Path(root).resolve()
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_", dir=source.parent))
@@ -82,7 +86,7 @@ def sandboxed_run(
         if work_hook is not None:
             work_hook(work)
         rc = _execute(source, work, cmd, env, timeout_seconds, stdout_path, stderr_path,
-                      cancel)
+                      cancel, workspace)
         out = _redact(_read_output(stdout_path, stderr_path), bindings)
     finally:
         shutil.rmtree(work, ignore_errors=True)
@@ -96,6 +100,7 @@ def _posix_sandboxed_run(
     cmd: str, root: str, bindings: CredentialBindings | None,
     timeout_seconds: int, scratch_home: bool = False,
     extra_env: "dict[str, str] | None" = None, cancel=None, work_hook=None,
+    workspace=None,
 ) -> tuple[bool, str]:
     """Run `cmd` under whichever POSIX backend this host has.
 
@@ -152,7 +157,8 @@ def _posix_sandboxed_run(
         outcome = posix_run(cmd, source, work, env=env,
                             timeout_seconds=timeout_seconds,
                             network=policy is None, egress=None if route is
-                            None else route.route, runner=streaming)
+                            None else route.route, runner=streaming,
+                            **({} if workspace is None else workspace.posix()))
         if outcome is None:
             raise SandboxUnavailable(_no_backend_reason())
         rc, out, plan = outcome
@@ -219,7 +225,7 @@ def _build_posix_env(bindings: CredentialBindings | None,
 
 def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
              timeout_seconds: int, stdout_path: Path, stderr_path: Path,
-             cancel=None) -> int:
+             cancel=None, workspace=None) -> int:
     """Enter the low-integrity namespace and run `cmd` inside it.
 
     Raises SandboxUnavailable (never the lower-level
@@ -233,7 +239,9 @@ def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
     shell = comspec if os.path.isabs(comspec) else safe_program.system_tool("cmd.exe")
     argv = [str(Path(shell).resolve()), "/c", cmd]
     try:
-        with protect_execution_namespace(source, work) as runner:
+        enter = (protect_execution_namespace if workspace is None
+                 else workspace.windows_namespace)
+        with enter(source, work) as runner:
             return runner.run(
                 argv, env=env, timeout_seconds=timeout_seconds,
                 stdout_path=stdout_path, stderr_path=stderr_path,

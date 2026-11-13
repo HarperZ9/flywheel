@@ -69,25 +69,27 @@ def print_event(event: dict) -> None:
         print(f"{lead}{mark}: {first[0][:160] if first else ''}", file=sys.stderr)
 
 
-# The sandbox leaves the project folder read-only to commands: files change
-# only through the gated, receipted write tools. Tools that cache inside the
-# tree must be told so, or they fail (or, for pytest's cache, stall until the
-# timeout). TEMP and HOME point at the run's own scratch folder.
+# Commands may write in the project folder (harness/workspace_run.py says where
+# and what stays closed). These two settings keep Python tools from leaving
+# caches in the tree, and they matter when the folder is read-only to commands:
+# pytest's cache would stall until the timeout. TEMP and HOME point at the
+# run's own scratch folder.
 SANDBOX_ENV = {"PYTHONDONTWRITEBYTECODE": "1", "PYTEST_ADDOPTS": "-p no:cacheprovider"}
 
 
 def _runner():
-    """Commands run in the OS sandbox with a writable scratch TEMP and HOME.
+    """Commands run in the OS sandbox and may write in the project and scratch.
 
     A host with no sandbox refuses, unless FLYWHEEL_ALLOW_UNSANDBOXED=1 (or the
     machine policy) says to run bare and label the output."""
-    from harness.sandboxed_runner import SandboxUnavailable, sandboxed_run
+    from harness.sandboxed_runner import SandboxUnavailable
+    from harness.workspace_run import workspace_run
     from harness.tool_sandbox_bridge import fallback_from_env, make_unsandboxed_runner
     fallback = fallback_from_env()
 
     def run(cmd: str, root: str):
         try:
-            return sandboxed_run(cmd, root, scratch_home=True, extra_env=SANDBOX_ENV)
+            return workspace_run(cmd, root, scratch_home=True, extra_env=SANDBOX_ENV)
         except SandboxUnavailable as e:
             if fallback != "disclose":
                 return False, (f"[refused] no OS sandbox on this host ({e}). Set "

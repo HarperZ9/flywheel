@@ -106,7 +106,8 @@ def backend_for(platform: str | None = None, which=None) -> str | None:
 
 def bwrap_argv(program: str, root, work, cmd: str, *,
                network: bool = False, entry: list | tuple = (),
-               protected=()) -> list:
+               protected=(), root_writable: bool = True,
+               write_protected=()) -> list:
     """The bubblewrap command line. Order matters: later binds layer on top.
 
     `--ro-bind / /` first, then the workspace bound writable over it, then
@@ -120,6 +121,9 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
     egress bridge is what goes there, because the proxy it forwards to sits
     on the other side of `--unshare-net` and nothing outside the namespace
     can hand a socket across.
+
+    With `root_writable` False the workspace keeps the read-only bind of `/`.
+    `write_protected` paths are bound read-only over the writable workspace.
     """
     argv = [program, "--die-with-parent", "--new-session",
             "--unshare-pid", "--unshare-ipc", "--unshare-uts", "--unshare-cgroup"]
@@ -128,7 +132,11 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
     here, scratch = posix_path(root), posix_path(work)
     argv += ["--ro-bind", "/", "/",
              "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
-             "--bind", here, here, "--bind", scratch, scratch]
+             "--bind", scratch, scratch]
+    if root_writable:
+        argv[-3:-3] = ["--bind", here, here]
+    for _kind, path in write_protected:
+        argv += ["--ro-bind", posix_path(path), posix_path(path)]
     # After the workspace bind, so a protected path that happens to sit
     # inside the workspace is hidden rather than exposed by it.
     argv += bwrap_hide_args(protected)
@@ -150,12 +158,13 @@ def routed(egress, network: bool):
 
 
 def describe(backend: str, root, work, *, network: bool = False,
-             egress=None, protected=()) -> Confinement:
+             egress=None, protected=(), root_writable: bool = True) -> Confinement:
     """What a run under `backend` will have enforced when it finishes."""
     route = routed(egress, network)
     return Confinement(
         backend=backend, program=PROGRAM[backend], root=posix_path(root),
-        writable=(posix_path(root), posix_path(work)), network=network,
+        writable=((posix_path(root),) if root_writable else ())
+        + (posix_path(work),), network=network,
         reads_confined=READS_CONFINED[backend],
         processes_isolated=PROCESS_ISOLATED[backend],
         protected=tuple(protected),
@@ -164,7 +173,8 @@ def describe(backend: str, root, work, *, network: bool = False,
 
 
 def build(backend: str, program: str, root, work, cmd: str, *,
-          network: bool = False, egress=None, protected=()) -> list:
+          network: bool = False, egress=None, protected=(),
+          root_writable: bool = True, write_protected=()) -> list:
     """The argv for one backend. Pure, so a diff shows what will run.
 
     The route is passed whole rather than as the piece each backend wants.
@@ -176,18 +186,23 @@ def build(backend: str, program: str, root, work, cmd: str, *,
     if backend == "bwrap":
         entry = () if route is None else bridge_argv(route)
         return bwrap_argv(program, root, work, cmd, network=network,
-                          entry=entry, protected=protected)
+                          entry=entry, protected=protected,
+                          root_writable=root_writable,
+                          write_protected=write_protected)
     if backend == "seatbelt":
         profile = sbpl_profile(root, work, network=network,
                                egress_port=None if route is None
-                               else route.port, protected=protected)
+                               else route.port, protected=protected,
+                               root_writable=root_writable,
+                               write_protected=write_protected)
         return seatbelt_argv(program, profile, cmd)
     raise ProfileRefused(f"no such backend: {backend}")
 
 
 def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
               network: bool = False, egress=None, platform: str | None = None,
-              which=None, runner=None, probe=None, protected=None) -> tuple:
+              which=None, runner=None, probe=None, protected=None,
+              root_writable: bool = True, write_protected=()) -> tuple:
     """Run `cmd` confined. Returns (returncode, output, Confinement).
 
     Returns None for the backend rather than raising when the host has none:
@@ -217,9 +232,10 @@ def posix_run(cmd: str, root, work, *, env: dict, timeout_seconds: int = 120,
     hidden = (host_protected_paths(Path.home(), os.environ)
               if protected is None else protected)
     plan = describe(backend, root, work, network=network, egress=egress,
-                    protected=hidden)
+                    protected=hidden, root_writable=root_writable)
     argv = build(backend, program, root, work, cmd, network=network,
-                 egress=egress, protected=hidden)
+                 egress=egress, protected=hidden, root_writable=root_writable,
+                 write_protected=write_protected)
     call = runner if runner is not None else _spawn
     rc, out = call(argv, root, with_egress(env, egress), timeout_seconds)
     return rc, out, plan

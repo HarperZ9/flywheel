@@ -48,6 +48,9 @@ PINNABLE: dict = {
     #: Whether a host with no OS-enforced sandbox may run a command bare and
     #: labelled. False is the shipped default and the restrictive value.
     "allow_unsandboxed": False,
+    #: Whether a sandboxed command in a coding session may write inside the
+    #: project folder. False keeps the folder read-only to commands.
+    "allow_workspace_writes": False,
 }
 
 
