@@ -50,7 +50,7 @@
   "harness/plan_run_store.py": "c892de47450d26c606fc69318d750b85c0d07b89cd9e6785544621e719730eb1",
   "harness/plan_workflow_contract.py": "bc73127e25c40f97afc7b596e9693db3638784902769953db5823f9dc157d2eb",
   "harness/proc_kill.py": "2ba9103275a5999be3ebf45a2afa9e3f82a6d94ddcd1bf8e28d52ee638c1dc9b",
-  "harness/proposer.py": "df008173ce73f8b7e19e0b33f9e633f3c617b8b1970bdf04574e30dea649568c",
+  "harness/proposer.py": "d8ac125f134caef2f071970acc97053a19f357ed6e15aff7d7758ab956d36057",
   "harness/provider_session_gateway_fields.py": "4babfa286202f29539ed5c246ec6cefefece741ef2aceb5892de4f81ff50bf69",
   "harness/provider_transport_error.py": "c2ab1655105e52dd2682ca088955b775073cb17a98af3dcd85a328ecc86c4688",
   "harness/providers.py": "3f47880adb22f3d8ad530efc4a3e68747e26231daa1963badfa09f0b323a0fdf",

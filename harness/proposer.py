@@ -17,7 +17,19 @@ import urllib.request
 import urllib.error
 
 from .local_agent import BackendError
-from .provider_fault_boundary import format_http_error
+
+
+def _raise_provider_fault(name: str, error, *, dialect: str):
+    """Raise a provider HTTP error as a BackendError with the redacted reading.
+
+    The reader is imported here, lazily, so a stripped deployment that ships
+    this module without it (the tools companion plugin) keeps the old
+    behaviour: the HTTPError travels unchanged."""
+    try:
+        from .provider_fault_boundary import format_http_error
+    except ImportError:
+        raise error
+    raise BackendError(format_http_error(name, error, dialect=dialect, kind=name)) from error
 
 
 @dataclass
@@ -155,9 +167,7 @@ class EnterpriseProposer:
             with urllib.request.urlopen(req, timeout=300) as r:
                 obj = json.loads(r.read())
         except urllib.error.HTTPError as e:
-            kind = self.model_ref.split(":", 1)[0] or "openai"
-            raise BackendError(
-                format_http_error(kind, e, dialect="openai", kind=kind)) from e
+            _raise_provider_fault(self.model_ref.split(":", 1)[0] or "openai", e, dialect="openai")
         from .extract import extract_code
         text = extract_code(obj["choices"][0]["message"]["content"])  # enterprise models fence too
         # the model the provider actually served: a receipt that trusts the
@@ -205,8 +215,7 @@ class AnthropicProposer:
             with urllib.request.urlopen(req, timeout=300) as r:
                 obj = json.loads(r.read())
         except urllib.error.HTTPError as e:
-            raise BackendError(format_http_error(
-                "anthropic", e, dialect="anthropic", kind="anthropic")) from e
+            _raise_provider_fault("anthropic", e, dialect="anthropic")
         from .extract import extract_code
         blocks = obj.get("content") or []
         text = "".join(b.get("text", "") for b in blocks
