@@ -55,6 +55,14 @@ def plain_output() -> bool:
     return os.environ.get("FLYWHEEL_SCREEN_READER", "") not in ("", "0")
 
 
+def streaming_on() -> bool:
+    """Text and command output appear as they arrive, unless turned off.
+
+    Off with FLYWHEEL_STREAM=0, and in screen-reader mode, where text that
+    arrives in fragments is read out in fragments."""
+    return os.environ.get("FLYWHEEL_STREAM", "1") != "0" and not plain_output()
+
+
 def print_event(event: dict) -> None:
     kind, plain = event.get("type"), plain_output()
     if kind == "tool_call":
@@ -88,14 +96,19 @@ def _runner():
     fallback = fallback_from_env()
 
     def run(cmd: str, root: str):
+        live = {}
+        if run.sink is not None:      # an interactive turn shows output as it arrives
+            from .streaming import OutputTail
+            live["work_hook"] = OutputTail(run.sink).hook
         try:
-            return workspace_run(cmd, root, scratch_home=True, extra_env=SANDBOX_ENV)
+            return workspace_run(cmd, root, scratch_home=True, extra_env=SANDBOX_ENV, **live)
         except SandboxUnavailable as e:
             if fallback != "disclose":
                 return False, (f"[refused] no OS sandbox on this host ({e}). Set "
                                "FLYWHEEL_ALLOW_UNSANDBOXED=1 to run commands bare.")
             ok, out = make_unsandboxed_runner()(cmd, root)
             return ok, "[UNVERIFIABLE: sandbox unavailable] " + out
+    run.sink = None
     return run
 
 
@@ -151,7 +164,8 @@ def run_turn(session, text: str) -> int:
     except BackendError as e:
         print(f"[error] {e}", file=sys.stderr)
         return 1
-    print(result.final)
+    if getattr(session, "streamed_final", None) != result.final:
+        print(result.final)             # not already shown as it streamed
     print(footer(result), file=sys.stderr)
     return 1 if result.tests_pass is False else 0
 
@@ -193,7 +207,9 @@ def repl(session) -> int:
             print(out)
             continue
         try:
-            run_turn(session, text)
+            from .streaming import live
+            with live(session, enabled=streaming_on()):
+                run_turn(session, text)
         except KeyboardInterrupt:
             print("\n[turn stopped]", file=sys.stderr)
 

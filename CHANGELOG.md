@@ -11,6 +11,9 @@ Writable workspace
 - `FLYWHEEL_WORKSPACE_WRITES=0` or the machine policy key `allow_workspace_writes: false` keeps the project read-only to commands. Background jobs run with the project read-only. On Linux and macOS a read-only project is now enforced by the sandbox; before, the folder was writable there despite the documentation.
 - Tested in the real sandbox on Windows. On Linux and macOS the sandbox arguments are tested; no command was run there for this change.
 
+Output as it arrives
+- In the interactive `flywheel code` session, a command's output prints while the command runs. Model text prints as it is written when the backend can stream, which today is Ollama; hosted providers still print a reply whole. The ledger and the recorded results are unchanged. `FLYWHEEL_STREAM=0` turns it off.
+
 Provider boundary
 - A failed call to a hosted model ends its error line with one plain sentence: whether trying again could help, and the wait the provider asked for when it sent one. Flywheel does not retry on its own. The retry deadline now reaches errors from the hosted chat backends as well as the proposers.
 - The error object carries no unredacted provider text: its `body` is scrubbed for key shapes, and the run budget reads the error type, code and status from a separate `limit_fields` value. Usage records and kept reasoning text are scrubbed the same way, and each call's record names which request gates were open (`gates`), so an absent figure states its cause. The local `serve` and `ollama` backends still quote their server's error text as it arrived.

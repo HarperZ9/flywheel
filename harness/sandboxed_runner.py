@@ -45,8 +45,7 @@ def sandboxed_run(
 ) -> tuple[bool, str]:
     """Run `cmd` under this host's sandbox, rooted at `root`.
 
-    `workspace` (workspace_run.Workspace) says whether the command may write
-    in `root`; None keeps each backend's earlier behaviour.
+    `workspace` (workspace_run.Workspace) opens `root` to writes; None changes nothing.
 
     `cancel` (a threading.Event) stops the command early, exit 130;
     `work_hook(work_dir)` is called before the command starts, so a caller can
@@ -78,17 +77,19 @@ def sandboxed_run(
     source = Path(root).resolve()
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_", dir=source.parent))
     stdout_path, stderr_path = work / "stdout.txt", work / "stderr.txt"
+    done = None     # what work_hook returned: called once the output files are complete
     try:
         env = _build_env(bindings)
         if scratch_home:
             env.update({name: str(work) for name in ("HOME", "TEMP", "TMP")})
         env.update(extra_env or {})
-        if work_hook is not None:
-            work_hook(work)
+        done = work_hook(work) if work_hook is not None else None
         rc = _execute(source, work, cmd, env, timeout_seconds, stdout_path, stderr_path,
                       cancel, workspace)
         out = _redact(_read_output(stdout_path, stderr_path), bindings)
     finally:
+        if callable(done):
+            done()
         shutil.rmtree(work, ignore_errors=True)
 
     if rc == 124:
@@ -136,12 +137,11 @@ def _posix_sandboxed_run(
     work = Path(tempfile.mkdtemp(prefix="fw_sandbox_")).resolve()
     env = _build_posix_env(bindings, work, scratch_home)
     env.update(extra_env or {})
-    streaming = None
+    streaming, done = None, None
     if cancel is not None or work_hook is not None:
         from .streaming_spawn import make_runner
         streaming = make_runner(work, cancel)
-        if work_hook is not None:
-            work_hook(work)
+        done = work_hook(work) if work_hook is not None else None
     try:
         policy = from_env()
     except PolicyRefused as exc:
@@ -169,6 +169,8 @@ def _posix_sandboxed_run(
     finally:
         if route is not None:
             route.close()
+        if callable(done):
+            done()
         shutil.rmtree(work, ignore_errors=True)
     # A run that never started gets no confinement line. The summary states
     # what the kernel enforced, and a failed exec enforced nothing. The probe
@@ -239,8 +241,7 @@ def _execute(source: Path, work: Path, cmd: str, env: dict[str, str],
     shell = comspec if os.path.isabs(comspec) else safe_program.system_tool("cmd.exe")
     argv = [str(Path(shell).resolve()), "/c", cmd]
     try:
-        enter = (protect_execution_namespace if workspace is None
-                 else workspace.windows_namespace)
+        enter = protect_execution_namespace if workspace is None else workspace.windows_namespace
         with enter(source, work) as runner:
             return runner.run(
                 argv, env=env, timeout_seconds=timeout_seconds,

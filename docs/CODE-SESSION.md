@@ -368,6 +368,22 @@ Limits of this design:
 - Commands can read the whole disk apart from the protected credential paths.
   Windows does not restrict a command's network access.
 
+## Output as it arrives
+
+In the interactive session, a command's output prints while the command runs,
+each line marked `    | `. The model's text prints as the model writes it when
+the backend can stream; today that is Ollama. A reply from a hosted provider
+or a subscription CLI still prints whole when it is complete. Lines that are
+tool calls are left out of the streamed text, because the session prints each
+call in its own form.
+
+Streaming changes what you see and nothing that is recorded. The ledger entry
+for a reply is the same text, the command result is read from the same files
+after the command ends, and `-p`, `--output-format stream-json` and `--acp`
+are unchanged. One difference: a streamed Ollama reply reports no token
+counts, so `/cost` lists that call as uncounted. `FLYWHEEL_STREAM=0` turns
+streaming off, and it is off in `--plain` mode.
+
 ## Background jobs
 
 `run_background` starts a long command, such as a dev server or a watcher, in
