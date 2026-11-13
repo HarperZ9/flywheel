@@ -9,6 +9,14 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 $ProgressPreference = "SilentlyContinue"
 
+# Telemetry. The Flutter and Dart CLIs post build metadata to Google on every
+# invocation: tool version, host OS string, locale, session id, and a
+# persistent client id. This suppresses the send for the child tools this
+# script launches. It is a request to cooperative software and withholds no
+# packets. The durable control is reporting=0 in
+# %APPDATA%\.dart-tool\dart-flutter-telemetry.config.
+$env:FLUTTER_SUPPRESS_ANALYTICS = "true"
+
 $scriptRoot = Split-Path -Parent $MyInvocation.MyCommand.Path
 $desktopRoot = (Resolve-Path (Join-Path $scriptRoot "..")).Path
 $positiveSha256 = "c78f3f9d3e4834a91e83a0fb0fd005348354329ea58443f4156407b5f6d80413"

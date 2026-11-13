@@ -27,7 +27,7 @@ import 'journey_controller_test.dart' show headA;
 import 'journey_shell_test.dart';
 
 void main() {
-  testWidgets('factory preserves all forty-three exact destination mappings', (
+  testWidgets('the factory preserves every exact destination mapping', (
     tester,
   ) async {
     final dir = Directory.systemTemp.createTempSync('journey-factory-');
@@ -73,7 +73,7 @@ void main() {
   });
 
   testWidgets(
-    'forty-three labels remain reachable at ordinary scaled viewport',
+    'every label remains reachable at ordinary scaled viewport',
     (tester) async {
       tester.view.physicalSize = const Size(1440, 900);
       tester.view.devicePixelRatio = 1;

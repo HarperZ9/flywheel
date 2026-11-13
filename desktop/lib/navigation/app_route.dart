@@ -50,6 +50,7 @@ enum DestinationId {
   uplift,
   family,
   plugins,
+  peers,
 }
 
 @immutable

@@ -1,26 +1,12 @@
-// Five stable destination groups. Labels are presentation;
-// DestinationId remains the routing contract when a label changes.
+// Which destinations exist, in the order the rail renders them inside each
+// group. The spec type and the group enum live in destination_spec.dart and
+// are re-exported here.
 import '../assistant/assistant_identity.dart';
 import 'app_route.dart';
+import 'destination_catalog_advanced.dart';
+import 'destination_spec.dart';
 
-enum DestinationGroup { work, chat, code, evidence, advanced }
-
-class DestinationSpec {
-  final DestinationId id;
-  final String label;
-  final String abbr;
-  final DestinationGroup group;
-
-  /// Phone primary destinations appear in the bottom bar; the rest are in More.
-  final bool mobilePrimary;
-  const DestinationSpec(
-    this.id,
-    this.label, {
-    required this.abbr,
-    required this.group,
-    this.mobilePrimary = false,
-  });
-}
+export 'destination_spec.dart';
 
 const destinationCatalog = <DestinationSpec>[
   DestinationSpec(
@@ -148,6 +134,12 @@ const destinationCatalog = <DestinationSpec>[
     group: DestinationGroup.code,
   ),
   DestinationSpec(
+    DestinationId.relay,
+    'Relay',
+    abbr: 'RL',
+    group: DestinationGroup.code,
+  ),
+  DestinationSpec(
     DestinationId.receipts,
     'Receipts',
     abbr: 'RC',
@@ -191,101 +183,12 @@ const destinationCatalog = <DestinationSpec>[
     group: DestinationGroup.evidence,
   ),
   DestinationSpec(
-    DestinationId.studio,
-    'Studio',
-    abbr: 'ST',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.graph,
-    'Graph',
-    abbr: 'GR',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.feeds,
-    'Feeds',
-    abbr: 'FD',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.discourse,
-    'Discourse',
-    abbr: 'DS',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.academy,
-    'Academy',
-    abbr: 'AY',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.lessons,
-    'Lessons',
-    abbr: 'LE',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.instruments,
-    'Instruments',
-    abbr: 'IS',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.browser,
-    'Browser',
-    abbr: 'BR',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
     DestinationId.lanes,
     'Tools',
     abbr: 'TL',
     group: DestinationGroup.evidence,
   ),
-  DestinationSpec(
-    DestinationId.forum,
-    'Forum',
-    abbr: 'FM',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.registry,
-    'Registry',
-    abbr: 'RG',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.relay,
-    'Relay',
-    abbr: 'RL',
-    group: DestinationGroup.code,
-  ),
-  DestinationSpec(
-    DestinationId.train,
-    'Train',
-    abbr: 'TR',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.uplift,
-    'Uplift',
-    abbr: 'UP',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.family,
-    'Family',
-    abbr: 'FA',
-    group: DestinationGroup.advanced,
-  ),
-  DestinationSpec(
-    DestinationId.plugins,
-    'Plugins',
-    abbr: 'PL',
-    group: DestinationGroup.advanced,
-  ),
+  ...advancedDestinations,
 ];
 
 DestinationSpec? specFor(DestinationId id) {

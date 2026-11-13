@@ -47,6 +47,7 @@ import '../views/relay_view.dart';
 import '../views/lessons_view.dart';
 import '../views/lint_view.dart';
 import '../views/memory_view.dart';
+import '../views/peer_sessions_view.dart';
 import '../views/plan_view.dart';
 import '../views/plugins_view.dart';
 import '../views/projects_view.dart';
@@ -295,5 +296,9 @@ Widget? _advanced(DestinationId id, DestinationInputs i) => switch (id) {
       DestinationId.uplift => UpliftView(client: i.client, alive: i.alive),
       DestinationId.family => FamilyView(client: i.client, alive: i.alive),
       DestinationId.plugins => PluginsView(client: i.client, alive: i.alive),
+      DestinationId.peers => PeerSessionsView(
+          client: i.client,
+          alive: i.alive,
+        ),
       _ => null,
     };

@@ -26,7 +26,7 @@ import 'journey_controller_test.dart' show ScriptedJourneyApi;
 import 'journey_shell_test.dart' show unmount;
 
 void main() {
-  testWidgets('all thirty destinations build a view from typed ids',
+  testWidgets('every catalog destination builds a view from typed ids',
       (tester) async {
     final dir = Directory.systemTemp.createTempSync('nav-reach-');
     addTearDown(() => dir.deleteSync(recursive: true));

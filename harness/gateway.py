@@ -849,13 +849,13 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
             return self._json(body, code)
         if p == "/api/schedule":                   # schedules, what they owe, chain verdict
             from harness.schedule_route import handle_schedule_get
-            body, code = handle_schedule_get(p, run_root=self.run_root,
-                                             clock=self.clock)
+            body, code = handle_schedule_get(p, run_root=self.run_root, clock=self.clock)
             return self._json(body, code)
+        if p.startswith("/api/peer-sessions"):     # local Claude Code and Codex sessions, read-only
+            from harness.peer_sessions_route import handle_peer_sessions_get; return self._json(*handle_peer_sessions_get(p, qs, state_root=self.flywheel_home / "state", clock=self.clock))
         if p == "/api/scan/vulnerabilities":       # the last code scan, re-checked
             from harness.scan_route import handle_scan_get
-            return self._json(*handle_scan_get(
-                p, root=self.root, run_root=self.run_root, clock=self.clock))
+            return self._json(*handle_scan_get(p, root=self.root, run_root=self.run_root, clock=self.clock))
         if p == "/api/skills":                     # installed skills, read off disk
             from harness.skill_route import handle_skills_get
             return self._json(*handle_skills_get(p, run_root=self.run_root))

@@ -44,4 +44,5 @@ const expectedDestinationTypes = <DestinationId, String>{
   DestinationId.approvals: 'ApprovalsInboxView',
   DestinationId.bulletin: 'BulletinMediaView',
   DestinationId.browser: 'BrowserView',
+  DestinationId.peers: 'PeerSessionsView',
 };

@@ -3,7 +3,8 @@
 One injectable HTTP boundary (_http), one credential reader (_k), one
 typed network guard (_guard) and one error for a response with no
 completion (_response_error), shared by every backend module, so a test or
-an operator can swap the transport exactly once.
+an operator can swap the transport exactly once. The strict parser for one
+native tool call (_parse_tool_call) lives here too.
 """
 from __future__ import annotations
 
@@ -67,3 +68,28 @@ def _response_error(name: str, status, obj) -> BackendError:
     error = BackendError(f"{name} returned {status}: {obj.get('error', obj)}")
     error.status, error.body = status, obj
     return error
+
+
+def _parse_tool_call(call: dict) -> dict:
+    """One native tool call, parsed strictly: malformed JSON arguments are
+    reported, never silently executed with guessed arguments."""
+    fn = call.get("function") if isinstance(call, dict) else None
+    name = fn.get("name", "") if isinstance(fn, dict) else ""
+    raw = fn.get("arguments", "{}") if isinstance(fn, dict) else "{}"
+    parsed: dict = {}
+    error = ""
+    if isinstance(raw, dict):
+        parsed = raw
+    else:
+        try:
+            loaded = json.loads(raw)
+            if isinstance(loaded, dict):
+                parsed = loaded
+            else:
+                error = "arguments are not a JSON object"
+        except (json.JSONDecodeError, TypeError):
+            error = "arguments are not parseable JSON"
+    out = {"id": call.get("id", ""), "name": name, "arguments": parsed}
+    if error:
+        out["arguments_error"] = error
+    return out

@@ -12,7 +12,8 @@ import shlex
 from dataclasses import dataclass, field
 
 from .local_agent import BackendError
-from .endpoints_http import _http, _guard, _k, _response_error
+from .endpoints_http import _http, _guard, _k, _parse_tool_call, _response_error
+from .model_observation import attach as _observed
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 from . import safe_program
 from .token_usage import field as _usage, from_anthropic, from_gemini, from_openai
@@ -45,6 +46,9 @@ class OpenAICompatBackend:
     api_key: str | None = field(default=None, repr=False)
     tools: list | None = None
     tool_choice: "str | dict | None" = None
+    # Reasoning text is retained only when a caller asks for it. See
+    # model_observation for why the default withholds it.
+    keep_reasoning: bool = False
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key)) \
@@ -97,32 +101,9 @@ class OpenAICompatBackend:
                 raise BackendError(
                     f"{self.name} returned {status} with no message content{detail}")
         out["text"] = text
-        return {**out, **_usage(from_openai(obj))}
-
-
-def _parse_tool_call(call: dict) -> dict:
-    """One native tool call, parsed strictly: malformed JSON arguments are
-    reported, never silently executed with guessed arguments."""
-    fn = call.get("function") if isinstance(call, dict) else None
-    name = fn.get("name", "") if isinstance(fn, dict) else ""
-    raw = fn.get("arguments", "{}") if isinstance(fn, dict) else "{}"
-    parsed: dict = {}
-    error = ""
-    if isinstance(raw, dict):
-        parsed = raw
-    else:
-        try:
-            loaded = json.loads(raw)
-            if isinstance(loaded, dict):
-                parsed = loaded
-            else:
-                error = "arguments are not a JSON object"
-        except (json.JSONDecodeError, TypeError):
-            error = "arguments are not parseable JSON"
-    out = {"id": call.get("id", ""), "name": name, "arguments": parsed}
-    if error:
-        out["arguments_error"] = error
-    return out
+        out.update(_usage(from_openai(obj)))
+        return _observed(out, obj, dialect="openai", requested_model=self.model,
+                         keep_reasoning=self.keep_reasoning)
 
 
 # Models that reject `temperature` outright. Anthropic began retiring the
@@ -166,6 +147,7 @@ class AnthropicBackend:
     transport: "callable" = _http
     timeout: float = 120.0
     api_key: str | None = field(default=None, repr=False)
+    keep_reasoning: bool = False
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key))
@@ -196,7 +178,10 @@ class AnthropicBackend:
             text = "".join(b.get("text", "") for b in obj["content"] if b.get("type") == "text")
         except (KeyError, TypeError):
             raise _response_error(self.name, status, obj)
-        return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed, **_usage(from_anthropic(obj))}
+        out = {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed,
+               **_usage(from_anthropic(obj))}
+        return _observed(out, obj, dialect="anthropic", requested_model=self.model,
+                         keep_reasoning=self.keep_reasoning)
 
 
 @dataclass
@@ -212,6 +197,7 @@ class GeminiBackend:
     transport: "callable" = _http
     timeout: float = 120.0
     api_key: str | None = field(default=None, repr=False)
+    keep_reasoning: bool = False
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key))
@@ -229,10 +215,18 @@ class GeminiBackend:
         status, obj = _guard(self.transport, "POST", url, headers,
                              json.dumps(payload).encode(), self.timeout, self.name)
         try:
-            text = "".join(p.get("text", "") for p in obj["candidates"][0]["content"]["parts"])
+            # A part flagged thought:true is the model reasoning, not the
+            # answer. Joining every part put the chain of thought inside the
+            # returned text, where every caller stored it as the reply.
+            parts = obj["candidates"][0]["content"]["parts"]
+            text = "".join(q.get("text", "") for q in parts
+                           if q.get("thought") is not True)
         except (KeyError, IndexError, TypeError):
             raise _response_error(self.name, status, obj)
-        return {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed, **_usage(from_gemini(obj))}
+        out = {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed,
+               **_usage(from_gemini(obj))}
+        return _observed(out, obj, dialect="gemini", requested_model=self.model,
+                         keep_reasoning=self.keep_reasoning)
 
 
 @dataclass
