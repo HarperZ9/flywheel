@@ -5,6 +5,11 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Provider boundary
+- A failed call to a hosted model ends its error line with one plain sentence: whether trying again could help, and the wait the provider asked for when it sent one. Flywheel does not retry on its own. The retry deadline now reaches errors from the hosted chat backends as well as the proposers.
+- The error object carries no unredacted provider text: its `body` is scrubbed for key shapes, and the run budget reads the error type, code and status from a separate `limit_fields` value. Usage records and kept reasoning text are scrubbed the same way, and each call's record names which request gates were open (`gates`), so an absent figure states its cause. The local `serve` and `ollama` backends still quote their server's error text as it arrived.
+- `FLYWHEEL_KEEP_REASONING=1` keeps reasoning text on the record. The default is unchanged: no text.
+
 Distance to criticality
 - `harness.measure.criticality` measures d2, the KL divergence rate in bits per step from a series' best-fit AR model to the nearest critical AR model of the same order (Sooter et al. 2026, PNAS, CC BY 4.0). d_beta uses an exact closed form derived here, checked against numerical minimisation of the paper's integral. Standard library only; a clean-room implementation (the authors' toolkit is CC BY-NC 4.0 and was only read). `sliding` detrends with the past only by default, because a two-sided smoother let a leap fake an early warning in a learning-curve study. The paper's Hawkes, Langevin, AR(1), white-noise and bursty benchmarks reproduce under a preregistered study. See `docs/features/criticality.md`.
 

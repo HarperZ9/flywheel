@@ -56,6 +56,7 @@ silently failed to load would protect nothing.
 | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `BEDROCK_MODEL` | Amazon Bedrock |
 | `VERTEX_PROJECT`, `VERTEX_LOCATION`, `VERTEX_MODEL`, `VERTEX_ACCESS_TOKEN` | Google Vertex AI (without a token, `gcloud auth print-access-token` is used) |
+| `FLYWHEEL_KEEP_REASONING=1` | Keep the reasoning text a hosted model returns on the call's record, with key-shaped strings redacted. Unset, the record carries a digest and counts and no text. Anything that saves the record saves the text, so turn it on for debugging and leave it off otherwise |
 
 Which model answers, and in what order Flywheel tries them, is on the
 [flywheel code](CODE-SESSION.md#models) page.

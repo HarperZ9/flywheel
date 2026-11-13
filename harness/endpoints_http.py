@@ -10,22 +10,48 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import urllib.error
 import urllib.request
 
 from .local_agent import BackendError
-from .provider_fault_boundary import body_from_http_error, format_provider_fault
+from .model_redaction import scrub_value
+from .provider_fault_boundary import (body_from_http_error, limit_fields,
+                                      read_provider_fault, redacted_text)
+
+# The transport contract is (status, json) and every injected transport and
+# budget wrapper relies on that pair, so a failed response's headers cannot ride
+# in the return. They wait here, per thread, beside the exact body object they
+# arrived with, and _response_error takes them only for that same object.
+_FAULT = threading.local()
 
 
 def _http(method, url, headers, body, timeout):
     """(method,url,headers,body,timeout)->(status,json). Injectable for tests."""
+    _FAULT.last = None
     req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             raw = r.read()
             return r.status, (json.loads(raw) if raw else {})
     except urllib.error.HTTPError as e:
-        return e.code, body_from_http_error(e)
+        obj = body_from_http_error(e)
+        _FAULT.last = (obj, _header_map(getattr(e, "headers", None)))
+        return e.code, obj
+
+
+def _header_map(headers) -> dict:
+    items = getattr(headers, "items", None)
+    return {str(k): v for k, v in items()} if callable(items) else {}
+
+
+def _fault_headers(obj) -> dict:
+    """The headers of the failed response whose body is ``obj``, read once.
+
+    Identity, not equality: two failures can carry equal bodies and different
+    retry deadlines, and a deadline must never move from one to the other."""
+    last, _FAULT.last = getattr(_FAULT, "last", None), None
+    return last[1] if last is not None and last[0] is obj else {}
 
 
 def _k(env_name: str) -> str:
@@ -56,16 +82,24 @@ def _guard(transport, method, url, headers, body, timeout, name):
     try:
         return transport(method, url, headers, body, timeout)
     except (urllib.error.URLError, OSError, ConnectionError) as e:
-        raise BackendError(f"{name} unreachable: {e}") from e
+        raise BackendError(f"{name} unreachable: {redacted_text(str(e))}") from e
 
 
 def _response_error(name: str, status, obj, *, kind: str = "") -> BackendError:
     """A response with no completion. The message is the redacted one-line
-    fault reading, so a credential a provider echoes back never reaches a log.
-    The status and the body ride on the error unredacted, so a caller can read
-    the provider's own error fields."""
-    error = BackendError(format_provider_fault(name, status, obj, kind=kind or name))
-    error.status, error.body = status, obj
+    fault reading, with the retry deadline when the response carried one, so a
+    credential a provider echoes back never reaches a log.
+
+    Nothing unredacted rides on the error. ``body`` is the provider's body with
+    every string scrubbed, ``fault`` is the redacted fault record, and
+    ``limit_fields`` holds the error type, code and status a budget reader
+    compares by exact value."""
+    record, line = read_provider_fault(
+        name, status, obj, headers=_fault_headers(obj), kind=kind or name)
+    error = BackendError(line)
+    error.status, error.fault = status, record
+    error.limit_fields = limit_fields(obj)
+    error.body = scrub_value(obj)["value"]
     return error
 
 

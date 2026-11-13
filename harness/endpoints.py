@@ -13,7 +13,7 @@ from dataclasses import dataclass, field
 
 from .local_agent import BackendError
 from .endpoints_http import _http, _guard, _k, _parse_tool_call, _response_error
-from .model_observation import attach as _observed
+from .model_observation import attach as _observed, keep_reasoning_default as _keep
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 from . import safe_program
 from .token_usage import field as _usage, from_anthropic, from_gemini, from_openai
@@ -47,9 +47,9 @@ class OpenAICompatBackend:
     api_key: str | None = field(default=None, repr=False)
     tools: list | None = None
     tool_choice: "str | dict | None" = None
-    # Reasoning text is retained only when a caller asks for it. See
-    # model_observation for why the default withholds it.
-    keep_reasoning: bool = False
+    # Reasoning text is retained only when a caller asks for it, here or with
+    # FLYWHEEL_KEEP_REASONING=1. See model_observation for why it is withheld.
+    keep_reasoning: bool = field(default_factory=_keep)
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key)) \
@@ -95,7 +95,7 @@ class OpenAICompatBackend:
                     reason = obj["choices"][0].get("finish_reason") or ""
                 except (KeyError, IndexError, TypeError):
                     pass
-                detail = f" (finish_reason={reason})" if reason else ""
+                detail = f" (finish_reason={redacted_text(str(reason))})" if reason else ""
                 if reason == "length":
                     detail += "; the completion budget was spent before any " \
                               "content was emitted -- raise max_tokens"
@@ -104,7 +104,7 @@ class OpenAICompatBackend:
         out["text"] = text
         out.update(_usage(from_openai(obj)))
         return _observed(out, obj, dialect="openai", requested_model=self.model,
-                         keep_reasoning=self.keep_reasoning)
+                         keep_reasoning=self.keep_reasoning, request=payload, kind=self.name)
 
 
 # Models that reject `temperature` outright. Anthropic began retiring the
@@ -148,7 +148,7 @@ class AnthropicBackend:
     transport: "callable" = _http
     timeout: float = 120.0
     api_key: str | None = field(default=None, repr=False)
-    keep_reasoning: bool = False
+    keep_reasoning: bool = field(default_factory=_keep)
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key))
@@ -182,7 +182,7 @@ class AnthropicBackend:
         out = {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed,
                **_usage(from_anthropic(obj))}
         return _observed(out, obj, dialect="anthropic", requested_model=self.model,
-                         keep_reasoning=self.keep_reasoning)
+                         keep_reasoning=self.keep_reasoning, request=payload)
 
 
 @dataclass
@@ -198,7 +198,7 @@ class GeminiBackend:
     transport: "callable" = _http
     timeout: float = 120.0
     api_key: str | None = field(default=None, repr=False)
-    keep_reasoning: bool = False
+    keep_reasoning: bool = field(default_factory=_keep)
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key))
@@ -227,7 +227,7 @@ class GeminiBackend:
         out = {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed,
                **_usage(from_gemini(obj))}
         return _observed(out, obj, dialect="gemini", requested_model=self.model,
-                         keep_reasoning=self.keep_reasoning)
+                         keep_reasoning=self.keep_reasoning, request=payload)
 
 
 @dataclass

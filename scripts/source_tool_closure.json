@@ -63,7 +63,7 @@
   "harness/router_agent.py": "3379d27afe0d01a352c9127bb84f9c765533dc0e87c2c578d999494eb8aeab27",
   "harness/run_budget.py": "27a07ee77d747c0bbb2857781e19b78ef213b89bdccee11c7817d01448385b1b",
   "harness/run_budget_contract.py": "412d4f583594eb7dd9ebc891e513d2fd6d5f2a0202107a05efc058c4b08f7680",
-  "harness/run_budget_executor.py": "6614cf10030f0ea8a0f6f44e5cdb150912feda80367a6945d9e7a74153811dfa",
+  "harness/run_budget_executor.py": "c2465c468dc9ab46890b6d41e12d5f4b5e3ada94c7a70bc251df811e1eed8969",
   "harness/run_budget_usage.py": "21d801113211aedfbd22f13df9fd6203fa9635cc820c20a0da7ddc15ebe0abc5",
   "harness/run_paths.py": "ea7e129252b6f81eaf5d2a5e589333dbf0e7ddf4f9e8db092e473774c9ace29c",
   "harness/safe_program.py": "d36f285c8a699f5da06908dcd7fb60d7b46247720e37598fd8f8cb7d9a40c8a6",

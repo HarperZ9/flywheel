@@ -18,7 +18,7 @@ import os
 import urllib.parse
 from dataclasses import dataclass
 
-from .endpoints_http import _guard, _k, _http
+from .endpoints_http import _guard, _k, _http, _response_error
 from .local_agent import BackendError
 
 
@@ -82,7 +82,7 @@ class OpenCodeBackend:
             self.name,
         )
         if status >= 400:
-            raise BackendError(f"{self.name} returned {status}: {obj.get('error', obj)}")
+            raise _response_error(self.name, status, obj, kind="opencode")
         return obj
 
     def _collect_text(self, obj) -> list[str]:
