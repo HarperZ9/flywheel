@@ -62,7 +62,9 @@ DEV_WRITES = ('  (literal "/dev/null")',
 
 
 def sbpl_profile(root, work, *, network: bool = False,
-                 egress_port: int | None = None, protected=()) -> str:
+                 egress_port: int | None = None, protected=(),
+                 root_writable: bool = True, write_protected=(),
+                 extra_writable=()) -> str:
     """The Seatbelt policy confining writes to the workspace.
 
     Reads stay allowed apart from the `protected` denylist. That is a real
@@ -87,11 +89,15 @@ def sbpl_profile(root, work, *, network: bool = False,
     resolve has to hand the proxy a name, and the policy the proxy applies is
     written about names.
     """
-    writable = [_policy_path(root), _policy_path(work)]
+    writable = [_policy_path(work)]
+    if root_writable:
+        writable.insert(0, _policy_path(root))
+    writable += [_policy_path(path) for path in extra_writable]
     lines = ["(version 1)", "(allow default)", "(deny file-write*)",
              "(allow file-write*"]
     lines += [f'  (subpath "{path}")' for path in writable]
     lines += list(DEV_WRITES)
+    lines += _write_deny_lines(write_protected)
     if not network:
         lines.append("(deny network*)")
         if egress_port is not None:
@@ -103,6 +109,22 @@ def sbpl_profile(root, work, *, network: bool = False,
     # different one.
     lines += sbpl_deny_lines(protected, _policy_path)
     return "\n".join(lines) + "\n"
+
+
+def _write_deny_lines(paths) -> list:
+    """Rules closing paths inside the writable workspace to writes.
+
+    They follow the allow, and Seatbelt takes the last matching rule, so a
+    git hook folder under a writable project stays read-only to the run.
+    """
+    if not paths:
+        return []
+    lines = ["(deny file-write*"]
+    for kind, path in paths:
+        keyword = "subpath" if kind == "dir" else "literal"
+        lines.append(f'  ({keyword} "{_policy_path(path)}")')
+    lines[-1] += ")"
+    return lines
 
 
 def _egress_port(value) -> int:

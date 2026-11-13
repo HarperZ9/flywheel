@@ -229,7 +229,8 @@ def test_session_runner_gives_commands_scratch_temp_and_no_tree_caches(monkeypat
         seen.update(kw)
         return True, "[exit 0]\n"
     monkeypatch.setattr(sr, "sandboxed_run", fake)
-    assert cli._runner()("python -m pytest -q", ".") == (True, "[exit 0]\n")
+    ok, out = cli._runner()("python -m pytest -q", ".")
+    assert ok and out.splitlines()[0] == "[exit 0]"
     assert seen["scratch_home"] is True
     assert seen["extra_env"]["PYTEST_ADDOPTS"] == "-p no:cacheprovider"
 

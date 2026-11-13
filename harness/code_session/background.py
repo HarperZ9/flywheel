@@ -9,6 +9,10 @@ minutes. Every start, stop and finish goes on the session ledger.
 
 The output can be read while the job runs and `stop` ends it at once, in the
 Windows sandbox and in the bubblewrap and Seatbelt sandboxes alike.
+
+A background job runs with the project folder read-only. A `run` command may
+write there because the session checks the guarded paths the moment it ends;
+a job that lives for half an hour has no such moment.
 """
 from __future__ import annotations
 
@@ -21,6 +25,7 @@ from pathlib import Path
 TIME_LIMIT = 1800
 MAX_JOBS = 8
 TAIL = 4000
+READ_ONLY = "background jobs cannot write in the project; use run for that"
 TOOL_TEXT = ('Also available: TOOL run_background {"cmd": "<command>"} starts a long command '
              '(a dev server, a watcher) and returns a job id; TOOL processes {"action": '
              '"list" | "output" | "stop", "id": "<job id>"} checks or stops it.')
@@ -50,14 +55,17 @@ class JobTable:
         self._start = start or self._sandboxed
 
     def _sandboxed(self, job: Job) -> tuple:
-        from harness.sandboxed_runner import SandboxUnavailable, sandboxed_run
+        from harness.sandboxed_runner import SandboxUnavailable
+        from harness.workspace_run import Workspace, workspace_run
         from .cli import SANDBOX_ENV
+        space = Workspace(Path(self.root).resolve(), False, READ_ONLY)
 
         def keep(work):
             job.work = Path(work)
         try:
-            return sandboxed_run(job.cmd, self.root, scratch_home=True, extra_env=SANDBOX_ENV,
-                                 timeout_seconds=TIME_LIMIT, cancel=job.cancel, work_hook=keep)
+            return workspace_run(job.cmd, self.root, scratch_home=True, extra_env=SANDBOX_ENV,
+                                 timeout_seconds=TIME_LIMIT, cancel=job.cancel, work_hook=keep,
+                                 space=space)
         except SandboxUnavailable as e:
             return False, f"[refused] no OS sandbox on this host ({e})"
 

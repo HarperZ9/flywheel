@@ -274,13 +274,165 @@ session. The tool works in every mode, plan mode included.
 ## Commands run in a sandbox
 
 On Windows, commands run in the low-integrity sandbox; on Linux and macOS, in
-bubblewrap or Seatbelt when installed. The project folder is read-only to
-commands: files change only through the agent's write tools, which are gated
-and receipted. TEMP and HOME point at a scratch folder per command, and
-`PYTHONDONTWRITEBYTECODE=1` and `PYTEST_ADDOPTS=-p no:cacheprovider` keep Python
-tools from writing caches into the tree. A host with no sandbox refuses
-commands unless `FLYWHEEL_ALLOW_UNSANDBOXED=1` is set, and then every output is
-labeled unsandboxed.
+bubblewrap or Seatbelt when installed. A host with no sandbox refuses commands
+unless `FLYWHEEL_ALLOW_UNSANDBOXED=1` is set, and then every output is labeled
+unsandboxed and none of the limits below is enforced.
+
+### What a command may write
+
+A `run` command may write in two places: the project folder, and a scratch
+folder made for that one command and removed after it (TEMP, TMP and HOME point
+there). Installs, builds, formatters, `git init`, `git add` and `git commit`
+work. Git reads your name and email from your own `~/.gitconfig`, which the
+command can read and cannot change.
+
+Deleting has one more rule. The command denylist refuses `rm`, `rmdir`,
+`unlink`, `shred` and `srm` by name, before the sandbox starts and wherever
+the path points, so `rm -rf node_modules` is refused inside the project too.
+Deletes that go through another program work: `git rm`, `git clean`, `mv`,
+`find ... -delete`, a build tool's own clean step, and on Windows `del` and
+`rd`. The agent's file tools can also remove a file.
+
+Everything else is closed to the command by the operating system: your home
+folder, Flywheel's own folder (settings, sessions, ledgers, receipts, memory),
+and the rest of the disk. A path that leaves the project through `..`, a
+symbolic link or a junction is refused too, because the check is made on the
+file the path leads to.
+
+Some paths inside the project stay closed, because a file there starts a
+program later, outside the sandbox, with your full rights:
+
+| Path | Why it is closed |
+|---|---|
+| `hooks/` in `.git` and in every git folder under `.git/modules`, at any depth | git runs these on commit, checkout, merge and push |
+| `config` and `config.worktree` in the same git folders | can name programs git starts: `core.hooksPath`, `core.fsmonitor`, `core.sshCommand`, an alias with `!`, a filter, a credential helper, an include |
+| `.git`, when it is a file | says which repository a linked worktree or submodule checkout uses |
+| `.flywheel/permissions.json` | the session's own allow and deny rules |
+| `.flywheel/hooks.json` | commands the session runs outside the sandbox |
+| `.flywheel/mcp.json`, `.mcp.json` | servers the session starts outside the sandbox |
+
+The session reads these paths before each command and compares them after it.
+A change is put back byte for byte, the command is reported as failed, and the
+output lists each path. Two changes are allowed so that git stays usable: new
+`*.sample` files in a hooks folder, which `git init` writes and git never runs,
+and plain settings in a git config (`user.name`, `user.email`, a remote's `url`
+and `fetch`, a branch's `remote` and `merge`, and the `core` keys `git init`
+writes). Hook folders and the session's own files that already exist are also
+read-only to the command while it runs. To change any of these paths, use the
+agent's file tools, which ask under the permission mode, or do it yourself.
+
+Putting a file back restores its bytes, its permission bits (a hook keeps its
+executable bit), and a link as a link to the same place. A guarded file larger
+than 1 MiB is remembered by its sha256 only, so a change to it is reported and
+cannot be put back. When anything cannot be put back or removed, the session
+puts a hold on the project: commands get a read-only project, the output names
+a hold file under the Flywheel folder, and deleting that file after you have
+checked the project lifts the hold. The check also runs when a command is
+interrupted or the sandbox fails part way.
+
+Two things are not guarded, and you should know them. A hooks folder that
+`core.hooksPath` already points at, such as `.husky/`, is ordinary project
+content: a command can write there, as any build tool or teammate's commit
+can. And git inside the sandbox reads your global git config, so your aliases
+and hooks path apply to the git commands the agent runs; they run inside the
+sandbox.
+
+In a linked git worktree, which is what `flywheel code --worktree` makes, the
+index, objects and refs live in the main repository. The session opens only
+what `git add` and `git commit` write: the worktree's own folder under
+`.git/worktrees/`, and `objects`, `refs` and `logs` of the main repository.
+That repository's `hooks`, `config` and working files stay closed and are
+compared like the rest. In a linked worktree a command can move or delete
+branches in the main repository, because it writes that repository's refs.
+
+Each command's output ends with one line saying what held:
+`[workspace writable: guarded paths unchanged]`, a `[refused]` line naming the
+paths put back, or `[workspace read-only: REASON]`. That line is part of the
+tool result on the ledger.
+
+The permission mode decides whether a command runs at all, exactly as before:
+refused in `plan`, asked in `ask` and `edit`, run in `auto`, and a deny rule
+wins over every mode.
+
+### Keeping the project read-only
+
+The project folder stays read-only to commands in seven cases, and the output
+says which in one line:
+
+- `FLYWHEEL_WORKSPACE_WRITES=0` is set.
+- An administrator wrote `{"allow_workspace_writes": false}` to the machine
+  policy file (`/etc/flywheel/policy.json`,
+  `/Library/Application Support/flywheel/policy.json`, or
+  `%ProgramData%\flywheel\policy.json`). The pin outranks the variable.
+- The project folder contains your home folder or Flywheel's own folder, or is
+  a whole drive. Opening it would open the folders the limit protects.
+- The command is a background job (`run_background`).
+- A hold is on the project, because a guarded file could not be put back or
+  Windows could not close the folder after a command.
+- `.git/modules` holds more than 128 git folders or nests deeper than 8
+  levels. The guard reads no further, and a hook folder it did not read is one
+  it could not put back.
+- On Windows, your account has Modify and not Full control of the folder,
+  which is common on a second drive. Opening a folder to the sandbox changes
+  its integrity label, and that needs the WRITE_OWNER right. Modify plus that
+  one right is enough:
+  `icacls <folder> /grant <user>:(OI)(CI)(M,WO)`. Without it commands still
+  run; they cannot write in the project.
+
+`PYTHONDONTWRITEBYTECODE=1` and `PYTEST_ADDOPTS=-p no:cacheprovider` are set for
+every command, so Python tools leave no caches in the tree.
+
+### How each system enforces it
+
+| System | Writes outside the project | Paths closed inside it |
+|---|---|---|
+| Windows | The project is labeled low integrity while a command runs and medium again after; a low-integrity process cannot write anything labeled medium or higher. | Existing hook folders and session files are labeled medium; every guarded path is compared after the run. |
+| Linux (bubblewrap) | The whole filesystem is bound read-only, with the project and scratch bound writable over it. | Existing hook folders and session files are bound read-only; every guarded path is compared after the run. |
+| macOS (Seatbelt) | The profile denies every file write outside the project and scratch. | The profile denies writes to existing hook folders and session files; every guarded path is compared after the run. |
+
+Tested on Windows, where the commands above ran in the real sandbox. For Linux
+and macOS the sandbox arguments are tested, and the same tests run a real
+command on a host that has bubblewrap or Seatbelt; they were not run on such a
+host for this release.
+
+Limits of this design:
+
+- The comparison happens when the command ends. Between a write to a guarded
+  path and the end of that command, the changed file is on disk. If you run
+  git in the project from another terminal in that moment, git can see it.
+- `/undo` does not put back what a command wrote. It covers the write tools.
+- On Windows, while a command runs, any other low-integrity process of your
+  account can also write in the project, and a background job that is running
+  at that moment can too. A session that exits in the middle of a command
+  closes the folder on its way out; one that is killed outright leaves it
+  labeled low until the next Flywheel session starts, which closes it.
+- A git repository nested below the project folder, other than a submodule
+  under `.git/modules/`, is not guarded: its hooks and config are ordinary
+  project files to the command.
+- In a linked worktree a command can write the main repository's `objects`,
+  `refs` and `logs`, so it can move or delete a branch there. On Windows each
+  command relabels those folders, which is slow in a repository with many
+  loose objects. A real commit in a worktree was run on Windows only.
+- If you edit a guarded file yourself while a command is running, the session
+  puts your edit back too and reports it.
+- Commands can read the whole disk apart from the protected credential paths.
+  Windows does not restrict a command's network access.
+
+## Output as it arrives
+
+In the interactive session, a command's output prints while the command runs,
+each line marked `    | `. The model's text prints as the model writes it when
+the backend can stream; today that is Ollama. A reply from a hosted provider
+or a subscription CLI still prints whole when it is complete. Lines that are
+tool calls are left out of the streamed text, because the session prints each
+call in its own form.
+
+Streaming changes what you see and nothing that is recorded. The ledger entry
+for a reply is the same text, the command result is read from the same files
+after the command ends, and `-p`, `--output-format stream-json` and `--acp`
+are unchanged. One difference: a streamed Ollama reply reports no token
+counts, so `/cost` lists that call as uncounted. `FLYWHEEL_STREAM=0` turns
+streaming off, and it is off in `--plain` mode.
 
 ## Background jobs
 
@@ -290,7 +442,9 @@ denylist, and returns a job id at once. The agent reads a job's output and
 stops it with its `processes` tool; `/jobs` lists jobs. A job runs for at most
 30 minutes and every job stops when the session ends. Its output can be read
 while it runs, and stop ends it at once (on Linux and macOS the whole process
-group is stopped).
+group is stopped). A background job cannot write in the project folder; it has
+its scratch folder only. A dev server that writes a cache into the tree needs
+that cache pointed at TEMP.
 
 ## Project instructions
 
@@ -436,9 +590,8 @@ markers. Output has no color and no spinners in either mode.
 
 ## Limits
 
-- Commands cannot write into the project folder. A build or code generator
-  that writes into the tree fails inside the session today; a writable
-  workspace option for the sandbox is planned.
+- Changes a command makes in the project folder are not covered by `/undo`,
+  and a background job cannot write there. See "What a command may write".
 - The tool protocol is text lines, which any model can follow; native function
   calling is not used yet.
 - This session has been tested with a scripted model. A run against each
