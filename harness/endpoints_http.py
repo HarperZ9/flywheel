@@ -14,6 +14,7 @@ import urllib.error
 import urllib.request
 
 from .local_agent import BackendError
+from .provider_fault_boundary import body_from_http_error, format_provider_fault
 
 
 def _http(method, url, headers, body, timeout):
@@ -24,11 +25,7 @@ def _http(method, url, headers, body, timeout):
             raw = r.read()
             return r.status, (json.loads(raw) if raw else {})
     except urllib.error.HTTPError as e:
-        raw = e.read()
-        try:
-            return e.code, (json.loads(raw) if raw else {})
-        except json.JSONDecodeError:
-            return e.code, {"error": raw.decode("utf-8", "replace")[:300]}
+        return e.code, body_from_http_error(e)
 
 
 def _k(env_name: str) -> str:
@@ -62,10 +59,12 @@ def _guard(transport, method, url, headers, body, timeout, name):
         raise BackendError(f"{name} unreachable: {e}") from e
 
 
-def _response_error(name: str, status, obj) -> BackendError:
-    """A response with no completion. The status and the body ride on the
-    error, so a caller can read the provider's own error fields."""
-    error = BackendError(f"{name} returned {status}: {obj.get('error', obj)}")
+def _response_error(name: str, status, obj, *, kind: str = "") -> BackendError:
+    """A response with no completion. The message is the redacted one-line
+    fault reading, so a credential a provider echoes back never reaches a log.
+    The status and the body ride on the error unredacted, so a caller can read
+    the provider's own error fields."""
+    error = BackendError(format_provider_fault(name, status, obj, kind=kind or name))
     error.status, error.body = status, obj
     return error
 

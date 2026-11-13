@@ -17,6 +17,7 @@ from .model_observation import attach as _observed
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 from . import safe_program
 from .token_usage import field as _usage, from_anthropic, from_gemini, from_openai
+from .provider_fault_boundary import redacted_text
 
 
 def _credential(env_name: str, direct: str | None) -> str:
@@ -74,7 +75,7 @@ class OpenAICompatBackend:
             message = obj["choices"][0]["message"]
             text = message["content"]
         except (KeyError, IndexError, TypeError):
-            raise _response_error(self.name, status, obj)
+            raise _response_error(self.name, status, obj, kind=self.name)
         out = {"model_ref": f"{self.name}:{self.model}", "seed": seed}
         calls = message.get("tool_calls") if isinstance(message, dict) else None
         if isinstance(calls, list) and calls:
@@ -177,7 +178,7 @@ class AnthropicBackend:
         try:
             text = "".join(b.get("text", "") for b in obj["content"] if b.get("type") == "text")
         except (KeyError, TypeError):
-            raise _response_error(self.name, status, obj)
+            raise _response_error(self.name, status, obj, kind="anthropic")
         out = {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed,
                **_usage(from_anthropic(obj))}
         return _observed(out, obj, dialect="anthropic", requested_model=self.model,
@@ -222,7 +223,7 @@ class GeminiBackend:
             text = "".join(q.get("text", "") for q in parts
                            if q.get("thought") is not True)
         except (KeyError, IndexError, TypeError):
-            raise _response_error(self.name, status, obj)
+            raise _response_error(self.name, status, obj, kind="gemini")
         out = {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed,
                **_usage(from_gemini(obj))}
         return _observed(out, obj, dialect="gemini", requested_model=self.model,
@@ -276,9 +277,9 @@ class CliBackend:
         except (OSError, subprocess.SubprocessError) as e:
             raise BackendError(f"{self.name} cli failed: {e}") from e
         if rc != 0:
-            detail = _decode(err).strip() or _decode(out).strip()
+            detail = redacted_text(_decode(err).strip() or _decode(out).strip(), limit=200)
             raise BackendError(
-                f"{self.name} cli exit {rc}: {detail[:200]}")
+                f"{self.name} cli exit {rc}: {detail}")
         text = ""
         if output_path and os.path.exists(output_path):
             try:
