@@ -68,7 +68,7 @@ class BudgetedProposer:
 
     The usage the call reports is recorded. A call that raises is named as
     one that reported nothing, and an error that carries the provider's HTTP
-    status and body is read for a limit in those fields only."""
+    status and limit fields (or a body) is read for a limit in those only."""
 
     def __init__(self, inner, budget) -> None:
         self._inner, self.budget = inner, budget
@@ -82,7 +82,8 @@ class BudgetedProposer:
             self.budget.record_usage(None)
             status = getattr(exc, "status", getattr(exc, "code", None))
             if type(status) is int:
-                self.budget.observe_provider_response(status, getattr(exc, "body", None))
+                read = getattr(exc, "limit_fields", getattr(exc, "body", None))
+                self.budget.observe_provider_response(status, read)
             raise
         self.budget.record_usage(proposer_usage(getattr(out, "usage", None)))
         self.budget.observe_clean_call()

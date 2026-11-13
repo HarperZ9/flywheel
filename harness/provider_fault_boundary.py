@@ -3,7 +3,10 @@
 The durable fact lives in ``model_faults.capture``. This module only turns that
 bounded, redacted reading into the short ``BackendError`` text the current
 runtime already carries upward. It never retries a call and never treats a
-provider's advisory timing header as permission to wait and try again.
+provider's advisory timing header as permission to wait and try again. The
+line ends with one sentence in plain words (provider_retry_advice) that says
+whether trying again could help and when, because the person reading the line
+is the only one who acts on it.
 """
 from __future__ import annotations
 
@@ -12,9 +15,11 @@ import urllib.error
 from typing import Any
 
 from . import model_dialects, model_faults, model_redaction
+from .provider_retry_advice import retry_advice
 
 HTTP_ERROR_BODY_LIMIT = 65536
 TRUNCATED_HTTP_ERROR_BODY = "[provider_error_body_truncated]"
+LIMIT_FIELD_KEYS = ("type", "code", "status")
 
 
 def redacted_text(text: Any, *, limit: int = 200) -> str:
@@ -74,10 +79,30 @@ def _append_deadlines(parts: list[str], rows: Any) -> None:
             parts.append(f"{header} {basis}=unread")
 
 
-def format_provider_fault(name: str, status: Any, body: Any, *,
-                          headers: Any = None, dialect: str = "",
-                          kind: str = "") -> str:
-    """Return a redacted one-line description of a provider failure."""
+def limit_fields(body: Any) -> dict:
+    """The three error fields a budget reader compares by exact value.
+
+    ``error.type``, ``error.code`` and ``error.status``, kept only when they are
+    a string or a whole number, with each string redacted and bounded. This is
+    everything limit_signal.provider_body_limit reads, so an error can carry it
+    beside a redacted body and no reader needs the provider's raw text."""
+    error = body.get("error") if type(body) is dict else None
+    if type(error) is not dict:
+        return {}
+    kept = {}
+    for key in LIMIT_FIELD_KEYS:
+        value = error.get(key)
+        if type(value) is int:
+            kept[key] = value
+        elif type(value) is str:
+            kept[key] = redacted_text(value, limit=128)
+    return {"error": kept} if kept else {}
+
+
+def read_provider_fault(name: str, status: Any, body: Any, *,
+                        headers: Any = None, dialect: str = "",
+                        kind: str = "") -> tuple:
+    """The redacted fault record and its one-line description, as a pair."""
     provider = kind or name
     record = model_faults.capture(
         status=status, headers=_headers(headers), body=body,
@@ -99,7 +124,15 @@ def format_provider_fault(name: str, status: Any, body: Any, *,
     caveats = record.get("caveats")
     if isinstance(caveats, list) and caveats:
         parts.append("caveats=" + ",".join(redacted_text(str(c)) for c in caveats))
-    return "; ".join(parts)
+    return record, "; ".join(parts) + ". " + retry_advice(record)
+
+
+def format_provider_fault(name: str, status: Any, body: Any, *,
+                          headers: Any = None, dialect: str = "",
+                          kind: str = "") -> str:
+    """Return a redacted one-line description of a provider failure."""
+    return read_provider_fault(name, status, body, headers=headers,
+                               dialect=dialect, kind=kind)[1]
 
 
 def format_http_error(name: str, error: urllib.error.HTTPError, *,
@@ -111,6 +144,7 @@ def format_http_error(name: str, error: urllib.error.HTTPError, *,
         kind=kind or name)
 
 
-__all__ = ["HTTP_ERROR_BODY_LIMIT", "TRUNCATED_HTTP_ERROR_BODY",
-           "body_from_http_error", "format_http_error", "format_provider_fault",
-           "redacted_text"]
+__all__ = ["HTTP_ERROR_BODY_LIMIT", "LIMIT_FIELD_KEYS",
+           "TRUNCATED_HTTP_ERROR_BODY", "body_from_http_error",
+           "format_http_error", "format_provider_fault", "limit_fields",
+           "read_provider_fault", "redacted_text"]
