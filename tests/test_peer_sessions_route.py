@@ -77,7 +77,7 @@ def test_the_journey_route_ties_its_events_to_the_registry_it_came_from(home):
     assert body["registry_sha256"] == registry["registry_sha256"]
     assert body["observed_at"] == NOW and body["discovered"] == 2
     assert body["publication_state"] == "not_approved_for_publication"
-    assert "does not prove" in body["does_not_prove"]
+    assert body["scope"] == registry["scope"]
     refs = [f["session_ref"] for e in body["events"][1:] for f in e["payload"]["facts"]]
     assert sorted(refs) == sorted([CODEX_THREAD, CLAUDE_SESSION])
     assert_no_canary(body)
@@ -137,7 +137,7 @@ def test_a_mailbox_nobody_has_written_to_reads_as_empty_not_as_an_error(tmp_path
     assert code == 200 and body["mailbox_present"] is False
     assert body["messages"] == [] and body["listed"] == 0 and body["matched"] == 0
     assert route.MAILBOX_DIRNAME in body["mailbox"]
-    assert "does not prove" in body["does_not_prove"]
+    assert "no file was present" in body["scope"]
 
 
 def test_a_mailbox_path_that_is_a_file_is_not_read_as_a_mailbox(tmp_path):

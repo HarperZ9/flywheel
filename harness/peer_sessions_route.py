@@ -105,7 +105,7 @@ def _journey(query: dict, *, home, clock) -> dict:
             "discovered": registry["discovered"],
             "observe_failures": registry["observe_failures"],
             "publication_state": PUBLICATION_STATE,
-            "does_not_prove": registry["does_not_prove"]}
+            "scope": registry["scope"]}
 
 
 def _empty_mailbox(box: Path, limit: int) -> dict:
@@ -118,8 +118,8 @@ def _empty_mailbox(box: Path, limit: int) -> dict:
     return {"schema": MAILBOX_SCHEMA, "mailbox": str(box), "mailbox_present": False,
             "messages": [], "listed": 0, "matched": 0, "limit": limit,
             "omitted_over_limit": 0, "skipped_unnamed": 0,
-            "does_not_prove": "An absent mailbox proves no file was present at read time; it "
-                              "does not prove no peer wrote one elsewhere."}
+            "scope": "Covers the mailbox path at read time: no file was present. Mail a "
+                     "peer wrote elsewhere is unobserved."}
 
 
 def _mailbox(query: dict, *, state_root, clock) -> dict:

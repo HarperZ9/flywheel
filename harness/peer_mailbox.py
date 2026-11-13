@@ -160,8 +160,8 @@ def parse(data: str | bytes, *, file_name: str | None = None) -> dict:
               "body_sha256_declared": declared.lower(), "body_sha256_computed": computed,
               "receipt_state": state, "body_chars": len(body),
               "body_bytes": len(body_bytes), "body": body,
-              "does_not_prove": "A message file proves its own bytes; it does not prove who "
-                                "wrote it or that its claims are true."}
+              "scope": "Covers the bytes of this message file. Its author and the truth "
+                       "of its claims are unverified."}
     if file_name is not None:
         match = FILE_NAME.match(file_name)
         record["file_name_consistent"] = bool(match and match["sender"] == headers["from"]
@@ -216,8 +216,8 @@ def listing(mailbox: str | os.PathLike[str], *, include_body: bool = False,
     return {"schema": MAILBOX_SCHEMA, "mailbox": str(root), "messages": rows,
             "listed": len(rows), "matched": len(named), "limit": limit,
             "omitted_over_limit": len(named) - len(kept), "skipped_unnamed": skipped,
-            "does_not_prove": "A listing proves which files were present at read time; it "
-                              "does not prove who wrote them or that a reply is owed."}
+            "scope": "Covers which files were present at read time. Who wrote them and "
+                     "whether a reply is owed are unverified."}
 
 
 def list_messages(mailbox: str | os.PathLike[str], *, include_body: bool = False,

@@ -5,7 +5,7 @@ import hashlib
 import json
 
 from harness.peer_session_claude import observe_claude_transcript
-from harness.peer_session_types import DOES_NOT_PROVE, SESSION_SCHEMA
+from harness.peer_session_types import SCOPE, SESSION_SCHEMA
 from tests.peer_session_fixtures import (CANARY, CLAUDE_SESSION, CLAUDE_TITLE, assert_no_canary,
                                          claude_records, jsonl, write_claude)
 
@@ -17,7 +17,7 @@ def test_observer_reports_identity_counts_and_hashes_but_no_text(tmp_path):
     rec = observe_claude_transcript(path, observed_at=NOW)
     assert_no_canary(rec)
     assert rec["schema"] == SESSION_SCHEMA and rec["harness"] == "claude_code"
-    assert rec["does_not_prove"] == DOES_NOT_PROVE
+    assert rec["scope"] == SCOPE
     assert rec["publication_state"] == "not_approved_for_publication"
     assert rec["source_authenticity"] == "unavailable"
     assert rec["external_calls"] == 0

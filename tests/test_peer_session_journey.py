@@ -12,7 +12,7 @@ from harness.journey_projection import reduce_events
 from harness.peer_session_journey import ACTOR_ID, registry_to_events
 from harness.peer_session_io import text_digest
 from harness.peer_session_registry import build_registry, default_roots, discover
-from harness.peer_session_types import DOES_NOT_PROVE, FAILURE_DOES_NOT_PROVE
+from harness.peer_session_types import FAILURE_SCOPE, SCOPE
 from tests.peer_session_fixtures import (CLAUDE_SESSION, CODEX_THREAD, assert_no_canary,
                                          write_claude, write_codex)
 
@@ -75,12 +75,12 @@ def test_fact_receipt_refs_are_the_window_hashes(tmp_path):
         assert fact["source_path"] == session["source"]["path"]
         assert set(fact["windows"]) == {"head", "tail"}
         assert set(fact["windows"]["head"]) == {"offset", "length", "sha256"}
-        assert "does not prove" in fact["does_not_prove"].lower()
+        assert "unobserved" in fact["scope"].lower()
         for claim in event["payload"]["claims"]:
             assert claim["verdict"] == "UNVERIFIABLE" and claim["review_required"] is True
             assert claim["depends_on"] == [fact["fact_id"]]
             assert claim["receipt_refs"] == fact["receipt_refs"]
-            assert claim["does_not_prove"]
+            assert claim["scope"]
 
 
 def test_failed_observation_becomes_a_missing_receipt(tmp_path):
@@ -170,6 +170,6 @@ def test_a_failure_carries_the_failure_wording_not_the_observation_wording(tmp_p
     events = registry_to_events(registry, occurred_at=NOW)["events"]
     failed = events[1]["payload"]["facts"][0]
     observed = events[2]["payload"]["facts"][0]
-    assert failed["does_not_prove"] == FAILURE_DOES_NOT_PROVE
-    assert observed["does_not_prove"] == DOES_NOT_PROVE
-    assert "does not prove the file is absent" in failed["does_not_prove"]
+    assert failed["scope"] == FAILURE_SCOPE
+    assert observed["scope"] == SCOPE
+    assert "Whether the file exists" in failed["scope"]
