@@ -129,13 +129,22 @@ def test_every_shipped_entry_point_asks_the_environment(tmp_path):
 
 
 @pytest.mark.skipif(os.name == "nt",
-                    reason="Windows has the sandbox, so nothing to refuse")
-def test_a_real_posix_host_refuses_without_any_patching(tmp_path):
-    """The same claim, with the platform doing the work instead of a stub."""
+                    reason="the Windows sandbox has its own tests")
+def test_a_real_posix_host_confines_or_refuses_and_never_runs_bare(tmp_path):
+    """The same claim, with the platform doing the work instead of a stub.
+
+    A POSIX host with no backend refuses. A host with bubblewrap or
+    sandbox-exec either confines the command or, when the kernel will not
+    let the backend start, refuses. No host runs the command bare."""
+    from harness.posix_sandbox import backend_for
     from harness.tool_sandbox_bridge import make_sandboxed_runner
     ok, out = make_sandboxed_runner(bindings=None)("echo open", str(tmp_path))
-    assert not ok
-    assert "[refused]" in out
+    assert "[UNVERIFIABLE" not in out and "[unsandboxed]" not in out
+    refused = not ok and "[refused]" in out
+    if backend_for() is None:
+        assert refused
+    else:
+        assert refused or (ok and "[exit 0]" in out and "open" in out)
 
 
 def test_make_unsandboxed_runner_reports_nonzero_exit(tmp_path):
