@@ -277,6 +277,13 @@ there). Installs, builds, formatters, `git init`, `git add` and `git commit`
 work. Git reads your name and email from your own `~/.gitconfig`, which the
 command can read and cannot change.
 
+Deleting has one more rule. The command denylist refuses `rm`, `rmdir`,
+`unlink`, `shred` and `srm` by name, before the sandbox starts and wherever
+the path points, so `rm -rf node_modules` is refused inside the project too.
+Deletes that go through another program work: `git rm`, `git clean`, `mv`,
+`find ... -delete`, a build tool's own clean step, and on Windows `del` and
+`rd`. The agent's file tools can also remove a file.
+
 Everything else is closed to the command by the operating system: your home
 folder, Flywheel's own folder (settings, sessions, ledgers, receipts, memory),
 and the rest of the disk. A path that leaves the project through `..`, a

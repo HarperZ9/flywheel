@@ -82,7 +82,9 @@ def test_a_command_changes_and_deletes_existing_files(project):
     root, _home, _state, run = project
     (root / "src" / "old.txt").write_text("old\n", encoding="utf-8")
     (root / "gone.txt").write_text("x", encoding="utf-8")
-    remove = "del gone.txt" if WINDOWS else "rm gone.txt"
+    # `rm` is on the session's command denylist by name, so the POSIX delete
+    # here is one the session permits.
+    remove = "del gone.txt" if WINDOWS else "find gone.txt -delete"
     ok, out = run(f"{_write('src/old.txt', 'new')} && {remove}")
     assert ok, out
     assert (root / "src" / "old.txt").read_text().strip() == "new"

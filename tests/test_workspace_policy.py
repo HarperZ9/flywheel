@@ -33,8 +33,12 @@ def test_bwrap_binds_guarded_paths_read_only_over_the_writable_root():
 
 
 def test_bwrap_with_a_closed_root_binds_only_the_scratch_writable():
-    argv = bwrap_argv("bwrap", "/w", "/s", "make", root_writable=False)
+    argv = bwrap_argv("bwrap", "/tmp/w", "/s", "make", root_writable=False)
     assert _pairs(argv, "--bind") == [("/s", "/s")]
+    # A root under /tmp must be bound again after the tmpfs that hides /tmp, or
+    # the run cannot even change into it.
+    assert ("/tmp/w", "/tmp/w") in _pairs(argv, "--ro-bind")
+    assert argv.index("--tmpfs") < argv.index("/tmp/w") < argv.index("--chdir")
     assert ("/", "/") in _pairs(argv, "--ro-bind")
     assert describe("bwrap", "/w", "/s", root_writable=False).writable == ("/s",)
     assert describe("bwrap", "/w", "/s").writable == ("/w", "/s")

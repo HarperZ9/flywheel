@@ -122,7 +122,10 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
     on the other side of `--unshare-net` and nothing outside the namespace
     can hand a socket across.
 
-    With `root_writable` False the workspace keeps the read-only bind of `/`.
+    With `root_writable` False the workspace is bound read-only at the same
+    place in the order. It cannot be left to the bind of `/`: a workspace under
+    `/tmp` is hidden by the `--tmpfs /tmp` above, and the run then fails at
+    `--chdir` with no such directory.
     `write_protected` paths are bound read-only over the writable workspace.
     """
     argv = [program, "--die-with-parent", "--new-session",
@@ -133,8 +136,7 @@ def bwrap_argv(program: str, root, work, cmd: str, *,
     argv += ["--ro-bind", "/", "/",
              "--dev", "/dev", "--proc", "/proc", "--tmpfs", "/tmp",
              "--bind", scratch, scratch]
-    if root_writable:
-        argv[-3:-3] = ["--bind", here, here]
+    argv[-3:-3] = ["--bind" if root_writable else "--ro-bind", here, here]
     for path in extra_writable:      # a linked worktree's git folders
         argv += ["--bind", posix_path(path), posix_path(path)]
     for _kind, path in write_protected:
