@@ -129,7 +129,7 @@ class _PeerSessionsViewState extends State<PeerSessionsView> {
         if (r != null) ..._sessionSection(t),
         ..._mailboxSection(t),
         const SizedBox(height: FwLayout.s4),
-        if (r != null) HonestNull('${r['does_not_prove']}'),
+        if (r != null) HonestNull('${r['scope']}'),
       ],
     );
   }

@@ -3,7 +3,7 @@
 // the engine route, so a field asserted here is a field the engine emits. Two
 // things are load-bearing and tested as such: a mailbox body never reaches the
 // surface, and freshness never gets a verdict color, because a file written a
-// minute ago does not prove a session is running.
+// minute ago is no evidence that a session is running.
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -111,7 +111,7 @@ void main() {
     expect(find.textContaining('body 315d8407bbf23b0b'), findsOneWidget);
 
     // the limit of the whole surface, carried on the surface
-    expect(find.textContaining('does not prove any session is running'),
+    expect(find.textContaining('Whether any session is running'),
         findsOneWidget);
   });
 

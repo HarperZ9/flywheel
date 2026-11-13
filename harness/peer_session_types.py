@@ -2,7 +2,7 @@
 
 A peer session is another agent harness (Claude Code, Codex) whose local
 transcript Flywheel observes read-only. Every record here carries the file
-provenance the observer used and a does_not_prove statement. A field the
+provenance the observer used and a scope statement. A field the
 source did not emit stays null; the observer never fills it in.
 
 Two bounding rules apply to every label that leaves a transcript. A closed
@@ -27,12 +27,12 @@ HARNESSES = (HARNESS_CLAUDE, HARNESS_CODEX)
 ACTIVITY_STATES = ("recent", "quiet", "stale", "unknown")
 LABEL = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.:@/+-]{0,63}\Z")
 MAX_DISTINCT_KEYS = 64
-DOES_NOT_PROVE = ("Observation of a local transcript window proves the file's bytes at read time. "
-                  "It does not prove the session is alive, that reported models or versions ran, "
-                  "that any task succeeded, or that the file was written by the harness it names.")
-FAILURE_DOES_NOT_PROVE = ("A recorded observation failure proves the observer could not read the "
-                          "named path at that moment. It does not prove the file is absent, that "
-                          "no session exists, or that the condition is permanent.")
+SCOPE = ("Covers the bytes of a local transcript window at read time. Whether the session is "
+         "alive, whether the reported models or versions ran, whether any task succeeded and "
+         "which harness wrote the file are unobserved.")
+FAILURE_SCOPE = ("Covers one failed read: the observer could not read the named path at that "
+                 "moment. Whether the file exists, whether a session exists and whether the "
+                 "condition lasts are unobserved.")
 CONTENT_POLICY = "content_minimized_hashes_and_counts_only"
 SOURCE_AUTHENTICITY = "unavailable"
 PUBLICATION_STATE = "not_approved_for_publication"
@@ -81,7 +81,7 @@ def base_record(harness: str, *, observed_at: str) -> dict:
     return {"schema": SESSION_SCHEMA, "observer_version": OBSERVER_VERSION,
             "harness": harness, "observed_at": observed_at,
             "content_policy": CONTENT_POLICY, "source_authenticity": SOURCE_AUTHENTICITY,
-            "publication_state": PUBLICATION_STATE, "does_not_prove": DOES_NOT_PROVE,
+            "publication_state": PUBLICATION_STATE, "scope": SCOPE,
             "external_calls": 0}
 
 
@@ -108,8 +108,8 @@ def consistent(values: list) -> dict:
 
 AGREED = ("consistent", "single_sample")
 
-__all__ = ["ACTIVITY_STATES", "AGREED", "CONTENT_POLICY", "DOES_NOT_PROVE",
-           "FAILURE_DOES_NOT_PROVE", "HARNESSES", "HARNESS_CLAUDE", "HARNESS_CODEX",
+__all__ = ["ACTIVITY_STATES", "AGREED", "CONTENT_POLICY", "FAILURE_SCOPE", "HARNESSES",
+           "HARNESS_CLAUDE", "HARNESS_CODEX",
            "MAILBOX_SCHEMA", "MAX_DISTINCT_KEYS", "OBSERVER_VERSION", "PUBLICATION_STATE",
-           "REGISTRY_SCHEMA", "SESSION_SCHEMA", "SOURCE_AUTHENTICITY", "activity_state",
+           "REGISTRY_SCHEMA", "SCOPE", "SESSION_SCHEMA", "SOURCE_AUTHENTICITY", "activity_state",
            "base_record", "bounded_counts", "bucket", "consistent", "label"]

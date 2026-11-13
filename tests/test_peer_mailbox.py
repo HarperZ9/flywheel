@@ -33,7 +33,7 @@ def test_write_then_read_round_trip_matches(tmp_path):
     assert record["body_sha256_computed"] == record["body_sha256_declared"]
     assert record["file_name_consistent"] is True
     assert record["schema"] == "flywheel.peer-mailbox-message/v1"
-    assert "does not prove who wrote it" in record["does_not_prove"]
+    assert "Its author and the truth of its claims are unverified" in record["scope"]
 
 
 def test_render_has_fixed_header_block_and_trailing_newline():

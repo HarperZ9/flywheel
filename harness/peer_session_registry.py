@@ -180,9 +180,9 @@ def build_registry(entries: list[dict], *, observed_at: str, limit: int = DEFAUL
             "observe_failures": sum(1 for r in observed if not r.get("observed")),
             "limit": limit, "sessions": observed, "unobserved": unobserved,
             "unobserved_count": len(rest), "unobserved_listed": len(unobserved),
-            "does_not_prove": ("A registry lists transcript files present at discovery time. "
-                               "It does not prove any session is running, that the files were "
-                               "written by the harness named, or that their content is complete.")}
+            "scope": ("Covers transcript files present at discovery time. Whether any session "
+                      "is running, which harness wrote the files and whether their content is "
+                      "complete are unverified.")}
     canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     body["registry_sha256"] = hashlib.sha256(canonical.encode("utf-8")).hexdigest()
     return body

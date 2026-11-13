@@ -16,8 +16,7 @@ from .evidence_json import canonical_sha256
 from .journey_projection import new_genesis
 from .journey_types import build_event
 from .peer_session_io import text_digest
-from .peer_session_types import (DOES_NOT_PROVE, FAILURE_DOES_NOT_PROVE, HARNESS_CLAUDE,
-                                 PUBLICATION_STATE)
+from .peer_session_types import FAILURE_SCOPE, HARNESS_CLAUDE, PUBLICATION_STATE, SCOPE
 
 ACTOR_ID = "peer-session-observer"
 LEGACY_LABEL = "peer-sessions"
@@ -84,7 +83,7 @@ def _fact(session: dict, base: str) -> dict:
                       f"(mtime {src.get('mtime_utc')}) was read in bounded windows at "
                       f"{session.get('observed_at')}; activity class {session.get('activity')}."),
         "receipt_refs": _receipt_refs(session), "receipt_state": "present_unchecked",
-        "does_not_prove": DOES_NOT_PROVE,
+        "scope": SCOPE,
         "harness": session["harness"], "session_ref": ref,
         "session_ref_unshaped": text_digest(raw) if ref is None else None,
         "source_path": src.get("path"), "source_size_bytes": src.get("size_bytes"),
@@ -102,12 +101,12 @@ def _claims(session: dict, base: str, refs: list[str]) -> list[dict]:
               "receipt_state": "present_unchecked", "review_required": True}
     claims = [{"claim_id": f"{base}-alive", **common,
                "statement": "The session that wrote this transcript is still running.",
-               "does_not_prove": "File freshness is not process liveness."}]
+               "scope": "File freshness is observed; process liveness is unobserved."}]
     if _model_named(session):
         claims.append({"claim_id": f"{base}-model", **common,
                        "statement": "The model named in the transcript is the model that ran.",
-                       "does_not_prove": ("A harness writes the model label it was configured "
-                                          "with; the provider is not observed here.")})
+                       "scope": ("A harness writes the model label it was configured "
+                                 "with; the provider is unobserved here.")})
     return claims
 
 
@@ -116,7 +115,7 @@ def _failure(session: dict, base: str) -> dict:
             "statement": f"Observation of a {session.get('harness')} transcript failed: "
                          f"{session.get('error')}.",
             "receipt_refs": [f"observe-failure:{base}"], "receipt_state": "missing",
-            "does_not_prove": FAILURE_DOES_NOT_PROVE, "source_path": session.get("path")}
+            "scope": FAILURE_SCOPE, "source_path": session.get("path")}
 
 
 def registry_to_events(registry: dict, *, occurred_at: str, journey_ref: str | None = None,

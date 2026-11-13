@@ -79,7 +79,7 @@ def test_registry_observes_only_the_newest_limit_and_hashes_its_body(tmp_path):
     body = {k: v for k, v in registry.items() if k != "registry_sha256"}
     canonical = json.dumps(body, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     assert registry["registry_sha256"] == hashlib.sha256(canonical.encode()).hexdigest()
-    assert "does not prove any session is running" in registry["does_not_prove"]
+    assert "Whether any session is running" in registry["scope"]
 
 
 def test_registry_hash_and_window_hashes_change_on_append_and_truncate(tmp_path):
