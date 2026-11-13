@@ -192,3 +192,14 @@ def test_an_opencode_server_error_is_read_and_scrubbed():
     assert PROJECT_KEY not in message
     assert "opencode-plan returned 401" in message
     assert "category=auth" in message
+
+
+def test_a_backend_error_scrubs_key_shaped_text_from_every_argument():
+    from harness.local_agent import BackendError, MalformedBackendOutput
+    key = "sk-" + "ant-" + "api03-" + "x" * 60
+    for cls in (BackendError, MalformedBackendOutput):
+        err = cls(f"serve returned 500: {{'error': 'bad key {key}'}}", key)
+        assert key not in str(err) and all(key not in str(a) for a in err.args)
+        assert "[redacted:" in err.args[0]
+    assert BackendError().args == ()
+    assert str(BackendError("ollama unreachable: timed out")) == "ollama unreachable: timed out"

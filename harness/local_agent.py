@@ -1,13 +1,9 @@
 """local_agent.py — the standalone LOCAL agent: the offline / exhaustion tier.
 
-When the subscription or a hosted API is out of usage, this keeps you working
-entirely on models running on THIS machine — the trained 14B/32B behind
-serve.py, or an Ollama model — with automatic failover between them. It proxies
-no hosted account and harvests no session token; it speaks only to local model
-servers over localhost.
-
-Backends are health-gated and transport-injectable. Every completion passes
-through messages_api so offline turns retain re-checkable receipts.
+Keeps work going on models on THIS machine (the trained 14B/32B behind serve.py,
+or an Ollama model) with failover. It proxies no hosted account, harvests no
+session token, and speaks only to localhost. Backends are health-gated and
+transport-injectable; every completion passes through messages_api for a receipt.
 """
 from __future__ import annotations
 import json
@@ -41,6 +37,10 @@ def _http(method: str, url: str, body: Optional[bytes], timeout: float) -> "tupl
 
 class BackendError(RuntimeError):
     """A backend failed to produce a completion (down, HTTP error, malformed)."""
+    def __init__(self, *a):               # key-shaped text never rides an error message
+        try: from .model_redaction import scrub; a = tuple(scrub(x)["text"] if isinstance(x, str) else x for x in a)
+        except ImportError: pass          # an install without the scrubber keeps the text
+        super().__init__(*a)
 class MalformedBackendOutput(BackendError): """A backend response violates its typed identity contract."""
 class Backend(Protocol):
     name: str
