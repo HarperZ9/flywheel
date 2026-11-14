@@ -13,7 +13,7 @@ import json
 from pathlib import Path
 from typing import Any
 
-from scripts.benchmark_shared import wrap
+from scripts.benchmark_shared import esc, wrap
 
 RECORD = Path(__file__).resolve().parent.parent / "docs" / "benchmarks" / "gateway-overhead.json"
 _FORMATS = {"openai": "OpenAI-compatible chat", "anthropic": "Anthropic Messages"}
@@ -156,3 +156,46 @@ def render_markdown(record: dict[str, Any] | None = None) -> list[str]:
     return [*_lead(record), *_method(record), "### Where the time goes", "",
             *_parts(record), "", *_tail(record), "### The key list warm-up", "",
             *_warm(record), "", "### What these figures leave out", "", *_LEFT_OUT]
+
+
+_HEAD = ("interface", "upstream format", "caller", "mode", "to first byte, median",
+         "to end, median", "to end, p95", "to end, max")
+
+
+def _row_html(row: dict[str, Any]) -> str:
+    total = row["total"]
+    cells = (f"<code>{esc(row['interface'])}</code>", esc(_FORMATS[row["upstream"]]),
+             "virtual key" if row["caller"] == "key" else "gateway token",
+             "stream" if row["stream"] else "plain",
+             f"{row['first']['overhead_median_ms']:.2f}", f"{total['overhead_median_ms']:.2f}",
+             f"{total['overhead_p95_ms']:.1f}", f"{total['overhead_max_ms']:.1f}")
+    return "<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>"
+
+
+def section_html(record: dict[str, Any] | None = None) -> str:
+    """The section for site/benchmarks.html: the same record, lead and table.
+
+    The method, the breakdown and the slow calls stay in docs/BENCHMARKS.md;
+    this section says so, and it lists what the figures leave out in full.
+    """
+    record = load_record() if record is None else record
+    cases = record["cases"]
+    owner = [c["total"]["overhead_median_ms"] for c in cases if c["caller"] == "owner"]
+    keyed = [c["total"]["overhead_median_ms"] for c in cases if c["caller"] == "key"]
+    left_out = "".join(f"<li>{esc(line[2:])}</li>" for line in _LEFT_OUT if line.startswith("- "))
+    return (
+        '<section id="gateway"><h2>Gateway overhead</h2>'
+        '<p class="lede">What the gateway adds to one model call on <code>/v1/messages</code> '
+        f"and <code>/v1/responses</code>: a median of {_span(owner)} with the gateway token and "
+        f"{_span(keyed)} with a virtual key, to the end of the reply. Measured "
+        f"{esc(record['date'])} on one machine, with one client and a loopback stub in place of "
+        "the provider. Every figure is milliseconds over the same request sent straight to the "
+        "stub. Provider network time is not in these figures.</p>"
+        '<div class="tablewrap"><table><thead><tr>'
+        + "".join(f"<th>{esc(name)}</th>" for name in _HEAD) + "</tr></thead><tbody>"
+        + "".join(_row_html(row) for row in cases) + "</tbody></table></div>"
+        f'<p class="lede">Left out of these figures:</p><ul class="caveats">{left_out}</ul>'
+        '<p class="lede">The method, the time inside each step and the slow calls are in '
+        "<code>docs/BENCHMARKS.md</code>. The record is "
+        "<code>docs/benchmarks/gateway-overhead.json</code>, and "
+        "<code>python scripts/bench_gateway_overhead.py</code> writes it again.</p></section>")

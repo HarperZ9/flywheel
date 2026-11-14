@@ -41,6 +41,7 @@ PAGES = (  # (group, title, source, page)
     ("Project", "Schemas changed in 2.0", "docs/MIGRATING-2.0-SCHEMAS.md",
      "migrating-2.0-schemas.html"),
     ("Project", "Support", "SUPPORT.md", "support.html"),
+    ("Project", "Security", "SECURITY.md", "security.html"),
     ("Project", "Changelog", "CHANGELOG.md", "changelog.html"),
 )
 

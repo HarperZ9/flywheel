@@ -11,9 +11,10 @@ fits. A bug report asks for `flywheel doctor --json`, the command you ran, and
 what you expected. Flywheel is maintained by one person, so the issue tracker is
 the one support channel; there is no chat server and no paid support queue.
 
-Security problems do not belong in a public issue. Open an issue titled
-"Security contact request" with no details, and the maintainer will arrange a
-private channel.
+Security problems do not belong in a public issue. Report one privately at
+https://github.com/HarperZ9/flywheel/security/advisories/new. The
+[security policy](SECURITY.md) says which versions get fixes and what a report
+needs.
 
 If a command crashes, Flywheel writes a crash report to `crashes/` in the
 Flywheel home and prints its path. The report holds the version, OS, Python,
