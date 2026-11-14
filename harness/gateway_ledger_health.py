@@ -40,7 +40,7 @@ import time
 from dataclasses import asdict
 
 _LOG = logging.getLogger(__name__)
-SEGMENT = re.compile(r"segment-\d{6}\.jsonl\Z")
+SEGMENT = re.compile(r"segment-[0-9]{6}\.jsonl\Z")     # ASCII digits only
 RETRY_SECONDS = 1.0                     # between attempts to resume a failed ledger
 GAP = "ledger_gap"                      # the entry a resumed ledger starts with
 
@@ -79,6 +79,15 @@ def write(ledger, entry) -> None:
         _put(ledger._file, line)
         if ledger._sync:
             os.fsync(ledger._file.fileno())
+    except (OSError, ValueError) as exc:
+        _fail(ledger, exc)
+        raise
+
+
+def head(ledger) -> None:
+    """Rewrite the head record. A failure marks the ledger failed, as a failed append does."""
+    try:
+        ledger._write_head()
     except (OSError, ValueError) as exc:
         _fail(ledger, exc)
         raise
@@ -145,6 +154,9 @@ def resume(ledger) -> None:
                           f"a write failed ({failed['error']}) and left: "
                           f"{problem or 'entries this gateway did not write'}")
         ledger._file = ledger._held.enter_context(open(ledger.path, "ab", buffering=0))
+        record = where / base.HEAD
+        ledger._head = ledger._held.enter_context(
+            open(record, "r+b" if record.exists() else "w+b"))
         ledger.failed = None
         ledger.append(GAP, "append_failed", {
             "reason": "append_failed", "error": failed["error"], "since": failed["since"],

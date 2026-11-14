@@ -103,6 +103,7 @@ _OUT = {"openai": _openai_out, "anthropic": _anthropic_out, "gemini": _gemini_ou
 def outgoing(dialect: str, backend, messages: list, system: str, payload: dict) -> dict:
     """The request body to send: native and cache-marked when a session asks for it."""
     offer = _tools.offered(backend)
+    _tools.REQUEST_NATIVE.set(offer is not None)    # what `incoming` holds the reply to
     if offer is not None:
         box, specs = offer
         found = _tools.matched(box, dialect, list(messages))
@@ -152,6 +153,8 @@ def incoming(dialect: str, backend, obj, gen: dict) -> dict:
     calls, raw, claimed, needs_id = _IN[dialect](obj, gen)
     if needs_id and not all(isinstance(c.get("id"), str) and c["id"] for c in calls):
         raw = None                       # cannot be answered natively; travels as text
+    # Native is what the request was, not what the model's standing is now: another
+    # session can move the model to the text protocol while this reply is on its way.
     gen["text"] = _tools.absorb(dialect, backend, gen["text"], calls, raw, claimed,
-                                native=_tools.offered(backend) is not None)
+                                native=_tools.REQUEST_NATIVE.get())
     return gen

@@ -42,6 +42,8 @@ from dataclasses import dataclass, field
 from .local_agent import MalformedBackendOutput
 
 _ACTIVE = contextvars.ContextVar("flywheel_native_tools", default=None)
+# Whether the request now being answered on this thread carried the session's tool schemas.
+REQUEST_NATIVE = contextvars.ContextVar("flywheel_native_request", default=False)
 _LOG = logging.getLogger(__name__)
 
 # Hosts whose function-calling wire format this module was written against.

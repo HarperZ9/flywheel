@@ -22,10 +22,13 @@ never meet it. Two deadlines bound that, and both apply before the gateway
 knows who is calling:
 
   - the request line and headers of one request must arrive within one
-    timeout (`HeaderDeadline`, on every route);
-  - the body of a request to a model interface must arrive within BODY_READS
-    timeouts, two minutes by default (`read_body`). Other routes read their
-    bodies in gateway.py and have the per-read timeout only.
+    timeout (`HeaderDeadline.readline`, on every route);
+  - a request body must arrive within BODY_READS timeouts, two minutes by
+    default. On a model interface the answer is 408 (`read_body`); on the
+    other routes, which read their bodies in gateway.py, the connection is
+    closed (`HeaderDeadline.read`);
+  - what a refused request still sends is read and discarded for at most two
+    seconds (gateway_body_drain, bounded by `HeaderDeadline.read`).
 
 A slow client costs a thread and no provider spend, because nothing is
 admitted before the body is whole. Writes have no timeout, and there is no
@@ -87,24 +90,55 @@ def arm(handler) -> None:
         _LOG.warning("gateway connection has no read timeout: SO_RCVTIMEO could not be set "
                      "(%s: %s)", type(exc).__name__, exc)
     if hasattr(getattr(handler, "rfile", None), "peek"):
-        handler.rfile = HeaderDeadline(handler.rfile, limit)
+        handler.rfile = HeaderDeadline(handler.rfile, limit, sock)
 
 
 class HeaderDeadline:
-    """The connection's reader, with one deadline for the lines of each request head.
+    """The connection's reader, with a deadline for each request head and each body read.
 
     `http.server` reads the request line and the headers with `readline`. The
     clock starts at the first of those reads and stops at the blank line that
     ends the headers. A line asked for after the deadline raises TimeoutError,
     which `http.server` answers by closing the connection. A client that sends
     a header line every few seconds, with or without a credential, is closed
-    after `limit` seconds and at most one more read."""
+    after `limit` seconds and at most one more read.
 
-    def __init__(self, raw, limit: float):
-        self._raw, self._limit, self._until = raw, limit, None
+    `read(n)` is how every other reader of a body asks for it: the routes in
+    gateway.py, and the drain that discards what a refused request still sends
+    (gateway_body_drain). A plain buffered `read(n)` waits until all `n` bytes
+    are there, so a client that sent one byte at a time held the thread for as
+    long as it liked, also after a 401. Here one `read(n)` gets a budget: the
+    socket's own timeout while one is set (the drain sets two seconds), else
+    BODY_READS read timeouts. Past it, TimeoutError."""
+
+    def __init__(self, raw, limit: float, sock=None):
+        self._raw, self._limit, self._until, self._sock = raw, limit, None, sock
 
     def __getattr__(self, name: str):
         return getattr(self._raw, name)
+
+    def _budget(self) -> float:
+        try:
+            own = self._sock.gettimeout() if self._sock is not None else None
+        except OSError:
+            own = None
+        return own or self._limit * BODY_READS
+
+    def read(self, size: int = -1) -> bytes:
+        if size is None or size < 0:
+            return self._raw.read()
+        budget = self._budget()
+        until, parts, got = time.monotonic() + budget, [], 0
+        while got < size:
+            chunk = self._raw.read1(min(size - got, _CHUNK))    # Windows raises TimeoutError
+            if not chunk:
+                break                           # closed, or a read that timed out with nothing
+            parts.append(chunk)
+            got += len(chunk)
+            if got < size and time.monotonic() > until:
+                raise TimeoutError(f"a request body was still arriving after {budget} seconds, "
+                                   f"at {got} of {size} bytes")
+        return b"".join(parts)
 
     def readline(self, size: int = -1) -> bytes:
         if self._until is None:

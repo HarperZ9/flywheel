@@ -31,6 +31,22 @@ def home(monkeypatch, tmp_path):
     gateway_ledger.close_all()
 
 
+def test_a_name_with_digits_that_are_not_ascii_is_not_a_segment(home, capsys):
+    """`\\d` also matches digits of other scripts, and `int()` reads them: such a file
+    sorted last and was taken for the newest segment."""
+    from harness.gateway_ledger_health import strays
+    ledger = gateway_ledger.for_home(home)
+    ledger.append("endpoint_call", "x", {})
+    gateway_ledger.close_all()
+    folder = home / "gateway-ledger"
+    name = "segment-\u0660\u0660\u0660\u0660\u0660\u0669.jsonl"
+    (folder / name).write_bytes((folder / "segment-000001.jsonl").read_bytes())
+    assert [path.name for path in gateway_ledger.segments(home)] == ["segment-000001.jsonl"]
+    assert strays(folder) == [name]
+    assert gateway_ledger_cli.main(["verify"]) == 0 and "ignored" in capsys.readouterr().out
+    assert gateway_ledger.for_home(home).path.name == "segment-000001.jsonl"
+
+
 @pytest.mark.parametrize("name", ["segment-backup.jsonl", "segment-000001 - Copy.jsonl",
                                   "segment-0000001.jsonl", "segment-000002.jsonl.bak"])
 def test_a_stray_file_in_the_ledger_folder_is_ignored_and_named(home, name, capsys):

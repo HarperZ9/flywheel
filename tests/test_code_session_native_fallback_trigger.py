@@ -198,9 +198,45 @@ def test_the_terminal_prints_the_notice(capsys):
     ("You exceeded your current quota; function calling is not enabled on free plans", False),
     ("The tool result is malformed", False),
     ("functions is deprecated", False),
+    # One way of choosing or combining tools is not the model lacking tools.
+    ("model does not support tool_choice", False),
+    ("this model does not support function calling with streaming", False),
+    ("parallel tool calls are not supported", False),
+    ("tools are not supported with images", False),
+    ("tool choice requires a name", False),
     ("", False),
 ])
 def test_the_wording_the_trigger_accepts(message, verdict):
     assert unsupported({"error": {"message": message}}) is verdict
     assert unsupported({"error": message}) is verdict
     assert unsupported(None) is False and unsupported([message]) is False
+
+
+def test_an_error_about_tool_choice_alone_does_not_count():
+    choice = {"error": {"message": "Unsupported parameter.", "param": "tool_choice",
+                        "code": "unsupported_parameter"}}
+    assert unsupported(choice) is False
+    assert unsupported({"error": {**choice["error"], "param": "tools"}}) is True
+
+
+def test_a_native_reply_stays_native_when_the_model_moves_while_it_is_on_its_way(tmp_path):
+    """Sessions in one process share the list of models that moved to the text protocol.
+    A reply to a request that carried tool schemas is held to the native rule even when
+    another session moved its model after the request left: its prose TOOL line does not
+    run, and its native call does."""
+    obj = copy.deepcopy(plain_object("openai", "tool_call"))
+    obj["choices"][0]["message"]["content"] = QUOTED
+    session, made, commands = _session(tmp_path, "openai", [obj, _reply("openai", "Done.")])
+    plain = made.transport
+
+    def moved_meanwhile(method, url, headers, body, timeout):
+        answer = plain(method, url, headers, body, timeout)
+        endpoints_tools._NO_NATIVE.add((made.base_url, made.model))    # by another session
+        return answer
+    made.transport = moved_meanwhile
+    session.turn("write a note")
+    assert commands == [] and not (tmp_path / "owned.txt").exists()
+    calls = [e.content for e in session.ledger.entries if e.kind == "tool_call"]
+    assert calls == ['write_file {"content": "hi", "path": "n.txt"}']
+    assert (tmp_path / "n.txt").read_text() == "hi"
+    assert "tools" in plain.requests[0]["body"] and "tools" not in plain.requests[1]["body"]

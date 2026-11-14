@@ -198,6 +198,36 @@ def test_a_line_cut_short_by_the_failure_is_recorded_as_a_break(keyed, served, m
     assert "records a break" in capsys.readouterr().out
 
 
+def test_a_head_record_that_cannot_be_written_stops_later_calls_too(
+        keyed, served, monkeypatch, home):
+    """The entry is in the segment and the head record after it cannot be rewritten.
+    That failure used to leave the ledger in use: every later call reached the provider
+    and was then answered 500."""
+    keys, _store = keyed
+    raw, _ = keys.create("ci-bot")
+    url, upstream, ledger, _disk = _gateway(monkeypatch, served, turn2(3), home)
+    real, broken = ledger._write_head, types.SimpleNamespace(on=False)
+
+    def write_head():
+        if broken.on:
+            raise OSError(5, "Input/output error")
+        return real()
+    monkeypatch.setattr(ledger, "_write_head", write_head)
+    assert post(url, "/v1/messages", raw)[0] == 200
+    broken.on = True
+    assert post(url, "/v1/messages", raw)[0] == 500
+    assert post(url, "/v1/messages", raw)[0] == 503 and len(upstream.requests) == 2
+    broken.on = False
+    assert post(url, "/v1/messages", raw)[0] == 200
+    gateway_ledger.close_all()
+    rows = _rows(home)
+    kinds = [kind for _name, _seq, kind in rows]
+    assert [seq for _name, seq, _kind in rows] == list(range(len(rows)))
+    assert kinds[:2] == ["endpoint_call", "endpoint_call"] and kinds[-1] == "endpoint_call"
+    assert set(kinds[2:-1]) == {"ledger_gap"}
+    assert gateway_ledger_cli.main(["verify"]) == 0
+
+
 @pytest.mark.parametrize("disk_back", [True, False])
 def test_a_gateway_that_stops_while_its_ledger_is_failed_records_the_gap_if_it_can(
         keyed, served, monkeypatch, home, disk_back):

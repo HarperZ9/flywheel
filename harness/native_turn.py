@@ -95,4 +95,4 @@ def turn_calls(resp, text: str) -> tuple:
         raise MalformedBackendOutput(
             "a native reply's record does not read back as the provider's tool calls; "
             "the reply was refused and nothing from it ran")
-    return [(name, args, row[2]) for (name, args), row in zip(wanted, found)], []
+    return found, []                             # equal to the objects, and no object shared

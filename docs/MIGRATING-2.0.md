@@ -581,9 +581,9 @@ these further changes:
   left cut short. What to do: after a 503 with `ledger_unavailable`, free
   space or repair the folder; the gateway resumes without a restart.
 - **Deadlines for slow clients.** The request line and headers must arrive
-  within one read timeout, and the body of a model call within four (two
-  minutes by default). What to do: for a client that uploads a large body
-  over a slow link, raise `FLYWHEEL_GATEWAY_READ_TIMEOUT`.
+  within one read timeout, and a request body within four (two minutes by
+  default), on every route. What to do: for a client that uploads a large
+  body over a slow link, raise `FLYWHEEL_GATEWAY_READ_TIMEOUT`.
 - **An unfinished stream is charged at least a quarter of its characters.**
   A prompt with no spaces no longer costs a few tokens when the client
   leaves early. Nothing to do; a key's totals for such calls are larger.

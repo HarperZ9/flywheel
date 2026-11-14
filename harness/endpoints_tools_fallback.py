@@ -41,17 +41,21 @@ import re
 
 KIND = "native_tools_fallback"           # ledger kind of the notice
 _SAYS = re.compile(
-    r"does(?: not|n't) support (?:tool|function)"
+    r"does(?: not|n't) support (?:tools?|tool (?:use|calling|calls|types)|function calling"
+    r"|functions?)(?!\w)"
     r"|(?:\btools?|\btool (?:use|calling|calls)|\bfunction calling|\bfunctions?(?: parameter)?"
     r"|['\"`]tools['\"`]) (?:is|are) not (?:supported|enabled|available)"
-    r"|no endpoints found that support tool"
-    r"|tool choice requires"
-    r"|unsupported parameter: ['\"`]?(?:tools|functions)")
+    r"|no endpoints found that support tool use"
+    r"|['\"`]auto['\"`] tool choice requires"
+    r"|unsupported parameter: ['\"`]?(?:tools|functions)['\"`]?(?!\w)")
+# An error about something narrower or something else, whatever else it says: a size or
+# rate limit, one way of choosing or combining tools, or tools together with another input.
 _OTHER = re.compile(r"context[ _-]?(?:length|window)|maximum context|too many tokens"
-                    r"|too long|too large|rate limit|quota")
+                    r"|too long|too large|rate limit|quota|tool_choice|parallel"
+                    r"|stream|with (?:images?|vision|audio|files?)")
 _OTHER_CODES = ("context_length_exceeded", "string_above_max_length", "rate_limit_exceeded",
                 "insufficient_quota")
-_PARAMS = ("tools", "tool_choice", "functions", "function_call")
+_PARAMS = ("tools", "functions")
 
 
 def unsupported(obj) -> bool:

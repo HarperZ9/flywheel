@@ -747,16 +747,19 @@ in that time is closed. A body that stops arriving on a model interface is
 answered 408, and nothing is sent upstream. The timeout applies to the
 requests of every route of the gateway.
 
-The timeout is per read, so two deadlines bound a client that keeps sending
-a few bytes. Both apply before the gateway knows who is calling:
+The timeout is per read, so three deadlines bound a client that keeps
+sending a few bytes. They apply before the gateway knows who is calling:
 
 - the request line and headers of one request must arrive within one read
   timeout. A client that is still sending header lines after that is closed,
   after at most one more read;
-- the body of a request to `/v1/messages`, `/v1/messages/count_tokens` or
-  `/v1/responses` must arrive within four read timeouts (two minutes by
-  default), or the answer is 408. Other routes read their bodies with the
-  per-read timeout only.
+- a request body must arrive within four read timeouts (two minutes by
+  default). On `/v1/messages`, `/v1/messages/count_tokens` and
+  `/v1/responses` the answer is 408; on the other routes the connection is
+  closed;
+- after a refusal that did not read the body (a 401, for one) the gateway
+  reads and discards what the client still sends, so that the answer is not
+  lost to a connection reset. That read ends after two seconds.
 
 Such a client holds a gateway thread for that long and gains no spend. The
 gateway has no cap on open connections. Writes have no timeout: a client

@@ -176,6 +176,55 @@ def test_a_body_that_keeps_dripping_is_answered_408_at_the_body_deadline(
     assert upstream.requests == [] and ledger.entries == []
 
 
+def test_what_a_refused_request_still_sends_is_discarded_for_two_seconds_at_most(
+        keyed, served):
+    """A 401 is answered at once, and the gateway then reads what the client still sends
+    so that the answer is not lost to a reset. That was a buffered read of the promised
+    length: a client with no credential that sent a byte at a time held its thread for
+    as long as it kept sending."""
+    url, upstream, _ledger = served(turn2(1))
+    target, closed_at = urlparse(url), None
+    with socket.create_connection((target.hostname, target.port), timeout=10) as sock:
+        sock.sendall(_head("/v1/messages", None, 100000))       # no credential, no body yet
+        assert _status(sock) == 401
+        started = time.monotonic()
+        for _ in range(50):                     # a byte every 0.2 s, for up to 10 s
+            try:
+                sock.sendall(b" ")
+                sock.settimeout(0.2)
+                if sock.recv(4096) == b"":
+                    closed_at = time.monotonic() - started
+                    break
+            except socket.timeout:
+                continue
+            except OSError:
+                closed_at = time.monotonic() - started
+                break
+    assert closed_at is not None and closed_at < 6.0, closed_at
+    assert upstream.requests == []
+
+
+def test_one_body_read_has_a_budget_and_the_drain_sets_its_own():
+    import io
+
+    class Drip:                                 # one byte every 0.05 s, for ever
+        def read1(self, size):
+            time.sleep(0.05)
+            return b"x"
+
+    started = time.monotonic()
+    with pytest.raises(TimeoutError):           # four read timeouts of 0.1 s
+        gateway_read_timeout.HeaderDeadline(Drip(), 0.1).read(1000)
+    assert 0.3 < time.monotonic() - started < 3
+    drain = type("Sock", (), {"gettimeout": lambda self: 0.15})()
+    started = time.monotonic()
+    with pytest.raises(TimeoutError):           # the socket's own timeout, as the drain sets
+        gateway_read_timeout.HeaderDeadline(Drip(), 30.0, drain).read(1000)
+    assert time.monotonic() - started < 3
+    whole = gateway_read_timeout.HeaderDeadline(io.BufferedReader(io.BytesIO(b"abcdef")), 5.0)
+    assert (whole.read(4), whole.read(10), whole.read(3)) == (b"abcd", b"ef", b"")
+
+
 def test_control_keep_alive_requests_and_a_body_sent_in_pieces_are_served(
         keyed, served, monkeypatch):
     keys, _store = keyed
