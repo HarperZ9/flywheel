@@ -66,6 +66,10 @@ class UpstreamFailed(Exception):
         self.body, self.headers = body, headers or {}
 
 
+class AccountingFailed(UpstreamFailed):
+    """The upstream answered and the call could not be charged or recorded."""
+
+
 @dataclass
 class Turn:
     interface: str                      # "anthropic-messages", "openai-responses"
@@ -215,20 +219,32 @@ def reply_text(reply: Reply) -> str:
     return canonical(reply.text, reply.calls)
 
 
-def record(ledger, upstream: Upstream, turn: Turn, reply: Reply) -> None:
-    """Append the `endpoint_call` entry. A reply with no ledger is not served."""
+def record(ledger, upstream: Upstream, turn: Turn, reply: Reply, delivered=False) -> None:
+    """Append the `endpoint_call` entry. A reply with no ledger is not served.
+
+    `delivered` is true for a stream, whose text has left before this runs. A
+    debit or an append that fails here still leaves an entry (gateway_unaccounted)."""
     from .proposer import prompt_hash
     if ledger is None:
         raise RuntimeError("the gateway ledger is unavailable; the reply was not served")
     from .gateway_key_gate import Bill
+    from .gateway_unaccounted import provider_tools, unaccounted
     sha, bill = prompt_hash(reply_text(reply)), Bill(turn, reply)
     meta = {"endpoint": upstream.name, "interface": turn.interface,
             "model_ref": reply.model_ref, "seed": 0,
             "prompt_sha": prompt_sha(turn), "response_sha": sha,
-            "usage_reported": reply.usage_reported, **bill.meta}
-    bill.settle()                       # a call that cannot be charged is not served
-    with _APPEND:
-        ledger.append("endpoint_call", sha, meta)
+            "usage_reported": reply.usage_reported, **provider_tools(reply), **bill.meta}
+    try:
+        bill.settle()
+    except Exception as exc:  # noqa: BLE001 - whatever stopped the debit, the call is recorded
+        raise unaccounted(ledger, upstream, turn, bill, sha, "charge_failed",
+                           delivered, exc) from exc
+    try:
+        with _APPEND:
+            ledger.append("endpoint_call", sha, meta)
+    except Exception as exc:  # noqa: BLE001
+        raise unaccounted(ledger, upstream, turn, bill, sha, "ledger_failed",
+                           delivered, exc) from exc
 
 
 def record_failed(ledger, upstream: Upstream, turn: Turn, reason: str, detail="") -> None:

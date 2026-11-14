@@ -5,6 +5,12 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Security review fixes (2026-11-14)
+- Fixed: `/v1/messages` in front of an Anthropic upstream broke on tools the provider runs itself. A streamed reply with a `server_tool_use` block was cut, and a reply with a `web_search_tool_result` or other provider result block was recorded as failed with nothing charged, although a stream had delivered it. Such replies are now delivered as sent, recorded as `endpoint_call` and charged from the reported usage, and the entry carries the provider's `server_tool_use` counts. Unknown block and delta types are relayed untouched. A block of the exact type `tool_result` is still refused. The coding session keeps its broader rule.
+- Fixed: a reply could be delivered with no ledger entry when the debit or the ledger append failed after the upstream answered. The ledger now gets `endpoint_call_failed` with reason `charge_failed` or `ledger_failed` and the response hash, and the client gets 500 naming the cause. For a stream whose text had already left, the entry says `delivered_unrecorded_charge`, the stream ends with an error event that says so, and the key is suspended until `flywheel gateway-key clear NAME`.
+- New: `flywheel gateway-key clear NAME` lifts a suspension. `list` and `show` print the state `suspended`.
+- Tested with replay fixtures written from the Claude API documentation (read 2026-11-14) against a gateway on a loopback port. Not run: any hosted provider.
+
 Gateway: overhead figure and timing gate
 - Measured what the gateway adds to one call on `/v1/messages` and `/v1/responses`: a median of 1.3 to 2.0 ms with the gateway token and 2.6 to 3.4 ms with a virtual key, to the end of the reply. One Windows 11 machine, 2026-11-14, one client, one request at a time, a loopback stub in place of the provider, 30 warm calls per case. The table, the method and what the figure leaves out are in `docs/BENCHMARKS.md`, "Gateway overhead".
 - `python scripts/bench_gateway_overhead.py` reruns the measurement and writes `docs/benchmarks/gateway-overhead.json`. No provider is called.

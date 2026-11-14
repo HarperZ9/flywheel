@@ -39,6 +39,8 @@ the key by its name; the ledger also carries its fingerprint.
 from __future__ import annotations
 
 import logging
+import threading
+import time
 import uuid
 from dataclasses import dataclass
 from hmac import compare_digest
@@ -48,8 +50,9 @@ from . import gateway_keys
 _LOG = logging.getLogger(__name__)
 OWNER_NAME = "owner"
 _INTERFACES = {"/v1/responses": "openai-responses"}
-_CODES = {401: "invalid_api_key", 403: "model_not_allowed", 429: "key_budget_exceeded"}
+_CODES = {401: "invalid_api_key", 429: "key_budget_exceeded"}
 _JSON = "application/json"
+_HELD, _HELD_LOCK = {}, threading.Lock()    # key fingerprint -> when this process stopped it
 
 
 @dataclass
@@ -127,12 +130,46 @@ def _caller(handler) -> "Caller | None":
     return None
 
 
-def _refusal(path: str, status: int, text: str, budget: bool = False) -> object:
+def suspend(caller: Caller, reason: str) -> str:
+    """Stop a key until an operator clears it; returns the sentence that says so.
+
+    The stop is held in this process and written to the key list. When the
+    list cannot be written (the usual reason a charge failed), the stop still
+    holds for the life of this gateway and the failure is logged."""
+    if caller.row is None:
+        return ""
+    now = time.time()
+    with _HELD_LOCK:
+        _HELD[caller.fingerprint] = now
+    try:
+        caller.keys.mark(caller.name, suspended={"reason": reason, "at": int(now)})
+    except Exception as exc:  # noqa: BLE001 - the in-process stop stands either way
+        _LOG.error("gateway key %s is suspended in this gateway process only: the key list "
+                   "could not be written (%s)", caller.name, type(exc).__name__)
+    return (f"; gateway key '{caller.name}' is suspended until an operator runs "
+            f"`flywheel gateway-key clear {caller.name}`")
+
+
+def suspended(caller: Caller) -> "str | None":
+    """Why a key is stopped, or None. `flywheel gateway-key clear` lifts both forms."""
+    row = caller.row
+    if isinstance(row.get("suspended"), dict):
+        return str(row["suspended"].get("reason") or "suspended")
+    with _HELD_LOCK:
+        at = _HELD.get(caller.fingerprint)
+        if at is not None and (row.get("cleared") or 0) >= at:
+            del _HELD[caller.fingerprint]
+            at = None
+    return None if at is None else "delivered_unrecorded_charge"
+
+
+def _refusal(path: str, status: int, text: str, budget: bool = False, reason: str = "",
+             param: "str | None" = None) -> object:
     from .gateway_turn import Response
     extra = {"x-should-retry": "false"} if budget else {}
     if path == "/v1/responses":
         from .gateway_responses_reply import error
-        body = error(status, text, "model" if status == 403 else None, _CODES.get(status))
+        body = error(status, text, param, _CODES.get(status) or reason or None)
         if budget:
             body["error"]["type"] = "insufficient_quota"
         return Response(status, body, headers={
@@ -144,19 +181,25 @@ def _refusal(path: str, status: int, text: str, budget: bool = False) -> object:
 
 
 def _check(caller: Caller, model) -> "tuple | None":
-    """(reason, status, sentence) when the key may not make this call."""
+    """(reason, status, sentence, field) when the key may not make this call."""
     from .provider_fault_boundary import redacted_text
     row, name = caller.row, caller.name
+    stopped = suspended(caller)
+    if stopped is not None:
+        return "key_suspended", 403, (
+            f"gateway key '{name}' is suspended ({stopped}): an earlier reply was delivered "
+            "and could not be charged or recorded. Read the gateway ledger, then run "
+            f"`flywheel gateway-key clear {name}`"), None
     allowed = row.get("models") or []
     if allowed and isinstance(model, str) and model not in allowed:
         return "model_not_allowed", 403, (
             f"gateway key '{name}' may not use the model "
-            f"{redacted_text(model, limit=80)!r}; its allow-list is {', '.join(allowed)}")
+            f"{redacted_text(model, limit=80)!r}; its allow-list is {', '.join(allowed)}"), "model"
     limit = gateway_keys.over(row)
     if limit is not None:
         return limit[0], 0, (f"gateway key '{name}' has reached {limit[1]}; zero its counters "
                              f"with `flywheel gateway-key reset {name}` or create a key with "
-                             "a higher limit")
+                             "a higher limit"), None
     return None
 
 
@@ -171,7 +214,7 @@ def enter(handler, path: str, body, ledger) -> tuple:
     refused = _check(caller, body.get("model") if isinstance(body, dict) else None)
     if refused is None:
         return caller, None
-    reason, status, text = refused
+    reason, status, text, param = refused
     interface = _INTERFACES.get(path, "anthropic-messages")
     budget = status == 0
     if budget:
@@ -182,7 +225,8 @@ def enter(handler, path: str, body, ledger) -> tuple:
         with _APPEND:
             ledger.append("endpoint_call_refused", reason,
                           {"interface": interface, **caller.meta, "reason": reason})
-    return caller, _refusal(path, status, text + ". Nothing was sent upstream.", budget)
+    return caller, _refusal(path, status, text + ". Nothing was sent upstream.", budget,
+                            reason, param)
 
 
 class Bill:
@@ -203,6 +247,9 @@ class Bill:
         else:
             self.counts = {key: reply.usage.get(key) or 0 for key in gateway_keys.COUNTS}
         self.meta["charged_tokens"] = sum(self.counts.values())
+
+    def suspend(self, reason: str) -> str:
+        return suspend(self.caller, reason)
 
     def settle(self) -> None:
         """Debit the key. A call that cannot be charged is not served."""

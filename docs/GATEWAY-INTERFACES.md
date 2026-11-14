@@ -112,6 +112,20 @@ it. The reply comes back as the upstream sent it, and so does each stream
 event. Thinking blocks, cache marks, images, documents and fields this page
 does not name all pass through.
 
+Tools the provider runs itself pass through as well. A reply that holds a
+`server_tool_use` block and its result block (`web_search_tool_result`,
+`web_fetch_tool_result`, `bash_code_execution_tool_result` and the others) is
+delivered as sent, streamed or not, recorded as a served call and charged
+from the reported usage. The ledger entry carries the provider's
+`usage.server_tool_use` counts as `server_tool_use` when the reply has them. A
+block type or a delta type this gateway has never seen is relayed untouched.
+Only a block of the exact type `tool_result` is refused: that one is the
+client's to produce, and a reply that carries it is recorded as failed with
+reason `tool_result_claimed`. The block and event shapes were read on
+2026-11-14 from the web search tool, server tools and code execution tool
+pages of the Claude API documentation; the replay fixtures follow them, and
+no hosted provider was called.
+
 To an OpenAI-compatible or Gemini upstream the turn is rewritten in that
 upstream's format, and the reply is written back as a Message.
 
@@ -628,6 +642,30 @@ the same way. A limit or model refusal appends `endpoint_call_refused` with
 the interface, the key, its fingerprint and the reason (`token_limit`,
 `spend_limit` or `model_not_allowed`). It carries no hashes, and it is never a
 completed-call entry. No entry holds a key.
+
+### When a call cannot be charged or recorded
+
+The debit and the ledger entry are written after the upstream has answered.
+If either one fails, the call still has a ledger entry and the client is told.
+
+- A reply that has not been sent yet is held back. The client gets 500 with a
+  message that says the call could not be charged or could not be recorded,
+  and the ledger gets `endpoint_call_failed` with reason `charge_failed` or
+  `ledger_failed`, the caller, the response hash and `"delivered": false`.
+- A stream has already sent its text by then. The stream ends with the
+  interface's error event in place of its normal last event. The ledger entry
+  has reason `delivered_unrecorded_charge`, `"delivered": true`, `cause`
+  (`charge_failed` or `ledger_failed`) and the `charged_tokens` that were due.
+  The key is suspended: its next call is refused with 403 and reaches no
+  upstream.
+- To lift a suspension, read the entry, correct the totals if you want them
+  corrected, and run `flywheel gateway-key clear NAME`. `flywheel gateway-key
+  list` and `show` print the state `suspended`.
+
+A suspension is written to the key list and also held in the running gateway,
+so it holds when the key list is the file that could not be written. If the
+ledger itself cannot take the failure entry, the failure is logged at error
+level with the caller and the cause, and the client is still told.
 
 ### What is not covered
 
