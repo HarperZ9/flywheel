@@ -238,11 +238,17 @@ def call(url: str, path: str, body: bytes, credential: str, mark: "bytes | None"
     """(seconds to first byte or first text delta, seconds to the end) for one POST.
 
     A fresh connection per call: the gateway closes the connection after a
-    stream, so a client reconnects for every streamed request anyway."""
+    stream, so a client reconnects for every streamed request anyway. The
+    connect is blocking and the timeout is set after it. On Windows a Python
+    socket that has a timeout connects without blocking and then waits, and
+    that wait came back about 15 ms late in a third of loopback connects
+    (measured 2026-11-14). It would land on this client, not on the gateway."""
     parts = urlsplit(url)
     started = time.perf_counter()
-    conn = http.client.HTTPConnection(parts.hostname, parts.port, timeout=30)
+    conn = http.client.HTTPConnection(parts.hostname, parts.port)
     try:
+        conn.connect()
+        conn.sock.settimeout(30)
         conn.request("POST", path, body, {"Content-Type": "application/json",
                                           "x-api-key": credential})
         response = conn.getresponse()

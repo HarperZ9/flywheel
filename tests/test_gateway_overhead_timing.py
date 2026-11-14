@@ -13,12 +13,14 @@ Where the budget comes from: 30 warm calls per case on Windows 11 with Python
 3.12.10, measured 2026-11-14 while other work ran on the machine
 (scripts/bench_gateway_overhead.py; figures in docs/BENCHMARKS.md). Medians
 were 1 to 2 ms with the gateway token and 1.5 to 3.5 ms with a virtual key.
-About one call in ten took 13 to 25 ms longer, and so did calls sent to the
-stub alone: opening a connection to a threaded standard-library HTTP server
-has that tail on that machine. The budget sits above the slowest warm calls
-in the published run, so a median would need most calls to be slower than the
-worst ones measured, and it is a quarter of the 200 ms the control adds. A
-shared CI runner several times slower than the measured machine still fits.
+More than one call in twenty took 20 to 27 ms: on Windows a socket connect
+made with a timeout sometimes comes back about 15 ms late, and the gateway
+connects to its upstream that way. The budget sits above the slowest warm
+calls in the published run, so a median would need most calls to be slower
+than the worst ones measured, and it is a quarter of the 200 ms the control
+adds. On CI (2026-11-14) Linux runners measured 1.2 to 3.9 ms; one Windows
+runner measured 2.1 to 7.0 ms and another 15.1 to 23.0 ms, before the test
+client stopped connecting with a timeout of its own.
 
 What the figure leaves out: the provider's network time and TLS, the system
 credential store (the key store here is in memory), the first call's module

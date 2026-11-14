@@ -24,20 +24,20 @@
       "stream": false,
       "calls": 30,
       "first": {
-        "stub_median_ms": 0.89,
-        "stub_p95_over_its_median_ms": 0.5,
-        "gateway_median_ms": 2.2,
-        "overhead_median_ms": 1.31,
-        "overhead_p95_ms": 15.08,
-        "overhead_max_ms": 24.78
+        "stub_median_ms": 0.97,
+        "stub_p95_over_its_median_ms": 0.29,
+        "gateway_median_ms": 2.54,
+        "overhead_median_ms": 1.56,
+        "overhead_p95_ms": 2.37,
+        "overhead_max_ms": 19.69
       },
       "total": {
-        "stub_median_ms": 1.03,
-        "stub_p95_over_its_median_ms": 0.52,
-        "gateway_median_ms": 2.32,
-        "overhead_median_ms": 1.28,
-        "overhead_p95_ms": 15.06,
-        "overhead_max_ms": 24.67
+        "stub_median_ms": 1.21,
+        "stub_p95_over_its_median_ms": 0.45,
+        "gateway_median_ms": 2.75,
+        "overhead_median_ms": 1.54,
+        "overhead_p95_ms": 2.3,
+        "overhead_max_ms": 19.64
       }
     },
     {
@@ -47,20 +47,20 @@
       "stream": true,
       "calls": 30,
       "first": {
-        "stub_median_ms": 0.84,
-        "stub_p95_over_its_median_ms": 15.41,
-        "gateway_median_ms": 2.05,
+        "stub_median_ms": 0.91,
+        "stub_p95_over_its_median_ms": 0.26,
+        "gateway_median_ms": 2.12,
         "overhead_median_ms": 1.21,
-        "overhead_p95_ms": 23.9,
-        "overhead_max_ms": 23.96
+        "overhead_p95_ms": 23.6,
+        "overhead_max_ms": 25.17
       },
       "total": {
-        "stub_median_ms": 1.27,
-        "stub_p95_over_its_median_ms": 15.3,
-        "gateway_median_ms": 3.1,
-        "overhead_median_ms": 1.83,
-        "overhead_p95_ms": 24.35,
-        "overhead_max_ms": 24.72
+        "stub_median_ms": 1.45,
+        "stub_p95_over_its_median_ms": 0.32,
+        "gateway_median_ms": 3.47,
+        "overhead_median_ms": 2.02,
+        "overhead_p95_ms": 24.43,
+        "overhead_max_ms": 26.11
       }
     },
     {
@@ -70,135 +70,135 @@
       "stream": false,
       "calls": 30,
       "first": {
-        "stub_median_ms": 0.88,
-        "stub_p95_over_its_median_ms": 13.86,
-        "gateway_median_ms": 2.21,
-        "overhead_median_ms": 1.33,
-        "overhead_p95_ms": 22.1,
-        "overhead_max_ms": 26.72
-      },
-      "total": {
-        "stub_median_ms": 1.05,
-        "stub_p95_over_its_median_ms": 13.89,
-        "gateway_median_ms": 2.33,
-        "overhead_median_ms": 1.29,
-        "overhead_p95_ms": 22.04,
-        "overhead_max_ms": 26.61
-      }
-    },
-    {
-      "interface": "/v1/messages",
-      "upstream": "anthropic",
-      "caller": "owner",
-      "stream": true,
-      "calls": 30,
-      "first": {
-        "stub_median_ms": 0.84,
-        "stub_p95_over_its_median_ms": 0.24,
-        "gateway_median_ms": 1.95,
-        "overhead_median_ms": 1.11,
-        "overhead_p95_ms": 16.62,
-        "overhead_max_ms": 22.29
-      },
-      "total": {
-        "stub_median_ms": 1.24,
-        "stub_p95_over_its_median_ms": 0.24,
-        "gateway_median_ms": 2.86,
-        "overhead_median_ms": 1.61,
-        "overhead_p95_ms": 17.14,
-        "overhead_max_ms": 22.78
-      }
-    },
-    {
-      "interface": "/v1/responses",
-      "upstream": "openai",
-      "caller": "owner",
-      "stream": false,
-      "calls": 30,
-      "first": {
-        "stub_median_ms": 0.87,
-        "stub_p95_over_its_median_ms": 9.31,
-        "gateway_median_ms": 2.18,
-        "overhead_median_ms": 1.31,
-        "overhead_p95_ms": 25.85,
+        "stub_median_ms": 0.91,
+        "stub_p95_over_its_median_ms": 0.32,
+        "gateway_median_ms": 2.37,
+        "overhead_median_ms": 1.46,
+        "overhead_p95_ms": 25.91,
         "overhead_max_ms": 26.05
       },
       "total": {
-        "stub_median_ms": 1.01,
-        "stub_p95_over_its_median_ms": 9.32,
-        "gateway_median_ms": 2.29,
-        "overhead_median_ms": 1.28,
-        "overhead_p95_ms": 25.83,
-        "overhead_max_ms": 25.98
+        "stub_median_ms": 1.09,
+        "stub_p95_over_its_median_ms": 0.35,
+        "gateway_median_ms": 2.54,
+        "overhead_median_ms": 1.45,
+        "overhead_p95_ms": 25.9,
+        "overhead_max_ms": 26.08
+      }
+    },
+    {
+      "interface": "/v1/messages",
+      "upstream": "anthropic",
+      "caller": "owner",
+      "stream": true,
+      "calls": 30,
+      "first": {
+        "stub_median_ms": 0.88,
+        "stub_p95_over_its_median_ms": 0.27,
+        "gateway_median_ms": 2.08,
+        "overhead_median_ms": 1.2,
+        "overhead_p95_ms": 21.65,
+        "overhead_max_ms": 24.37
+      },
+      "total": {
+        "stub_median_ms": 1.36,
+        "stub_p95_over_its_median_ms": 0.22,
+        "gateway_median_ms": 3.12,
+        "overhead_median_ms": 1.76,
+        "overhead_p95_ms": 22.22,
+        "overhead_max_ms": 24.69
       }
     },
     {
       "interface": "/v1/responses",
       "upstream": "openai",
       "caller": "owner",
+      "stream": false,
+      "calls": 30,
+      "first": {
+        "stub_median_ms": 0.89,
+        "stub_p95_over_its_median_ms": 0.14,
+        "gateway_median_ms": 2.24,
+        "overhead_median_ms": 1.35,
+        "overhead_p95_ms": 25.15,
+        "overhead_max_ms": 25.98
+      },
+      "total": {
+        "stub_median_ms": 1.08,
+        "stub_p95_over_its_median_ms": 0.15,
+        "gateway_median_ms": 2.42,
+        "overhead_median_ms": 1.34,
+        "overhead_p95_ms": 25.1,
+        "overhead_max_ms": 25.87
+      }
+    },
+    {
+      "interface": "/v1/responses",
+      "upstream": "openai",
+      "caller": "owner",
+      "stream": true,
+      "calls": 30,
+      "first": {
+        "stub_median_ms": 0.85,
+        "stub_p95_over_its_median_ms": 0.11,
+        "gateway_median_ms": 2.05,
+        "overhead_median_ms": 1.21,
+        "overhead_p95_ms": 20.54,
+        "overhead_max_ms": 21.42
+      },
+      "total": {
+        "stub_median_ms": 1.26,
+        "stub_p95_over_its_median_ms": 0.14,
+        "gateway_median_ms": 3.28,
+        "overhead_median_ms": 2.02,
+        "overhead_p95_ms": 21.19,
+        "overhead_max_ms": 22.12
+      }
+    },
+    {
+      "interface": "/v1/messages",
+      "upstream": "openai",
+      "caller": "key",
+      "stream": false,
+      "calls": 30,
+      "first": {
+        "stub_median_ms": 0.92,
+        "stub_p95_over_its_median_ms": 0.41,
+        "gateway_median_ms": 3.56,
+        "overhead_median_ms": 2.64,
+        "overhead_p95_ms": 22.62,
+        "overhead_max_ms": 25.82
+      },
+      "total": {
+        "stub_median_ms": 1.06,
+        "stub_p95_over_its_median_ms": 0.35,
+        "gateway_median_ms": 3.67,
+        "overhead_median_ms": 2.61,
+        "overhead_p95_ms": 22.55,
+        "overhead_max_ms": 25.86
+      }
+    },
+    {
+      "interface": "/v1/messages",
+      "upstream": "openai",
+      "caller": "key",
       "stream": true,
       "calls": 30,
       "first": {
         "stub_median_ms": 0.83,
-        "stub_p95_over_its_median_ms": 0.08,
-        "gateway_median_ms": 2.05,
-        "overhead_median_ms": 1.22,
-        "overhead_p95_ms": 1.64,
-        "overhead_max_ms": 22.04
-      },
-      "total": {
-        "stub_median_ms": 1.21,
-        "stub_p95_over_its_median_ms": 0.18,
-        "gateway_median_ms": 3.17,
-        "overhead_median_ms": 1.96,
-        "overhead_p95_ms": 2.79,
-        "overhead_max_ms": 23.18
-      }
-    },
-    {
-      "interface": "/v1/messages",
-      "upstream": "openai",
-      "caller": "key",
-      "stream": false,
-      "calls": 30,
-      "first": {
-        "stub_median_ms": 0.85,
-        "stub_p95_over_its_median_ms": 0.3,
-        "gateway_median_ms": 3.68,
-        "overhead_median_ms": 2.83,
-        "overhead_p95_ms": 17.2,
-        "overhead_max_ms": 24.2
-      },
-      "total": {
-        "stub_median_ms": 0.99,
         "stub_p95_over_its_median_ms": 0.28,
-        "gateway_median_ms": 3.82,
-        "overhead_median_ms": 2.83,
-        "overhead_p95_ms": 17.24,
-        "overhead_max_ms": 24.22
-      }
-    },
-    {
-      "interface": "/v1/messages",
-      "upstream": "openai",
-      "caller": "key",
-      "stream": true,
-      "calls": 30,
-      "first": {
-        "stub_median_ms": 0.88,
-        "stub_p95_over_its_median_ms": 0.29,
         "gateway_median_ms": 2.27,
-        "overhead_median_ms": 1.39,
-        "overhead_p95_ms": 25.39,
-        "overhead_max_ms": 25.7
+        "overhead_median_ms": 1.44,
+        "overhead_p95_ms": 20.26,
+        "overhead_max_ms": 20.76
       },
       "total": {
-        "stub_median_ms": 1.29,
-        "stub_p95_over_its_median_ms": 0.35,
-        "gateway_median_ms": 4.42,
-        "overhead_median_ms": 3.13,
-        "overhead_p95_ms": 27.02,
-        "overhead_max_ms": 27.23
+        "stub_median_ms": 1.24,
+        "stub_p95_over_its_median_ms": 0.24,
+        "gateway_median_ms": 4.4,
+        "overhead_median_ms": 3.16,
+        "overhead_p95_ms": 21.89,
+        "overhead_max_ms": 22.28
       }
     },
     {
@@ -208,20 +208,20 @@
       "stream": false,
       "calls": 30,
       "first": {
-        "stub_median_ms": 0.9,
-        "stub_p95_over_its_median_ms": 21.73,
-        "gateway_median_ms": 3.75,
-        "overhead_median_ms": 2.86,
-        "overhead_p95_ms": 27.5,
-        "overhead_max_ms": 27.76
+        "stub_median_ms": 0.87,
+        "stub_p95_over_its_median_ms": 0.2,
+        "gateway_median_ms": 3.65,
+        "overhead_median_ms": 2.78,
+        "overhead_p95_ms": 24.09,
+        "overhead_max_ms": 24.19
       },
       "total": {
-        "stub_median_ms": 1.03,
-        "stub_p95_over_its_median_ms": 21.67,
-        "gateway_median_ms": 3.93,
-        "overhead_median_ms": 2.9,
-        "overhead_p95_ms": 27.48,
-        "overhead_max_ms": 27.75
+        "stub_median_ms": 1.01,
+        "stub_p95_over_its_median_ms": 0.22,
+        "gateway_median_ms": 3.81,
+        "overhead_median_ms": 2.8,
+        "overhead_p95_ms": 24.1,
+        "overhead_max_ms": 24.24
       }
     },
     {
@@ -231,20 +231,20 @@
       "stream": true,
       "calls": 30,
       "first": {
-        "stub_median_ms": 0.89,
-        "stub_p95_over_its_median_ms": 0.18,
-        "gateway_median_ms": 2.43,
+        "stub_median_ms": 0.81,
+        "stub_p95_over_its_median_ms": 0.28,
+        "gateway_median_ms": 2.35,
         "overhead_median_ms": 1.54,
-        "overhead_p95_ms": 25.28,
-        "overhead_max_ms": 35.28
+        "overhead_p95_ms": 25.4,
+        "overhead_max_ms": 25.96
       },
       "total": {
-        "stub_median_ms": 1.28,
-        "stub_p95_over_its_median_ms": 0.25,
-        "gateway_median_ms": 4.7,
-        "overhead_median_ms": 3.42,
-        "overhead_p95_ms": 27.13,
-        "overhead_max_ms": 36.93
+        "stub_median_ms": 1.2,
+        "stub_p95_over_its_median_ms": 0.27,
+        "gateway_median_ms": 4.61,
+        "overhead_median_ms": 3.41,
+        "overhead_p95_ms": 27.04,
+        "overhead_max_ms": 27.81
       }
     }
   ],
@@ -252,22 +252,22 @@
     {
       "interface": "/v1/messages",
       "stream": false,
-      "first_call_overhead_ms": 65.11
+      "first_call_overhead_ms": 61.63
     },
     {
       "interface": "/v1/messages",
       "stream": true,
-      "first_call_overhead_ms": 84.41
+      "first_call_overhead_ms": 64.24
     },
     {
       "interface": "/v1/responses",
       "stream": false,
-      "first_call_overhead_ms": 81.55
+      "first_call_overhead_ms": 66.44
     },
     {
       "interface": "/v1/responses",
       "stream": true,
-      "first_call_overhead_ms": 66.77
+      "first_call_overhead_ms": 64.07
     }
   ],
   "breakdown": [
@@ -276,18 +276,18 @@
       "stream": false,
       "caller": "key",
       "calls": 30,
-      "overhead_total_median_ms": 2.85,
+      "overhead_total_median_ms": 2.66,
       "parts_median_ms": {
-        "key lookup": 0.24,
+        "key lookup": 0.23,
         "request body read and JSON parse": 0.01,
         "limit and allow-list check": 0.02,
         "upstream choice": 0.02,
-        "upstream connect, send and wait, plain (includes the stub delay)": 51.51,
-        "reply read into the neutral form": 0.09,
-        "key debit": 0.95,
-        "ledger entry, with the debit inside it": 1.02,
+        "upstream connect, send and wait, plain (includes the stub delay)": 51.54,
+        "reply read into the neutral form": 0.08,
+        "key debit": 0.96,
+        "ledger entry, with the debit inside it": 1.03,
         "receipt": 0.02,
-        "whole handler, from the body read to the last byte written": 53.01
+        "whole handler, from the body read to the last byte written": 53.06
       }
     },
     {
@@ -301,12 +301,12 @@
         "request body read and JSON parse": 0.01,
         "limit and allow-list check": 0.02,
         "upstream choice": 0.02,
-        "upstream connect, send and wait, stream (includes the stub delay)": 51.46,
+        "upstream connect, send and wait, stream (includes the stub delay)": 51.44,
         "reply read into the neutral form": 0.08,
-        "key debit": 0.95,
-        "ledger entry, with the debit inside it": 1.01,
-        "receipt": 0.03,
-        "whole handler, from the body read to the last byte written": 53.8
+        "key debit": 0.9,
+        "ledger entry, with the debit inside it": 0.96,
+        "receipt": 0.02,
+        "whole handler, from the body read to the last byte written": 53.78
       }
     }
   ],
@@ -314,26 +314,26 @@
     {
       "warm_up": false,
       "stream": false,
-      "first_ms": 9.33,
-      "total_ms": 9.29
+      "first_ms": 8.85,
+      "total_ms": 8.87
     },
     {
       "warm_up": false,
       "stream": true,
-      "first_ms": 8.47,
-      "total_ms": 9.97
+      "first_ms": 8.17,
+      "total_ms": 9.82
     },
     {
       "warm_up": true,
       "stream": false,
-      "first_ms": 2.8,
-      "total_ms": 2.85
+      "first_ms": 2.56,
+      "total_ms": 2.61
     },
     {
       "warm_up": true,
       "stream": true,
-      "first_ms": 1.39,
-      "total_ms": 3.18
+      "first_ms": 1.6,
+      "total_ms": 3.58
     }
   ]
 }

@@ -122,12 +122,14 @@ def _tail(record: dict[str, Any]) -> list[str]:
     tail = [c["total"]["overhead_p95_ms"] for c in cases]
     alone = max(c["total"]["stub_p95_over_its_median_ms"] for c in cases)
     return [wrap(
-        f"The p95 column is {_span(tail)}. Calls sent to the stub alone have a tail of the "
-        f"same kind, up to {alone:.1f} ms over their own median at the 95th percentile, "
-        "and the gateway makes two connections per call where the direct call makes one. "
-        "The stub and the gateway both run Python's threaded HTTP server. What makes "
-        "some connections slow on this machine, roughly one in twelve in a separate "
-        "check, was not found."), ""]
+        f"The p95 column is {_span(tail)}. The slow calls are the gateway's own connection "
+        "to the upstream. On Windows, Python connects a socket that has a timeout without "
+        "blocking and then waits for it. In a separate check on the measured machine that "
+        "wait came back about 15 ms late in 62 to 85 of 200 loopback connects, and a "
+        "blocking connect was never late. The gateway's upstream connection carries a "
+        "timeout. The benchmark client connects blocking, so calls sent to the stub alone "
+        f"stay within {alone:.1f} ms of their own median at the 95th percentile. Whether a "
+        "connection to a remote provider is late in the same way was not measured."), ""]
 
 
 _LEFT_OUT = [

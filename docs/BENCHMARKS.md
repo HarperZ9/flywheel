@@ -208,23 +208,23 @@ reason written down, in harness/parity_coverage.py.
 ## Gateway overhead
 
 What the gateway adds to one model call on `/v1/messages` and `/v1/responses`:
-a median of 1.3 to 2.0 ms with the gateway token and 2.8 to 3.4 ms with a
+a median of 1.3 to 2.0 ms with the gateway token and 2.6 to 3.4 ms with a
 virtual key, to the end of the reply. Measured 2026-11-14 on one machine, with
 one client and a loopback stub in place of the provider. Provider network time
 is not in these figures. Record: `docs/benchmarks/gateway-overhead.json`.
 
 | interface | upstream format | caller | mode | to first byte, median | to end, median | to end, p95 | to end, max |
 | :-- | :-- | :-- | :-- | --: | --: | --: | --: |
-| `/v1/messages` | OpenAI-compatible chat | gateway token | plain | 1.31 | 1.28 | 15.1 | 24.7 |
-| `/v1/messages` | OpenAI-compatible chat | gateway token | stream | 1.21 | 1.83 | 24.4 | 24.7 |
-| `/v1/messages` | Anthropic Messages | gateway token | plain | 1.33 | 1.29 | 22.0 | 26.6 |
-| `/v1/messages` | Anthropic Messages | gateway token | stream | 1.11 | 1.61 | 17.1 | 22.8 |
-| `/v1/responses` | OpenAI-compatible chat | gateway token | plain | 1.31 | 1.28 | 25.8 | 26.0 |
-| `/v1/responses` | OpenAI-compatible chat | gateway token | stream | 1.22 | 1.96 | 2.8 | 23.2 |
-| `/v1/messages` | OpenAI-compatible chat | virtual key | plain | 2.83 | 2.83 | 17.2 | 24.2 |
-| `/v1/messages` | OpenAI-compatible chat | virtual key | stream | 1.39 | 3.13 | 27.0 | 27.2 |
-| `/v1/responses` | OpenAI-compatible chat | virtual key | plain | 2.86 | 2.90 | 27.5 | 27.8 |
-| `/v1/responses` | OpenAI-compatible chat | virtual key | stream | 1.54 | 3.42 | 27.1 | 36.9 |
+| `/v1/messages` | OpenAI-compatible chat | gateway token | plain | 1.56 | 1.54 | 2.3 | 19.6 |
+| `/v1/messages` | OpenAI-compatible chat | gateway token | stream | 1.21 | 2.02 | 24.4 | 26.1 |
+| `/v1/messages` | Anthropic Messages | gateway token | plain | 1.46 | 1.45 | 25.9 | 26.1 |
+| `/v1/messages` | Anthropic Messages | gateway token | stream | 1.20 | 1.76 | 22.2 | 24.7 |
+| `/v1/responses` | OpenAI-compatible chat | gateway token | plain | 1.35 | 1.34 | 25.1 | 25.9 |
+| `/v1/responses` | OpenAI-compatible chat | gateway token | stream | 1.21 | 2.02 | 21.2 | 22.1 |
+| `/v1/messages` | OpenAI-compatible chat | virtual key | plain | 2.64 | 2.61 | 22.6 | 25.9 |
+| `/v1/messages` | OpenAI-compatible chat | virtual key | stream | 1.44 | 3.16 | 21.9 | 22.3 |
+| `/v1/responses` | OpenAI-compatible chat | virtual key | plain | 2.78 | 2.80 | 24.1 | 24.2 |
+| `/v1/responses` | OpenAI-compatible chat | virtual key | stream | 1.54 | 3.41 | 27.0 | 27.8 |
 
 Every figure is milliseconds over the same request sent straight to the stub.
 For a stream, the first byte is the first text delta a client can read.
@@ -248,34 +248,37 @@ Windows 11 (build 10.0.26320), Python 3.12.10.
 ### The first call
 
 The first call after a gateway starts also loads the modules the gateway
-imports on first use. In a fresh process that call took 65.1 to 84.4 ms more
+imports on first use. In a fresh process that call took 61.6 to 66.4 ms more
 than the stub. It is not in the table.
 
 ### Where the time goes
 
-For a plain `/v1/messages` call with a virtual key (2.85 ms over the stub in
+For a plain `/v1/messages` call with a virtual key (2.66 ms over the stub in
 that run), the median time inside each step of the gateway:
 
-- key lookup: 0.24 ms
+- key lookup: 0.23 ms
 - request body read and JSON parse: 0.01 ms
 - limit and allow-list check: 0.02 ms
 - upstream choice: 0.02 ms
-- reply read into the neutral form: 0.09 ms
-- ledger entry, with the debit inside it: 1.02 ms
+- reply read into the neutral form: 0.08 ms
+- ledger entry, with the debit inside it: 1.03 ms
 - receipt: 0.02 ms
 
-The key debit is 0.95 ms of the ledger entry step: a file lock, a read, a write
-and a rename. The remaining 1.4 ms is the two HTTP hops: the gateway's server
+The key debit is 0.96 ms of the ledger entry step: a file lock, a read, a write
+and a rename. The remaining 1.2 ms is the two HTTP hops: the gateway's server
 accepts the connection, starts a thread and parses the request, and the gateway
 opens its own connection to the upstream. A call with the gateway token has no
 key lookup and no debit.
 
-The p95 column is 2.8 to 27.5 ms. Calls sent to the stub alone have a tail of
-the same kind, up to 21.7 ms over their own median at the 95th percentile, and
-the gateway makes two connections per call where the direct call makes one. The
-stub and the gateway both run Python's threaded HTTP server. What makes some
-connections slow on this machine, roughly one in twelve in a separate check,
-was not found.
+The p95 column is 2.3 to 27.0 ms. The slow calls are the gateway's own
+connection to the upstream. On Windows, Python connects a socket that has a
+timeout without blocking and then waits for it. In a separate check on the
+measured machine that wait came back about 15 ms late in 62 to 85 of 200
+loopback connects, and a blocking connect was never late. The gateway's
+upstream connection carries a timeout. The benchmark client connects blocking,
+so calls sent to the stub alone stay within 0.5 ms of their own median at the
+95th percentile. Whether a connection to a remote provider is late in the same
+way was not measured.
 
 ### The key list warm-up
 
@@ -284,8 +287,8 @@ After a debit the gateway opens the key list once on a thread of its own
 contents change waits about 6 ms, and rewriting the same contents does not show
 the wait, which points at real-time file scanning. Before the warm-up that wait
 fell on the next call's key check. With the warm-up off, the same run measured
-9.29 ms for a plain call and 8.47 ms to the first text of a stream; with it on,
-2.85 ms and 1.39 ms. A call that starts within a few milliseconds of the
+8.87 ms for a plain call and 8.17 ms to the first text of a stream; with it on,
+2.61 ms and 1.60 ms. A call that starts within a few milliseconds of the
 previous debit still waits. Every check and every debit reads the file as
 before.
 
