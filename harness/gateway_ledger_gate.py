@@ -6,8 +6,10 @@ cannot be recorded would be billed with nothing to show for it. The ledger is
 unavailable when
 
   - another gateway process on the same Flywheel home holds the writer lock,
-  - any other process holds the writer lock, or
-  - the ledger folder cannot be created or written.
+  - any other process holds the writer lock,
+  - the ledger folder cannot be created or written, or
+  - a write failed after the ledger had opened (a full disk, for one) and the
+    ledger has not resumed (gateway_ledger_health).
 
 Each model interface asks here before it contacts an upstream:
 
@@ -89,4 +91,9 @@ def startup(ledger_of, out=print) -> bool:
     out(f"  ledger    {where or 'in memory'}  ({len(ledger.entries)} entries in this segment"
         + (f"; BROKEN before it: {broken}; run `flywheel gateway-ledger verify`)" if broken
            else ")"))
+    if where is not None:
+        from .gateway_ledger_health import strays
+        for name in strays(where.parent):
+            out(f"  ledger    ignored {name!r}: its name is not a segment's, so it is not "
+                "part of the ledger")
     return True

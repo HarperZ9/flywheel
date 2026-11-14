@@ -113,14 +113,17 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
 
       input   the count the provider had reported when the stream stopped
               (Anthropic's `message_start`, the usage chunk of an OpenAI-format
-              stream, Gemini's `usageMetadata`), else the word estimate of the
+              stream, Gemini's `usageMetadata`), else the estimate of the
               prompt;
       output  the larger of the provider's reported output count, when one had
-              arrived (Anthropic's `message_delta`), and the word estimate of
+              arrived (Anthropic's `message_delta`), and the estimate of
               everything received: text, tool-call arguments and thinking.
 
-    The entry is marked `estimated`. A stream the upstream cut before any
-    event is not charged."""
+    An estimate is the larger of the word count and a quarter of the
+    characters, rounded up. An OpenAI-format stream reports usage in its last
+    chunk, so every such stream that stops early is estimated, hosted OpenAI
+    included. The entry is marked `estimated`. A stream the upstream cut
+    before any event is not charged."""
     caller = turn.caller
     if caller is None or caller.row is None:
         return {}
@@ -128,9 +131,14 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
         return {}
     from . import token_usage
     system, prompt = turn.text_form()
+    sent = f"{system}\n{prompt}"
     received = " ".join(filter(None, ["".join(p for p in pieces if p), _beside_text(assembler)]))
-    words = token_usage.estimate(f"{system}\n{prompt}", received)
-    counts = {"input": words["prompt_words"], "output": words["completion_words"]}
+    words = token_usage.estimate(sent, received)
+    # A word count is near zero for text with no spaces (CJK, base64, minified
+    # code), so each side is at least a quarter of its characters, rounded up:
+    # the rule the reservation uses for a request's bytes.
+    counts = {"input": max(words["prompt_words"], -(-len(sent) // 4)),
+              "output": max(words["completion_words"], -(-len(received) // 4))}
     reported = _reported(assembler)
     if "input" in reported:
         counts.update(input=reported["input"], cache_read=reported.get("cache_read", 0),

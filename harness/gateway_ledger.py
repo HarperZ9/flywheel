@@ -42,9 +42,9 @@ import os
 import threading
 import time
 from contextlib import ExitStack
-from dataclasses import asdict
 from pathlib import Path
 
+from . import gateway_ledger_health as _health
 from .local_session import Entry, SessionLedger
 
 _LOG = logging.getLogger(__name__)
@@ -66,9 +66,11 @@ def folder(home) -> Path:
 
 
 def segments(home) -> list:
-    """The segment files of a home, oldest first."""
+    """The segment files of a home, oldest first. A file whose name is not exactly
+    a segment's (a copy, a backup) is not one (gateway_ledger_health.strays)."""
     where = folder(home)
-    return sorted(where.glob("segment-*.jsonl")) if where.is_dir() else []
+    return sorted(p for p in where.glob("segment-*.jsonl")
+                  if _health.SEGMENT.match(p.name)) if where.is_dir() else []
 
 
 def _sha(line: str) -> str:
@@ -83,7 +85,8 @@ def read_segment(path) -> tuple:
     except (OSError, UnicodeDecodeError) as exc:
         return None, [], "", f"cannot be read ({type(exc).__name__})"
     lines = text.split("\n")
-    cut = lines.pop() != ""             # no newline after the last line: it was cut short
+    cut = lines[-1] != ""               # no newline after the last line: it was cut short
+    lines = lines if cut else lines[:-1]
     try:
         header = json.loads(lines[0]) if lines else None
     except ValueError:
@@ -119,9 +122,10 @@ def read_head(home) -> "dict | None":
     return found if isinstance(found, dict) else None
 
 
-def _against_head(home, path, header, entries) -> "str | None":
-    """What the head record says is wrong with the last segment, or None."""
-    head = read_head(home)
+def _against_head(home, path, header, entries, head=...) -> "str | None":
+    """What the head record says is wrong with the last segment, or None. `head` is
+    the record as read before the segment, so an append in between is not a fault."""
+    head = read_head(home) if head is ... else head
     if head is None:
         return "the head record is missing or unreadable"
     if head.get("segment") != Path(path).name:
@@ -139,6 +143,7 @@ def _against_head(home, path, header, entries) -> "str | None":
 
 def check(home) -> list:
     """Every segment, oldest first: {name, entries, head, ok, problem, header, rows}."""
+    head = read_head(home) or read_head(home)   # before the segments: a gateway may append
     out, paths = [], segments(home)
     if not paths and (folder(home) / HEAD).exists():
         return [{"name": "(no segment)", "entries": 0, "ok": False, "head": "", "rows": [],
@@ -146,7 +151,7 @@ def check(home) -> list:
     for index, path in enumerate(paths):
         header, entries, base, problem = read_segment(path)
         if problem is None and index == len(paths) - 1:
-            problem = _against_head(home, path, header, entries)
+            problem = _against_head(home, path, header, entries, head)
         if problem is None and header.get("previous") != (
                 out[-1]["name"] if out else None):
             problem = "the header does not name the segment before it"
@@ -165,6 +170,7 @@ class GatewayLedger(SessionLedger):
     def __init__(self, home, clock=time.time):
         super().__init__()
         self.home, self.clock, self.found_broken = Path(home), clock, None
+        self.failed = None              # set while writes fail (gateway_ledger_health)
         self._lock, self._held = threading.RLock(), ExitStack()
         self._sync = os.environ.get(SYNC_ENV, "").strip().lower() not in ("0", "false", "no")
         where = folder(home)
@@ -200,7 +206,7 @@ class GatewayLedger(SessionLedger):
             self._start(where, paths[-1].name if paths else None,
                         (entries[-1].entry_hash if entries else base) if paths else None,
                         problem)
-        self._file = self._held.enter_context(open(self.path, "ab"))
+        self._file = self._held.enter_context(open(self.path, "ab", buffering=0))
         self._head = self._held.enter_context(open(where / HEAD, "r+b" if (
             where / HEAD).exists() else "w+b"))
         self._write_head()
@@ -228,18 +234,15 @@ class GatewayLedger(SessionLedger):
         self._head.flush()              # not fsynced: a head behind the segment is accepted
 
     def append(self, kind: str, content: str, meta: "dict | None" = None) -> Entry:
-        """Chain one entry and put it in the file. Raises OSError when it cannot."""
+        """Chain one entry and put it in the file. Raises OSError when it cannot;
+        the ledger then refuses appends until it resumes (gateway_ledger_health)."""
         meta = meta or {}
         with self._lock:
             seq = len(self.entries)
             prev = self.entries[-1].entry_hash if self.entries else self._base
             entry = Entry(seq, kind, content, meta, prev,
                           Entry.compute_hash(seq, kind, content, meta, prev))
-            self._file.write(json.dumps(asdict(entry), ensure_ascii=False).encode("utf-8")
-                             + b"\n")
-            self._file.flush()
-            if self._sync:
-                os.fsync(self._file.fileno())
+            _health.write(self, entry)
             self.entries.append(entry)
             self._write_head()
             return entry
@@ -280,7 +283,7 @@ def for_home(home) -> "GatewayLedger | None":
                 _LOG.error("gateway ledger unavailable (%s: %s); model calls are refused "
                            "until it can be written", type(exc).__name__, exc)
                 return None
-        return _OPEN[key]
+        return _health.usable(_OPEN[key])   # None while its writes fail
 
 
 def close_all() -> None:

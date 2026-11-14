@@ -176,7 +176,12 @@ def _reread(caller: Caller) -> bool:
     `admits` read the row when the request headers arrived. The body can
     arrive much later, and other calls on the key are charged in between, so
     the limits, the allow-lists and the suspension flag are checked against
-    the row as it is now. A store that cannot be read admits nobody."""
+    the row as it is now. A store that cannot be read admits nobody.
+
+    `enter` calls this under gateway_key_policy.ADMISSION and takes the call's
+    slot before it lets go. A call that finishes is charged before its slot
+    is freed, so a row read under that lock shows every other call either as
+    a charge in the totals or as a reservation still held."""
     try:
         row = caller.keys.row(caller.name)
     except Exception as exc:   # noqa: BLE001 - a broken store admits nobody
@@ -199,16 +204,19 @@ def enter(handler, path: str, body, ledger) -> tuple:
                               "live gateway key")
     if caller.row is None:
         return caller, None
-    if not _reread(caller):             # revoked or gone while the body was on its way
+    from . import gateway_key_policy as policy
+    with policy.ADMISSION:              # the row is read and the slot taken as one step
+        live = _reread(caller)          # False: revoked or gone while the body was on its way
+        refused, busy = (_check(caller, body.get("model") if isinstance(body, dict) else None)
+                         if live else None), False
+        if live and refused is None and not path.endswith("/count_tokens"):
+            refused = policy.capped(caller, path, body)
+            if refused is None:         # a slot and a reservation, freed by `leave`
+                refused = policy.admit(caller, path, body, handler._content_length() or 0)
+                busy = refused is not None
+    if not live:
         return None, _refusal(path, 401, "the credential is not the gateway token or a "
                               "live gateway key")
-    refused, busy = _check(caller, body.get("model") if isinstance(body, dict) else None), False
-    if refused is None and not path.endswith("/count_tokens"):
-        from . import gateway_key_policy as policy
-        refused = policy.capped(caller, path, body)
-        if refused is None:             # a slot and a reservation, freed by `leave`
-            refused = policy.admit(caller, path, body, handler._content_length() or 0)
-            busy = refused is not None
     if refused is None:
         return caller, None
     reason, status, text, param = refused

@@ -531,10 +531,18 @@ everywhere. The text protocol is used whenever native calling is not:
 
 - the switch is off, or the host is not on the list above and the switch is
   not `1`;
-- the host answers a request that carries tool schemas with an error that
-  names tools or functions. The session logs one warning, sends the request
-  again in the text protocol, and stays in it for that model until the
-  session ends;
+- the host answers a request that carries tool schemas with a 400, 404 or
+  422 that says the model cannot take tools or function calling ("does not
+  support tools", "function calling is not enabled", an OpenAI-shape error
+  with `param` `tools` and the code `unsupported_parameter`). The session
+  sends the request again in the text protocol and stays in it for that
+  model until the program ends. It prints one line that says so
+  (`Notice: ...`) and records it as a `native_tools_fallback` entry, because
+  from then on a `TOOL name {json}` line in that model's replies is a call.
+  Any other error, such as a context-length error that mentions functions,
+  fails the request and changes nothing. No provider documents the exact
+  sentence for this refusal, so a host that words it differently is not
+  recognized: set `FLYWHEEL_NATIVE_TOOLS=0` for it;
 - an earlier turn cannot be matched to the native reply it came from, which
   happens after `--continue`, `--resume` or a compaction. That turn is sent
   as text; new turns are native again.

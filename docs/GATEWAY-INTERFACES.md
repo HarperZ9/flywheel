@@ -744,10 +744,22 @@ within the read timeout, 30 seconds by default.
 `FLYWHEEL_GATEWAY_READ_TIMEOUT` sets another number of seconds, and `0` or
 `off` removes the timeout. A connection that sends no request line or header
 in that time is closed. A body that stops arriving on a model interface is
-answered 408, and nothing is sent upstream. The timeout is per read, so a
-client that keeps sending a few bytes holds its connection for longer; it
-holds a gateway thread and gains no spend. The timeout applies to the
-requests of every route of the gateway. Writes have no timeout: a client
+answered 408, and nothing is sent upstream. The timeout applies to the
+requests of every route of the gateway.
+
+The timeout is per read, so two deadlines bound a client that keeps sending
+a few bytes. Both apply before the gateway knows who is calling:
+
+- the request line and headers of one request must arrive within one read
+  timeout. A client that is still sending header lines after that is closed,
+  after at most one more read;
+- the body of a request to `/v1/messages`, `/v1/messages/count_tokens` or
+  `/v1/responses` must arrive within four read timeouts (two minutes by
+  default), or the answer is 408. Other routes read their bodies with the
+  per-read timeout only.
+
+Such a client holds a gateway thread for that long and gains no spend. The
+gateway has no cap on open connections. Writes have no timeout: a client
 that stops reading a stream keeps its connection, and its in-flight slot,
 until it closes.
 
@@ -759,11 +771,18 @@ A stream the client closes before its end is recorded as
 
 - input: the count the provider had reported when the stream stopped
   (`message_start` of an Anthropic upstream, the usage chunk of an
-  OpenAI-format stream, `usageMetadata` of Gemini), else the word estimate of
-  the prompt;
+  OpenAI-format stream, `usageMetadata` of Gemini), else the estimate of the
+  prompt;
 - output: the larger of the provider's reported output count, when one had
-  arrived (`message_delta` of an Anthropic upstream), and the word estimate
-  of everything received: text, tool-call arguments and thinking.
+  arrived (`message_delta` of an Anthropic upstream), and the estimate of
+  everything received: text, tool-call arguments and thinking.
+
+The estimate for an unfinished stream is the larger of the word count and a
+quarter of the characters, rounded up. An OpenAI-format stream reports usage
+in its last chunk, so every such stream that stops early is charged the
+estimate of its prompt, on hosted OpenAI as on a local host. The quarter rule
+keeps text without spaces (CJK, base64, minified code) from costing next to
+nothing.
 
 The entry carries `charged_tokens` and `"estimated": true`. A stream the
 upstream cuts after it began (`stream_incomplete`) is charged the same way.
@@ -811,8 +830,9 @@ what a provider can bill. What it leaves open, in full:
 - A call with no reported counts is charged a word estimate, which runs low
   and is far too low for text without spaces.
 - An unfinished stream is charged the provider's output count when one had
-  arrived, and otherwise a word estimate of what was received. Neither is the
-  provider's final count.
+  arrived, and otherwise an estimate of what was received: the larger of the
+  word count and a quarter of the characters. Neither is the provider's
+  final count.
 - A call that fails after the provider answered, other than an unfinished
   stream, is not charged.
 - Fees that are not tokens (web search per search, code execution per
@@ -883,6 +903,7 @@ flywheel gateway-ledger show                   # every entry, oldest first
 flywheel gateway-ledger show --key ci-bot      # the calls of one gateway key
 flywheel gateway-ledger show --key owner       # calls made with the gateway token
 flywheel gateway-ledger show --kind endpoint_call_failed --last 20 --json
+flywheel gateway-ledger show --full            # every field whole
 ```
 
 `verify` recomputes every hash and link, checks each segment's header against
@@ -898,13 +919,41 @@ cannot read it.
 
 `verify` fails when the head record is there and no segment file is: the
 segments were removed. A home that has never recorded a call has neither
-file and passes. When a read finds a problem, `verify` reads once more a
-quarter of a second later before it reports it, because a gateway that
-appends during the first read can look like a removed entry or a line cut
-short. `show` prints control characters and characters outside ASCII in a
+file and passes. `verify` reads the head record before the segments, so
+entries a running gateway appends during the check are not reported as
+removed. When a read still finds a problem, `verify` reads once more a
+quarter of a second later before it reports it, because a line can be caught
+half written. A file in the ledger folder that is named like a segment and
+is not one (`segment-backup.jsonl`, `segment-000001 - Copy.jsonl`) is not
+read as part of the ledger: `verify` and the gateway's start line name it as
+ignored. `show` prints control characters and characters outside ASCII in a
 recorded string (a model name an upstream chose, for one) as escapes such as
-`\x1b`, so a record cannot write to your terminal. `show --json` prints
-JSON, which escapes control characters itself.
+`\x1b`, so a record cannot write to your terminal, and cuts a field longer
+than 80 characters, saying how much it left out; `--full` prints every field
+whole. `show --json` prints JSON, which escapes control characters itself
+and is never cut.
+
+### A ledger that stops taking writes
+
+A ledger that opened at start can fail later: the disk fills, or a write is
+refused. The first append that fails marks the ledger failed. From then on
+every model call is answered 503 with the code `ledger_unavailable` before
+any provider is contacted, as when the ledger cannot be opened. At most once
+a second the gateway tries to resume.
+
+Every model interface writes its entry after the provider has answered,
+because the entry holds the hash of the reply. So the one call that meets
+the failure has already reached the provider. A plain reply is then held
+back and answered 500, and the key is charged. A stream's text has already
+left; it ends with an error event and the key is suspended, as for any reply
+that was delivered and could not be recorded.
+
+When writes work again the gateway reads the segment back. If it verifies
+and begins with the entries the gateway holds, the gateway appends to it,
+and the first new entry is a `ledger_gap` with what failed, when, and how
+many appends were refused; `verify` passes. If the failed write left a line
+cut short, the segment is left as it is and a new segment records the
+break, as after a damaged file: `verify` then reports the break and exits 1.
 
 ### When an entry reaches the disk
 

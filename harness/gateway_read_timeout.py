@@ -15,10 +15,21 @@ some bytes within that many seconds, or the connection is closed:
     (gateway_interfaces.serve), and nothing is sent upstream.
 
 The default is 30 seconds. FLYWHEEL_GATEWAY_READ_TIMEOUT sets another number
-of seconds; `0` or `off` removes the timeout. The timeout is per read, not a
-deadline for the whole request: a client that keeps sending a few bytes holds
-its connection for longer. That costs a thread and no provider spend, because
-nothing is admitted before the body is whole. Writes have no timeout.
+of seconds; `0` or `off` removes the timeout and the two deadlines below.
+
+The timeout is per read, so a client that keeps sending a few bytes would
+never meet it. Two deadlines bound that, and both apply before the gateway
+knows who is calling:
+
+  - the request line and headers of one request must arrive within one
+    timeout (`HeaderDeadline`, on every route);
+  - the body of a request to a model interface must arrive within BODY_READS
+    timeouts, two minutes by default (`read_body`). Other routes read their
+    bodies in gateway.py and have the per-read timeout only.
+
+A slow client costs a thread and no provider spend, because nothing is
+admitted before the body is whole. Writes have no timeout, and there is no
+cap on the number of open connections.
 
 The timeout is the operating system's own (SO_RCVTIMEO), set on a socket that
 stays in blocking mode, so the way the gateway reads and writes is what it
@@ -43,6 +54,8 @@ import uuid
 _LOG = logging.getLogger(__name__)
 ENV = "FLYWHEEL_GATEWAY_READ_TIMEOUT"
 DEFAULT = 30.0
+BODY_READS = 4                          # a whole body gets this many read timeouts
+_CHUNK = 1 << 20
 
 
 def seconds(environ=None) -> "float | None":
@@ -73,18 +86,68 @@ def arm(handler) -> None:
     except (OSError, AttributeError) as exc:
         _LOG.warning("gateway connection has no read timeout: SO_RCVTIMEO could not be set "
                      "(%s: %s)", type(exc).__name__, exc)
+    if hasattr(getattr(handler, "rfile", None), "peek"):
+        handler.rfile = HeaderDeadline(handler.rfile, limit)
+
+
+class HeaderDeadline:
+    """The connection's reader, with one deadline for the lines of each request head.
+
+    `http.server` reads the request line and the headers with `readline`. The
+    clock starts at the first of those reads and stops at the blank line that
+    ends the headers. A line asked for after the deadline raises TimeoutError,
+    which `http.server` answers by closing the connection. A client that sends
+    a header line every few seconds, with or without a credential, is closed
+    after `limit` seconds and at most one more read."""
+
+    def __init__(self, raw, limit: float):
+        self._raw, self._limit, self._until = raw, limit, None
+
+    def __getattr__(self, name: str):
+        return getattr(self._raw, name)
+
+    def readline(self, size: int = -1) -> bytes:
+        if self._until is None:
+            self._until = time.monotonic() + self._limit
+        line = b""
+        while size < 0 or len(line) < size:
+            if time.monotonic() > self._until:
+                raise TimeoutError(f"the request head did not arrive within {self._limit} s")
+            seen = self._raw.peek(1)            # one read of the socket at most
+            if not seen:
+                break                           # closed, or a read that timed out with nothing
+            cut = seen.find(b"\n") + 1
+            take = cut or len(seen)
+            line += self._raw.read(take if size < 0 else min(take, size - len(line)))
+            if line.endswith(b"\n"):
+                break
+        if line in (b"\r\n", b"\n", b""):
+            self._until = None                  # the head is over; the next one starts a clock
+        return line
 
 
 def read_body(handler, length: int) -> bytes:
-    """The request body. Raises TimeoutError when it stopped arriving.
+    """The request body. Raises TimeoutError when it stopped arriving, or when the
+    whole of it did not arrive within BODY_READS read timeouts.
 
     A body the client cut short by closing its side comes back short, as
     before, and the caller answers it as a body that is not JSON."""
     limit, started = seconds(), time.monotonic()
-    data = handler.rfile.read(length) or b""        # Windows raises TimeoutError here
-    if len(data) < length and limit is not None and time.monotonic() - started >= limit * 0.9:
-        raise TimeoutError(f"the request body stopped at {len(data)} of {length} bytes")
-    return data
+    if limit is None:
+        return handler.rfile.read(length) or b""
+    parts, got = [], 0
+    while got < length:
+        chunk = handler.rfile.read1(min(length - got, _CHUNK))   # Windows raises TimeoutError
+        if not chunk:
+            break                               # closed, or a read that timed out with nothing
+        parts.append(chunk)
+        got += len(chunk)
+        if got < length and time.monotonic() - started > limit * BODY_READS:
+            raise TimeoutError(f"the request body was still arriving after {limit * BODY_READS} "
+                               f"seconds, at {got} of {length} bytes")
+    if got < length and time.monotonic() - started >= limit * 0.9:
+        raise TimeoutError(f"the request body stopped at {got} of {length} bytes")
+    return b"".join(parts)
 
 
 def timed_out(handler, path: str):

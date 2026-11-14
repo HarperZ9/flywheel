@@ -1,7 +1,7 @@
 """gateway_ledger_cli.py -- `flywheel gateway-ledger`: read and check the gateway's record.
 
   flywheel gateway-ledger verify             check every segment; exit 0 only when all hold
-  flywheel gateway-ledger show [--key NAME] [--kind KIND] [--last N] [--json]
+  flywheel gateway-ledger show [--key NAME] [--kind KIND] [--last N] [--json] [--full]
                                              list entries, oldest first
 
 The gateway appends one entry per model call to a hash-chained ledger under
@@ -27,6 +27,7 @@ from harness import gateway_ledger
 USAGE = __doc__.split("\n\n", 1)[1].rstrip()
 OWNER = "owner"
 RETRY_AFTER = 0.25                      # seconds before `_checked` reads a second time
+WIDTH = 80                              # characters of one field `show` prints without --full
 _CONTROL = {code: f"\\x{code:02x}" for code in [*range(32), 127]}
 
 
@@ -38,10 +39,11 @@ def _home(environ=None) -> str:
 def _checked(home) -> list:
     """`gateway_ledger.check`, read once more when the first read finds a problem.
 
-    A running gateway appends while this reads: a line can be half written,
-    and the head record can be ahead of the segment that was read just before
-    it. A second read a moment later settles both. A ledger that is broken on
-    disk is broken on the second read too."""
+    A running gateway appends while this reads. `check` reads the head record
+    before the segments, so entries appended in between are more than the
+    head names and not a fault. What is left for the second read is a line
+    caught half written, or a head record caught mid-rewrite. A ledger that
+    is broken on disk is broken on the second read too."""
     found = gateway_ledger.check(home)
     if all(segment["ok"] for segment in found):
         return found
@@ -90,14 +92,22 @@ def _plain(value) -> str:
     return str(value).encode("ascii", "backslashreplace").decode("ascii").translate(_CONTROL)
 
 
-def _line(row: dict) -> str:
+def _short(value, full: bool) -> str:
+    """`_plain(value)`, cut to WIDTH characters with what was left out, unless `full`."""
+    text = _plain(value)
+    if full or len(text) <= WIDTH:
+        return text
+    return f"{text[:WIDTH]}...(+{len(text) - WIDTH} more; --full shows all)"
+
+
+def _line(row: dict, full: bool = False) -> str:
     meta = row["meta"]
-    parts = [f"{_plain(row['segment'])[8:14]}:{row['seq']:<6}", f"{_plain(row['kind']):<22}",
-             f"key={_plain(meta.get('key', OWNER))}"]
+    parts = [f"{_plain(row['segment'])[8:14]}:{row['seq']:<6}",
+             f"{_short(row['kind'], full):<22}", f"key={_short(meta.get('key', OWNER), full)}"]
     for name in ("interface", "model_ref", "endpoint", "reason", "charged_tokens",
                  "response_sha"):
         if name in meta and not (name == "endpoint" and "model_ref" in meta):
-            parts.append(f"{name}={_plain(meta[name])}")
+            parts.append(f"{name}={_short(meta[name], full)}")
     return "  ".join(parts)
 
 
@@ -113,7 +123,16 @@ def _parser() -> argparse.ArgumentParser:
                       "endpoint_call or endpoint_call_failed")
     show.add_argument("--last", type=int, default=None, help="only the newest N")
     show.add_argument("--json", action="store_true", help="one JSON object per line")
+    show.add_argument("--full", action="store_true", help="print every field whole; without "
+                      f"it a field longer than {WIDTH} characters is cut and says so")
     return parser
+
+
+def _ignored(home) -> str:
+    """One line per file in the ledger folder that is named like a segment and is not one."""
+    from harness.gateway_ledger_health import strays
+    return "".join(f"  ignored {_plain(name)!r}: its name is not a segment's, so it is not "
+                   "part of the ledger\n" for name in strays(gateway_ledger.folder(home)))
 
 
 def main(argv: "list[str] | None" = None, *, environ=None) -> int:
@@ -123,13 +142,15 @@ def main(argv: "list[str] | None" = None, *, environ=None) -> int:
               file=sys.stdout if argv else sys.stderr)
         return 0 if argv else 2
     args = _parser().parse_args(argv)
-    found = _checked(_home(environ))
+    home = _home(environ)
+    found = _checked(home)
     text, ok = render_verify(found)
     if args.verb == "verify":
-        print(text)
+        print(_ignored(home) + text)
         return 0 if ok else 1
     for row in rows(found, args.key, args.kind, args.last):
-        print(json.dumps(row, ensure_ascii=False, sort_keys=True) if args.json else _line(row))
+        print(json.dumps(row, ensure_ascii=False, sort_keys=True) if args.json
+              else _line(row, args.full))
     if not ok:
         print(text, file=sys.stderr)
     return 0 if ok else 1
