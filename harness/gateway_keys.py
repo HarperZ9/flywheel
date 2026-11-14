@@ -35,6 +35,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import logging
 import os
 import re
 import secrets
@@ -54,6 +55,8 @@ _ZERO = {"calls": 0, "tokens": 0, "input_tokens": 0, "output_tokens": 0,
          "cache_read_tokens": 0, "cache_write_tokens": 0,
          "estimated_calls": 0, "estimated_tokens": 0}
 _THREADS = threading.Lock()             # one reader or writer of the index per process
+_LOG = logging.getLogger(__name__)
+WARM = os.name == "nt"                  # open the index after a debit; see Keys._warm
 
 
 class KeysError(Exception):
@@ -243,7 +246,22 @@ class Keys:
                 totals["estimated_calls"] += 1
                 totals["estimated_tokens"] += spent
             self._write(rows)
+        if WARM:
+            threading.Thread(target=self._warm, daemon=True).start()
         return row
+
+    def _warm(self) -> None:
+        """Open the index once, on a thread of its own, after a debit changed it.
+
+        On Windows with real-time file scanning the first open of a file with
+        new contents waits for the scan (6 ms measured, docs/BENCHMARKS.md).
+        Paying that here keeps it out of the next call's key check. The bytes
+        are thrown away: every check and every debit still reads the file."""
+        try:
+            with _THREADS:
+                self.path.read_bytes()
+        except OSError as exc:
+            _LOG.debug("gateway key list not opened after a debit (%s)", type(exc).__name__)
 
 
 def _well_formed(row) -> bool:

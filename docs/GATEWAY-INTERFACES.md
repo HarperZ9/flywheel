@@ -656,3 +656,34 @@ the CLI output finds the key only in the output of `create`.
 
 Not run: any hosted provider, Claude Code or Codex CLI holding a key, and the
 real system credential store.
+
+## Overhead
+
+On the measured machine the gateway adds a median of 1.3 to 2.0 ms to a call
+made with the gateway token and 2.6 to 3.4 ms to a call made with a virtual
+key, counted to the end of the reply. Those figures are from 2026-11-14, on one
+Windows 11 machine, with one client sending one request at a time to a
+loopback stub in place of the provider, over 30 warm calls per case. The time
+to the first text of a stream is 1.2 to 1.6 ms over the stub for either
+caller. More than one call in twenty took 20 to 27 ms. Those calls waited on
+the gateway's own connection to the upstream: on Windows a connect made with a
+timeout sometimes comes back about 15 ms late. The first call after the
+gateway starts loads modules and took 62 to 66 ms more than the stub.
+
+The figures leave out the provider's network time and TLS, the system
+credential store read for a key, concurrency, connection reuse, any hosted
+provider and every other machine. They are not comparable with figures
+published at a request rate. The table, the method, where the time goes and
+the command to rerun it are in [BENCHMARKS.md](BENCHMARKS.md), "Gateway
+overhead".
+
+After a virtual key's call is charged, the gateway on Windows opens the key
+list once on a separate thread. The first open of that file after a change
+waited about 6 ms on the measured machine, and it used to be the next call's
+key check. Every check and every debit still reads the file.
+
+A test holds the figure in CI: `tests/test_gateway_overhead_timing.py` fails
+when the median of five warm calls is 50 ms or more over the stub, for both
+interfaces, streamed and not. Its controls add 200 ms inside the gateway,
+which must fail, and make the stub four times slower, which must change
+nothing.
