@@ -185,7 +185,8 @@ jobs:
 
           where = pathlib.Path(harness.__file__).resolve()
           assert "site-packages" in where.parts, f"harness came from {where}"
-          assert ".release-venv" in pathlib.Path(sys.executable).resolve().parts, sys.executable
+          # sys.prefix, not the executable: on Linux a venv's python is a link to the base one.
+          assert ".release-venv" in pathlib.Path(sys.prefix).parts, sys.prefix
           print(f"harness is the installed wheel: {where}")
           PY
           test "$(flywheel --version)" = "flywheel $VERSION" || { flywheel --version; exit 1; }

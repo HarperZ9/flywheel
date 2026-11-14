@@ -7,6 +7,7 @@
   flywheel gateway-key show NAME        one key in full
   flywheel gateway-key revoke NAME      stop a key; its totals are kept
   flywheel gateway-key reset NAME       zero a key's running totals
+  flywheel gateway-key clear NAME       lift a suspension, after reading the ledger
 
 A key opens the gateway's model interfaces (/v1/messages, /v1/responses) and
 no other route. Prices are USD per million tokens and are yours to set; no
@@ -44,12 +45,19 @@ def _limits(row: dict) -> str:
     return "; ".join(parts)
 
 
+def _state(row: dict) -> str:
+    if row.get("revoked"):
+        return "revoked"
+    held = row.get("suspended")
+    return f"suspended ({held.get('reason')})" if isinstance(held, dict) else "live"
+
+
 def render_list(rows: dict) -> str:
     if not rows:
         return "no gateway keys. Mint one with `flywheel gateway-key create NAME`."
     lines = []
     for name, row in sorted(rows.items()):
-        state = "revoked" if row.get("revoked") else "live"
+        state = _state(row).split(" ")[0]
         lines.append(f"  {name:<20} {state:<8} {row['fingerprint']}  {_limits(row)}  "
                      f"calls {row['totals']['calls']}")
     return "\n".join(lines)
@@ -62,7 +70,7 @@ def _or(value, missing: str):
 def render_show(name: str, row: dict) -> str:
     shown, totals = gateway_keys.view(name, row), row["totals"]
     lines = [f"name          {name}",
-             f"state         {'revoked' if row.get('revoked') else 'live'}",
+             f"state         {_state(row)}",
              f"fingerprint   {row['fingerprint']} (first 16 hex of the key's SHA-256)",
              f"created       {row.get('created')} (Unix seconds)",
              f"models        {', '.join(row['models']) or 'any'}",
@@ -111,7 +119,8 @@ def _parser() -> argparse.ArgumentParser:
                         help="comma-separated model names the key may send; default any")
     verbs.add_parser("list", help="every key, its limits and totals")
     for verb, text in (("show", "one key in full"), ("revoke", "stop a key"),
-                       ("reset", "zero a key's running totals")):
+                       ("reset", "zero a key's running totals"),
+                       ("clear", "lift a suspension")):
         verbs.add_parser(verb, help=text).add_argument("name")
     return parser
 
@@ -139,6 +148,10 @@ def main(argv: "list[str] | None" = None, *, store=None, environ=None) -> int:
             keys.revoke(args.name)
             print(f"gateway key '{args.name}' is revoked; its stored key was deleted and "
                   "its totals are kept")
+        elif args.verb == "clear":
+            import time
+            keys.mark(args.name, suspended=None, cleared=time.time())
+            print(f"gateway key '{args.name}' is no longer suspended")
         else:
             keys.reset(args.name)
             print(f"the totals of gateway key '{args.name}' are zero")
