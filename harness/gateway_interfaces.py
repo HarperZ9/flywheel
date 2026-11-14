@@ -88,8 +88,9 @@ def _body(handler):
     length = handler._content_length()
     if length is None:
         return None
+    from .gateway_read_timeout import read_body
     try:
-        body = json.loads(handler.rfile.read(length) or b"null")
+        body = json.loads(read_body(handler, length) or b"null")
     except (ValueError, RecursionError) as exc:     # not JSON, or nested too deep to parse
         _LOG.info("gateway request body refused (%s)", type(exc).__name__)
         return None

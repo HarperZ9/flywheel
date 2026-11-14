@@ -738,16 +738,18 @@ against the totals as they are then. A key that was revoked while the body
 was on its way gets 401, and one that was suspended gets 403. Neither
 reaches an upstream.
 
-A connection may not stay silent. Every read of the request line, the
-headers and the body, and every write of the answer, must make progress
+A client may not stay silent while the gateway waits for its request. Every
+read of the request line, the headers and the body must get some bytes
 within the read timeout, 30 seconds by default.
 `FLYWHEEL_GATEWAY_READ_TIMEOUT` sets another number of seconds, and `0` or
 `off` removes the timeout. A connection that sends no request line or header
 in that time is closed. A body that stops arriving on a model interface is
 answered 408, and nothing is sent upstream. The timeout is per read, so a
 client that keeps sending a few bytes holds its connection for longer; it
-holds a gateway thread and gains no spend. The timeout applies to every
-route of the gateway.
+holds a gateway thread and gains no spend. The timeout applies to the
+requests of every route of the gateway. Writes have no timeout: a client
+that stops reading a stream keeps its connection, and its in-flight slot,
+until it closes.
 
 ### An unfinished stream is charged
 

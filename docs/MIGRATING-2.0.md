@@ -550,10 +550,9 @@ A second review of the fixes above changed four things you can meet.
   `ledger_unavailable` as a gateway to repair, not a provider outage.
 - **A read timeout.** A connection that sends nothing for 30 seconds while
   the gateway waits for its request line, headers or body is closed (408 on
-  a model interface when the body stops). A client that stops reading a
-  stream for 30 seconds is disconnected, and the call is recorded as
-  abandoned and charged. What to do: nothing for the usual clients. For a
-  client that pauses longer, set `FLYWHEEL_GATEWAY_READ_TIMEOUT` to a larger
+  a model interface when the body stops). Writes have no timeout. What to
+  do: nothing for the usual clients. For a client that pauses longer between
+  its headers and its body, set `FLYWHEEL_GATEWAY_READ_TIMEOUT` to a larger
   number of seconds, or to `0` to switch the timeout off.
 - **Limits are read again after the body.** A key that is revoked,
   suspended or over a limit by the time its request body has arrived is

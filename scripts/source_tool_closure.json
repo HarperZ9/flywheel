@@ -16,7 +16,7 @@
   "harness/gateway_agent_failures.py": "07f401e312036b0a9eb87e594aa1376ae6befb1367371d4150832d56e3a81275",
   "harness/gateway_auth.py": "7ddec1c93c92089740b8dc722314f8230ea616221cd15156f2a73c58254fa776",
   "harness/gateway_bind.py": "176b068a23bec95235f926bb21adc253df50fddc3b7ec6608472a406c74adc3c",
-  "harness/gateway_body_drain.py": "9ed9f3a82311934a14184457fc9949b88b098a908968451a03fa7904316ab331",
+  "harness/gateway_body_drain.py": "fc38b80ec4f7e5ce347806a5aa90221b981029e8aef4b12525a120838aa32e33",
   "harness/gateway_custody.py": "d600f10f454f9d30ed9d07f9859c2daf6a6e32a8b7d452bb2441b370512e98b9",
   "harness/gateway_lane_calls.py": "a3674db27182c495d542c89f9fa7f5abb2426ef430098c754898a14b1961d4f9",
   "harness/gateway_openai_route.py": "39afc332d11f6a66ce788fe1fdd7b317982212fb760083aad42fe99028dff270",

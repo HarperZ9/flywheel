@@ -44,7 +44,7 @@ class CountingReader:
         return getattr(self._raw, name)
 
     def _count(self, data: bytes) -> bytes:
-        self._total += len(data)
+        self._total += len(data or b"")   # None: a read that timed out with nothing
         return data
 
     def read(self, *args: Any) -> bytes:
@@ -141,7 +141,7 @@ class BodyDrainMixin:
     def setup(self) -> None:
         super().setup()  # type: ignore[misc]
         from .gateway_read_timeout import arm
-        arm(self)                         # a connection that goes silent is closed
+        arm(self)                         # a client that goes silent is disconnected
         self.rfile = CountingReader(self.rfile)
 
     def parse_request(self) -> bool:
