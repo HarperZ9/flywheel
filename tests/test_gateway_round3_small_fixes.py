@@ -3,9 +3,6 @@
   D1  an unfinished stream on an OpenAI-format upstream was charged a word
       count of the prompt: 80,000 characters with no space cost 6 tokens. The
       charge is now at least a quarter of the characters, rounded up.
-  A2  the key's row was read again outside the admission lock, so a request
-      paused between the read and its admission was admitted on a stale
-      total. The read and the admission are one step under one lock.
   N3  a client with no credential that dripped header bytes held a thread for
       as long as it liked. The head of a request has one deadline, and the
       body of a model call has one.
@@ -13,6 +10,7 @@
       cut at 80 characters unless `--full` is given.
 
 A real gateway on a loopback port with a stub upstream. No provider is called.
+`tests/test_gateway_admission_lock.py` has finding A2.
 """
 import json
 import os
@@ -25,10 +23,10 @@ from urllib.parse import urlparse
 
 import pytest
 
-from harness import gateway_key_policy, gateway_ledger, gateway_ledger_cli, gateway_read_timeout
+from harness import gateway_ledger, gateway_ledger_cli, gateway_read_timeout
 from tests import gateway_messages_support as support
 from tests.gateway_keys_support import (  # noqa: F401  (fixtures)
-    MESSAGES, TURN2_TOKENS, keyed, post, served, stream_bytes, turn2)
+    MESSAGES, keyed, post, served, stream_bytes, turn2)
 
 pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
 
@@ -123,65 +121,6 @@ def test_the_estimate_of_spaced_text_is_at_least_its_word_count_and_a_quarter_of
     began = type("A", (), {"began": True})()
     charged = gateway_unaccounted.partial_charge(Turn(), "client_disconnected", began, [])
     assert charged["estimated"] and charged["charged_tokens"] >= max(words, len(text) // 4)
-
-
-# --- A2 -------------------------------------------------------------------------------
-
-def test_a_request_paused_before_admission_cannot_be_admitted_on_a_stale_total(
-        keyed, served, monkeypatch):
-    """B has read its key's row and stalls before it takes a slot. A must not be
-    able to run whole and be charged in that pause. Limit 400; each request asks
-    for up to 400 output tokens, so one call in flight reserves the whole limit.
-
-    Before the fix A ran to its end inside B's pause and B was then admitted on
-    the total it had read: two calls served. Now A waits for B's admission and
-    is refused, because B's reservation is held. (With a smaller reservation
-    both would run together, which is the documented margin for calls in
-    flight, not a stale total.)"""
-    keys, _store = keyed
-    raw, _ = keys.create("ci-bot", token_limit=400)
-    url, upstream, _ledger = served(turn2(2))
-    ask = {**MESSAGES, "max_tokens": 400}
-    real, stalled, go = gateway_key_policy.capped, threading.Event(), threading.Event()
-
-    def capped(caller, path, body):
-        if not stalled.is_set():
-            stalled.set()                       # request B: its row is read, admission is next
-            go.wait(1.5)
-        return real(caller, path, body)
-    monkeypatch.setattr(gateway_key_policy, "capped", capped)
-    result = {}
-    b = threading.Thread(target=lambda: result.update(b=post(url, "/v1/messages", raw, ask)[0]))
-    b.start()
-    assert stalled.wait(5)
-    a = threading.Thread(target=lambda: result.update(a=post(url, "/v1/messages", raw, ask)[0]))
-    a.start()
-    a.join(0.7)
-    finished_in_the_pause = not a.is_alive()
-    go.set()
-    a.join(20)
-    b.join(20)
-    assert not finished_in_the_pause, "A was admitted and served while B held a stale row"
-    assert result == {"b": 200, "a": 429}       # A met B's reservation, not a stale total
-    assert len(upstream.requests) == 1
-    assert keys.row("ci-bot")["totals"]["tokens"] == TURN2_TOKENS
-
-
-def test_control_calls_on_two_keys_and_calls_in_flight_still_run(keyed, served):
-    keys, _store = keyed
-    one, _ = keys.create("one")
-    two, _ = keys.create("two")
-    url, upstream, _ledger = served(turn2(6))
-    statuses = []
-    threads = [threading.Thread(target=lambda key=key: statuses.append(
-        post(url, "/v1/messages", key)[0])) for key in (one, two, one, two, one, two)]
-    [thread.start() for thread in threads]
-    [thread.join(30) for thread in threads]
-    assert statuses.count(200) == 6 and len(upstream.requests) == 6
-    deadline = time.monotonic() + 5             # a slot is freed after its reply has left
-    while gateway_key_policy._RUNNING and time.monotonic() < deadline:
-        time.sleep(0.02)
-    assert gateway_key_policy._RUNNING == {}    # every slot was freed
 
 
 # --- N3 -------------------------------------------------------------------------------
