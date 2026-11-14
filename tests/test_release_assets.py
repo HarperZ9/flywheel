@@ -17,7 +17,7 @@ ROOT = Path(__file__).resolve().parents[1]
 WORKFLOW = (ROOT / ".github" / "workflows" / "publish.yml").read_text(encoding="utf-8")
 
 
-def tree(tmp_path, version="2.0.0", notes=None, pubspec=None, dart=None):
+def tree(tmp_path, version="2.0.0", notes=None, pubspec=None, dart=None, cff=None):
     """A folder with the version sites and the files the release check reads."""
     (tmp_path / "desktop" / "lib").mkdir(parents=True)
     (tmp_path / "pyproject.toml").write_text(f'[project]\nversion = "{version}"\n', "utf-8")
@@ -25,6 +25,8 @@ def tree(tmp_path, version="2.0.0", notes=None, pubspec=None, dart=None):
         f"name: x\nversion: {pubspec or version}+41\n", "utf-8")
     (tmp_path / "desktop" / "lib" / "version.dart").write_text(
         f"const appVersion = '{dart or version}';\n", "utf-8")
+    (tmp_path / "CITATION.cff").write_text(
+        f'cff-version: 1.2.0\nversion: "{cff or version}"\n', "utf-8")
     (tmp_path / "docs").mkdir()
     (tmp_path / "docs" / "MIGRATING-2.0.md").write_text("# Moving\n", "utf-8")
     text = (f"# Flywheel {version}\n\nSee docs/LICENSING.md and docs/MIGRATING-2.0.md.\n"
@@ -48,7 +50,7 @@ def test_a_tag_that_disagrees_with_the_declared_version_fails(tmp_path):
     assert problems == ["tag v2.0.1 does not match the declared version 2.0.0"]
 
 
-@pytest.mark.parametrize("site", ["pubspec", "dart"])
+@pytest.mark.parametrize("site", ["pubspec", "dart", "cff"])
 def test_a_version_site_left_behind_fails(tmp_path, site):
     problems = R.check(tree(tmp_path, **{site: "1.9.0"}), tag="v2.0.0")
     assert len(problems) == 1 and "declares 1.9.0" in problems[0]

@@ -9,8 +9,9 @@ are plain Python, so a person can run each one from a checkout:
     python scripts/release_assets.py pypi --version X.Y.Z --sums release-assets/python-SHA256SUMS.txt
     python scripts/release_assets.py gate-tests [--run]
 
-- check: the tag, pyproject.toml, desktop/pubspec.yaml and
-  desktop/lib/version.dart name one version, and the notes file for it exists,
+- check: the tag, pyproject.toml, desktop/pubspec.yaml,
+  desktop/lib/version.dart and CITATION.cff name one version, and the notes
+  file for it exists,
   has the right heading and links the licensing page. With --release it also
   refuses a placeholder left in the notes, the changelog or SECURITY.md.
 - build: copies the wheel and sdist from --dist and builds the plugin and
@@ -59,9 +60,12 @@ def version_sites(root: Path = ROOT) -> dict[str, str]:
                     (root / "desktop" / "pubspec.yaml").read_text(encoding="utf-8"), re.M)
     dart = re.search(r"appVersion\s*=\s*['\"](.+?)['\"]",
                      (root / "desktop" / "lib" / "version.dart").read_text(encoding="utf-8"))
+    cff = re.search(r'^version:\s*"?([^"\s]+)"?\s*$',
+                    (root / "CITATION.cff").read_text(encoding="utf-8"), re.M)
     return {"pyproject.toml": declared_version(root),
             "desktop/pubspec.yaml": pub.group(1).split("+")[0].strip() if pub else "",
-            "desktop/lib/version.dart": dart.group(1) if dart else ""}
+            "desktop/lib/version.dart": dart.group(1) if dart else "",
+            "CITATION.cff": cff.group(1) if cff else ""}
 
 
 def check(root: Path = ROOT, tag: str = "", release: bool = False) -> list[str]:

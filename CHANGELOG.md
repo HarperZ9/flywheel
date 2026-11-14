@@ -118,6 +118,13 @@ Research and measurement tools
 - Data: the 2026 H0 Distance Network record in `dataset/physics_tension_claims.jsonl`. (#432)
 - buildc byte-witness packets carry a `scope` block: the steps the bridge ran, and `inconclusive` when `buildc receipt verify` timed out. A timeout now has its own failure code, `buildc_verification_budget_exhausted`. See `docs/features/inconclusive-budget.md`. (#441)
 
+Release from one tag
+- Pushing a version tag now builds the wheel and the sdist, runs the release gates against the built wheel on Linux and Windows, publishes to PyPI, and creates the GitHub release with the notes file and its assets. For 1.9.0 the release and most of its assets were put together by hand. See `docs/RELEASING.md`.
+- The gates run with the wheel installed in a clean environment and the checkout's `harness` folder moved away: the scope migration check, every asset against its sums file, the 1.x record check with its byte-flip controls, every test marked `release_gate` (the 50 ms budgets for the coding session and the gateway, and the one-second budget for the record check), `flywheel gate`, and one coding request against a scripted model. Nothing is published unless all of them pass.
+- The release carries the wheel, the sdist, the plugin and skill zips, the source tools plugin and the VS Code extension, each in a sums file. The zips and the extension are built twice and must be the same bytes. The Windows installer and the native MCPB companion are still built by `desktop-release.yml` and added after their sums are checked.
+- Starting `publish.yml` by hand is a dry run: every step up to the gates, then the would-be release as a workflow artifact. A run publishes only from a version tag.
+- After the upload, a job on Linux, macOS and Windows checks that PyPI serves the files that were built and that a fresh install passes `flywheel gate`.
+
 ### What changed
 
 Each of these changes a default or an output. The setting that restores the 1.x
@@ -140,8 +147,8 @@ Provider boundary (#444, #445, #447)
 - `FLYWHEEL_KEEP_REASONING=1` keeps reasoning text on the record. The default is unchanged: no text.
 
 Reports and documents
-- `SECURITY.md` states which versions get fixes (2.x, and 1.9.x for security fixes for 90 days after 2.0.0) and how to report a vulnerability privately. Private vulnerability reporting is enabled on the repository.
-- `site/benchmarks.html` carries the gateway overhead table that `docs/BENCHMARKS.md` already had.
+- `SECURITY.md` states which versions get fixes (2.x, and 1.9.x for security fixes for 90 days after 2.0.0) and how to report a vulnerability privately. Private vulnerability reporting is enabled on the repository. (#460)
+- `site/benchmarks.html` carries the gateway overhead table that `docs/BENCHMARKS.md` already had. (#460)
 - Text, Markdown, LaTeX and HTML reports print their limits under one plain heading, "limits" or "## Limits". The `--limits` help in `flywheel acp`, `dap` and `lsp` says "print the limits of a run record". The bundled `reproduce.py` says what MATCH covers. (#429)
 - Changed: after a virtual key's call is charged, the gateway on Windows opens the key list once on a separate thread. On the measured machine the first open of that file after a change waited about 6 ms, and that open was the next call's key check. A plain call with a key went from 8.9 ms to 2.6 ms over the stub. Every check and every debit still reads the file, and a call that starts within a few milliseconds of the previous debit still waits. (#459)
 - `docs/MIGRATING-2.0.md` is complete for what is on main: a "what you need to do" list, the record vocabulary with a table of every renamed field and code, the workspace default, the hosted defaults, the `usage` field, the hosted error object, verdicts and audits, the removed hook scripts, and how to check an upgrade. `docs/MIGRATING-2.0-SCHEMAS.md` lists all 15 receipt code pairs and all 158 schema rows; `scripts/gen_migration_tables.py` writes it from `harness/receipt_scope.py` and `project-docs/SCOPE-MIGRATION.md`, and a test fails when it is stale. Both pages are on the docs site. (#456)
@@ -187,6 +194,8 @@ Fixes
 - The recheck runner test and the POSIX sandbox test no longer depend on the host. (#420, #446)
 
 ## 1.9.0 (2026-10-15)
+
+Flywheel installs with Homebrew and Scoop. `flywheel behavior-check A B` says whether two builds behave the same, `flywheel report scope` lists the calls that reached past what was allowed, and each turn of `flywheel code` records one hash of the harness settings it ran under.
 
 Behaviour changes
 - `-p` JSON results carry `harness_config_sha256`, and the ledger gains a `harness_config` entry when settings change.
