@@ -20,6 +20,7 @@ GROUPS = (
         "up": "start the local gateway on 127.0.0.1",
         "down": "say what is running and how to stop it",
         "gateway-key": "local keys with budgets for tools behind the gateway",
+        "gateway-ledger": "read and verify the gateway's record of model calls",
         "app": "start the gateway without the lane list (same server as `up`)",
         "update": "ask whether a newer Flywheel is out",
     }),
