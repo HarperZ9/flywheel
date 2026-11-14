@@ -205,9 +205,16 @@ formats covered are OpenAI-compatible chat, Anthropic and Gemini.
 Not run: any hosted provider, Claude Code itself against the gateway, and
 Gemini over a real socket (its path is replay only).
 
-A run against a local model server (Ollama) was planned and not done: the
-test machine had less free memory than the run needs. So no real model server
-has answered through this interface yet.
+One run against a real model server was done on 2026-11-14, with a local
+Ollama serving `qwen2.5:1.5b` and `FLYWHEEL_GATEWAY_UPSTREAM` set to
+`ollama:qwen2.5:1.5b`. The `anthropic` SDK sent three requests through the
+gateway's HTTP handler on a loopback port. A plain request returned text with
+`end_turn` and the server's token counts. A streamed request delivered 29
+text pieces. A request with one tool and `tool_choice` `any` returned a
+`tool_use` block with the arguments the prompt asked for. Each call left an
+`endpoint_call` entry with `"interface": "anthropic-messages"`. This was one
+run on one small model, started from the test harness and not from
+`flywheel up`.
 
 ## OpenAI Responses
 
@@ -426,7 +433,15 @@ validate against the SDK's own models.
 Not run: any hosted provider, Codex CLI, and any client other than the
 `openai` Python SDK.
 
-A run against a local model server (Ollama) was planned for this interface and
-for Messages. It was not done: the test machine had 3.9 GB of memory free, and
-the run needs 6 GB. No real model server has answered through either interface
-yet.
+One run against a real model server was done on 2026-11-14, with a local
+Ollama serving `qwen2.5:1.5b` and `FLYWHEEL_GATEWAY_UPSTREAM` set to
+`ollama:qwen2.5:1.5b`. The `openai` SDK sent four requests through the
+gateway's HTTP handler on a loopback port. A plain request returned
+`completed` with text and the server's token counts. A streamed request ran
+from `response.created` to `response.completed` with 10 text deltas. A
+request with one function tool and `tool_choice` `required` returned a
+`function_call` item, and the follow-up request carrying its
+`function_call_output` returned text that used the output. Each call left an
+`endpoint_call` entry with `"interface": "openai-responses"`, and the ledger
+chain verified. This was one run on one small model, started from the test
+harness and not from `flywheel up`.

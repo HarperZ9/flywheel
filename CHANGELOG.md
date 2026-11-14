@@ -11,7 +11,7 @@ Gateway: OpenAI Responses
 - Routing is the rule `/v1/messages` uses: a gateway endpoint name in `model`, or `FLYWHEEL_GATEWAY_UPSTREAM` for any other name. OpenAI-compatible, Anthropic and Gemini upstreams each get the turn in their own format. No upstream is called on `/v1/responses`.
 - Each served call appends an `endpoint_call` entry with `"interface": "openai-responses"` and returns a receipt as `x_receipt` on the Response object. A stream that stops early ends with `response.failed` and leaves `endpoint_call_failed`. Usage holds the provider's counts and is never estimated.
 - Changed: `/v1/responses` on the gateway used to be proxied to the local serve endpoint, which answered 404. See `docs/MIGRATING-2.0.md`, "The gateway answers /v1/responses itself".
-- Tested by replaying recorded requests and replies, and with the `openai` Python SDK against a gateway on a loopback port with a stub upstream. Not run: any hosted provider, Codex CLI, and a local model server.
+- Tested by replaying recorded requests and replies, and with the `openai` Python SDK against a gateway on a loopback port with a stub upstream. One local run with Ollama (`qwen2.5:1.5b`) answered a plain, a streamed and a function-call request through both `/v1/responses` and `/v1/messages`. Not run: any hosted provider, and Codex CLI.
 
 Gateway: Anthropic Messages
 - The local gateway answers `POST /v1/messages` itself, with and without streaming. Claude Code and Anthropic SDK clients can use it as their base URL. It carries text, system prompts, tool definitions, `tool_use` and `tool_result` blocks, `tool_choice`, and usage with the cache fields. See `docs/GATEWAY-INTERFACES.md`.
