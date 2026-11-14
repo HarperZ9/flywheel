@@ -29,6 +29,7 @@ from pathlib import Path
 
 from .verdict import Verdict
 from . import safe_program
+from .lean_env import lean_env
 
 # `#print axioms Some.Name` prints one of these two lines. Both are matched
 # rather than only the first, because a file resting on nothing is the good
@@ -60,7 +61,7 @@ def lean_path(explicit=None, *, cwd=None) -> str | None:
 def lean_version(lean: str) -> str:
     try:
         out = subprocess.run([lean, "--version"], capture_output=True, text=True,
-                             timeout=30)
+                             timeout=30, env=lean_env())
     except (OSError, subprocess.SubprocessError):
         return ""
     found = VERSION.search(out.stdout or "")
@@ -136,7 +137,8 @@ def run_proof(path, *, lean=None, timeout: int = TIMEOUT) -> dict:
     checker = lean_version(binary)
     try:
         done = subprocess.run([binary, str(path)], capture_output=True, text=True,
-                              timeout=timeout, cwd=str(Path(path).parent))
+                              timeout=timeout, cwd=str(Path(path).parent),
+                              env=lean_env())   # candidate code runs in this child
     except subprocess.TimeoutExpired:
         return _unverifiable(f"lean did not finish in {timeout}s", checker)
     except OSError as exc:

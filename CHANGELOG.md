@@ -203,6 +203,7 @@ Fixes
 - Changed: the overhead figures above were measured with the ledger in memory. With the ledger on disk the gateway adds a median of 3.5 to 4.7 ms with the gateway token and 4.8 to 5.4 ms with a virtual key (same machine, same method, 2026-11-14). An append took a median of 1.2 ms and 2.9 ms on two drives; `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips the disk commit. The 50 ms timing gate is unchanged and now runs with the on-disk ledger.
 - Changed: one gateway per Flywheel home appends to the ledger. A second gateway on the same home refuses model calls with 500. See `docs/MIGRATING-2.0.md`, "After the security review: the gateway ledger is a file".
 - Not covered: a call whose gateway stops between the provider's reply and the append leaves no entry. A same-user process that rewrites a segment and its head record together is not detected by the files alone.
+- Fixed: Lean child processes inherited the whole environment of the process that started them, so a candidate proof that evaluates `IO.getEnv` could print a provider key or another variable into `kernel_output`. Every Lean spawn (compile, binding check, replay, second kernel, export check, version probes) now gets an allow-listed environment from `harness/lean_env.py`. See `docs/PROOF-AND-FORMATS.md`, "The environment a Lean process gets". If you relied on a custom variable reaching Lean, it no longer does; `LEAN_PATH`, `LEAN_SYSROOT`, `ELAN_HOME`, `ELAN_TOOLCHAIN`, `LEAN_NUM_THREADS` and `LEAN_STACK_SIZE_KB` still do.
 
 ## 1.9.0 (2026-10-15)
 

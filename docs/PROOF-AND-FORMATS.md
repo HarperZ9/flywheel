@@ -450,6 +450,28 @@ no-network sandbox is the next step. Until it exists the receipt says
 `network: not restricted`, and `validation_level` stops at
 `leanchecker_replay`, short of `comparator_external`.
 
+### The environment a Lean process gets
+
+Every Lean process Flywheel starts gets an allow-listed environment
+(`harness/lean_env.py`), never the environment of the process that started
+it. A candidate can evaluate `IO.getEnv` while Lean elaborates it, and Lean
+prints the value into the output a receipt keeps, so a variable the Lean
+process held could end up in a record. The list keeps what Lean needs to
+start and to find its toolchain: `PATH`, the Windows loader variables, home
+and temp, the locale, and `ELAN_HOME`, `ELAN_TOOLCHAIN`, `LEAN_PATH`,
+`LEAN_SYSROOT`, `LEAN_NUM_THREADS` and `LEAN_STACK_SIZE_KB`. Provider keys,
+gateway settings and proxy variables are not passed. This covers the
+compile, the binding check, the replay, the second kernel, the export check
+and the version probes.
+
+Checked on one Windows machine with Lean installed (2026-11-14): a file that
+evaluates `IO.getEnv` on a variable set in the parent printed `none`, and
+printed the value of `LEAN_NUM_THREADS`.
+
+It does not stop candidate code from printing an allow-listed value such as
+the profile path, or from reading the environment of another process of the
+same user. That takes running Lean as another operating system identity.
+
 ### What a Lean accept does not say
 
 - The replay trusts every imported `.olean` file as it sits on disk: the

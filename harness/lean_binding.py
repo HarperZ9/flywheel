@@ -212,7 +212,8 @@ class _Live:
                              f"a module named {CHALLENGE_MODULE}"
         script = self.root / "Bind.lean"
         script.write_text(SOURCE, encoding="utf-8")
-        env = dict(os.environ)
+        from .lean_env import lean_env
+        env = lean_env()                # never the harness's whole environment
         env["LEAN_PATH"] = os.pathsep.join([*entries, str(self.root / "chb")])
         env["LEAN_SYSROOT"] = str(Path(self.libdir).parent.parent)
         return run_killable([self.lean, "--run", str(script), str(self.olean),
