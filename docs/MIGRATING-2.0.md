@@ -460,6 +460,24 @@ Flywheel home in `gateway-ledger/`, chained across restarts.
 - Back up or remove `gateway-ledger/` as a whole folder. Editing a segment
   makes `verify` fail from then on.
 
+### After the security review: what a virtual key may send
+
+These apply to virtual keys only. The gateway token is unchanged.
+
+- A key may have 4 calls running at once. Raise or lower it with
+  `flywheel gateway-key set NAME --in-flight N`. One more call gets 429 with
+  `retry-after: 1`.
+- A Messages request that goes to an Anthropic upstream is refused with 403
+  when it carries an `anthropic-beta` value, a tool with a `type` other than
+  `custom`, or `mcp_servers`, unless the key allows it. Allow them with
+  `flywheel gateway-key set NAME --allow-beta a,b --allow-server-tool
+  web_search --allow-mcp`. A key used by Claude Code needs `--allow-beta` for
+  the values Claude Code sends; the refusal names each one.
+- A stream that is closed before its end is charged for what was received.
+  It was free before.
+- `flywheel gateway-key set NAME --max-output N` caps the output one call may
+  ask for. No cap is set unless you set one.
+
 ## The error object of a hosted backend
 
 When a call to a hosted model fails, the error object's `body` no longer

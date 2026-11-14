@@ -2,7 +2,12 @@
 
   flywheel gateway-key create NAME [--token-limit N] [--models a,b,c]
                                    [--spend-limit USD --price-in USD --price-out USD]
+                                   [--in-flight N] [--max-output N] [--allow-beta a,b]
+                                   [--allow-server-tool a,b] [--allow-mcp]
                                         mint a key; it is printed once
+  flywheel gateway-key set NAME [--in-flight N] [--max-output N] [--allow-beta a,b]
+                                [--allow-server-tool a,b] [--allow-mcp]
+                                        change a key's per-call controls
   flywheel gateway-key list             every key, its limits and totals
   flywheel gateway-key show NAME        one key in full
   flywheel gateway-key revoke NAME      stop a key; its totals are kept
@@ -83,6 +88,8 @@ def render_show(name: str, row: dict) -> str:
              f"{totals['output_tokens']} + cache read {totals['cache_read_tokens']} + cache "
              f"write {totals['cache_write_tokens']} ({totals['estimated_tokens']} estimated)",
              f"spend         {_or(shown['spend_usd'], 'no prices set')} USD"]
+    from harness import gateway_key_policy
+    lines += gateway_key_policy.describe(row)
     for what, left in shown["remaining"].items():
         lines.append(f"remaining     {left} {what}")
     return "\n".join(lines)
@@ -117,6 +124,21 @@ def _parser() -> argparse.ArgumentParser:
                         help="USD per million output tokens")
     create.add_argument("--models", default="",
                         help="comma-separated model names the key may send; default any")
+    change = verbs.add_parser("set", help="change a key's per-call controls")
+    change.add_argument("name")
+    for made in (create, change):
+        made.add_argument("--in-flight", type=int, default=None, dest="in_flight",
+                          help="calls the key may have running at once (default 4)")
+        made.add_argument("--max-output", type=int, default=None, dest="max_output",
+                          help="the most output tokens one call may ask for")
+        made.add_argument("--allow-beta", default=None, dest="betas",
+                          help="comma-separated anthropic-beta values the key may send; "
+                          "* for any")
+        made.add_argument("--allow-server-tool", default=None, dest="server_tools",
+                          help="comma-separated provider-defined tool types the key may "
+                          "send, for example web_search; * for any")
+        made.add_argument("--allow-mcp", action="store_true", dest="mcp",
+                          help="let the key send mcp_servers")
     verbs.add_parser("list", help="every key, its limits and totals")
     for verb, text in (("show", "one key in full"), ("revoke", "stop a key"),
                        ("reset", "zero a key's running totals"),
@@ -134,11 +156,21 @@ def main(argv: "list[str] | None" = None, *, store=None, environ=None) -> int:
     args = _parser().parse_args(argv)
     try:
         keys = _keys(environ, store)
-        if args.verb == "create":
+        from harness import gateway_key_policy
+        if args.verb in ("create", "set"):
+            controls = gateway_key_policy.fields(args)
+        if args.verb == "set":
+            if not controls:
+                raise gateway_keys.KeysError("give at least one control to set; see --help")
+            keys.mark(args.name, **controls)
+            print(f"gateway key '{args.name}' updated: {', '.join(sorted(controls))}")
+        elif args.verb == "create":
             raw, _row = keys.create(
                 args.name, token_limit=args.token_limit, spend_limit=args.spend_limit,
                 price_in=args.price_in, price_out=args.price_out,
                 models=args.models.split(","))
+            if controls:
+                keys.mark(args.name, **controls)
             print(_created(args.name, raw))
         elif args.verb == "list":
             print(render_list(keys.rows()))

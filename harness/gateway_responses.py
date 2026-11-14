@@ -68,10 +68,10 @@ def _closing(turn, reply, ids, model: str, echo: dict, events, shown: str):
 def _stream(turn, stream, ids, model: str, echo: dict, events):
     """An upstream stream, written as Responses events."""
     opened = write.skeleton(ids, model, echo, "in_progress")
-    yield events.write("response.created", response=opened)
-    yield events.write("response.in_progress", response=opened)
     item_id, shown = ids.item("msg", 0), ""
-    try:
+    try:                                    # from the first event: a client that leaves
+        yield events.write("response.created", response=opened)     # still closes the stream
+        yield events.write("response.in_progress", response=opened)
         for piece, _raw, _data in stream:
             if not piece:
                 continue

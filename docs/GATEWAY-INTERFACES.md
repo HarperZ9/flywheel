@@ -643,6 +643,70 @@ the interface, the key, its fingerprint and the reason (`token_limit`,
 `spend_limit` or `model_not_allowed`). It carries no hashes, and it is never a
 completed-call entry. No entry holds a key.
 
+### Per-call controls
+
+A key's totals are checked before a call and debited after it. Four controls
+bound what happens in between. Set them at `create`, or later with `set`:
+
+```bash
+flywheel gateway-key create ci-bot --token-limit 2000000 --in-flight 2 --max-output 8000
+flywheel gateway-key set ci-bot --allow-beta BETA-VALUE --allow-server-tool web_search
+flywheel gateway-key set ci-bot --allow-mcp
+flywheel gateway-key show ci-bot
+```
+
+- **Calls in flight** (`--in-flight N`, default 4). A key may have that many
+  calls running in the gateway at once. One more is refused with 429
+  (`rate_limit_error` on Messages, code `key_in_flight_limit` on Responses)
+  and `retry-after: 1`. A stream holds its slot until it ends.
+- **Reservation.** Each running call reserves its output limit (`max_tokens`
+  or `max_output_tokens`, 4096 when the request names none) plus a quarter of
+  its request size in bytes as input. A new call is refused with 429 (code
+  `key_budget_reserved`) when the key's totals plus the reservations of the
+  calls already running reach a limit. Reservations are held in the gateway
+  process and are freed when the call ends; the debit is still the provider's
+  reported usage.
+- **Output per call** (`--max-output N`, default no cap). A request that asks
+  for more is refused with 400 naming `max_tokens` or `max_output_tokens`. A
+  Responses request that names no limit asks for 4096.
+- **Pass-through allow-lists**, for a Messages request that goes to an
+  Anthropic upstream as sent. A new key may send none of these:
+  - an `anthropic-beta` header value, unless `--allow-beta` lists it;
+  - a tool with a `type` other than `custom`, unless `--allow-server-tool`
+    lists its type (`web_search_20250305`) or the name before the date
+    (`web_search`). This covers the tools the provider runs (web search, web
+    fetch, code execution) and the provider-defined tools a client runs
+    (bash, text editor, computer use);
+  - `mcp_servers`, unless the key has `--allow-mcp`.
+  `*` on a list allows any value. A refusal is 403 `permission_error`, names
+  the field (`anthropic-beta`, `tools.1.type`, `mcp_servers`) and the command
+  that would allow it, sends nothing upstream and appends
+  `endpoint_call_refused` with reason `field_not_allowed`. Tools you define
+  yourself need no allowance. The gateway token forwards every field.
+
+Claude Code sends `anthropic-beta` values on its requests. A key made for it
+needs `--allow-beta` with those values, or `--allow-beta '*'`; the refusal
+message names each value as it is met.
+
+Budgets count tokens. Fees a provider charges per use are outside them: web
+search is billed per search and code execution per container hour, in
+addition to tokens (Claude API documentation, read 2026-11-14). The allow-list
+is what bounds those: a key that may not send a provider-run tool cannot
+cause its fee. For a key that may, the ledger entry of each served call
+carries the provider's `server_tool_use` counts.
+
+### An unfinished stream is charged
+
+A stream the client closes before its end is recorded as
+`endpoint_call_failed` with reason `client_disconnected`, and the key is
+charged for what was received: the input the provider reported at the start
+of the stream when it did (an Anthropic upstream), else the word estimate of
+the prompt, plus the word estimate of the text that had arrived. The entry
+carries `charged_tokens` and `"estimated": true`. A stream the upstream cuts
+after it began (`stream_incomplete`) is charged the same way. A stream that
+is closed before its first event is charged for the prompt. If that charge
+cannot be written, the entry says `"charge_failed": true`.
+
 ### When a call cannot be charged or recorded
 
 The debit and the ledger entry are written after the upstream has answered.
@@ -675,10 +739,8 @@ level with the caller and the cause, and the client is still told.
 - More than one machine. The totals live in one Flywheel home. Two gateways
   on two machines do not share them.
 - Changing a limit in place. Create a new key, or reset the totals.
-- Two calls that start together can both pass the check and both run.
-- A stream the client abandons. It is recorded as `endpoint_call_failed` with
-  reason `client_disconnected` and is not charged, although the upstream may
-  have billed for the part it produced.
+- In-flight counts and reservations across gateways. They are held in one
+  gateway process.
 
 ### What was run
 
