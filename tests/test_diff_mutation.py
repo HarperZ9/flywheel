@@ -77,7 +77,7 @@ def test_a_weak_test_leaves_named_survivors_on_changed_lines(tmp_path):
     assert weak["status"] == "complete" and weak["selection"] == "coverage"
     assert [(s["line"], s["mutant"]) for s in weak["survivors"]] ==         [(10, "if (x >= hi):"), (8, "if (not (x < lo)):")]
     assert "kill_rate" not in weak and "score" not in weak
-    assert weak["seed"] == 3 and weak["does_not_prove"]
+    assert weak["seed"] == 3 and weak["scope"]
 
 
 @pytest.mark.timeout(300)

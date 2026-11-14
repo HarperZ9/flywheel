@@ -32,16 +32,16 @@ from .red_classify import is_test_path, parse_junit
 from .red_select import changed_tests
 
 SCHEMA = "flywheel.suite-audit-diff/v1"
-DOES_NOT_PROVE = (
-    "A killed mutant shows a test can detect that change, not that the test checks "
-    "the requirement the author meant.",
-    "A survivor can be an equivalent mutant that no test could kill; it is a prompt "
-    "for review, not a verdict.",
-    "Mutants stand in for real faults imperfectly: Just et al. (2014) found 27% of "
-    "real faults not coupled to common mutants.",
-    "Only changed lines are mutated, one operator per line, so most possible faults "
-    "in the change are never tried.",
-    "Python only. Other languages are not mutated and are not reported clean.",
+SCOPE = (
+    "A killed mutant shows a test can detect that one change. Whether the test checks "
+    "the requirement the author meant is a reviewer's reading.",
+    "A survivor is a prompt for review. It can be an equivalent mutant that no test "
+    "could kill.",
+    "Mutants stand in for real faults in part: Just et al. (2014) found 27% of real "
+    "faults had no coupling to common mutants.",
+    "Changed lines only, one operator per line. Every other possible fault in the "
+    "change is left untried.",
+    "Python only. Other languages are left unmutated and unreported.",
 )
 _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@")
 
@@ -168,7 +168,7 @@ def audit_diff(repo, base, head, tests=None, *, max_mutants: int = 30,
     receipt = {"schema": SCHEMA, "mode": "report-only", "repo": repo.name, "base": base,
                "head": head, "seed": seed, "max_mutants": max_mutants,
                "budget_seconds": budget_seconds, "survivors": [], "not_covered": [],
-               "indeterminate": [], "does_not_prove": list(DOES_NOT_PROVE)}
+               "indeterminate": [], "scope": list(SCOPE)}
     with tempfile.TemporaryDirectory(prefix="diff-mutation-", dir=workdir,
                                      ignore_cleanup_errors=True) as tmp:
         tree = Path(tmp) / "head"
