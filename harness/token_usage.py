@@ -43,12 +43,56 @@ def from_ollama(native) -> "dict | None":
     return _pair(_get(native, "prompt_eval_count"), _get(native, "eval_count"))
 
 
+def from_record(usage) -> "dict | None":
+    """The pair from what a backend kept as `usage`: the normalized counts of
+    an observation record, an Ollama native block, a proposer's normalized
+    {"prompt", "completion"} block, or a provider's own block."""
+    counts = _get(usage, "counts")
+    return (_pair(_get(counts, "input"), _get(counts, "output"))
+            or from_ollama(usage)
+            or _pair(_get(usage, "prompt"), _get(usage, "completion"))
+            or _pair(_get(usage, "prompt_tokens"), _get(usage, "completion_tokens"))
+            or _pair(_get(usage, "input_tokens"), _get(usage, "output_tokens")))
+
+
 def field(usage: "dict | None") -> dict:
     """{"token_usage": usage} to merge into a generation, or {} when uncounted."""
     return {"token_usage": usage} if usage is not None else {}
 
 
+def reported(gen) -> "dict | None":
+    """The provider's pair for a generation, or None when it reported none."""
+    return _get(gen, "token_usage") or from_record(_get(gen, "usage"))
+
+
 def response_field(gen: dict) -> dict:
     """{"x_token_usage": ...} for a response built from `gen`, or {}."""
-    counted = gen.get("token_usage") or from_ollama(gen.get("usage"))
+    counted = reported(gen)
     return {"x_token_usage": counted} if counted is not None else {}
+
+
+# The `usage` field of a served response, from 2.0 on. It carries the
+# provider's token counts or it is None. The word counts that 1.x put in
+# `usage` live under ESTIMATE_FIELD, named as the estimate they are.
+ESTIMATE_FIELD = "x_usage_estimate"
+ESTIMATE_METHOD = "whitespace_words"
+
+
+def estimate(prompt, completion) -> dict:
+    """Whitespace word counts of the prompt and the reply. Words, never tokens."""
+    return {"method": ESTIMATE_METHOD, "prompt_words": len(str(prompt).split()),
+            "completion_words": len(str(completion).split())}
+
+
+def openai_usage(pair) -> "dict | None":
+    """An OpenAI-shaped usage object from a provider pair, or None."""
+    counted = _pair(_get(pair, "input_tokens"), _get(pair, "output_tokens"))
+    if counted is None:
+        return None
+    inp, out = counted["input_tokens"], counted["output_tokens"]
+    return {"prompt_tokens": inp, "completion_tokens": out, "total_tokens": inp + out}
+
+
+def anthropic_usage(pair) -> "dict | None":
+    """An Anthropic-shaped usage object from a provider pair, or None."""
+    return _pair(_get(pair, "input_tokens"), _get(pair, "output_tokens"))

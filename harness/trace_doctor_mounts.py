@@ -19,6 +19,8 @@ from . import safe_program
 
 MODULE = "harness.capture_hooks"
 LEGACY = ("wrapper_turn_receipt_hook.py", "wrapper_scaffold_hook.py")
+REMOVED = ("script removed in Flywheel 2.0, this mount captures nothing: "
+           "mount the module as flywheel traces hooks print-mount shows")
 
 
 @dataclass(frozen=True)
@@ -26,7 +28,7 @@ class Mount:
     label: str
     event: str
     form: str        # module, legacy-script
-    problem: str     # "" when it resolves
+    problem: str     # "" when it resolves; a legacy script never does
     target: str      # module name or script file name, never the whole command
 
 
@@ -99,8 +101,7 @@ def classify(label: str, event: str, command: str) -> Mount | None:
     for word in words:
         name = Path(word).name
         if name in LEGACY:
-            problem = "" if Path(word).is_file() else "script not found"
-            return Mount(label, event, "legacy-script", problem, name)
+            return Mount(label, event, "legacy-script", REMOVED, name)
     return None
 
 
