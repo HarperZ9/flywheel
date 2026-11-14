@@ -139,3 +139,10 @@ state/
 # pre-action monitor default home when run from a checkout root
 .flywheel-preaction/
 site/docs/
+
+# Gateway runtime state. It lives in the Flywheel home; these lines cover a home
+# that was placed inside a checkout.
+gateway-keys.json
+gateway-keys.json.*
+gateway-ledger/
+gateway.token

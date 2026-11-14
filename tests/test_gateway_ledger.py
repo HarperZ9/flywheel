@@ -18,6 +18,8 @@ from harness.local_session import Entry
 from tests import gateway_messages_support as support
 from tests.gateway_keys_support import keyed, post, served, turn2  # noqa: F401  (fixtures)
 
+pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
+
 
 @pytest.fixture
 def on_disk(monkeypatch, tmp_path, served):

@@ -34,6 +34,7 @@ can check it.
 from __future__ import annotations
 
 import json
+from .lean_env import lean_env
 
 # Vertices on a parabola or any generated instance stay small, but a coordinate
 # is unbounded in principle. Lean's Int is arbitrary precision, so there is no
@@ -185,7 +186,7 @@ def lean_axioms(source: str, *, lean: str = "lean", timeout: int = 180) -> dict:
         p.write_text(source, encoding="utf-8")
         try:
             r = subprocess.run([resolved, str(p)], capture_output=True, text=True,
-                               timeout=timeout)
+                               timeout=timeout, env=lean_env())
         except subprocess.TimeoutExpired:
             return {"ok": None, "axioms": [], "note": f"lean did not finish in "
                     f"{timeout}s"}

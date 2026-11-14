@@ -50,6 +50,7 @@ import os
 import subprocess
 import tempfile
 from pathlib import Path
+from .lean_env import lean_env
 
 #: The Lean reference's validation ladder, weakest first. This module reaches
 #: the third rung. The fourth (comparator: a sandboxed build, the proof checked
@@ -90,7 +91,7 @@ def run_killable(argv: list, *, timeout: int = TIMEOUT,
     propagates.
     """
     from .proc_kill import _kill_tree, spawn_killable
-    proc = spawn_killable(argv, env=env, stdout=subprocess.PIPE,
+    proc = spawn_killable(argv, env=lean_env(env), stdout=subprocess.PIPE,
                           stderr=stderr, **popen)
     try:
         out, _ = proc.communicate(timeout=timeout)
@@ -214,7 +215,7 @@ def _check_live(checker: str, libdir: str, build: Path) -> dict:
                              f"module named {MODULE}, so leanchecker would "
                              "not replay the module the compile wrote",
                        reason=R_SHADOW)
-    env = dict(os.environ)
+    env = lean_env()                    # never the harness's whole environment
     env["LEAN_PATH"] = os.pathsep.join(entries)
     try:
         rc, out = run_killable([checker, MODULE], env=env)

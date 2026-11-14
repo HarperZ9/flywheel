@@ -433,13 +433,8 @@ tool that sits behind the gateway. The gateway token works as before.
 Gateway ledger entries for Messages and Responses calls gain `key` and
 `usage_reported`.
 
-A budget has known gaps. The check reads the totals so far, so one call can
-cross a limit before the next is refused, and two calls that start together
-can both pass. A stream the client abandons is not charged, although the
-provider may have billed for the part it produced. A call with no reported
-counts is charged the word estimate, which runs low, and is marked
-`estimated`. Rate limits, a provider account per key and totals shared
-across machines are not covered. `docs/GATEWAY-INTERFACES.md`, "Keys and
+A budget has known limits. "After the security review: every remaining
+budget limit" below lists them all. `docs/GATEWAY-INTERFACES.md`, "Keys and
 budgets", has the details.
 
 ### After the security review: the gateway ledger is a file
@@ -459,6 +454,70 @@ Flywheel home in `gateway-ledger/`, chained across restarts.
   model calls with 500, because it cannot append to the ledger.
 - Back up or remove `gateway-ledger/` as a whole folder. Editing a segment
   makes `verify` fail from then on.
+
+### After the security review: what a virtual key may send
+
+These apply to virtual keys only. The gateway token is unchanged.
+
+- A key may have 4 calls running at once. Raise or lower it with
+  `flywheel gateway-key set NAME --in-flight N`. One more call gets 429 with
+  `retry-after: 1`.
+- A Messages request that goes to an Anthropic upstream is refused with 403
+  when it carries an `anthropic-beta` value, a tool with a `type` other than
+  `custom`, or `mcp_servers`, unless the key allows it. Allow them with
+  `flywheel gateway-key set NAME --allow-beta a,b --allow-server-tool
+  web_search --allow-mcp`. A key used by Claude Code needs `--allow-beta` for
+  the values Claude Code sends; the refusal names each one.
+- A stream that is closed before its end is charged for what was received.
+  It was free before.
+- `flywheel gateway-key set NAME --max-output N` caps the output one call may
+  ask for. No cap is set unless you set one.
+
+### After the security review: who a key is for
+
+A virtual key is for a tool on the same machine as the gateway, or for a
+teammate who reaches it over a link you trust. The gateway speaks plain
+HTTP and listens on 127.0.0.1 unless started with `--host`. From another
+machine, use an SSH tunnel (`ssh -N -L 8799:127.0.0.1:8799
+user@gateway-host`) or put a TLS proxy or tunnel in front and give its name
+to `--allow-host`. A key that crossed a network without TLS should be
+revoked. `docs/GATEWAY-INTERFACES.md`, "Who a key is for, and the network".
+
+### After the security review: every remaining budget limit
+
+A budget is an operating limit for a tool you run. It is not a hard cap on
+what a provider can bill.
+
+- One call that runs alone can cross a limit by its own cost: its input plus
+  up to its output limit. The next call is refused.
+- Calls that run together reserve their output limit and a quarter of their
+  request bytes. They can cross a limit by the input each one used beyond
+  that reservation, over at most the key's in-flight limit (4 by default).
+- A call with no reported counts is charged a word estimate, which runs low
+  and is far too low for text without spaces.
+- An unfinished stream is charged an estimate of what was received, not the
+  provider's final count.
+- A call that fails after the provider answered, other than an unfinished
+  stream, is not charged.
+- Fees that are not tokens (web search per search, code execution per
+  container hour) are not counted. A key cannot cause them unless its
+  allow-list names the tool.
+- Totals, in-flight counts and reservations live in one Flywheel home and one
+  gateway process. Two machines do not share them.
+- There is no requests-per-minute limit, and no provider account per key:
+  every key spends from the gateway's own credential for the upstream.
+- A limit cannot be changed in place. Create a new key, or reset the totals.
+
+### After the security review: smaller changes
+
+- The gateway follows no redirect from an upstream. If a provider base URL
+  you set (`OPENAI_BASE_URL` and the like) answers with a redirect, calls
+  fail with that status. Set the variable to the final address.
+- `flywheel gateway-key revoke NAME` exits 1 when the credential store did
+  not delete the stored key. The key is still refused.
+- A request body nested too deep to parse gets 400. It got 500.
+- `docs/KNOWN-LIMITS-2.0.0.md` lists what the review found and 2.0.0 leaves
+  as it is.
 
 ## The error object of a hosted backend
 
