@@ -1,0 +1,6 @@
+data: {"candidates":[{"content":{"parts":[{"text":"Wrote n.txt.\nN"}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":459,"totalTokenCount":459},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-2"}
+
+data: {"candidates":[{"content":{"parts":[{"text":"othing else ch"}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":459,"totalTokenCount":459},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-2"}
+
+data: {"candidates":[{"content":{"parts":[{"text":"anged."}],"role":"model"},"index":0,"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":459,"candidatesTokenCount":10,"totalTokenCount":469},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-2"}
+

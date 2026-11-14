@@ -1,0 +1,32 @@
+{
+ "candidates": [
+  {
+   "content": {
+    "parts": [
+     {
+      "text": "I will write the note."
+     },
+     {
+      "functionCall": {
+       "name": "write_file",
+       "args": {
+        "path": "n.txt",
+        "content": "hi"
+       }
+      }
+     }
+    ],
+    "role": "model"
+   },
+   "finishReason": "STOP",
+   "index": 0
+  }
+ ],
+ "usageMetadata": {
+  "promptTokenCount": 510,
+  "candidatesTokenCount": 36,
+  "totalTokenCount": 546
+ },
+ "modelVersion": "gemini-2.5-flash",
+ "responseId": "resp-fixture-3"
+}

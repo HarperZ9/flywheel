@@ -1,0 +1,12 @@
+data: {"candidates":[{"content":{"parts":[{"text":"I will write t"}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":405,"totalTokenCount":405},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-1"}
+
+data: {"candidates":[{"content":{"parts":[{"text":"he note.\nTOOL "}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":405,"totalTokenCount":405},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-1"}
+
+data: {"candidates":[{"content":{"parts":[{"text":"write_file {\"p"}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":405,"totalTokenCount":405},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-1"}
+
+data: {"candidates":[{"content":{"parts":[{"text":"ath\": \"n.txt\","}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":405,"totalTokenCount":405},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-1"}
+
+data: {"candidates":[{"content":{"parts":[{"text":" \"content\": \"h"}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":405,"totalTokenCount":405},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-1"}
+
+data: {"candidates":[{"content":{"parts":[{"text":"i\"}"}],"role":"model"},"index":0,"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":405,"candidatesTokenCount":26,"totalTokenCount":431},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-1"}
+

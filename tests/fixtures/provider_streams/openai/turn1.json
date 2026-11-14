@@ -1,0 +1,24 @@
+{
+ "id": "chatcmpl-fixture-1",
+ "object": "chat.completion",
+ "created": 1794268190,
+ "model": "gpt-5.3-codex-spark",
+ "system_fingerprint": "fp_fixture01",
+ "choices": [
+  {
+   "index": 0,
+   "message": {
+    "role": "assistant",
+    "content": "I will write the note.\nTOOL write_file {\"path\": \"n.txt\", \"content\": \"hi\"}",
+    "refusal": null
+   },
+   "logprobs": null,
+   "finish_reason": "stop"
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 398,
+  "completion_tokens": 25,
+  "total_tokens": 423
+ }
+}

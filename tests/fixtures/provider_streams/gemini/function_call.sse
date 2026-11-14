@@ -1,0 +1,6 @@
+data: {"candidates":[{"content":{"parts":[{"text":"I will write t"}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":510,"totalTokenCount":510},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-3"}
+
+data: {"candidates":[{"content":{"parts":[{"text":"he note."}],"role":"model"},"index":0}],"usageMetadata":{"promptTokenCount":510,"totalTokenCount":510},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-3"}
+
+data: {"candidates":[{"content":{"parts":[{"functionCall":{"name":"write_file","args":{"path":"n.txt","content":"hi"}}}],"role":"model"},"index":0,"finishReason":"STOP"}],"usageMetadata":{"promptTokenCount":510,"candidatesTokenCount":36,"totalTokenCount":546},"modelVersion":"gemini-2.5-flash","responseId":"resp-fixture-3"}
+

@@ -4,23 +4,29 @@ Two things a person waits on in a session: the model writing its reply, and a
 command running. Both used to appear only when finished. This module delivers
 each as chunks while it happens and changes nothing about what is recorded:
 
-  model text      `streamed_send` makes each backend that has `chat_stream`
-                  answer `chat` by reading that stream. The agent's `send`
-                  runs unchanged around it: the same failover, compaction,
-                  receipt and ledger entry. The entry is the joined chunks.
+  model text      `streamed_send` makes each backend that can stream answer
+                  `chat` by reading its stream. The agent's `send` runs
+                  unchanged around it: the same failover, compaction, receipt
+                  and ledger entry. The entry is the joined chunks.
   command output  `OutputTail` reads stdout.txt and stderr.txt in the
                   sandbox's scratch folder while the command runs. The
                   command's recorded output is still read by the sandbox
                   itself, from the same files, after the command ends.
 
-Model text streams only from a backend that has `chat_stream`, and which
-backend answers is decided by `send` exactly as before. Today that is the
-Ollama backend; a hosted provider's reply still arrives whole.
+Which backend answers is decided by `send` exactly as before. A backend can
+stream in one of two ways:
 
-Token counts are not recorded for a streamed reply. `chat_stream` yields text
-only, so the response has no `x_token_usage` where the same backend's plain
-`chat` would have one, and `/cost` lists the call as uncounted. Everything
-else in the response and the ledger entry is the same.
+  chat_streamed   yields text and returns the whole generation `chat` would
+                  return, token counts included. The hosted backends
+                  (OpenAI-compatible, Anthropic, Gemini) have this. The text
+                  that was shown must equal the text in that generation, or
+                  the reply is refused.
+  chat_stream     yields text and returns the model reference only. Ollama
+                  has this. Its streamed reply carries no `x_token_usage`, so
+                  `/cost` lists the call as uncounted.
+
+A subscription CLI and the cloud backends (Azure, Bedrock, Vertex) have
+neither, and their replies arrive whole.
 """
 from __future__ import annotations
 
@@ -34,9 +40,22 @@ POLL_SECONDS = 0.1
 TOOL_PREFIX = "TOOL "
 
 
-def _generation(backend, text: str, ref: str, max_tokens, temperature, seed) -> dict:
-    """The dict a backend's `chat` returns, built from a finished stream."""
-    from harness.local_agent import OllamaBackend, generation_config
+def _stream_of(backend):
+    """The backend's stream method, `chat_streamed` before `chat_stream`."""
+    return getattr(backend, "chat_streamed", None) or getattr(backend, "chat_stream", None)
+
+
+def _generation(backend, text: str, result, max_tokens, temperature, seed) -> dict:
+    """The dict a backend's `chat` returns, from what a finished stream returned."""
+    from harness.local_agent import MalformedBackendOutput, OllamaBackend, generation_config
+    ref = result.get("model_ref") if isinstance(result, dict) else result
+    if not isinstance(ref, str) or not ref:
+        raise MalformedBackendOutput("streaming backend omitted validated model reference")
+    if isinstance(result, dict):
+        if result.get("text") != text:
+            raise MalformedBackendOutput(
+                "the text a stream showed differs from the reply it returned")
+        return result
     gen = {"text": text, "model_ref": ref, "seed": seed}
     if isinstance(backend, OllamaBackend):
         gen["generation_config"] = generation_config(backend, max_tokens, temperature, seed)
@@ -44,33 +63,35 @@ def _generation(backend, text: str, ref: str, max_tokens, temperature, seed) -> 
 
 
 def _streaming_chat(backend, on_chunk, finish):
-    """A `chat` for `backend` that reads its `chat_stream`.
+    """A `chat` for `backend` that reads its stream.
 
-    A stream that fails part way is answered by the backend's ordinary `chat`,
-    so a dropped stream costs a second request and never a different result.
-    `finish(None)` is called first, so a display can say that what it showed
-    so far is not the reply.
+    A stream that fails with an ordinary BackendError is answered by the
+    backend's plain `chat`, so it costs a second request and never a different
+    result. A stream that broke its contract, and a hosted stream that was cut
+    short after it began or finished with no usable reply, is not asked again:
+    the error goes to `send`, which tries the next backend or fails the turn.
+    `finish(None)` is called first in every such case, so a display can say
+    that what it showed so far is not the reply.
     """
     from harness.local_agent import BackendError, MalformedBackendOutput
 
     def chat(messages, *, system, max_tokens, temperature, seed):
         options = {"system": system, "max_tokens": max_tokens,
                    "temperature": temperature, "seed": seed}
-        stream, full, done, dropped = iter(backend.chat_stream(messages, **options)), "", False, False
+        stream, full, done, dropped = iter(_stream_of(backend)(messages, **options)), "", False, False
         try:
             while True:
                 try:
                     piece = next(stream)
                 except StopIteration as completed:
-                    ref = completed.value
+                    result = completed.value
                     break
                 full += piece
                 on_chunk(piece)
-            if not isinstance(ref, str) or not ref:
-                raise MalformedBackendOutput("streaming backend omitted validated model reference")
+            gen = _generation(backend, full, result, max_tokens, temperature, seed)
             done = True
         except BackendError as exc:
-            if isinstance(exc, MalformedBackendOutput):
+            if isinstance(exc, MalformedBackendOutput) or getattr(exc, "stream_complete", False):
                 raise
             dropped = True
         finally:        # an interrupt, a display error and a bad reply all end here
@@ -80,7 +101,7 @@ def _streaming_chat(backend, on_chunk, finish):
         if dropped:
             return type(backend).chat(backend, messages, **options)
         finish(full)
-        return _generation(backend, full, ref, max_tokens, temperature, seed)
+        return gen
     return chat
 
 
@@ -93,7 +114,7 @@ def streamed_send(agent, on_chunk, on_end=None):
     `agent.send` itself is not replaced.
     """
     finish = on_end if on_end is not None else (lambda text: None)
-    wrapped = [(b, vars(b).get("chat")) for b in agent.backends if hasattr(b, "chat_stream")]
+    wrapped = [(b, vars(b).get("chat")) for b in agent.backends if _stream_of(b) is not None]
     for backend, _own in wrapped:
         backend.chat = _streaming_chat(backend, on_chunk, finish)
     try:
@@ -234,7 +255,7 @@ def live(session, out=None, err=None, enabled: bool = True):
     def ended(text) -> None:
         gate.end()
         if text is None:
-            put(err)("[stream interrupted; the reply follows]\n")
+            put(err)("[stream interrupted; the text above is not the reply]\n")
         session.streamed_final = text
     runner = getattr(session.executor, "runner", None)
     tails = hasattr(runner, "sink")

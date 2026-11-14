@@ -1,0 +1,34 @@
+{
+ "id": "chatcmpl-fixture-3",
+ "object": "chat.completion",
+ "created": 1794268190,
+ "model": "gpt-5.3-codex-spark",
+ "system_fingerprint": "fp_fixture01",
+ "choices": [
+  {
+   "index": 0,
+   "message": {
+    "role": "assistant",
+    "content": "I will write the note.",
+    "refusal": null,
+    "tool_calls": [
+     {
+      "id": "call_fixtureWrite01",
+      "type": "function",
+      "function": {
+       "name": "write_file",
+       "arguments": "{\"path\": \"n.txt\", \"content\": \"hi\"}"
+      }
+     }
+    ]
+   },
+   "logprobs": null,
+   "finish_reason": "tool_calls"
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 502,
+  "completion_tokens": 38,
+  "total_tokens": 540
+ }
+}
