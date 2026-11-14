@@ -6,8 +6,9 @@ The hash covers every setting that shapes what the model is sent or what the
 loop lets it do, so equal hashes mean same-harness runs and a delta between
 two runs with equal hashes cannot be put down to the harness.
 
-Covered: the full system prompt as sent (tool texts, instruction files, skills
-and memory notes are in it), permission mode, permission rules, hook entries,
+Covered: the session's full system prompt (tool texts, instruction files,
+skills and memory notes are in it; a native function calling request rewords
+the tool instructions on the wire, which the switch below records), permission mode, permission rules, hook entries,
 max steps, compaction budget, max tokens, temperature, seed, the backend
 preference, which backends and models answered, the native function calling
 and prompt caching switches, the test command, the
