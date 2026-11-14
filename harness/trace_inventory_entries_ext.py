@@ -150,6 +150,9 @@ EXEMPTIONS = (
               f"names only, never a key; {_NO_TRACE}"),
     Exemption("home", "gateway-keys.json*", f"gateway virtual key names, fingerprints, limits "
               f"and token totals, never a key or a prompt; {_NO_TRACE}"),
+    Exemption("home", "gateway-ledger", f"the gateway's hash-chained record of model calls: "
+              f"hashes, model names, key names and token counts, never a prompt or a reply; "
+              f"{_NO_TRACE}"),
     Exemption("home", "mcp-tokens", f"MCP server OAuth tokens where no OS credential "
               f"store exists, owner-only files; {_NO_TRACE}"),
     Exemption("home", "gateway.endpoint*", f"where the running gateway listens; {_NO_TRACE}"),

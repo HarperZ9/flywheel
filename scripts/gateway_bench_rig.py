@@ -204,8 +204,9 @@ def rig(home, dialect: str = "openai", delay: float = 0.05, key: bool = False,
     `gateway_delay` sleeps that long inside the gateway on every call, before
     the upstream is contacted. The timing gate uses it as its control."""
     from harness import gateway, gateway_key_gate, gateway_keys, gateway_turn
-    from harness.local_session import SessionLedger
-    store, ledger, stub = MemoryStore(), SessionLedger(), Stub(dialect, delay).start()
+    from harness.gateway_ledger import GatewayLedger
+    store, stub = MemoryStore(), Stub(dialect, delay).start()
+    ledger = GatewayLedger(home)            # on disk, committed per entry, as a gateway runs
 
     def make(name, model):
         time.sleep(gateway_delay)
@@ -227,6 +228,7 @@ def rig(home, dialect: str = "openai", delay: float = 0.05, key: bool = False,
         server.shutdown()
         server.server_close()
         stub.stop()
+        ledger.close()
         gateway._ROUTER_LEDGER, gateway_turn.make_backend, gateway_key_gate.open_keys = saved[:3]
         if saved[3] is None:
             os.environ.pop(gateway_turn.UPSTREAM_ENV, None)

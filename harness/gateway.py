@@ -426,17 +426,14 @@ _ROUTER_LEDGER = None
 
 
 def _router_ledger():
-    global _ROUTER_LEDGER
-    if _ROUTER_LEDGER is None:
-        try:
-            from harness.local_session import SessionLedger
-        except Exception:
-            try:
-                from local_session import SessionLedger
-            except Exception:
-                return None
-        _ROUTER_LEDGER = SessionLedger()
-    return _ROUTER_LEDGER
+    """The gateway's ledger. It is kept on disk under the Flywheel home and
+    chained across restarts (harness.gateway_ledger); None, with the reason
+    logged there, when it cannot be opened. A test may set _ROUTER_LEDGER to
+    an in-memory ledger."""
+    if _ROUTER_LEDGER is not None:
+        return _ROUTER_LEDGER
+    from harness.gateway_ledger import for_home
+    return for_home(os.environ.get("FLYWHEEL_HOME", str(Path.home() / ".flywheel")))
 
 
 def route_answer(prompt: str, endpoint: str, proposer, *, credential: str = "local-none") -> dict:
