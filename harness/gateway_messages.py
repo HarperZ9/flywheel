@@ -42,7 +42,7 @@ def _passed(headers) -> dict:
 
 
 def _refused(refused: _turn.TurnRefused, request_id: str) -> _turn.Response:
-    status = 404 if refused.kind == "not_found" else 400
+    status = {"not_found": 404, "forbidden": 403}.get(refused.kind, 400)
     _LOG.info("gateway messages request refused (%s): %s", status, refused)
     return _turn.Response(status, wire.error(status, str(refused), request_id),
                           headers={"request-id": request_id})
@@ -120,12 +120,12 @@ def _closing(turn, reply, shown: str):
 
 def _translated(turn, stream, model: str, message_id: str):
     """Another upstream's stream, written as Messages events."""
-    yield wire.sse("message_start", {"type": "message_start", "message": {
-        "id": message_id, "type": "message", "role": "assistant", "model": model,
-        "content": [], "stop_reason": None, "stop_sequence": None,
-        "usage": {"input_tokens": 0, "output_tokens": 0}}})
     shown = ""
-    try:
+    try:                                    # from the first event: a client that leaves
+        yield wire.sse("message_start", {"type": "message_start", "message": {
+            "id": message_id, "type": "message", "role": "assistant", "model": model,
+            "content": [], "stop_reason": None, "stop_sequence": None,
+            "usage": {"input_tokens": 0, "output_tokens": 0}}})     # still closes the stream
         for piece, _raw, _data in stream:
             if not piece:
                 continue
@@ -164,7 +164,9 @@ def handle(body, headers, ledger, environ=None, caller=None) -> _turn.Response:
         upstream = _turn.resolve_upstream(turn.model, environ)
         same, model = upstream.dialect == "anthropic", upstream.backend.model
         payload = extra = None
-        if same:
+        if same:                            # forwarded as sent: the key's allow-lists apply
+            from .gateway_key_policy import check_passthrough
+            check_passthrough(caller, body, headers, ledger, turn.interface)
             payload, extra = {**body, "model": model}, _passed(headers)
         else:
             _uncarried(turn, upstream)

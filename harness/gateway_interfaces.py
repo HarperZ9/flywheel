@@ -94,6 +94,13 @@ def serve(handler, path: str, ledger) -> None:
     caller, refusal = gate.enter(handler, path, body, ledger)
     if refusal is not None:
         return send(handler, refusal)
+    try:
+        return _answer(handler, path, body, ledger, caller)
+    finally:
+        gate.leave(caller)              # the key's in-flight slot, held to the stream's end
+
+
+def _answer(handler, path: str, body, ledger, caller) -> None:
     headers = {str(name).lower(): value for name, value in handler.headers.items()}
     if path == "/v1/responses":
         from . import gateway_responses

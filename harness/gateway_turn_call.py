@@ -174,15 +174,22 @@ def forward(upstream, url: str, headers: dict, payload: dict) -> dict:
 
 
 class Stream:
-    """An opened upstream stream. Iterate, then read `.reply`."""
+    """An opened upstream stream. Iterate, then read `.reply`.
 
-    def __init__(self, events):
-        self._events, self.reply = events, None
+    `unread` runs when the stream is closed before anything was read from it:
+    the upstream was opened, so the call still gets its ledger entry."""
+
+    def __init__(self, events, unread=None):
+        self._events, self._unread, self.reply = events, unread, None
 
     def __iter__(self):
+        self._unread = None
         self.reply = yield from self._events
 
     def close(self) -> None:
+        unread, self._unread = self._unread, None
+        if unread is not None:
+            unread()
         self._events.close()
 
 
@@ -228,17 +235,21 @@ def _events(backend, assembler, lines):
 def _relay(turn, upstream, ledger, lines, body):
     from . import endpoints_stream as _stream
     spec, backend = _stream.DIALECTS[upstream.dialect], upstream.backend
-    assembler = spec.assembler()
+    assembler, got = spec.assembler(), []   # `got`: the text that reached the client
     try:
-        yield from _events(backend, assembler, lines)
+        for item in _events(backend, assembler, lines):
+            got.append(item[0])
+            yield item
         reply = read(upstream, _stream._finished(backend, spec, assembler), body)
     except BackendError as exc:
         failed = failure(exc)
-        _turn.record_failed(ledger, upstream, turn, failed.reason, exc)
+        _turn.record_failed(ledger, upstream, turn, failed.reason, exc,
+                            partial=(assembler, got))
         raise failed from exc
-    except GeneratorExit:
+    except GeneratorExit:                   # charged for what was received, not free
         _turn.record_failed(ledger, upstream, turn, "client_disconnected",
-                            "the client closed the stream before the reply was complete")
+                            "the client closed the stream before the reply was complete",
+                            partial=(assembler, got))
         raise
     _turn.record(ledger, upstream, turn, reply, delivered=True)
     return reply
@@ -253,4 +264,12 @@ def stream(turn, upstream, ledger, payload=None, headers=None) -> Stream:
         failed = failure(exc)
         _turn.record_failed(ledger, upstream, turn, failed.reason, exc)
         raise failed from exc
-    return Stream(_relay(turn, upstream, ledger, lines, body))
+    def unread():
+        close = getattr(lines, "close", None)
+        if callable(close):
+            close()
+        from . import endpoints_stream as _stream
+        _turn.record_failed(ledger, upstream, turn, "client_disconnected",
+                            "the client closed the stream before its first event",
+                            partial=(_stream.DIALECTS[upstream.dialect].assembler(), []))
+    return Stream(_relay(turn, upstream, ledger, lines, body), unread)

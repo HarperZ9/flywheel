@@ -247,8 +247,12 @@ def record(ledger, upstream: Upstream, turn: Turn, reply: Reply, delivered=False
                            delivered, exc) from exc
 
 
-def record_failed(ledger, upstream: Upstream, turn: Turn, reason: str, detail="") -> None:
-    """Append `endpoint_call_failed` and log why, with secrets scrubbed."""
+def record_failed(ledger, upstream: Upstream, turn: Turn, reason: str, detail="",
+                  partial=None) -> None:
+    """Append `endpoint_call_failed` and log why, with secrets scrubbed.
+
+    `partial` is (assembler, text pieces) for a stream that began and did not
+    finish; a key is then charged for what was received (gateway_unaccounted)."""
     from .provider_fault_boundary import redacted_text
     _LOG.warning("gateway %s call to %s failed (%s): %s", turn.interface, upstream.name,
                  reason, redacted_text(str(detail)))
@@ -257,6 +261,9 @@ def record_failed(ledger, upstream: Upstream, turn: Turn, reason: str, detail=""
         meta = {"endpoint": upstream.name, "interface": turn.interface,
                 "prompt_sha": prompt_sha(turn), "reason": reason,
                 **(turn.caller or OWNER).meta}
+        if partial is not None:
+            from .gateway_unaccounted import partial_charge
+            meta.update(partial_charge(turn, reason, *partial))
         with _APPEND:
             ledger.append("endpoint_call_failed", reason, meta)
 
