@@ -84,10 +84,21 @@ def _emit(session, event: dict) -> None:
                      event.get("type"), exc_info=True)
 
 
-def _sent(box, send, text: str) -> tuple:
-    """(reply, prose TOOL lines with no call, record that differs from its calls)."""
+def _sent(session, send, text: str) -> tuple:
+    """(reply, prose TOOL lines with no call, record that differs from its calls).
+
+    A model that moved to the text protocol during the call (its host said it
+    cannot take tool schemas) is shown and recorded here, once."""
+    box = session.toolbox
     box.stray, box.unfaithful, box.turn = 0, False, None
-    resp = send(text)
+    try:
+        resp = send(text)
+    finally:
+        from .endpoints_tools_fallback import KIND
+        while box.notices:
+            line = box.notices.pop(0)
+            session.ledger.append(KIND, line, {"protocol": "text"})
+            _emit(session, {"type": "notice", "text": line})
     stray, wrong = box.stray, box.unfaithful
     box.stray, box.unfaithful = 0, False
     return resp, stray, wrong
@@ -103,7 +114,7 @@ def checked(session, send, text: str) -> dict:
     if box is None:
         return send(text)
     from .native_turn import UNFAITHFUL, stamp
-    resp, stray, wrong = _sent(box, send, text)
+    resp, stray, wrong = _sent(session, send, text)
     if not (stray or wrong) or _told(session.ledger):
         return stamp(resp, box)
     written = resp["content"][0]["text"] if resp.get("content") else ""
@@ -117,5 +128,5 @@ def checked(session, send, text: str) -> dict:
               else f"wrote {stray} TOOL line(s) in its text and made no call")
     _emit(session, {"type": "assistant", "text": written})
     _emit(session, {"type": NOTICE, "lines": stray})
-    resp, _stray, _wrong = _sent(box, send, UNFAITHFUL if wrong else CORRECTION)
+    resp, _stray, _wrong = _sent(session, send, UNFAITHFUL if wrong else CORRECTION)
     return stamp(resp, box)

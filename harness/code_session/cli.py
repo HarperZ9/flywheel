@@ -75,6 +75,8 @@ def print_event(event: dict) -> None:
         mark = words[0] if event.get("ok") else words[1]
         lead = "Tool result, " if plain else "    "
         print(f"{lead}{mark}: {first[0][:160] if first else ''}", file=sys.stderr)
+    elif kind == "notice":              # for one, a model moved to the text protocol
+        print(f"Notice: {event.get('text')}", file=sys.stderr)
 
 
 # Commands may write in the project folder (harness/workspace_run.py says where

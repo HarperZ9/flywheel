@@ -160,9 +160,11 @@ def test_arguments_and_reasoning_count_in_the_other_formats():
     assert gateway_unaccounted._reported(gemini) == {"input": 12, "output": 4}
 
 
-def test_control_text_alone_is_charged_as_before(keyed, served):
+def test_control_text_alone_is_charged_its_estimate(keyed, served):
+    """The provider's input count, and the estimate of the text received: 5 words,
+    and 9 as a quarter of its characters. The larger is charged (third review, D1)."""
     totals, _entry = _cut_stream(keyed, served, support.raw("upstream/anthropic_cut.sse"))
-    assert (totals["input_tokens"], totals["output_tokens"]) == (468, 5)
+    assert (totals["input_tokens"], totals["output_tokens"]) == (468, 9)
 
 
 # --- the key name `owner` ---------------------------------------------------------------
