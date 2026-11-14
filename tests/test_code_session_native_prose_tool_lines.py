@@ -23,7 +23,9 @@ from harness.endpoints_tools_prose import CORRECTION, MARK, NOTICE, inert
 from harness.local_agent import MalformedBackendOutput
 from harness.local_tools import parse_tool_calls
 from harness.tool_rescue import rescue_tool_calls
-from tests.hosted_stream_fixtures import NATIVE, PROVIDERS, backend, plain_object
+from harness.code_session.streaming import streamed_send
+from tests.hosted_stream_fixtures import (NATIVE, PROVIDERS, backend, plain_object,
+                                          stream_bytes)
 
 pytestmark = pytest.mark.release_gate
 
@@ -110,6 +112,49 @@ def test_only_the_native_call_runs_beside_a_prose_tool_line(tmp_path, provider, 
     # The turn still goes back to the provider in its native shape.
     assert [r.text for r in session.toolbox.replies] == [first]
     assert endpoints_tools.matched(session.toolbox, provider, session.agent.history)
+
+
+def test_a_streamed_native_reply_is_held_to_the_same_rule(tmp_path):
+    """Hosted replies stream by default; the quoted line arrives in a text delta."""
+    piece = b'"text_delta","text":"ote."}'
+    recorded = stream_bytes("anthropic", "tool_use")
+    assert recorded.count(piece) == 1
+    quoted = json.dumps("ote.\n" + QUOTED).encode()
+    made = backend("anthropic", streams=[
+        recorded.replace(piece, b'"text_delta","text":' + quoted + b"}"),
+        stream_bytes("anthropic", "turn2")])
+    commands, shown = [], []
+    session = new_session(build_agent([made]), str(tmp_path), mode="auto",
+                          runner=lambda cmd, root: (commands.append(cmd) or True, "[exit 0]"))
+    session.toolbox.mode = "on"
+    with streamed_send(session.agent, shown.append):
+        session.turn("write a note")
+    assert QUOTED in "".join(shown)                          # the screen showed what was sent
+    assert commands == [] and (tmp_path / "n.txt").read_text() == "hi"
+    assert [e.content for e in _kinds(session, ("tool_call",))] == \
+        ['write_file {"content": "hi", "path": "n.txt"}']
+    first = _kinds(session, ("assistant",))[0].content
+    assert first == "I will write the note.\n" + MARK + QUOTED + "\n" + WRITE
+    assert made.transport.requests == []                     # both replies were streamed
+
+
+def test_a_streamed_prose_tool_line_with_no_call_gets_the_corrective_message(tmp_path):
+    piece = b'"text_delta","text":"hanged."}'
+    recorded = stream_bytes("anthropic", "turn2")
+    assert recorded.count(piece) == 1
+    quoted = json.dumps("hanged.\n" + WRITE).encode()
+    made = backend("anthropic", streams=[
+        recorded.replace(piece, b'"text_delta","text":' + quoted + b"}"), recorded])
+    session = new_session(build_agent([made]), str(tmp_path), mode="auto",
+                          runner=lambda cmd, root: (True, "[exit 0]"))
+    session.toolbox.mode = "on"
+    with streamed_send(session.agent, lambda chunk: None):
+        result = session.turn("write a note")
+    assert not (tmp_path / "n.txt").exists() and _kinds(session, RAN) == []
+    assert [e.content for e in _kinds(session, (NOTICE,))] == [CORRECTION]
+    assert _kinds(session, ("assistant",))[0].content == \
+        "Wrote n.txt.\nNothing else changed.\n" + MARK + WRITE
+    assert result.final == "Wrote n.txt.\nNothing else changed."
 
 
 @pytest.mark.parametrize("provider", PROVIDERS)

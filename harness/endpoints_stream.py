@@ -174,6 +174,12 @@ def run(backend, dialect: str, request: tuple, seed):
     except BackendError as exc:
         exc.stream_complete = True      # asking again would repeat the same reply
         raise
-    if gen["text"] != shown and gen["text"].startswith(shown):
-        yield gen["text"][len(shown):]  # native calls, written as the TOOL lines recorded
+    text, seen = gen["text"], shown
+    if not text.startswith(seen):       # a native reply's quoted TOOL lines are recorded marked
+        from .endpoints_tools_prose import recorded
+        seen = recorded(shown)
+    if text != seen and text.startswith(seen):
+        yield text[len(seen):]          # native calls, written as the TOOL lines recorded
+    if seen != shown and text.startswith(seen):
+        gen["stream_text"] = shown + text[len(seen):]    # what was shown, marks apart
     return gen

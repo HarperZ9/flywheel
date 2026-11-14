@@ -58,6 +58,12 @@ def inert(prose: str) -> "tuple[str, int]":
     return text, marked
 
 
+def recorded(prose: str) -> str:
+    """`prose` as a session's native turn records it, for a stream that showed it unmarked."""
+    from . import endpoints_tools
+    return inert(prose)[0] if endpoints_tools.current() is not None else prose
+
+
 def _told(ledger) -> bool:
     """True when this user request already got its one corrective message."""
     for entry in reversed(ledger.entries):

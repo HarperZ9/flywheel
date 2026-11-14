@@ -477,7 +477,9 @@ from a hosted provider is rebuilt into the response the provider would have
 sent without streaming and read by the same code, so the ledger entry, its
 receipt id, the conversation and the token counts are the ones a plain reply
 gives. The text that was shown must equal the text that is recorded, or the
-reply is refused. The command result is read from the same files after the
+reply is refused. One difference is allowed: on a native turn, a TOOL line in
+the reply's own words is recorded with `> ` in front of it (see "How tool
+calls travel") and was streamed without. The command result is read from the same files after the
 command ends, and `-p`, `--output-format stream-json` and `--acp` are
 unchanged. `FLYWHEEL_STREAM=0` turns streaming off, and it is off in `--plain`
 mode.
@@ -756,9 +758,8 @@ markers. Output has no color and no spinners in either mode.
 - With native calling on, the request's system prompt explains tools in
   function-calling terms and tells the model not to write TOOL lines. If it
   writes one anyway, the line does not run; only native calls do (see "How
-  tool calls travel"). The recorded reply carries `> ` before such a line, so
-  it differs by those two characters from the text that was streamed to the
-  screen. The ledger and the receipt are computed over the session's own
+  tool calls travel"). The recorded reply carries `> ` before such a line,
+  and the streamed text does not. The ledger and the receipt are computed over the session's own
   system prompt, which keeps the text-protocol wording, so they do not show
   the wording that was sent.
 - When one reply holds several native calls and a tool's output contains the
