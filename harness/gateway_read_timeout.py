@@ -21,10 +21,13 @@ its connection for longer. That costs a thread and no provider spend, because
 nothing is admitted before the body is whole. Writes have no timeout.
 
 The timeout is the operating system's own (SO_RCVTIMEO), set on a socket that
-stays in blocking mode. Python's `socket.settimeout` was tried first and
-removed: it waits in `select` in place of a pending read, and on the Windows
-CI runner the gateway's measured overhead per call went from 7 to 22 ms to
-55 to 230 ms (run 43633574345, 2026-11-14). What a timed-out read looks like
+stays in blocking mode, so the way the gateway reads and writes is what it
+was before the timeout existed. Python's `socket.settimeout` was the first
+form and was replaced: it changes the socket's mode for reads and writes
+alike. With it, one Windows CI run measured 55 to 230 ms of gateway overhead
+a call (run 43633574345) and a second run of the same commit measured 16 to
+24 ms (run 43633577283), where main measures 7 to 22 ms. Whether the timeout
+caused the slow run was not established. What a timed-out read looks like
 differs by system, and `read_body` hides the difference: Windows raises
 TimeoutError; Linux and macOS return the bytes that had arrived.
 """
