@@ -91,21 +91,32 @@ An independent security review of the gateway and the coding session ran on
 "fix before release" findings are fixed, with nine smaller ones (#462, #465,
 #466, #467, #468, and #469 for the last of them). A second reviewer checked
 the first five of those pull requests and found nine further items, three of
-them marked "should fix before release". All nine are fixed (#470). The two
-later pull requests, #469 and #470, were tested by their authors and have
-not had a second review. You will notice these:
+them marked "should fix before release". All nine are fixed (#470). A third
+reviewer, who had written none of the fixes, then read #469 and #470 and
+found eleven items. One blocked the release: text inside a native tool
+call's arguments could run as a different call. It is fixed (#472), and so
+are nine of the others (#473); the eleventh was a gap in the limits page,
+now closed. The third reviewer's probe scripts were run again against the
+fixed code and no longer reproduce, with one exception that the limits page
+describes (calls on one key that are in flight together). #472 and #473
+were tested by their author and have not had a further independent review.
+You will notice these:
 
 - **The gateway ledger is a file.** It lives in `gateway-ledger/` under the
   Flywheel home and is chained across restarts. Start one gateway per
   Flywheel home. Back up or remove the folder as a whole. Editing a segment,
   or deleting one and leaving the head record, makes `verify` fail from then
   on.
-- **No ledger, no model call.** A gateway that cannot open or write its
-  ledger answers model calls with 503 and `retry-after: 5` before it
-  contacts a provider. That happens to a second gateway on the same home, or
-  when the `gateway-ledger` folder cannot be written. The gateway prints at
-  start whether the ledger opened: look for the `ledger` line, and for
-  `LEDGER UNAVAILABLE`.
+- **No ledger, no model call.** A gateway that cannot open its ledger
+  answers model calls with 503 and `retry-after: 5` before it contacts a
+  provider. That happens to a second gateway on the same home, or when the
+  `gateway-ledger` folder cannot be written. The gateway prints at start
+  whether the ledger opened: look for the `ledger` line, and for
+  `LEDGER UNAVAILABLE`. A ledger that stops taking writes while the gateway
+  runs (a full disk) gets the same 503 from the next call on. The one call
+  that meets the failure has already reached the provider. The gateway tries
+  the ledger again when a call comes in, at most once a second; when the
+  write works it serves that call, and the ledger records the gap.
 - **Each entry is committed to the disk before the reply is sent.** That
   commit (fsync) is on by default and took a median of 1.2 ms and 2.9 ms on
   the two drives measured. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips it and
@@ -124,23 +135,34 @@ not had a second review. You will notice these:
   the end is charged for what was received: the provider's output count when
   one had arrived, else an estimate of the text, tool-call arguments and
   thinking. A client that resets its connection before the first byte is
-  recorded and charged for the prompt. Before, such calls cost the key
-  nothing.
+  recorded and charged for the prompt. An estimate here is at least a
+  quarter of the characters, so text without spaces is not nearly free.
+  Before, such calls cost the key nothing.
 - **A key's limits are read again when the request body has arrived.** A
   key that was revoked, suspended or over a limit by then is refused, even if
   the request's headers came earlier.
 - **A client that goes silent during its request is disconnected after 30
   seconds.** A client that sends headers and no body gets 408 on a model
-  interface. `FLYWHEEL_GATEWAY_READ_TIMEOUT` sets another number of seconds;
-  `0` switches the timeout off. Writes have no timeout.
+  interface. The request line and headers must arrive within those 30
+  seconds, and a request body within two minutes, whether or not the client
+  holds a credential. `FLYWHEEL_GATEWAY_READ_TIMEOUT` sets another number
+  of seconds; `0` switches the timeout and the deadlines off. Writes have
+  no timeout.
 - **In a native tool turn, a `TOOL name {json}` line in the model's text does
   not run.** When the session offered its tools through the provider's
   function calling, only the provider's tool-call objects run. A line the
   model quotes from a file or a tool's output is recorded as quoted text. If
   a model writes such lines and makes no native call, it is told once to use
-  the native interface. If you relied on text TOOL lines with OpenAI,
-  Anthropic or Gemini, set `FLYWHEEL_NATIVE_TOOLS=0`, which uses the text
-  protocol as 1.x did.
+  the native interface. The same holds for text inside a call's arguments: a
+  call is recorded on one line whatever its arguments hold, and the calls
+  that run are compared with the provider's objects. If you relied on text
+  TOOL lines with OpenAI, Anthropic or Gemini, set `FLYWHEEL_NATIVE_TOOLS=0`,
+  which uses the text protocol as 1.x did.
+- **A model moves to the text protocol only when its host says it cannot
+  take tools.** The session then prints one `Notice:` line and records it.
+  An error that merely mentions tools or functions no longer does this. A
+  host that words the refusal in a way Flywheel does not recognize fails the
+  request; set `FLYWHEEL_NATIVE_TOOLS=0` for it.
 - **No key can be named `owner`.** That is the ledger's name for calls made
   with the gateway token.
 - **A redirecting upstream fails.** The gateway no longer follows a redirect
@@ -242,6 +264,9 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
   2 ms of that is the ledger entry being committed to the disk. The figures
   were taken before the gateway read a key's row a second time (#470); that
   read took 0.16 ms on the same machine and the table was not measured again.
+  It was not measured again after #473 either, which reads the request
+  head line by line under a deadline and holds one lock from the row read to
+  the admission; the 50 ms timing gate ran with both changes.
   Provider network time, concurrency and other machines are outside the
   figure.
   [docs/BENCHMARKS.md](docs/BENCHMARKS.md) has the table.
@@ -274,9 +299,11 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
 - **Fees that are not tokens are not counted**, such as web search per search
   and code execution per container hour. A key cannot cause them unless its
   allow-list names the tool.
-- **There is no rate, request-size or connection limit per key** beyond calls
-  in flight. A key holder can send bodies up to 32 MiB and open many
-  connections. Give keys to tools and people you trust.
+- **There is no rate or connection limit, and no request-size limit per
+  key**, beyond calls in flight. Any client that can reach the gateway's
+  port can open many connections, with or without a credential, and a key
+  holder can send bodies up to 32 MiB. Keep the port on loopback, and give
+  keys to tools and people you trust.
 - **Keys share one provider account.** Provider prompt caches are shared
   across keys, so a cache-read count can show one key holder that another
   caller recently sent the same prefix. Use separate provider accounts where
@@ -293,12 +320,14 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
   output cap, the in-flight limit and the suspension flag. Check the totals
   against the gateway ledger. Totals, in-flight counts and reservations are
   not shared across machines.
-- **The read timeout is per read, and covers reads only.** A client that
-  keeps sending a few bytes holds its connection and a gateway thread for
-  longer than 30 seconds, and a client that stops reading a stream keeps its
-  in-flight slot until it closes. Neither gains spend. Put a proxy with a
-  request deadline in front of a gateway that clients you do not run can
-  reach.
+- **Slow clients are bounded by deadlines, not by a connection cap.** A
+  client that keeps sending a few bytes holds a gateway thread until the
+  head deadline (30 seconds, plus at most one more read), the body deadline
+  (two minutes), or two seconds after a refusal that did not read its
+  body. Nothing limits how many connections a client opens. A client that
+  stops reading a stream keeps its in-flight slot until it closes. Neither
+  gains spend. Put a proxy with a connection limit in front of a gateway
+  that clients you do not run can reach.
 - **The gateway speaks plain HTTP on the loopback address.** For use from
   another machine put TLS in front, for example an SSH tunnel.
   [docs/GATEWAY-INTERFACES.md](docs/GATEWAY-INTERFACES.md) has the steps.
@@ -310,9 +339,14 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
   home answers every model call with 503. Give it its own `FLYWHEEL_HOME`.
 - **The 503 covers the routes that write to the ledger**: `/v1/messages`,
   `/v1/messages/count_tokens`, `/v1/responses`, `/v1/chat/completions` with a
-  provider endpoint, and `/api/route`. The local model on the chat path and
-  the gateway's own agent, companion and evaluation routes never wrote to
-  this ledger and are not refused.
+  provider endpoint, and `/api/route`. `/v1/embeddings`, the local model on
+  the chat path and the gateway's own agent, companion and evaluation routes
+  never wrote to this ledger and are not refused.
+- **The call that meets a ledger write failure has already reached the
+  provider.** Every model interface writes its entry after the provider
+  answered. A plain reply is then held back and answered 500; a stream's
+  text has left and its key is suspended. If the failed write left a line
+  cut short, `verify` exits 1 from then on and names the recorded break.
 - **A gateway that stops between a provider's reply and the ledger append
   leaves no entry.** The provider billed the call and the ledger does not
   show it.
@@ -347,6 +381,13 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
   `TOOL` line in the model's text still runs as a call, through the same
   permission prompt as any call; prefer `ask` or `edit` mode over `auto`
   there when the model reads text you do not trust.
+- **The move to the text protocol rests on the wording of a provider's
+  error.** No provider documents the sentence for "this model cannot take
+  tools". The phrases Flywheel accepts come from two documented Claude API
+  forms and from error texts quoted in public issue reports, and were not
+  checked against a live host. A host that uses one of them for another
+  reason switches that model to the text protocol; the session's notice
+  tells you when that happens.
 - **A Lean child process can see profile and toolchain paths.** It gets the
   variables it needs to start (home and temp folders, locale, `PATH`, the
   toolchain names) and no provider key. Proof code can print those paths.

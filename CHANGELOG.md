@@ -128,6 +128,9 @@ Research and measurement tools
 Diff-scoped mutation audit (#461)
 - `harness.suite_audit.audit_suite_diff(repo, base, head)` mutates only the lines a change added or edited, one mutant per line, runs the tests that reach each line, and names each survivor by file, line, original and mutant. It gives no score: a survivor is a prompt for review. It works in a scratch copy of the head commit. With `coverage.py` installed it runs only the tests that cover a mutated line; without it, every selected test runs for every mutant. Python and pytest only.
 
+Telos Toolkit plugin, in the repository only (#471)
+- `plugins/telos-toolkit/` is a Claude Code plugin that starts five MCP servers from tools you already have installed (`crucible mcp`, `gather mcp`, `index mcp`, `forum mcp` and the `@harperz9/learn` server), with one skill and three commands. No marketplace file lists it and no release asset carries it: the wheel and the sdist do not contain the `plugins` folder. Starting the five servers through the plugin inside Claude Code has not been run.
+
 Release from one tag (#463)
 - Pushing a version tag now builds the wheel and the sdist, runs the release gates against the built wheel on Linux and Windows, publishes to PyPI, and creates the GitHub release with the notes file and its assets. For 1.9.0 the release and most of its assets were put together by hand. See `docs/RELEASING.md`.
 - The gates run with the wheel installed in a clean environment and the checkout's `harness` folder moved away: the scope migration check, every asset against its sums file, the 1.x record check with its byte-flip controls, every test marked `release_gate` (the 50 ms budgets for the coding session and the gateway, and the one-second budget for the record check), `flywheel gate`, and one coding request against a scripted model. Nothing is published unless all of them pass.
