@@ -210,8 +210,13 @@ reports `TOKEN_UNREADABLE`.
 ## The old scripts
 
 `scripts/hooks/wrapper_scaffold_hook.py` and
-`scripts/hooks/wrapper_turn_receipt_hook.py` now print a deprecation line
-and run the module above. They stay for one release.
+`scripts/hooks/wrapper_turn_receipt_hook.py` were removed in 2.0. Each file
+is now a stub that writes one line naming the module to mount and exits 1.
+It runs no hook and captures nothing. `flywheel traces doctor` reports a
+mount that still names one of them as a failure. To move, run
+`flywheel traces hooks print-mount` and replace the old command in your
+settings file with the line it prints. The steps are in
+[MIGRATING-2.0.md](MIGRATING-2.0.md).
 
 ## Flywheel's own hook registry
 
