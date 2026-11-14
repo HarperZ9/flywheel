@@ -728,8 +728,11 @@ markers. Output has no color and no spinners in either mode.
   AI, Ollama and the subscription CLIs always use the text protocol.
 - No figure for what prompt caching saves has been measured. The counts shown
   are the provider's own; Flywheel applies no price to them.
-- With native calling on, the model is told not to write TOOL lines. If it
-  writes one anyway beside a native call, both run.
+- With native calling on, the request's system prompt explains tools in
+  function-calling terms and tells the model not to write TOOL lines. If it
+  writes one anyway beside a native call, both run. The ledger and the
+  receipt are computed over the session's own system prompt, which keeps the
+  text-protocol wording, so they do not show the wording that was sent.
 - When one reply holds several native calls and a tool's output contains the
   exact header of the next call's result, the outputs are divided at the
   wrong place on the way back to the provider. The text still arrives whole

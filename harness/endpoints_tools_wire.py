@@ -26,6 +26,9 @@ from . import endpoints_cache as _cache, endpoints_tools as _tools
 
 
 def _noted(system: str) -> str:
+    """The system prompt for a native request: call through the interface, not as text."""
+    from .local_tools import TOOLS_SYSTEM
+    system = system.replace(TOOLS_SYSTEM, _tools.GUIDE)
     return f"{system}\n\n{_tools.NOTE}" if system else _tools.NOTE
 
 

@@ -68,9 +68,11 @@ What stays the same:
 
 What changes:
 
-- Requests to the three hosts above carry a `tools` list and one more
-  paragraph at the end of the system prompt. A proxy that rewrites or rejects
-  `tools` will see different traffic.
+- Requests to the three hosts above carry a `tools` list, and the part of the
+  system prompt that explains how to call a tool is worded for function
+  calling. A proxy that rewrites or rejects `tools` will see different
+  traffic. The system prompt on the record, and the receipt computed over it,
+  keep the 1.x wording.
 - The harness-config ledger entry has a new field, `native_tools`, so the
   config hash of a 2.0 session differs from a 1.x session with the same
   settings. The hash already included the Flywheel version, so hashes never
