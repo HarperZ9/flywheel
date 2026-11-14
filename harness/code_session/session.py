@@ -14,6 +14,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
+from harness import endpoints_tools as _native
 from harness.local_loop import run_agent
 from harness.local_session import SessionLedger
 
@@ -77,6 +78,7 @@ class CodeSession:
     hooks: "object | None" = None
     commands: dict = field(default_factory=dict)
     config_sha256: str = ""           # harness settings of the last turn (config_hash)
+    toolbox: "object | None" = None   # native function calling state (endpoints_tools)
     runtime: "dict | None" = None     # declared serving runtime (runtime_identity)
 
     def set_hooks(self, hooks) -> None:
@@ -147,6 +149,11 @@ class CodeSession:
         from .background import JobTable
         self.executor.jobs = JobTable(self.root, record=lambda kind, data: self.ledger.append(
             "background", json.dumps({"event": kind, **data}, sort_keys=True), {"event": kind}))
+        if self.toolbox is None:
+            import os
+            from .tool_specs import for_executor
+            self.toolbox = _native.Toolbox(specs=lambda: for_executor(self.executor),
+                                           mode=_native.mode_from_env(os.environ))
         original = self.agent.send
 
         def counted_send(text):
@@ -156,7 +163,8 @@ class CodeSession:
             if folded is not None:
                 _context.record_fold(self.ledger, folded)
                 self.fire("PostCompact", messages=len(self.agent.history))
-            resp = original(text)
+            with _native.active(self.toolbox):     # hosted backends may speak natively
+                resp = original(text)
             add_usage(self.usage, resp)
             return resp
         self.agent.send = counted_send

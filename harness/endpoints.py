@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from .local_agent import BackendError
 from .endpoints_http import _http, _guard, _k
 from . import endpoints_reply as _reply, endpoints_stream as _stream
+from . import endpoints_tools_wire as _wire
 from .model_observation import keep_reasoning_default as _keep
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 from . import safe_program
@@ -68,13 +69,18 @@ class OpenAICompatBackend:
             payload["tools"] = self.tools
             if self.tool_choice is not None:
                 payload["tool_choice"] = self.tool_choice
+        payload = _wire.outgoing("openai", self, messages, system, payload)
         return f"{self.base_url}/chat/completions", headers, payload
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
         url, headers, payload = self._request(messages, system, max_tokens, temperature)
         status, obj = _guard(self.transport, "POST", url, headers,
                              json.dumps(payload).encode(), self.timeout, self.name)
-        return _reply.openai_reply(self, status, obj, payload, seed)
+        if _wire.refused(self, status, obj, payload):     # asked again in the text protocol
+            return self.chat(messages, system=system, max_tokens=max_tokens,
+                             temperature=temperature, seed=seed)
+        gen = _reply.openai_reply(self, status, obj, payload, seed)
+        return _wire.incoming("openai", self, obj, gen)
 
     def chat_streamed(self, messages, *, system, max_tokens, temperature, seed):
         request = self._request(messages, system, max_tokens, temperature)
@@ -155,6 +161,7 @@ class AnthropicBackend:
             payload["system"] = system
         if self.model not in _NO_TEMPERATURE:
             payload["temperature"] = temperature
+        payload = _wire.outgoing("anthropic", self, messages, system, payload)
         return f"{self.base_url}/v1/messages", headers, payload
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
@@ -162,7 +169,11 @@ class AnthropicBackend:
         status, obj = self._post(payload, headers)
         if _drop_temperature(self.model, status, obj, payload):
             status, obj = self._post(payload, headers)
-        return _reply.anthropic_reply(self, status, obj, payload, seed)
+        if _wire.refused(self, status, obj, payload):
+            return self.chat(messages, system=system, max_tokens=max_tokens,
+                             temperature=temperature, seed=seed)
+        gen = _reply.anthropic_reply(self, status, obj, payload, seed)
+        return _wire.incoming("anthropic", self, obj, gen)
 
     def chat_streamed(self, messages, *, system, max_tokens, temperature, seed):
         request = self._request(messages, system, max_tokens, temperature)
@@ -198,13 +209,17 @@ class GeminiBackend:
         url = f"{self.base_url}/models/{urllib.parse.quote(self.model, safe='')}:generateContent"
         headers = {"Content-Type": "application/json",
                    "x-goog-api-key": _credential(self.key_env, self.api_key)}
-        return url, headers, payload
+        return url, headers, _wire.outgoing("gemini", self, messages, system, payload)
 
     def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
         url, headers, payload = self._request(messages, system, max_tokens, temperature)
         status, obj = _guard(self.transport, "POST", url, headers,
                              json.dumps(payload).encode(), self.timeout, self.name)
-        return _reply.gemini_reply(self, status, obj, payload, seed)
+        if _wire.refused(self, status, obj, payload):
+            return self.chat(messages, system=system, max_tokens=max_tokens,
+                             temperature=temperature, seed=seed)
+        gen = _reply.gemini_reply(self, status, obj, payload, seed)
+        return _wire.incoming("gemini", self, obj, gen)
 
     def chat_streamed(self, messages, *, system, max_tokens, temperature, seed):
         request = self._request(messages, system, max_tokens, temperature)
