@@ -215,6 +215,17 @@ class Keys:
             self._write(rows)
         return rows[name]
 
+    def mark(self, name: str, **fields) -> dict:
+        """Set fields on a key's row (None removes one); returns the row after it."""
+        with self._held():
+            rows = self._read()
+            if name not in rows:
+                raise KeysError(f"no gateway key named '{name}'")
+            for field, value in fields.items():
+                rows[name].pop(field, None) if value is None else rows[name].update({field: value})
+            self._write(rows)
+        return rows[name]
+
     def authenticate(self, offered) -> "tuple | None":
         """(name, row) for a key the credential store holds, else None."""
         if not isinstance(offered, str) or not offered.startswith(PREFIX) or len(offered) > 200:

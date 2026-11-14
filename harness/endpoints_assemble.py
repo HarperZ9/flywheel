@@ -43,8 +43,14 @@ class Assembler:
 
 
 class AnthropicAssembler(Assembler):
-    """Messages API events -> the Message object. Unknown events are ignored,
-    as the provider's versioning policy asks."""
+    """Messages API events -> the Message object. Unknown events, block types
+    and delta types are ignored, as the provider's versioning policy asks.
+
+    A block the provider runs itself (`server_tool_use`) streams its input the
+    way a client `tool_use` does, with `input_json_delta`
+    (https://platform.claude.com/docs/en/agents-and-tools/tool-use/server-tools,
+    read 2026-11-14). Its input is collected too. Only a client tool call is
+    held to a JSON object: that one is run on this side."""
 
     _KINDS = ("message_start", "content_block_start", "content_block_delta",
               "content_block_stop", "message_delta", "message_stop")
@@ -80,7 +86,7 @@ class AnthropicAssembler(Assembler):
             block["text"] = block.get("text", "") + delta["text"]
             return delta["text"]
         if kind == "input_json_delta":
-            self.partial[index] += delta["partial_json"]
+            self.partial[index] = self.partial.get(index, "") + delta["partial_json"]
         elif kind == "thinking_delta":
             block["thinking"] = block.get("thinking", "") + delta["thinking"]
         elif kind == "signature_delta":
@@ -89,11 +95,17 @@ class AnthropicAssembler(Assembler):
     def _content_block_stop(self, data):
         index = data["index"]
         if index in self.partial:           # a tool call's arguments, now whole
-            raw = self.partial.pop(index)
-            parsed = json.loads(raw) if raw.strip() else {}
-            if not isinstance(parsed, dict):
+            raw, ours = self.partial.pop(index), self.blocks[index].get("type") == "tool_use"
+            try:
+                parsed = json.loads(raw) if raw.strip() else {}
+            except ValueError:
+                if ours:
+                    raise
+                parsed = None               # the provider's own block: left as it came
+            if ours and not isinstance(parsed, dict):
                 raise ValueError("tool input is not a JSON object")
-            self.blocks[index]["input"] = parsed
+            if isinstance(parsed, dict):
+                self.blocks[index]["input"] = parsed
         self.open.discard(index)
 
     def _message_delta(self, data):

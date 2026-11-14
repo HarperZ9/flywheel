@@ -1,0 +1,55 @@
+{
+  "id": "msg_fixture_server_tool",
+  "type": "message",
+  "role": "assistant",
+  "model": "claude-sonnet-5",
+  "content": [
+    {
+      "type": "text",
+      "text": "I will search for the release notes."
+    },
+    {
+      "type": "server_tool_use",
+      "id": "srvtoolu_fixture01",
+      "name": "web_search",
+      "input": {
+        "query": "flywheel release notes"
+      }
+    },
+    {
+      "type": "web_search_tool_result",
+      "tool_use_id": "srvtoolu_fixture01",
+      "content": [
+        {
+          "type": "web_search_result",
+          "url": "https://example.com/release-notes",
+          "title": "Release notes",
+          "encrypted_content": "Zml4dHVyZS1ub3QtcmVhbA==",
+          "page_age": "November 1, 2026"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "text": "The notes list three changes.",
+      "citations": [
+        {
+          "type": "web_search_result_location",
+          "url": "https://example.com/release-notes",
+          "title": "Release notes",
+          "encrypted_index": "Zml4dHVyZS1pbmRleA==",
+          "cited_text": "Three changes in this release."
+        }
+      ]
+    }
+  ],
+  "stop_reason": "end_turn",
+  "stop_sequence": null,
+  "usage": {
+    "input_tokens": 6039,
+    "output_tokens": 931,
+    "server_tool_use": {
+      "web_search_requests": 1
+    }
+  }
+}
