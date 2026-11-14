@@ -5,6 +5,11 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Hosted streaming
+- In the interactive `flywheel code` session, replies from Anthropic, OpenAI, OpenAI-compatible hosts (DeepSeek, OpenRouter, GLM) and Gemini print as the model writes them. The stream is rebuilt into the provider's ordinary response and read by the same code as a plain reply, so the ledger entry, receipt id, conversation and provider token counts are the same either way. `FLYWHEEL_STREAM=0` turns it off. Azure, Bedrock, Vertex and the subscription CLIs still print whole.
+- A hosted stream that is cut short after it began fails the turn: nothing from it is recorded, a tool call it was in the middle of does not run, and the session does not send a second request by itself. A stream that never began is asked once more without streaming. The interrupted-stream note now reads `[stream interrupted; the text above is not the reply]`.
+- Flywheel's own time before the first streamed text is held under 50 ms by a test against a local stand-in that delays its first byte (measured median 1.6 to 1.9 ms, slowest turn 38 ms, 30 turns per dialect on Windows 11). Tested by replaying recorded streams in each provider's documented format; a live streamed turn per provider was not run. See `docs/CODE-SESSION.md`, "Output as it arrives", and `docs/MIGRATING-2.0.md`.
+
 Writable workspace
 - In `flywheel code`, a `run` command may write in the project folder and its own scratch folder, so installs, builds, formatters and `git commit` work. The rest of the disk stays closed to it, and so do paths reached through `..` or a link.
 - Git hooks, git config lines that start a program, and the session's permission, hook and MCP files are compared before and after each command; a change is put back and the command is reported as failed.
@@ -13,7 +18,7 @@ Writable workspace
 - Tested in the real sandbox on Windows. On Linux and macOS the sandbox arguments are tested; no command was run there for this change.
 
 Output as it arrives
-- In the interactive `flywheel code` session, a command's output prints while the command runs. Model text prints as it is written when the backend can stream, which today is Ollama; hosted providers still print a reply whole. The ledger and the recorded results are unchanged. `FLYWHEEL_STREAM=0` turns it off.
+- In the interactive `flywheel code` session, a command's output prints while the command runs. Model text prints as it is written when the backend can stream (Ollama; hosted providers are under "Hosted streaming" above). The ledger and the recorded results are unchanged. `FLYWHEEL_STREAM=0` turns it off.
 
 Provider boundary
 - A failed call to a hosted model ends its error line with one plain sentence: whether trying again could help, and the wait the provider asked for when it sent one. Flywheel does not retry on its own. The retry deadline now reaches errors from the hosted chat backends as well as the proposers.

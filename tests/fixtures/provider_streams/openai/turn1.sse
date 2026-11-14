@@ -1,0 +1,26 @@
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"I will wr"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"ite the n"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"ote.\nTOOL"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":" write_fi"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"le {\"path"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"\": \"n.txt"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"\", \"conte"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"nt\": \"hi\""},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"}"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{},"logprobs":null,"finish_reason":"stop"}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-1","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[],"usage":{"prompt_tokens":398,"completion_tokens":25,"total_tokens":423}}
+
+data: [DONE]
+

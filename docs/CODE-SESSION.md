@@ -422,17 +422,56 @@ Limits of this design:
 
 In the interactive session, a command's output prints while the command runs,
 each line marked `    | `. The model's text prints as the model writes it when
-the backend can stream; today that is Ollama. A reply from a hosted provider
-or a subscription CLI still prints whole when it is complete. Lines that are
-tool calls are left out of the streamed text, because the session prints each
-call in its own form.
+the backend can stream. These backends stream:
 
-Streaming changes what you see and nothing that is recorded. The ledger entry
-for a reply is the same text, the command result is read from the same files
-after the command ends, and `-p`, `--output-format stream-json` and `--acp`
-are unchanged. One difference: a streamed Ollama reply reports no token
-counts, so `/cost` lists that call as uncounted. `FLYWHEEL_STREAM=0` turns
-streaming off, and it is off in `--plain` mode.
+| Backend | How it streams | Token counts on a streamed reply |
+|---|---|---|
+| Anthropic (`ANTHROPIC_API_KEY`) | Messages API with `stream: true` | the provider's counts |
+| OpenAI and OpenAI-compatible hosts (OpenAI, DeepSeek, OpenRouter, GLM) | chat completions with `stream: true` | the provider's counts, asked for with `stream_options.include_usage` |
+| Gemini (`GEMINI_API_KEY`) | `streamGenerateContent` with `alt=sse` | the provider's counts |
+| Ollama | its native stream | none; `/cost` lists the call as uncounted |
+
+A reply from Azure OpenAI, Amazon Bedrock, Google Vertex AI or a subscription
+CLI still prints whole when it is complete. Lines that are tool calls are left
+out of the streamed text, because the session prints each call in its own
+form.
+
+Streaming changes what you see and nothing that is recorded. A streamed reply
+from a hosted provider is rebuilt into the response the provider would have
+sent without streaming and read by the same code, so the ledger entry, its
+receipt id, the conversation and the token counts are the ones a plain reply
+gives. The text that was shown must equal the text that is recorded, or the
+reply is refused. The command result is read from the same files after the
+command ends, and `-p`, `--output-format stream-json` and `--acp` are
+unchanged. `FLYWHEEL_STREAM=0` turns streaming off, and it is off in `--plain`
+mode.
+
+A hosted stream can end in three ways:
+
+- It ends with the provider's end marker. The reply is recorded.
+- It never begins: the request is refused, the host cannot be reached, or the
+  body carries no event. The session prints
+  `[stream interrupted; the text above is not the reply]` and asks once more
+  without streaming.
+- It begins and is cut short: the connection drops, an event cannot be read,
+  or the provider sends an error part way. The turn fails with the reason.
+  Nothing from the cut stream is recorded, and a tool call it was in the
+  middle of does not run. The session does not ask again by itself, because a
+  second request to a hosted provider is a second charge. Send the request
+  again to retry. An Ollama stream that is cut short is still asked again
+  without streaming, since a local request costs nothing.
+
+Time to the first text: Flywheel's own share of the wait, which is the time
+before the request leaves plus the time to read the first events and print
+them, is held under 50 ms by a test that runs each hosted dialect against a
+local stand-in that delays its first byte. Measured on Windows 11 with Python
+3.12 over 30 turns per dialect: median 1.6 to 1.9 ms, slowest turn 38 ms. The
+figure leaves out the key-store lookup, DNS and TLS to a real provider, and
+the first turn's imports. The provider's own time to its first byte is not
+Flywheel's to shorten and is not in the budget.
+
+Tested by replaying recorded streams in each provider's documented format.
+A streamed turn against each live hosted provider: not run.
 
 ## Background jobs
 
@@ -594,5 +633,8 @@ markers. Output has no color and no spinners in either mode.
   and a background job cannot write there. See "What a command may write".
 - The tool protocol is text lines, which any model can follow; native function
   calling is not used yet.
-- This session has been tested with a scripted model. A run against each
-  hosted provider is not part of the test suite.
+- This session has been tested with a scripted model and with recorded
+  provider streams. A run against each live hosted provider is not part of
+  the test suite, and no live streamed turn has been run.
+- Azure OpenAI, Amazon Bedrock, Google Vertex AI and the subscription CLIs do
+  not stream; their replies print whole.

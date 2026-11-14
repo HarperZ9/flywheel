@@ -1,0 +1,23 @@
+{
+ "candidates": [
+  {
+   "content": {
+    "parts": [
+     {
+      "text": "Wrote n.txt.\nNothing else changed."
+     }
+    ],
+    "role": "model"
+   },
+   "finishReason": "STOP",
+   "index": 0
+  }
+ ],
+ "usageMetadata": {
+  "promptTokenCount": 459,
+  "candidatesTokenCount": 10,
+  "totalTokenCount": 469
+ },
+ "modelVersion": "gemini-2.5-flash",
+ "responseId": "resp-fixture-2"
+}

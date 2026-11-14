@@ -1,0 +1,23 @@
+{
+ "candidates": [
+  {
+   "content": {
+    "parts": [
+     {
+      "text": "I will write the note.\nTOOL write_file {\"path\": \"n.txt\", \"content\": \"hi\"}"
+     }
+    ],
+    "role": "model"
+   },
+   "finishReason": "STOP",
+   "index": 0
+  }
+ ],
+ "usageMetadata": {
+  "promptTokenCount": 405,
+  "candidatesTokenCount": 26,
+  "totalTokenCount": 431
+ },
+ "modelVersion": "gemini-2.5-flash",
+ "responseId": "resp-fixture-1"
+}

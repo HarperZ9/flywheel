@@ -12,11 +12,11 @@ import shlex
 from dataclasses import dataclass, field
 
 from .local_agent import BackendError
-from .endpoints_http import _http, _guard, _k, _parse_tool_call, _response_error
-from .model_observation import attach as _observed, keep_reasoning_default as _keep
+from .endpoints_http import _http, _guard, _k
+from . import endpoints_reply as _reply, endpoints_stream as _stream
+from .model_observation import keep_reasoning_default as _keep
 from .endpoint_opencode import OpenCodeBackend  # noqa: F401 (re-exported)
 from . import safe_program
-from .token_usage import field as _usage, from_anthropic, from_gemini, from_openai
 from .provider_fault_boundary import redacted_text
 
 
@@ -50,12 +50,13 @@ class OpenAICompatBackend:
     # Reasoning text is retained only when a caller asks for it, here or with
     # FLYWHEEL_KEEP_REASONING=1. See model_observation for why it is withheld.
     keep_reasoning: bool = field(default_factory=_keep)
+    stream_transport: "callable" = None   # (method,url,headers,body,timeout)->(status,lines)
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key)) \
             if self.key_env else bool(self.base_url)
 
-    def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
+    def _request(self, messages, system, max_tokens, temperature) -> tuple:
         msgs = ([{"role": "system", "content": system}] if system else []) + list(messages)
         headers = {"Content-Type": "application/json"}
         key = _credential(self.key_env, self.api_key)
@@ -67,44 +68,17 @@ class OpenAICompatBackend:
             payload["tools"] = self.tools
             if self.tool_choice is not None:
                 payload["tool_choice"] = self.tool_choice
-        status, obj = _guard(self.transport, "POST",
-                             f"{self.base_url}/chat/completions",
-                             headers, json.dumps(payload).encode(),
-                             self.timeout, self.name)
-        try:
-            message = obj["choices"][0]["message"]
-            text = message["content"]
-        except (KeyError, IndexError, TypeError):
-            raise _response_error(self.name, status, obj, kind=self.name)
-        out = {"model_ref": f"{self.name}:{self.model}", "seed": seed}
-        calls = message.get("tool_calls") if isinstance(message, dict) else None
-        if isinstance(calls, list) and calls:
-            out["tool_calls"] = [_parse_tool_call(c) for c in calls]
-        if not isinstance(text, str) or not text.strip():
-            if out.get("tool_calls"):
-                text = ""          # a pure tool-call turn carries no prose
-            else:
-                # A 200 with content: null (a reasoning model that spent
-                # its whole budget) is refusal-shaped, not an empty reply.
-                # finish_reason separates the two causes an operator can act
-                # on: "length" means raise max_tokens, anything else means the
-                # turn really did come back empty. Naming it here saves a
-                # round of guesswork at the only point that knows.
-                reason = ""
-                try:
-                    reason = obj["choices"][0].get("finish_reason") or ""
-                except (KeyError, IndexError, TypeError):
-                    pass
-                detail = f" (finish_reason={redacted_text(str(reason))})" if reason else ""
-                if reason == "length":
-                    detail += "; the completion budget was spent before any " \
-                              "content was emitted -- raise max_tokens"
-                raise BackendError(
-                    f"{self.name} returned {status} with no message content{detail}")
-        out["text"] = text
-        out.update(_usage(from_openai(obj)))
-        return _observed(out, obj, dialect="openai", requested_model=self.model,
-                         keep_reasoning=self.keep_reasoning, request=payload, kind=self.name)
+        return f"{self.base_url}/chat/completions", headers, payload
+
+    def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
+        url, headers, payload = self._request(messages, system, max_tokens, temperature)
+        status, obj = _guard(self.transport, "POST", url, headers,
+                             json.dumps(payload).encode(), self.timeout, self.name)
+        return _reply.openai_reply(self, status, obj, payload, seed)
+
+    def chat_streamed(self, messages, *, system, max_tokens, temperature, seed):
+        request = self._request(messages, system, max_tokens, temperature)
+        return _stream.run(self, "openai", request, seed)
 
 
 # Models that reject `temperature` outright. Anthropic began retiring the
@@ -137,6 +111,18 @@ def _rejects_temperature(status: int, obj) -> bool:
         "deprecat" in msg or "unsupported" in msg or "not supported" in msg)
 
 
+def _drop_temperature(model: str, status: int, obj, payload: dict) -> bool:
+    """True when the provider named `temperature` as the fault and it was sent.
+
+    The parameter is dropped and the model remembered, so the caller retries
+    once and never returns the 400 as text."""
+    if not (_rejects_temperature(status, obj) and "temperature" in payload):
+        return False
+    _NO_TEMPERATURE.add(model)
+    payload.pop("temperature")
+    return True
+
+
 @dataclass
 class AnthropicBackend:
     """Anthropic /v1/messages (claude api) — native shape."""
@@ -149,6 +135,7 @@ class AnthropicBackend:
     timeout: float = 120.0
     api_key: str | None = field(default=None, repr=False)
     keep_reasoning: bool = field(default_factory=_keep)
+    stream_transport: "callable" = None
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key))
@@ -158,7 +145,7 @@ class AnthropicBackend:
                       headers, json.dumps(payload).encode(), self.timeout,
                       self.name)
 
-    def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
+    def _request(self, messages, system, max_tokens, temperature) -> tuple:
         headers = {"Content-Type": "application/json",
                    "x-api-key": _credential(self.key_env, self.api_key),
                    "anthropic-version": self.version}
@@ -168,21 +155,18 @@ class AnthropicBackend:
             payload["system"] = system
         if self.model not in _NO_TEMPERATURE:
             payload["temperature"] = temperature
+        return f"{self.base_url}/v1/messages", headers, payload
+
+    def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
+        _url, headers, payload = self._request(messages, system, max_tokens, temperature)
         status, obj = self._post(payload, headers)
-        if _rejects_temperature(status, obj) and "temperature" in payload:
-            # The provider named the offending parameter. Drop it, remember the
-            # model, and retry once -- never silently return the 400 as text.
-            _NO_TEMPERATURE.add(self.model)
-            payload.pop("temperature")
+        if _drop_temperature(self.model, status, obj, payload):
             status, obj = self._post(payload, headers)
-        try:
-            text = "".join(b.get("text", "") for b in obj["content"] if b.get("type") == "text")
-        except (KeyError, TypeError):
-            raise _response_error(self.name, status, obj, kind="anthropic")
-        out = {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed,
-               **_usage(from_anthropic(obj))}
-        return _observed(out, obj, dialect="anthropic", requested_model=self.model,
-                         keep_reasoning=self.keep_reasoning, request=payload)
+        return _reply.anthropic_reply(self, status, obj, payload, seed)
+
+    def chat_streamed(self, messages, *, system, max_tokens, temperature, seed):
+        request = self._request(messages, system, max_tokens, temperature)
+        return _stream.run(self, "anthropic", request, seed)
 
 
 @dataclass
@@ -199,11 +183,12 @@ class GeminiBackend:
     timeout: float = 120.0
     api_key: str | None = field(default=None, repr=False)
     keep_reasoning: bool = field(default_factory=_keep)
+    stream_transport: "callable" = None
 
     def health(self) -> bool:
         return bool(_credential(self.key_env, self.api_key))
 
-    def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
+    def _request(self, messages, system, max_tokens, temperature) -> tuple:
         contents = [{"role": "model" if m["role"] == "assistant" else "user",
                      "parts": [{"text": m["content"]}]} for m in messages]
         payload = {"contents": contents,
@@ -213,21 +198,17 @@ class GeminiBackend:
         url = f"{self.base_url}/models/{urllib.parse.quote(self.model, safe='')}:generateContent"
         headers = {"Content-Type": "application/json",
                    "x-goog-api-key": _credential(self.key_env, self.api_key)}
+        return url, headers, payload
+
+    def chat(self, messages, *, system, max_tokens, temperature, seed) -> dict:
+        url, headers, payload = self._request(messages, system, max_tokens, temperature)
         status, obj = _guard(self.transport, "POST", url, headers,
                              json.dumps(payload).encode(), self.timeout, self.name)
-        try:
-            # A part flagged thought:true is the model reasoning, not the
-            # answer. Joining every part put the chain of thought inside the
-            # returned text, where every caller stored it as the reply.
-            parts = obj["candidates"][0]["content"]["parts"]
-            text = "".join(q.get("text", "") for q in parts
-                           if q.get("thought") is not True)
-        except (KeyError, IndexError, TypeError):
-            raise _response_error(self.name, status, obj, kind="gemini")
-        out = {"text": text, "model_ref": f"{self.name}:{self.model}", "seed": seed,
-               **_usage(from_gemini(obj))}
-        return _observed(out, obj, dialect="gemini", requested_model=self.model,
-                         keep_reasoning=self.keep_reasoning, request=payload)
+        return _reply.gemini_reply(self, status, obj, payload, seed)
+
+    def chat_streamed(self, messages, *, system, max_tokens, temperature, seed):
+        request = self._request(messages, system, max_tokens, temperature)
+        return _stream.run(self, "gemini", request, seed)
 
 
 @dataclass
