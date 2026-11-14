@@ -1,6 +1,12 @@
 # Next release notes
 
-These notes collect changes merged since 1.0.3 for the next release.
+Retired on 2026-11-14. This page was last edited on 2026-09-23, when it
+collected changes merged after 1.0.3. It is kept as written, because other
+pages and tests cite it, and it is no longer updated. Changes that are merged
+and not yet released are in `CHANGELOG.md` under "Unreleased". Changes that
+affect an upgrade to 2.0 are in [MIGRATING-2.0.md](MIGRATING-2.0.md).
+
+The notes below are the 2026-09-23 text.
 
 ## Behaviour changes
 

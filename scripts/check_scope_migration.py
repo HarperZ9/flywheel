@@ -44,7 +44,7 @@ ALLOWED = (
     "desktop/assets/rowan/action-cues/*",
     "desktop/lib/assistant/rowan_action_cue_*",
     # the pages that tell a reader what the older name became
-    "docs/MIGRATING-2.0.md",
+    "docs/MIGRATING-2.0*.md",   # the note and its generated schema page
     "docs/VERSIONING.md",
     # historical documents, left as written
     "CHANGELOG.md",
