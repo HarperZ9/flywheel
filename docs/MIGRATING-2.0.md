@@ -442,6 +442,24 @@ counts is charged the word estimate, which runs low, and is marked
 across machines are not covered. `docs/GATEWAY-INTERFACES.md`, "Keys and
 budgets", has the details.
 
+### After the security review: the gateway ledger is a file
+
+In 1.x and in the first 2.0 builds the gateway's ledger lived in process
+memory and was gone when the gateway stopped. It is now kept under the
+Flywheel home in `gateway-ledger/`, chained across restarts.
+
+- Nothing to change in a client. Calls on `/v1/messages`, `/v1/responses` and
+  `/v1/chat/completions` are recorded as before, in the same entry format.
+- New command: `flywheel gateway-ledger verify` and `flywheel gateway-ledger
+  show [--key NAME]`. See `docs/GATEWAY-INTERFACES.md`, "The gateway ledger".
+- A call now waits for its entry to be committed to the disk, about 1 to 3 ms
+  on the measured machine. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips that wait
+  and accepts that a power loss can lose the newest entries.
+- Start one gateway per Flywheel home. A second one on the same home refuses
+  model calls with 500, because it cannot append to the ledger.
+- Back up or remove `gateway-ledger/` as a whole folder. Editing a segment
+  makes `verify` fail from then on.
+
 ## The error object of a hosted backend
 
 When a call to a hosted model fails, the error object's `body` no longer

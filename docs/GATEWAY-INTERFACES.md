@@ -695,14 +695,91 @@ the CLI output finds the key only in the output of `create`.
 Not run: any hosted provider, Claude Code or Codex CLI holding a key, and the
 real system credential store.
 
+## The gateway ledger
+
+Every model call the gateway routes is recorded in one ledger: `/v1/messages`,
+`/v1/responses` and the `/v1/chat/completions` path write to the same one. It
+is a file under the Flywheel home, so it outlives the gateway process.
+
+```text
+<Flywheel home>/gateway-ledger/segment-000001.jsonl   a header line, then one entry per line
+<Flywheel home>/gateway-ledger/head                   where the chain ends
+<Flywheel home>/gateway-ledger/writer.lock            held by the gateway that appends
+```
+
+An entry is the hash-chained entry a saved coding session uses: sequence
+number, kind, content, meta, the hash of the entry before it and its own
+hash. The first entry of a segment links to the SHA-256 of the segment's
+header line.
+
+### Read and verify it
+
+```bash
+flywheel gateway-ledger verify                 # exit 0 only when every segment holds
+flywheel gateway-ledger show                   # every entry, oldest first
+flywheel gateway-ledger show --key ci-bot      # the calls of one gateway key
+flywheel gateway-ledger show --key owner       # calls made with the gateway token
+flywheel gateway-ledger show --kind endpoint_call_failed --last 20 --json
+```
+
+`verify` recomputes every hash and link, checks each segment's header against
+the segment before it and the last segment against the head record, and names
+the line that is wrong. `show --key NAME` lists only the entries whose `key`
+is that name: served calls, failed calls and refusals. Entries that name no
+key (the chat path) count as the owner's. `show` exits 1 when the ledger does
+not verify, after printing the entries that do. Both commands only read and
+can run while the gateway is running. The ledger has no HTTP route, so a
+virtual key cannot read it.
+
+### When an entry reaches the disk
+
+Each entry is written to the segment and committed to the disk (fsync) before
+the gateway goes on. For a plain reply that is before the reply is sent. For
+a stream it is before the last event (`message_stop`, `response.completed`):
+the text of a stream leaves before its entry exists, because the entry holds
+the hash of the whole reply. A gateway that stops between a provider's reply
+and the append leaves no entry for that call.
+
+`FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips the fsync. A crash of the gateway
+process then still loses nothing, and a power loss can lose the entries the
+operating system had not yet written. On the measured machine an append took
+a median of 0.02 ms without the fsync and 1.2 ms and 2.9 ms with it on two
+drives (380 appends each, 2026-11-14).
+
+### Restarts and a broken chain
+
+A starting gateway loads the last segment, verifies it and the head record,
+and continues the chain from the last entry. If the segment does not verify
+(a changed byte, a removed entry, a line cut short), the gateway logs
+`GATEWAY LEDGER BROKEN` at error level with the segment and the line, leaves
+that file as it is, and starts a new segment. The new segment's header names
+the broken one, the last hash that still verified and what was wrong, and
+`verify` fails from then on with both lines. Nothing is appended to a broken
+segment. A segment that reaches 50,000 entries is closed at the next start,
+and the next segment's header carries its head hash.
+
+One gateway process appends to a home's ledger. A second gateway started on
+the same home cannot take the writer lock; it logs that at error level and
+refuses model calls with 500 instead of serving them without a record.
+
+### What the ledger does not show
+
+The head record makes a shortened file detectable. A process running as the
+same user that rewrites a segment and the head record together is not
+detected by these files alone. `flywheel anchor` has outside parties witness
+a head. The key totals in `gateway-keys.json` are a running sum and are not
+chained; the ledger is the record to check them against.
+
 ## Overhead
 
-On the measured machine the gateway adds a median of 1.3 to 2.0 ms to a call
-made with the gateway token and 2.6 to 3.4 ms to a call made with a virtual
-key, counted to the end of the reply. Those figures are from 2026-11-14, on one
+On the measured machine the gateway adds a median of 3.5 to 4.7 ms to a call
+made with the gateway token and 4.8 to 5.4 ms to a call made with a virtual
+key, counted to the end of the reply. About 2 ms of that is the ledger entry
+being committed to the disk before the reply is sent; before the ledger was
+kept on disk the same figures were 1.3 to 2.0 ms and 2.6 to 3.4 ms. Those figures are from 2026-11-14, on one
 Windows 11 machine, with one client sending one request at a time to a
 loopback stub in place of the provider, over 30 warm calls per case. The time
-to the first text of a stream is 1.2 to 1.6 ms over the stub for either
+to the first text of a stream is 1.0 to 1.6 ms over the stub for either
 caller. More than one call in twenty took 20 to 27 ms. Those calls waited on
 the gateway's own connection to the upstream: on Windows a connect made with a
 timeout sometimes comes back about 15 ms late. On GitHub's Windows runners

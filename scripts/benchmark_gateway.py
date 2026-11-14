@@ -55,7 +55,9 @@ def _parts(record: dict[str, Any]) -> list[str]:
     out += [f"- {label}: {ms:.2f} ms" for label, ms in named.items()]
     out += ["", wrap(
         f"The key debit is {debit:.2f} ms of the ledger entry step: a file lock, a read, a "
-        f"write and a rename. The remaining {rest:.1f} ms is the two HTTP hops: the "
+        "write and a rename. The rest of that step is the ledger append, which writes the "
+        "entry to the gateway ledger on disk and waits for the disk to commit it (fsync) "
+        f"before the reply is sent. The remaining {rest:.1f} ms is the two HTTP hops: the "
         "gateway's server accepts the connection, starts a thread and parses the request, "
         "and the gateway opens its own connection to the upstream. A call with the gateway "
         "token has no key lookup and no debit.")]
