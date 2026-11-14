@@ -65,15 +65,19 @@ def no_real_store(monkeypatch):
 
 
 @pytest.mark.parametrize("path,stream,key", CASES)
-def test_the_gateway_adds_less_than_the_budget(tmp_path, no_real_store, path, stream, key):
+def test_the_gateway_adds_less_than_the_budget(tmp_path, no_real_store, capsys, path, stream,
+                                               key):
     with bench.rig(tmp_path / "home", "openai", STUB_DELAY, key=key) as made:
         samples = bench.measure(made, path, stream, CALLS, WARMUP)
         served = [entry.kind for entry in made.ledger.entries]
         waits = list(made.stub.waits)
         charged = made.keys.row("bench")["totals"]["calls"] if key else None
     assert len(samples["gateway"]) == len(samples["direct"]) == CALLS
-    print("overhead ms", path, stream, key, round(bench.overhead(samples, 0) * 1000, 2),
-          round(bench.overhead(samples, 1) * 1000, 2))
+    with capsys.disabled():             # shown on a pass too: the room left on this runner
+        print(f"\n  gateway overhead {path} {'stream' if stream else 'plain'} "
+              f"{'key' if key else 'token'}: first {bench.overhead(samples, 0) * 1000:.1f} ms, "
+              f"end {bench.overhead(samples, 1) * 1000:.1f} ms "
+              f"(budget {BUDGET_SECONDS * 1000:.0f})", end="")
     assert within_budget(samples), shown(samples)
     # Every gateway call reached the stub and was recorded: a call answered
     # without the upstream would be fast and would not be the thing measured.
