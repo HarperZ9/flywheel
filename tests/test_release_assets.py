@@ -5,6 +5,7 @@ These tests hold the parts that decide: the version check, the sums check and
 the PyPI digest check, each with a control that must fail, and the shape of
 the workflow (the gates sit before the upload, a dry run publishes nothing).
 """
+import datetime
 import hashlib
 import re
 from pathlib import Path
@@ -80,6 +81,22 @@ def test_a_changelog_with_no_dated_section_stops_a_release(tmp_path):
     (root / "CHANGELOG.md").write_text("# Changelog\n\n## 2.0.0 (RELEASE-DATE)\n", "utf-8")
     problems = R.check(root, tag="v2.0.0", release=True)
     assert any("no dated" in p for p in problems) and any("RELEASE-DATE" in p for p in problems)
+
+
+def test_stamp_fills_the_dates_and_leaves_a_tree_that_can_release(tmp_path):
+    root = tree(tmp_path)
+    (root / "CHANGELOG.md").write_text("# Changelog\n\n## 2.0.0 (RELEASE-DATE)\n", "utf-8")
+    (root / "SECURITY.md").write_text("1.9.x until SECURITY-WINDOW-END\n", "utf-8")
+    (root / "docs" / "VERSIONING.md").write_text("until SECURITY-WINDOW-END.\n", "utf-8")
+    (root / "CITATION.cff").write_text('version: "2.0.0"\ndate-released: 2026-10-15\n', "utf-8")
+    assert R.check(root, tag="v2.0.0", release=True) != []
+    changed = R.stamp(root, datetime.date(2026, 11, 20))
+    assert changed == ["CHANGELOG.md", "SECURITY.md", "docs/VERSIONING.md", "CITATION.cff"]
+    assert "## 2.0.0 (2026-11-20)" in (root / "CHANGELOG.md").read_text("utf-8")
+    assert (root / "SECURITY.md").read_text("utf-8") == "1.9.x until 2027-02-18\n"
+    assert "date-released: 2026-11-20" in (root / "CITATION.cff").read_text("utf-8")
+    assert R.check(root, tag="v2.0.0", release=True) == []
+    assert R.stamp(root, datetime.date(2026, 11, 20)) == []
 
 
 def assets(tmp_path):

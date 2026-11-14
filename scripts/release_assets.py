@@ -8,12 +8,15 @@ are plain Python, so a person can run each one from a checkout:
     python scripts/release_assets.py verify release-assets
     python scripts/release_assets.py pypi --version X.Y.Z --sums release-assets/python-SHA256SUMS.txt
     python scripts/release_assets.py gate-tests [--run]
+    python scripts/release_assets.py stamp --date YYYY-MM-DD
 
 - check: the tag, pyproject.toml, desktop/pubspec.yaml,
   desktop/lib/version.dart and CITATION.cff name one version, and the notes
-  file for it exists,
-  has the right heading and links the licensing page. With --release it also
-  refuses a placeholder left in the notes, the changelog or SECURITY.md.
+  file for it exists, has the right heading and links the licensing page.
+  With --release it also refuses a placeholder left in the notes, the
+  changelog or SECURITY.md.
+- stamp: writes the release date over the RELEASE-DATE placeholder, the date
+  90 days later over SECURITY-WINDOW-END, and the date into CITATION.cff.
 - build: copies the wheel and sdist from --dist and builds the plugin and
   skill zips, the source tools plugin and the VS Code extension. Each built
   file is built twice and the two results must be the same bytes. Every file
@@ -32,6 +35,7 @@ are built by desktop-release.yml and are not handled here.
 from __future__ import annotations
 
 import argparse
+import datetime
 import hashlib
 import json
 import re
@@ -99,7 +103,7 @@ def _unfilled(root: Path, notes: Path, version: str) -> list[str]:
     changelog = (root / "CHANGELOG.md").read_text(encoding="utf-8")
     if not re.search(rf"^## {re.escape(version)} \(\d{{4}}-\d{{2}}-\d{{2}}\)$", changelog, re.M):
         out.append(f"CHANGELOG.md has no dated '## {version} (YYYY-MM-DD)' section")
-    for path in (notes, root / "CHANGELOG.md", root / "SECURITY.md"):
+    for path in (notes, root / "CHANGELOG.md", root / "SECURITY.md", root / "docs/VERSIONING.md"):
         if not path.exists():
             continue
         text = path.read_text(encoding="utf-8")
@@ -215,6 +219,30 @@ def pypi(version: str, sums: Path, fetch=_pypi_json, tries: int = 20, wait: floa
     return [reason]
 
 
+def stamp(root: Path, day: datetime.date) -> list[str]:
+    """Write the release date where a placeholder waits for it. Returns the files changed.
+
+    RELEASE-DATE becomes `day`, SECURITY-WINDOW-END becomes `day` plus 90 days
+    (the window in which the previous minor still gets security fixes), and
+    CITATION.cff's date-released becomes `day`.
+    """
+    words = {"RELEASE-DATE": day.isoformat(),
+             "SECURITY-WINDOW-END": (day + datetime.timedelta(days=90)).isoformat()}
+    changed = []
+    for path in (root / f"RELEASE-NOTES-{declared_version(root)}.md", root / "CHANGELOG.md",
+                 root / "SECURITY.md", root / "docs" / "VERSIONING.md", root / "CITATION.cff"):
+        old = path.read_bytes().decode("utf-8")
+        new = old
+        for word, value in words.items():
+            new = new.replace(word, value)
+        if path.name == "CITATION.cff":
+            new = re.sub(r"(?m)^date-released: .*$", f"date-released: {day.isoformat()}", new)
+        if new != old:
+            path.write_bytes(new.encode("utf-8"))
+            changed.append(path.relative_to(root).as_posix())
+    return changed
+
+
 def gate_tests(root: Path = ROOT) -> list[str]:
     """Test files that carry the release_gate marker, as posix paths from the root."""
     return sorted(path.relative_to(root).as_posix() for path in (root / "tests").glob("test_*.py")
@@ -237,7 +265,11 @@ def main(argv: list[str] | None = None) -> int:
     live = sub.add_parser("pypi")
     live.add_argument("--version", required=True)
     live.add_argument("--sums", required=True)
+    sub.add_parser("stamp").add_argument("--date", required=True, help="YYYY-MM-DD")
     args = ap.parse_args(argv)
+    if args.cmd == "stamp":
+        print("\n".join(stamp(ROOT, datetime.date.fromisoformat(args.date))) or "nothing to stamp")
+        return 0
     if args.cmd == "pypi":
         problems = pypi(args.version, Path(args.sums))
         print("\n".join(problems) if problems

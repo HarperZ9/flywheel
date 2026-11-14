@@ -64,10 +64,13 @@ has read-only permission and creates no release.
 Before the tag:
 
 1. Open a release pull request that sets the version at every site (the three
-   above, the README badge and the `docs/GITHUB-ACTION.md` pin), adds
-   `RELEASE-NOTES-<version>.md`, and turns the changelog's Unreleased section
-   into a dated section. `python scripts/release_assets.py check --tag
-   v<version> --release` must print `release check clean`.
+   above, `CITATION.cff`, the README badge, the `QUICKSTART.md` line and the
+   `docs/GITHUB-ACTION.md` pin), adds `RELEASE-NOTES-<version>.md`, and turns
+   the changelog's Unreleased section into a section for the version. On the
+   day of the release, `python scripts/release_assets.py stamp --date
+   YYYY-MM-DD` writes the date wherever a `RELEASE-DATE` placeholder waits
+   for it. Then `python scripts/release_assets.py check --tag v<version>
+   --release` must print `release check clean`.
 2. Run the dry run (next section) on that branch.
 3. Merge the pull request and wait for the checks on main.
 4. `git tag -a v<version> -m "Flywheel <version>"` on the merge commit, then
