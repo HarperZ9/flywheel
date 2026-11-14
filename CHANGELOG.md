@@ -3,7 +3,7 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
-## 2.0.0 (RELEASE-DATE)
+## 2.0.0 (2026-11-14)
 
 The coding session streams replies from hosted providers, calls tools through each provider's function calling and marks Anthropic requests for prompt caching. The local gateway answers the Anthropic Messages and OpenAI Responses formats itself and can give a tool a key with a budget. Records name what a result covers in a `scope` field, which replaces `does_not_prove`; every record a 1.x release wrote still verifies.
 
@@ -36,8 +36,15 @@ Gateway: virtual keys and budgets (#458)
 - Not covered: rate limits, a provider account per key, and totals shared across machines.
 - Tested against a gateway on a loopback port with a stub upstream and an in-memory credential store, and with the `anthropic` and `openai` Python SDKs holding a key. Not run: any hosted provider, Claude Code or Codex CLI holding a key, and the real credential store. See `docs/GATEWAY-INTERFACES.md`, "Keys and budgets".
 
+Gateway: a ledger on disk that you can verify (#465, #462)
+- The gateway keeps its ledger as a hash-chained file under the Flywheel home (`gateway-ledger/`), so the record of calls survives a restart. `flywheel gateway-ledger verify` checks every segment and exits 1 on a changed byte, a removed entry or a line cut short. `flywheel gateway-ledger show --key NAME` lists the calls of one gateway key. `show` also takes `--kind`, `--last N` and `--json`. See `docs/GATEWAY-INTERFACES.md`, "The gateway ledger".
+- `flywheel gateway-key clear NAME` lifts a suspension. `list` and `show` print the state `suspended`. A key is suspended when a streamed reply left the gateway and its charge could not be recorded.
+
+Gateway: per-key controls (#466)
+- `flywheel gateway-key set NAME` sets how many calls a key may have running at once (`--in-flight`, 4 by default), the largest output one call may ask for (`--max-output`), and which Anthropic pass-through features the key may use (`--allow-beta`, `--allow-server-tool`, `--allow-mcp`). See `docs/GATEWAY-INTERFACES.md`, "Per-call controls".
+
 Gateway: overhead figure and timing gate (#459)
-- Measured what the gateway adds to one call on `/v1/messages` and `/v1/responses`: a median of 1.3 to 2.0 ms with the gateway token and 2.6 to 3.4 ms with a virtual key, to the end of the reply. One Windows 11 machine, 2026-11-14, one client, one request at a time, a loopback stub in place of the provider, 30 warm calls per case. The table, the method and what the figure leaves out are in `docs/BENCHMARKS.md`, "Gateway overhead".
+- Measured what the gateway adds to one call on `/v1/messages` and `/v1/responses`: a median of 3.5 to 4.7 ms with the gateway token and 4.8 to 5.4 ms with a virtual key, to the end of the reply. About 2 ms of that is the ledger entry being committed to the disk before the reply is sent (#465); with the ledger in memory, as #459 first measured it, the figures were 1.3 to 2.0 ms and 2.6 to 3.4 ms. One Windows 11 machine, 2026-11-14, one client, one request at a time, a loopback stub in place of the provider, 30 warm calls per case. The table, the method and what the figure leaves out are in `docs/BENCHMARKS.md`, "Gateway overhead".
 - `python scripts/bench_gateway_overhead.py` reruns the measurement and writes `docs/benchmarks/gateway-overhead.json`. No provider is called.
 - `tests/test_gateway_overhead_timing.py` fails when the median of five warm calls is 50 ms or more over the stub, for both interfaces, streamed and not, with the gateway token and with a virtual key. Two controls keep the check able to fail: 200 ms added inside the gateway breaks the budget, and a stub four times slower leaves the overhead where it was.
 - Found and not changed: more than one call in twenty took 20 to 27 ms. On Windows a socket connect made with a timeout sometimes comes back about 15 ms late, and the gateway's connection to the upstream is made that way. A blocking connect was never late in the same check. On GitHub's Windows runners the late connect landed on most calls: medians of 11.6 to 23.6 ms, against 1.1 to 3.9 ms on Linux.
@@ -128,7 +135,7 @@ Release from one tag (#463)
 - Starting `publish.yml` by hand is a dry run: every step up to the gates, then the would-be release as a workflow artifact. A run publishes only from a version tag.
 - After the upload, a job on Linux, macOS and Windows checks that PyPI serves the files that were built and that a fresh install passes `flywheel gate`.
 
-### What changed
+### What changed by default
 
 Each of these changes a default or an output. The setting that restores the 1.x
 behaviour, where one exists, is named in the entry above or in the migration page.
@@ -138,6 +145,15 @@ Defaults in the coding session
 - Replies from hosted providers stream. `FLYWHEEL_STREAM=0` turns it off. (#450)
 - Tools are declared to OpenAI, Anthropic and Gemini as JSON schemas. `FLYWHEEL_NATIVE_TOOLS=0` keeps the text protocol. (#451)
 - Anthropic requests carry prompt-cache marks, which changes how the provider bills them: a cache write costs more than plain input and a cache read far less. `FLYWHEEL_PROMPT_CACHE=0` sends the 1.x requests. No saving has been measured by Flywheel. (#452)
+
+The gateway after the security review (2026-11-14)
+- The gateway ledger is a file, and each entry is committed to the disk (fsync) before a plain reply is sent and before the last event of a stream. With the ledger on disk the gateway adds a median of 3.5 to 4.7 ms with the gateway token and 4.8 to 5.4 ms with a virtual key (same machine, same method, 2026-11-14). An append took a median of 1.2 ms and 2.9 ms on two drives; `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips the disk commit. The 50 ms timing gate is unchanged and now runs with the on-disk ledger. (#465)
+- One gateway per Flywheel home appends to the ledger. A second gateway on the same home refuses model calls with 500. See `docs/MIGRATING-2.0.md`, "After the security review: the gateway ledger is a file". (#465)
+- On Messages pass-through to an Anthropic upstream, a virtual key may send an `anthropic-beta` value, a provider-defined tool or `mcp_servers` only when its allow-list names it (`flywheel gateway-key set NAME --allow-beta`, `--allow-server-tool`, `--allow-mcp`). A new key allows none; the refusal is 403 naming the field. The gateway token forwards everything. `--max-output` caps the output one call may ask for. See `docs/MIGRATING-2.0.md`, "After the security review: what a virtual key may send". A key used by Claude Code needs `--allow-beta` for the values Claude Code sends; the refusal names each one. (#466)
+- A virtual key may have 4 calls running at once. One more is refused with 429 and `retry-after: 1`, as is a call whose reservation would cross the key's budget. (#466)
+- A stream that the client closes before the end is charged for what was received. Before, it was charged nothing. (#466)
+- An upstream that answers with a redirect now fails with that status. Set the endpoint's base URL to the final address. (#468)
+- Lean child processes get an allow-listed environment. A custom variable no longer reaches Lean; the toolchain variables named under "Fixed" still do. (#467)
 
 Usage on every served endpoint (#458)
 - Every served reply carries `"x_flywheel": {"usage_reported": true}` or `false`: `/v1/messages`, `/v1/responses` and `/v1/chat/completions` on the gateway, and the model server's `/chat/completions`. The ledger entry of a Messages or Responses call records the same flag.
@@ -153,12 +169,12 @@ Reports and documents
 - `SECURITY.md` states which versions get fixes (2.x, and 1.9.x for security fixes for 90 days after 2.0.0) and how to report a vulnerability privately. Private vulnerability reporting is enabled on the repository. (#460)
 - `site/benchmarks.html` carries the gateway overhead table that `docs/BENCHMARKS.md` already had. (#460)
 - Text, Markdown, LaTeX and HTML reports print their limits under one plain heading, "limits" or "## Limits". The `--limits` help in `flywheel acp`, `dap` and `lsp` says "print the limits of a run record". The bundled `reproduce.py` says what MATCH covers. (#429)
-- Changed: after a virtual key's call is charged, the gateway on Windows opens the key list once on a separate thread. On the measured machine the first open of that file after a change waited about 6 ms, and that open was the next call's key check. A plain call with a key went from 8.9 ms to 2.6 ms over the stub. Every check and every debit still reads the file, and a call that starts within a few milliseconds of the previous debit still waits. (#459)
+- Changed: after a virtual key's call is charged, the gateway on Windows opens the key list once on a separate thread. On the measured machine the first open of that file after a change waited about 6 ms, and that open was the next call's key check. A plain call with a key went from 8.9 ms to 2.6 ms over the stub, measured with the ledger in memory; with the ledger on disk it is 4.8 ms. Every check and every debit still reads the file, and a call that starts within a few milliseconds of the previous debit still waits. (#459)
 - `docs/MIGRATING-2.0.md` is complete for what is on main: a "what you need to do" list, the record vocabulary with a table of every renamed field and code, the workspace default, the hosted defaults, the `usage` field, the hosted error object, verdicts and audits, the removed hook scripts, and how to check an upgrade. `docs/MIGRATING-2.0-SCHEMAS.md` lists all 15 receipt code pairs and all 158 schema rows; `scripts/gen_migration_tables.py` writes it from `harness/receipt_scope.py` and `project-docs/SCOPE-MIGRATION.md`, and a test fails when it is stale. Both pages are on the docs site. (#456)
 - `project-docs/STATE.md` has a 2026-11-14 entry that says where current state is written and marks the older entries as history. `docs/RELEASE-NEXT.md` is retired with a pointer to this file. (#456)
-- The README opens with what Flywheel does and links the verification pilot; each lane page says what the lane does with its proof beside it. (#424 to #427)
+- The README opens with what Flywheel does and links the verification pilot; each lane page says what the lane does with its proof beside it. (#424, #425, #426, #427)
 
-### What broke
+### What breaks
 
 Breaking changes, each with a section in `docs/MIGRATING-2.0.md`. 2.0.0 ships them
 without a deprecation release before it; `docs/VERSIONING.md` records that as a
@@ -187,7 +203,7 @@ Verdicts and audits
 Hosted error object
 - A program that parsed provider text out of the error object's `body` reads `limit_fields`. The entry is under "Provider boundary" above. (#447)
 
-### What was fixed
+### Fixed
 
 Fixes
 - Signed job results (the PySyft receipt): the verifier recomputes `receipt_id`, checks that `key_id` belongs to the pinned key, and checks the envelope schema. Before this, 81 single-bit changes to the fixture read MATCH; now none does. (#419)
@@ -196,26 +212,27 @@ Fixes
 - A Windows folder the account cannot label runs read-only with the reason, where it used to refuse every command. (#448)
 - The recheck runner test and the POSIX sandbox test no longer depend on the host. (#420, #446)
 
-### Fixed after the security review (2026-11-14)
-- Fixed: `/v1/messages` in front of an Anthropic upstream broke on tools the provider runs itself. A streamed reply with a `server_tool_use` block was cut, and a reply with a `web_search_tool_result` or other provider result block was recorded as failed with nothing charged, although a stream had delivered it. Such replies are now delivered as sent, recorded as `endpoint_call` and charged from the reported usage, and the entry carries the provider's `server_tool_use` counts. Unknown block and delta types are relayed untouched. A block of the exact type `tool_result` is still refused. The coding session keeps its broader rule.
-- Fixed: a reply could be delivered with no ledger entry when the debit or the ledger append failed after the upstream answered. The ledger now gets `endpoint_call_failed` with reason `charge_failed` or `ledger_failed` and the response hash, and the client gets 500 naming the cause. For a stream whose text had already left, the entry says `delivered_unrecorded_charge`, the stream ends with an error event that says so, and the key is suspended until `flywheel gateway-key clear NAME`.
-- New: `flywheel gateway-key clear NAME` lifts a suspension. `list` and `show` print the state `suspended`.
-- Tested with replay fixtures written from the Claude API documentation (read 2026-11-14) against a gateway on a loopback port. Not run: any hosted provider.
-- Fixed: the gateway's ledger lived in process memory and was lost when the gateway stopped. It is now a hash-chained file under the Flywheel home (`gateway-ledger/`), in the entry format a saved coding session uses. Each entry is committed to the disk before a plain reply is sent and before the last event of a stream. A starting gateway verifies the last segment and continues its chain. A segment that does not verify is logged at error level, left as it is and never appended to; a new segment records the break. The chat path writes to the same ledger and appends under its lock.
-- New: `flywheel gateway-ledger verify` checks every segment and exits 1 on a changed byte, a removed entry or a line cut short. `flywheel gateway-ledger show --key NAME` lists the calls of one gateway key.
-- Changed: the overhead figures above were measured with the ledger in memory. With the ledger on disk the gateway adds a median of 3.5 to 4.7 ms with the gateway token and 4.8 to 5.4 ms with a virtual key (same machine, same method, 2026-11-14). An append took a median of 1.2 ms and 2.9 ms on two drives; `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips the disk commit. The 50 ms timing gate is unchanged and now runs with the on-disk ledger.
-- Changed: one gateway per Flywheel home appends to the ledger. A second gateway on the same home refuses model calls with 500. See `docs/MIGRATING-2.0.md`, "After the security review: the gateway ledger is a file".
-- Not covered: a call whose gateway stops between the provider's reply and the append leaves no entry. A same-user process that rewrites a segment and its head record together is not detected by the files alone.
-- Fixed: a virtual key could avoid its budget by closing each stream before the end; such a call was recorded as `client_disconnected` and charged nothing. An unfinished stream is now charged for what was received (the provider's reported input when it sent one, else the word estimate, plus the estimate of the text received), and the entry carries `charged_tokens` and `estimated`. A stream closed on its first event is recorded too; it left no entry before.
-- Fixed: calls sent together on one key could all pass the limit check and overspend without bound. A key now has an in-flight limit (default 4, `--in-flight`), and each running call reserves its output limit plus a quarter of its request bytes against the budget. A call over either is refused with 429 and `retry-after: 1`. What remains: a call that runs alone can cross a limit by its own cost, and calls that run together by the input each used beyond its reservation.
-- Changed: on Messages pass-through to an Anthropic upstream, a virtual key may send an `anthropic-beta` value, a provider-defined tool or `mcp_servers` only when its allow-list names it (`flywheel gateway-key set NAME --allow-beta`, `--allow-server-tool`, `--allow-mcp`). A new key allows none; the refusal is 403 naming the field. The gateway token forwards everything. `--max-output` caps the output one call may ask for. See `docs/MIGRATING-2.0.md`, "After the security review: what a virtual key may send".
-- Documented: budgets count tokens. Per-use provider fees (web search per search, code execution per container hour) are outside them and are bounded by the allow-list.
-- Documented: who a virtual key is for (a tool on the same machine, or a teammate over a trusted link), the bind and `--allow-host` settings, that use from another machine needs TLS in front (an SSH tunnel example is given), and every remaining budget limit in one list, in `docs/GATEWAY-INTERFACES.md` and `docs/MIGRATING-2.0.md`. `docs/KNOWN-LIMITS-2.0.0.md` lists what the review found and this release leaves as it is, with the reason for each.
-- Fixed: a request body nested too deep to parse got 500; it gets 400. A credential header with a non-ASCII character dropped the connection; it gets 401.
-- Fixed: `flywheel gateway-key revoke` ignored a credential store that did not delete the key and still printed that it had. It now exits 1 and says so; the key is refused either way. On Linux and macOS the key list file is written owner-only.
-- Fixed: the gateway's upstream transports followed redirects, which re-sends the provider key header to the new address. They follow none now; a redirect comes back as an error with its status.
-- Fixed: a gateway key (`fwk_...`) that reaches log or error text is redacted. An upstream can no longer put `x_receipt` or `x_flywheel` on a relayed stream event.
-- Fixed: Lean child processes inherited the whole environment of the process that started them, so a candidate proof that evaluates `IO.getEnv` could print a provider key or another variable into `kernel_output`. Every Lean spawn (compile, binding check, replay, second kernel, export check, version probes) now gets an allow-listed environment from `harness/lean_env.py`. See `docs/PROOF-AND-FORMATS.md`, "The environment a Lean process gets". If you relied on a custom variable reaching Lean, it no longer does; `LEAN_PATH`, `LEAN_SYSROOT`, `ELAN_HOME`, `ELAN_TOOLCHAIN`, `LEAN_NUM_THREADS` and `LEAN_STACK_SIZE_KB` still do.
+Fixed after the security review (2026-11-14) (#462, #465, #466, #467, #468)
+- Fixed: `/v1/messages` in front of an Anthropic upstream broke on tools the provider runs itself. A streamed reply with a `server_tool_use` block was cut, and a reply with a `web_search_tool_result` or other provider result block was recorded as failed with nothing charged, although a stream had delivered it. Such replies are now delivered as sent, recorded as `endpoint_call` and charged from the reported usage, and the entry carries the provider's `server_tool_use` counts. Unknown block and delta types are relayed untouched. A block of the exact type `tool_result` is still refused. The coding session keeps its broader rule. (#462)
+- Fixed: a reply could be delivered with no ledger entry when the debit or the ledger append failed after the upstream answered. The ledger now gets `endpoint_call_failed` with reason `charge_failed` or `ledger_failed` and the response hash, and the client gets 500 naming the cause. For a stream whose text had already left, the entry says `delivered_unrecorded_charge`, the stream ends with an error event that says so, and the key is suspended until `flywheel gateway-key clear NAME`. (#462)
+- Tested with replay fixtures written from the Claude API documentation (read 2026-11-14) against a gateway on a loopback port. Not run: any hosted provider. (#462)
+- Fixed: the gateway's ledger lived in process memory and was lost when the gateway stopped. It is now a hash-chained file under the Flywheel home (`gateway-ledger/`), in the entry format a saved coding session uses. Each entry is committed to the disk before a plain reply is sent and before the last event of a stream. A starting gateway verifies the last segment and continues its chain. A segment that does not verify is logged at error level, left as it is and never appended to; a new segment records the break. The chat path writes to the same ledger and appends under its lock. (#465)
+- Fixed: a virtual key could avoid its budget by closing each stream before the end; such a call was recorded as `client_disconnected` and charged nothing. An unfinished stream is now charged for what was received (the provider's reported input when it sent one, else the word estimate, plus the estimate of the text received), and the entry carries `charged_tokens` and `estimated`. A stream closed on its first event is recorded too; it left no entry before. (#466)
+- Fixed: calls sent together on one key could all pass the limit check and overspend without bound. A key now has an in-flight limit (default 4, `--in-flight`), and each running call reserves its output limit plus a quarter of its request bytes against the budget. A call over either is refused with 429 and `retry-after: 1`. What remains: a call that runs alone can cross a limit by its own cost, and calls that run together by the input each used beyond its reservation. (#466)
+- Documented: budgets count tokens. Per-use provider fees (web search per search, code execution per container hour) are outside them and are bounded by the allow-list. (#466)
+- Documented: who a virtual key is for (a tool on the same machine, or a teammate over a trusted link), the bind and `--allow-host` settings, that use from another machine needs TLS in front (an SSH tunnel example is given), and every remaining budget limit in one list, in `docs/GATEWAY-INTERFACES.md` and `docs/MIGRATING-2.0.md`. `docs/KNOWN-LIMITS-2.0.0.md` lists what the review found and this release leaves as it is, with the reason for each. (#468)
+- Fixed: a request body nested too deep to parse got 500; it gets 400. A credential header with a non-ASCII character dropped the connection; it gets 401. (#468)
+- Fixed: `flywheel gateway-key revoke` ignored a credential store that did not delete the key and still printed that it had. It now exits 1 and says so; the key is refused either way. On Linux and macOS the key list file is written owner-only. (#468)
+- Fixed: the gateway's upstream transports followed redirects, which re-sends the provider key header to the new address. They follow none now; a redirect comes back as an error with its status. (#468)
+- Fixed: a gateway key (`fwk_...`) that reaches log or error text is redacted. An upstream can no longer put `x_receipt` or `x_flywheel` on a relayed stream event. (#468)
+- Fixed: Lean child processes inherited the whole environment of the process that started them, so a candidate proof that evaluates `IO.getEnv` could print a provider key or another variable into `kernel_output`. Every Lean spawn (compile, binding check, replay, second kernel, export check, version probes) now gets an allow-listed environment from `harness/lean_env.py`. See `docs/PROOF-AND-FORMATS.md`, "The environment a Lean process gets". If you relied on a custom variable reaching Lean, it no longer does; `LEAN_PATH`, `LEAN_SYSROOT`, `ELAN_HOME`, `ELAN_TOOLCHAIN`, `LEAN_NUM_THREADS` and `LEAN_STACK_SIZE_KB` still do. (#467)
+
+### Known limits
+
+`docs/KNOWN-LIMITS-2.0.0.md` lists what the security review found and this release leaves as it is, with the reason for each and every remaining budget limit in one list. `RELEASE-NOTES-2.0.0.md`, "Limits", has the limits a user should read before upgrading.
+- A call whose gateway stops between the provider's reply and the append leaves no entry. A same-user process that rewrites a segment and its head record together is not detected by the files alone. (#465)
+- Not measured: task success on a public benchmark. Not run: a paid call to any hosted provider, and Claude Code or Codex CLI against the gateway.
+- The package-manager files were pointed at 1.9.0 after that release (#418) and trail 2.0.0 until the same follow-up lands.
 
 ## 1.9.0 (2026-10-15)
 

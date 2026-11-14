@@ -1,6 +1,6 @@
 # Flywheel 2.0.0
 
-Released RELEASE-DATE.
+Released 2026-11-14.
 
 The coding session now works the way a hosted provider expects: replies
 stream, tools go through the provider's own function calling, and Anthropic
@@ -43,6 +43,14 @@ announced these changes beforehand; the
 - **Give a tool a key with a budget.** `flywheel gateway-key create NAME`
   mints a local key with a token limit, a spend limit at prices you set, and
   a list of models. Each call is recorded under the key's name. (#458)
+- **Check the gateway's record of calls.** The gateway keeps its ledger as
+  a hash-chained file under the Flywheel home, so it survives a restart.
+  `flywheel gateway-ledger verify` exits 1 on a changed byte, a removed entry
+  or a line cut short. `flywheel gateway-ledger show --key NAME` lists the
+  calls of one key. (#465)
+- **Set what a key may do per call.** `flywheel gateway-key set NAME` sets
+  the calls a key may have running at once, the largest output one call may
+  ask for, and which Anthropic pass-through features it may use. (#466)
 - **Keep several accounts per provider.** `flywheel setup --provider NAME
   --account LABEL`, `flywheel auth list`, `auth use` and `auth remove`. The
   system credential store is used on macOS and Linux as well as Windows.
@@ -75,6 +83,51 @@ pays less. A session with one short call can pay slightly more.
 
 `/undo` covers the write tools. It does not put back what a command wrote in
 the project. Use git for that.
+
+## What the security review changed
+
+An independent security review of the gateway and the coding session ran on
+2026-11-14, before this release. Its two release blockers and its five
+"fix before release" findings are fixed, with eight smaller ones (#462, #465,
+#466, #467, #468). You will notice these:
+
+- **The gateway ledger is a file.** It lives in `gateway-ledger/` under the
+  Flywheel home and is chained across restarts. Start one gateway per
+  Flywheel home: a second one on the same home refuses model calls with 500.
+  Back up or remove the folder as a whole. Editing a segment makes `verify`
+  fail from then on.
+- **Each entry is committed to the disk before the reply is sent.** That
+  commit (fsync) is on by default and took a median of 1.2 ms and 2.9 ms on
+  the two drives measured. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips it and
+  accepts that a power loss can lose the newest entries.
+- **A virtual key refuses Anthropic pass-through features unless you allow
+  them.** A Messages request to an Anthropic upstream that carries an
+  `anthropic-beta` value, a provider-defined tool or `mcp_servers` gets 403
+  naming the field. Allow them with `flywheel gateway-key set NAME
+  --allow-beta a,b --allow-server-tool web_search --allow-mcp`. A key for
+  Claude Code needs `--allow-beta` for the values Claude Code sends; the
+  refusal names each one. The gateway token forwards everything, as before.
+- **A key has an in-flight limit.** 4 calls at once by default; change it with
+  `--in-flight N`. One more call gets 429 with `retry-after: 1`. Each running
+  call also reserves its output limit against the key's budget.
+- **An unfinished stream is charged.** A client that closes a stream before
+  the end is charged for what was received. Before, such a call cost the key
+  nothing.
+- **A redirecting upstream fails.** The gateway no longer follows a redirect
+  from a provider address, because that would send the provider key to the
+  new host. Set the endpoint's base URL to the final address.
+- **Lean child processes get a restricted environment.** A proof under check
+  can no longer read a provider key or another variable from the process
+  that started Lean. `LEAN_PATH`, `LEAN_SYSROOT`, `ELAN_HOME`,
+  `ELAN_TOOLCHAIN`, `LEAN_NUM_THREADS` and `LEAN_STACK_SIZE_KB` still reach
+  it. A custom variable you relied on does not.
+- **`flywheel gateway-key clear NAME`** lifts a suspension. A key is
+  suspended when a streamed reply left the gateway and its charge could not
+  be recorded.
+
+[docs/MIGRATING-2.0.md](docs/MIGRATING-2.0.md) has a section for each, and
+[docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md) lists what the
+review found and this release leaves as it is.
 
 ## What breaks, and what to do
 
@@ -127,10 +180,15 @@ receipt or a gate envelope you kept.
 ## Which versions get fixes
 
 2.x gets fixes in the next release. 1.9.x gets security fixes only, until
-SECURITY-WINDOW-END, 90 days after this release. [SECURITY.md](SECURITY.md)
+2027-02-12, 90 days after this release. [SECURITY.md](SECURITY.md)
 says how to report a vulnerability privately.
 
 ## Limits
+
+Read these before you upgrade. The full list, with the reason each limit was
+left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
+
+### Not measured and not run
 
 - **Task success is not measured.** How often `flywheel code` finishes a task
   on a public benchmark, against other coding agents or against the bare
@@ -139,31 +197,93 @@ says how to report a vulnerability privately.
   inference 9 of 10 against single-shot 8 of 10, difference +0.100, 95% CI
   [-0.236, +0.420], and the two arms were not independent. No capability
   uplift is claimed.
-- **No paid hosted call was made for this release.** Streaming, native tool
-  calls, prompt caching and both gateway interfaces were tested by replaying
-  recorded provider traffic and against a local Ollama model. A live turn per
-  hosted provider, and token counts with caching on and off, were not run.
-  Claude Code and Codex CLI were not run against the gateway.
+- **No paid call to a hosted provider was made for this release.** Streaming,
+  native tool calls, prompt caching, both gateway interfaces and the security
+  fixes were tested by replaying recorded provider traffic and against a
+  local Ollama model. A live turn per hosted provider, and token counts with
+  caching on and off, were not run. Try your own provider on a small task
+  before you rely on it.
+- **Claude Code and Codex CLI were not run against the gateway.** The
+  `anthropic` and `openai` Python SDKs were, against a gateway on a loopback
+  port with a stub upstream.
+- **Gateway overhead was measured on one Windows machine**, one request at a
+  time, against a loopback stub: a median of 3.5 to 4.7 ms with the gateway
+  token and 4.8 to 5.4 ms with a virtual key, to the end of the reply. About
+  2 ms of that is the ledger entry being committed to the disk. Provider
+  network time, concurrency and other machines are outside the figure.
+  [docs/BENCHMARKS.md](docs/BENCHMARKS.md) has the table.
+- **On Linux and macOS the command sandbox was tested by its arguments.** No
+  command was run there for the writable-workspace change.
+
+### What ships, and where
+
 - **The desktop app ships for Windows only.** macOS and Linux desktop builds
   do not exist. There is no WinGet package and no VS Code Marketplace
   listing.
-- **Virtual key budgets have gaps.** The limit is checked before a call and
-  charged after it, so one call can cross a limit, and calls that start
-  together can all pass the check. A call with no reported counts is charged
-  a word estimate, which runs low. A key has no rate limit, all keys spend
-  from one provider account, and totals are not shared across machines.
-  [docs/GATEWAY-INTERFACES.md](docs/GATEWAY-INTERFACES.md), "What is not
-  covered", has the list.
-- **The gateway speaks plain HTTP on the loopback address.** A key or the
-  gateway token sent to it across a network travels in clear text.
-- **On Linux and macOS the command sandbox was tested by its arguments.** No
-  command was run there for the writable-workspace change.
-- **Gateway overhead was measured on one Windows machine**, one request at a
-  time, against a loopback stub: a median of 1.3 to 2.0 ms with the gateway
-  token and 2.6 to 3.4 ms with a virtual key. Provider network time,
-  concurrency and other machines are outside the figure.
+- **The Windows installer is built and attached separately.** It comes from
+  the same tag through a second workflow, so it can appear on the release
+  page after the Python package does.
 - **The Homebrew and Scoop files pin 1.9.0** until the follow-up that points
   them at 2.0.0 lands. That step needs the digests PyPI publishes.
+
+### Gateway keys and budgets
+
+- **A budget is an operating limit, not a hard cap on a provider's bill.** A
+  call that runs alone can cross a limit by its own cost, and the next call
+  is refused. Calls that run together can cross it by the input each used
+  beyond its reservation, over at most the key's in-flight limit. A call with
+  no reported counts is charged a word estimate, which runs low for text
+  without spaces. An unfinished stream is charged an estimate. A reply the
+  gateway refuses after the provider answered is not charged. Set a spending
+  limit at the provider as well.
+- **Fees that are not tokens are not counted**, such as web search per search
+  and code execution per container hour. A key cannot cause them unless its
+  allow-list names the tool.
+- **There is no rate, request-size or connection limit per key** beyond calls
+  in flight. A key holder can send bodies up to 32 MiB and open many
+  connections. Give keys to tools and people you trust.
+- **Keys share one provider account.** Provider prompt caches are shared
+  across keys, so a cache-read count can show one key holder that another
+  caller recently sent the same prefix. Use separate provider accounts where
+  that matters.
+- **Other pass-through fields are not allow-listed.** A key can still set
+  `service_tier`, `container`, `thinking` and other Messages fields on a
+  request to an Anthropic upstream, and any `anthropic-beta` value on a
+  token-count request.
+- **Key totals are a running sum in a file** (`gateway-keys.json`) that any
+  process of the same user can rewrite. Check them against the gateway
+  ledger. Totals, in-flight counts and reservations are not shared across
+  machines.
+- **The gateway speaks plain HTTP on the loopback address.** For use from
+  another machine put TLS in front, for example an SSH tunnel.
+  [docs/GATEWAY-INTERFACES.md](docs/GATEWAY-INTERFACES.md) has the steps.
+  Revoke a key that crossed a network without TLS.
+
+### The gateway ledger and receipts
+
+- **A gateway that stops between a provider's reply and the ledger append
+  leaves no entry.** The provider billed the call and the ledger does not
+  show it.
+- **`verify` catches a changed byte, a removed entry and a cut line.** A
+  process of the same user that rewrites a segment and its head record
+  together is not detected by the files alone.
+- **The receipt covers the gateway's reading of a reply, not the bytes
+  delivered.** On Messages pass-through, thinking blocks, citations and
+  provider tool blocks reach the client and are outside the receipt's hash.
+  The hash covers the reply's text and tool calls.
+- **Every refusal with a ledger entry appends one**, so a key that keeps
+  sending refused requests grows the ledger. In-flight and reservation
+  refusals are not recorded.
+
+### The coding session
+
+- **A `TOOL name {json}` line quoted in a native reply's prose runs as a
+  call.** It goes through the same permission prompt as any call and is
+  recorded as a call. Read the prompt before you approve, and prefer `ask` or
+  `edit` mode over `auto` when the model reads text you do not trust.
+- **A removed hook wrapper exits 1 quietly.** After the upgrade, a client
+  still configured with one of the two old hook paths captures nothing if it
+  hides hook errors. Run `flywheel traces doctor` once after upgrading.
 
 ## Release assets
 

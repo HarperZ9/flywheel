@@ -96,7 +96,7 @@ version's end of life upstream.
 
 Fixes ship in the next release. Older releases do not get backported fixes,
 with one exception: 1.9.x receives security fixes for 90 days after 2.0.0 is
-released, until SECURITY-WINDOW-END, and no other fixes. The
+released, until 2027-02-12, and no other fixes. The
 [security policy](../SECURITY.md) says how to report a problem. Upgrade with `flywheel update --apply` or your
 package manager. Each
 release's license terms, including its date of conversion to MIT, are on the
