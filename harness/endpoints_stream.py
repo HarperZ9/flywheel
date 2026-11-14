@@ -28,6 +28,7 @@ import json
 from dataclasses import dataclass
 
 from . import endpoints_assemble as _assemble, endpoints_reply as _reply
+from . import endpoints_tools_wire as _wire
 from .endpoints_http import _guard, _response_error
 from .endpoints_sse import events, open_stream
 from .local_agent import BackendError, MalformedBackendOutput
@@ -161,12 +162,18 @@ def run(backend, dialect: str, request: tuple, seed):
     if status != 200 and spec.retry(backend, status, lines, body):
         status, lines = _open(backend, url, headers, body)
     if status != 200:
+        _wire.refused(backend, status, lines, body)    # remembered: the plain retry is text
         raise _response_error(backend.name, status, lines, kind=spec.kind or backend.name)
-    assembler = spec.assembler()
-    yield from _read(backend, assembler, lines)
+    assembler, shown = spec.assembler(), ""
+    for piece in _read(backend, assembler, lines):
+        shown += piece
+        yield piece
     obj = _finished(backend, spec, assembler)
     try:
-        return spec.reply(backend, status, obj, body, seed)
+        gen = _wire.incoming(dialect, backend, obj, spec.reply(backend, status, obj, body, seed))
     except BackendError as exc:
         exc.stream_complete = True      # asking again would repeat the same reply
         raise
+    if gen["text"] != shown and gen["text"].startswith(shown):
+        yield gen["text"][len(shown):]  # native calls, written as the TOOL lines recorded
+    return gen

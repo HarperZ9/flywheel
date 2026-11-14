@@ -9,7 +9,8 @@ two runs with equal hashes cannot be put down to the harness.
 Covered: the full system prompt as sent (tool texts, instruction files, skills
 and memory notes are in it), permission mode, permission rules, hook entries,
 max steps, compaction budget, max tokens, temperature, seed, the backend
-preference, which backends and models answered, the test command, the
+preference, which backends and models answered, the native function calling
+switch, the test command, the
 Flywheel version, and the declared runtime (serving framework and version, GPU,
 dtype, compile mode, batch shape, batch-invariant and deterministic flags,
 capture hooks, kernel stack; see harness/runtime_identity.py). A runtime field
@@ -84,6 +85,7 @@ def harness_config(session, ledger_from: int = 0) -> dict:
         "test_cmd": session.test_cmd,
         "flywheel": _version(),
         "runtime": _runtime(session),
+        "native_tools": getattr(getattr(session, "toolbox", None), "mode", "off"),
     }
 
 

@@ -56,6 +56,8 @@ silently failed to load would protect nothing.
 | `AZURE_OPENAI_ENDPOINT`, `AZURE_OPENAI_API_KEY`, `AZURE_OPENAI_DEPLOYMENT` | Azure OpenAI |
 | `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AWS_REGION`, `BEDROCK_MODEL` | Amazon Bedrock |
 | `VERTEX_PROJECT`, `VERTEX_LOCATION`, `VERTEX_MODEL`, `VERTEX_ACCESS_TOKEN` | Google Vertex AI (without a token, `gcloud auth print-access-token` is used) |
+| `FLYWHEEL_NATIVE_TOOLS` | `0` sends every tool call through the text protocol. `1` uses native function calling on every hosted backend. Unset, native calling is on for the first-party OpenAI, Anthropic and Gemini hosts. See [How tool calls travel](CODE-SESSION.md#how-tool-calls-travel) |
+| `FLYWHEEL_STREAM=0` | Print a model reply whole when it is complete |
 | `FLYWHEEL_KEEP_REASONING=1` | Keep the reasoning text a hosted model returns on the call's record, with key-shaped strings redacted. Unset, the record carries a digest and counts and no text. Anything that saves the record saves the text, so turn it on for debugging and leave it off otherwise |
 
 Which model answers, and in what order Flywheel tries them, is on the

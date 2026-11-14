@@ -47,3 +47,37 @@ To keep the 1.x behaviour, set `FLYWHEEL_STREAM=0`. Streaming is also off in
 How to check after upgrading: run `flywheel code`, ask a question that needs a
 long answer, and watch the text arrive in pieces. Then run `/status` and
 confirm the chain verifies.
+
+### Tool calls use the provider's function calling by default
+
+In 1.x every model asked for a tool by writing a `TOOL name {json}` line. In
+2.0 the session declares its tools as JSON schemas to OpenAI
+(`api.openai.com`), Anthropic (`api.anthropic.com`) and Gemini
+(`generativelanguage.googleapis.com`) and reads their native tool calls.
+
+What stays the same:
+
+- Session, receipt and ledger formats. A native call is recorded as the TOOL
+  line the text protocol would have carried, so a ledger written by 2.0 has
+  the same entry kinds and the same content shapes as one written by 1.x.
+- Permission modes, rules, hooks and prompts. The same executor decides and
+  runs every call.
+- Every other backend. Local models, subscription CLIs, Azure, Bedrock,
+  Vertex, DeepSeek, OpenRouter and other OpenAI-compatible hosts keep the text
+  protocol unless you opt in.
+
+What changes:
+
+- Requests to the three hosts above carry a `tools` list and one more
+  paragraph at the end of the system prompt. A proxy that rewrites or rejects
+  `tools` will see different traffic.
+- The harness-config ledger entry has a new field, `native_tools`, so the
+  config hash of a 2.0 session differs from a 1.x session with the same
+  settings. The hash already included the Flywheel version, so hashes never
+  matched across releases.
+- A native reply that carries a tool-result object is refused and the turn
+  fails, because only the session produces tool results. 1.x had no native
+  replies, so no 1.x session meets this.
+
+To keep the 1.x behaviour, set `FLYWHEEL_NATIVE_TOOLS=0`. To use native calls
+on another host that supports them, set `FLYWHEEL_NATIVE_TOOLS=1`.

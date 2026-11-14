@@ -5,6 +5,12 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Native function calling
+- `flywheel code` declares its tools to OpenAI, Anthropic and Gemini as JSON schemas and reads their native tool calls, on by default for the three first-party hosts. `FLYWHEEL_NATIVE_TOOLS=1` turns it on for every hosted backend and `FLYWHEEL_NATIVE_TOOLS=0` turns it off. The text protocol (`TOOL name {json}` lines) stays for local models, subscription CLIs, the cloud backends, and any host that refuses tool schemas.
+- A native call is recorded as the TOOL line the text protocol would have carried, so the ledger entries, receipt ids, permission prompts and results are the same either way. The harness-config entry gains `native_tools`.
+- A reply that carries a tool result the session did not produce is refused, as is a native call with arguments that are not a JSON object. Nothing from a refused reply runs.
+- Tested by replaying recorded replies in each provider's documented format; a native call against a live provider was not run. See `docs/CODE-SESSION.md`, "How tool calls travel".
+
 Hosted streaming
 - In the interactive `flywheel code` session, replies from Anthropic, OpenAI, OpenAI-compatible hosts (DeepSeek, OpenRouter, GLM) and Gemini print as the model writes them. The stream is rebuilt into the provider's ordinary response and read by the same code as a plain reply, so the ledger entry, receipt id, conversation and provider token counts are the same either way. `FLYWHEEL_STREAM=0` turns it off. Azure, Bedrock, Vertex and the subscription CLIs still print whole.
 - A hosted stream that is cut short after it began fails the turn: nothing from it is recorded, a tool call it was in the middle of does not run, and the session does not send a second request by itself. A stream that never began is asked once more without streaming. The interrupted-stream note now reads `[stream interrupted; the text above is not the reply]`.

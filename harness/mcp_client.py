@@ -287,5 +287,6 @@ def as_external_tools(client: MCPClient, *, prefix: str = "") -> dict:
             return fn
 
         out[(prefix + tool_name) if prefix else tool_name] = {
-            "fn": _make(tool_name), "description": t.get("description", "")}
+            "fn": _make(tool_name), "description": t.get("description", ""),
+            "schema": t.get("inputSchema")}
     return out

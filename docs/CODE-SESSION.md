@@ -473,6 +473,60 @@ Flywheel's to shorten and is not in the budget.
 Tested by replaying recorded streams in each provider's documented format.
 A streamed turn against each live hosted provider: not run.
 
+## How tool calls travel
+
+The agent asks for a tool in one of two ways, and the session records both the
+same way.
+
+- Text protocol. The model writes a line `TOOL name {json}` in its reply. Any
+  model can do this, and it is how local models and subscription CLIs work.
+- Native function calling. The session declares its tools to the provider as
+  JSON schemas, the provider returns each call as its own tool-call object,
+  and the results go back in the provider's tool-result shape.
+
+Native function calling is on by default for the first-party hosts of OpenAI
+(`api.openai.com`), Anthropic (`api.anthropic.com`) and Gemini
+(`generativelanguage.googleapis.com`). `FLYWHEEL_NATIVE_TOOLS=1` turns it on
+for every hosted backend, such as DeepSeek, OpenRouter or a server of your
+own that speaks the OpenAI format. `FLYWHEEL_NATIVE_TOOLS=0` turns it off
+everywhere. The text protocol is used whenever native calling is not:
+
+- the switch is off, or the host is not on the list above and the switch is
+  not `1`;
+- the host answers a request that carries tool schemas with an error that
+  names tools or functions. The session logs one warning, sends the request
+  again in the text protocol, and stays in it for that model until the
+  session ends;
+- an earlier turn cannot be matched to the native reply it came from, which
+  happens after `--continue`, `--resume` or a compaction. That turn is sent
+  as text; new turns are native again.
+
+What is recorded does not depend on which way a call travelled. A native call
+is written into the reply as the `TOOL name {json}` line the text protocol
+would have carried, after the reply's own words, and the session parses and
+runs that text. So the ledger entry for the reply, its receipt id, each
+`tool_call`, `tool_result` and `approval` entry, and the question you are
+asked in `ask` mode are the same for a native call and for the same call
+written as text. The permission mode, the rules, the hooks, the denylist and
+the sandbox apply to both, because one executor runs both. The harness-config
+entry records the switch (`native_tools`: `auto`, `on` or `off`), so two runs
+that differ in it have different config hashes.
+
+Three replies are refused, and nothing from them runs:
+
+- a reply that carries a tool result. Only the session produces tool results,
+  so a reply that brings its own is not trusted;
+- a native call whose arguments are not a JSON object;
+- a native call whose tool name is not letters, digits and underscores.
+
+A tool is offered natively when its name is letters, digits and underscores,
+at most 64 long. An MCP tool with another name is not offered; it also could
+not be called through a TOOL line before. MCP tools carry the input schema
+their server declared.
+
+Tested by replaying recorded replies in each provider's documented format. A
+native tool call against each live hosted provider: not run.
+
 ## Background jobs
 
 `run_background` starts a long command, such as a dev server or a watcher, in
@@ -561,7 +615,8 @@ permission mode, rules and hooks; max steps, compaction budget, max tokens,
 temperature and seed; the backend preference and which backend and model
 answered; the test command; the Flywheel version). A `harness_config` ledger
 entry holds the settings whenever the hash changes, and `-p` JSON results carry
-it as `harness_config_sha256`. Two runs with equal hashes ran the same harness,
+it as `harness_config_sha256`. The native function calling switch is one of the
+settings. Two runs with equal hashes ran the same harness,
 so a difference between them comes from the model or the task, not from
 Flywheel's settings. The user's own words and an "always" answer given at a
 prompt are not in the hash.
@@ -631,8 +686,16 @@ markers. Output has no color and no spinners in either mode.
 
 - Changes a command makes in the project folder are not covered by `/undo`,
   and a background job cannot write there. See "What a command may write".
-- The tool protocol is text lines, which any model can follow; native function
-  calling is not used yet.
+- Native function calling is on by default for the first-party OpenAI,
+  Anthropic and Gemini hosts only. Other hosts use the text protocol unless
+  `FLYWHEEL_NATIVE_TOOLS=1` is set. Azure OpenAI, Amazon Bedrock, Google Vertex
+  AI, Ollama and the subscription CLIs always use the text protocol.
+- With native calling on, the model is told not to write TOOL lines. If it
+  writes one anyway beside a native call, both run.
+- When one reply holds several native calls and a tool's output contains the
+  exact header of the next call's result, the outputs are divided at the
+  wrong place on the way back to the provider. The text still arrives whole
+  and in order.
 - This session has been tested with a scripted model and with recorded
   provider streams. A run against each live hosted provider is not part of
   the test suite, and no live streamed turn has been run.
