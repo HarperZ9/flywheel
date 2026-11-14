@@ -44,6 +44,9 @@ import pytest
 
 from scripts import gateway_bench_rig as bench
 
+# Run by publish.yml against the built wheel before a release is published.
+pytestmark = pytest.mark.release_gate
+
 BUDGET_SECONDS = 0.050
 STUB_DELAY = 0.050
 CALLS, WARMUP = 5, 2

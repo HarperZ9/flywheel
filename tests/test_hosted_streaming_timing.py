@@ -25,6 +25,9 @@ import pytest
 from tests.hosted_stream_fixtures import PROVIDERS
 from tests.hosted_stream_stub import overheads
 
+# Run by publish.yml against the built wheel before a release is published.
+pytestmark = pytest.mark.release_gate
+
 BUDGET_SECONDS = 0.050
 STUB_DELAY = 0.150
 TURNS = 5

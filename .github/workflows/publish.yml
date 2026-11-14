@@ -1,9 +1,14 @@
 ﻿name: publish
 
-# Publish flywheel-verify to PyPI via Trusted Publishing (OIDC).
+# One version tag ships the release. Pushing `vX.Y.Z` builds the wheel and the
+# sdist, runs the release gates against the built wheel, publishes to PyPI by
+# Trusted Publishing (OIDC), and creates the GitHub release with the notes
+# file and every asset a runner can build without a secret, each listed in a
+# sums file.
+#
 # No API token is stored anywhere: GitHub mints a short-lived OIDC identity and
-# PyPI trades it for a one-time upload credential. Triggered by pushing a
-# version tag, e.g. `v0.3.0`.
+# PyPI trades it for a one-time upload credential. PyPI's trusted publisher is
+# bound to this file name, so the PyPI job has to stay in publish.yml.
 #
 # One-time PyPI setup (done in the PyPI web UI, by the project owner):
 #   PyPI -> Account -> Publishing -> add a pending trusted publisher:
@@ -12,16 +17,73 @@
 #     Workflow name:    publish.yml
 #     Environment:      (leave blank)
 #   Project name to reserve: flywheel-verify
+#
+# Dry run: start this workflow by hand (workflow_dispatch). It builds, runs
+# every gate and uploads the would-be release as the `release-dry-run`
+# artifact. It publishes nothing. A run publishes only from a v* tag ref: a
+# tag push, or a dispatch on the tag with dry_run turned off (to finish a
+# release whose first run stopped).
+#
+# Built separately: the Windows installer and the native MCPB companion.
+# desktop-release.yml builds and accepts them on the same tag and stages them
+# as a workflow artifact; they are added to the release after their sums are
+# checked (docs/RELEASING.md).
 
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Build, run every gate, upload the would-be assets; publish nothing"
+        type: boolean
+        default: true
 
 permissions:
   contents: read
 
+concurrency:
+  group: publish-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
+  plan:
+    # Decides whether this run publishes, and refuses a tree whose version
+    # sites, tag and notes file disagree.
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.plan.outputs.publish }}
+      version: ${{ steps.plan.outputs.version }}
+      tag: ${{ steps.plan.outputs.tag }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Plan the run
+        id: plan
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          version="$(python -c "import sys; sys.path.insert(0, 'scripts'); import release_assets; print(release_assets.declared_version())")"
+          publish=false
+          if [[ "$GITHUB_REF" == refs/tags/v* ]] && [[ "$GITHUB_EVENT_NAME" == push || "$DRY_RUN" == false ]]; then
+            publish=true
+          fi
+          if [[ "$publish" == true ]]; then
+            python scripts/release_assets.py check --tag "$GITHUB_REF_NAME" --release
+            python scripts/check_release_digest.py
+          else
+            python scripts/release_assets.py check
+          fi
+          {
+            echo "publish=$publish"
+            echo "version=$version"
+            echo "tag=v$version"
+          } >> "$GITHUB_OUTPUT"
+          echo "version $version, publish=$publish (ref $GITHUB_REF, event $GITHUB_EVENT_NAME)" | tee -a "$GITHUB_STEP_SUMMARY"
+
   discover:
     # Blocks the release when the repository is missing what search and
     # registries read. Report and fixes: the job log. Tool: HarperZ9/discover.
@@ -35,8 +97,8 @@ jobs:
           mode: repo
 
   build:
-    needs: discover
-    name: Build sdist and wheel
+    needs: [plan, discover]
+    name: Build the wheel, the sdist and the release assets
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -51,14 +113,144 @@ jobs:
         run: |
           python -m pip install --upgrade twine
           python -m twine check dist/*
+      - name: Build the assets and their sums files
+        env:
+          PUBLISH: ${{ needs.plan.outputs.publish }}
+        run: |
+          # The source plugin refuses a commit that is not the version tag, so
+          # a dry run builds it in its development form. The output folder is
+          # outside the checkout because that build also refuses a dirty tree.
+          dev=""
+          if [[ "$PUBLISH" != true ]]; then dev="--dev"; fi
+          python scripts/release_assets.py build --dist dist --out "$RUNNER_TEMP/release-assets" $dev
       - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: dist
           path: dist/
+          if-no-files-found: error
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: release-assets
+          path: ${{ runner.temp }}/release-assets/
+          if-no-files-found: error
+
+  gates:
+    # The release gates. Each runs against the built wheel installed in a
+    # clean environment: the checkout's own harness folder is moved away
+    # first, so nothing can pass on source the wheel does not carry.
+    needs: [plan, build]
+    name: Release gates on the built wheel
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      FLYWHEEL_HOME: ${{ runner.temp }}/flywheel-home
+      OPENAI_API_KEY: ci-stub-not-a-key
+      CODEX_BASE_URL: http://127.0.0.1:8099/v1
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: release-assets
+          path: release-assets/
+      - name: Gate | scope migration (source tree)
+        run: python scripts/check_scope_migration.py
+      - name: Gate | every asset matches its sums file
+        run: python scripts/release_assets.py verify release-assets
+      - name: Install the built wheel in a clean environment
+        run: |
+          python -m venv .release-venv
+          # GITHUB_WORKSPACE, not PWD: on Windows the path file needs a Windows path.
+          if [[ -d .release-venv/Scripts ]]; then bin="$GITHUB_WORKSPACE/.release-venv/Scripts"; else bin="$GITHUB_WORKSPACE/.release-venv/bin"; fi
+          "$bin/python" -m pip install --no-cache-dir release-assets/*.whl pytest pytest-timeout
+          echo "$bin" >> "$GITHUB_PATH"
+      - name: Move the source package away
+        run: |
+          mv harness "$RUNNER_TEMP/source-harness"
+          python - <<'PY'
+          import pathlib
+          import sys
+
+          import harness
+
+          where = pathlib.Path(harness.__file__).resolve()
+          assert "site-packages" in where.parts, f"harness came from {where}"
+          assert ".release-venv" in pathlib.Path(sys.executable).resolve().parts, sys.executable
+          print(f"harness is the installed wheel: {where}")
+          PY
+          test "$(flywheel --version)" = "flywheel $VERSION" || { flywheel --version; exit 1; }
+      - name: Gate | 1.x records verify, with the byte-flip controls
+        run: python scripts/verify_compat_records.py --control
+      - name: Gate | timing budgets and the other marked tests
+        run: python scripts/release_assets.py gate-tests --run
+      - name: Gate | flywheel gate from the wheel
+        run: |
+          mkdir "$RUNNER_TEMP/gate" && cd "$RUNNER_TEMP/gate"
+          flywheel gate | tee gate.txt
+          grep -q "^verdict=PASS rewitness=MATCH" gate.txt
+      - name: Gate | one coding request against a scripted model
+        run: |
+          python scripts/ci_stub_model.py 8099 \
+            'TOOL write_file {"path": "hello.txt", "content": "first run"}' 'Wrote hello.txt.' &
+          sleep 1
+          mkdir "$RUNNER_TEMP/work" && cd "$RUNNER_TEMP/work"
+          flywheel code -p "write hello.txt" --mode edit --backend codex --no-save \
+            --output-format json > result.json
+          test "$(cat hello.txt)" = "first run"
+          python -c "import json; r = json.load(open('result.json')); assert r['chain_ok'] is True and r['final'] == 'Wrote hello.txt.', r"
+
+  dry-run:
+    # What a real run would have published, as one artifact. Nothing leaves
+    # the runner.
+    needs: [plan, build, gates]
+    if: needs.plan.outputs.publish != 'true'
+    name: Dry run | the would-be release
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: release-assets
+          path: release-dry-run/assets/
+      - name: Write down what would have been published
+        run: |
+          python scripts/release_assets.py verify release-dry-run/assets > release-dry-run/ASSETS.txt
+          cp "RELEASE-NOTES-$VERSION.md" release-dry-run/NOTES.md
+          {
+            echo "### Dry run for $VERSION: nothing was published"
+            echo
+            echo "Skipped: the PyPI upload, the GitHub release, the PyPI install check and the media and docs site runs."
+            echo
+            echo "Would-be release assets (sha256, name):"
+            echo
+            echo '```'
+            cat release-dry-run/ASSETS.txt
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: release-dry-run
+          path: release-dry-run/
+          if-no-files-found: error
 
   publish:
     name: Publish to PyPI
-    needs: build
+    needs: [plan, build, gates]
+    if: needs.plan.outputs.publish == 'true'
     runs-on: ubuntu-latest
     permissions:
       id-token: write   # required for Trusted Publishing (OIDC); no token needed
@@ -76,3 +268,86 @@ jobs:
       # 0.3.10 wheel PyPI itself accepted. A stale pin here fails a release
       # at the last step, with the package unchanged.
       - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+
+  release:
+    # Creates the GitHub release from the same files the gates checked. An
+    # existing release is never written over.
+    name: Create the GitHub release
+    needs: [plan, build, gates, publish]
+    if: needs.plan.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the release
+      actions: write    # start the media and docs site runs
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ needs.plan.outputs.tag }}
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: release-assets
+          path: release-assets/
+      - name: Check the assets once more, then create the release (no-clobber)
+        run: |
+          python scripts/release_assets.py verify release-assets
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "release $TAG already exists; a release is never written over" >&2
+            exit 1
+          fi
+          gh release create "$TAG" release-assets/* --title "Flywheel $VERSION" \
+            --notes-file "RELEASE-NOTES-$VERSION.md" --verify-tag --latest
+      - name: Start the runs a published release used to start
+        # A release made with the workflow token starts no other workflow, so
+        # the media and docs site runs are started here by name.
+        run: |
+          gh workflow run release-media.yml -f tag="$TAG" \
+            || echo "::warning::release-media.yml did not start; run it by hand with tag=$TAG"
+          gh workflow run docs-site.yml --ref "$TAG" \
+            || echo "::warning::docs-site.yml did not start; run it by hand on $TAG"
+
+  verify-pypi:
+    # After the upload: PyPI serves the wheel the gates checked, and a fresh
+    # install of it on each system runs.
+    name: Check the published package
+    needs: [plan, build, publish]
+    if: needs.plan.outputs.publish == 'true'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    env:
+      FLYWHEEL_HOME: ${{ runner.temp }}/flywheel-home
+      VERSION: ${{ needs.plan.outputs.version }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: release-assets
+          path: release-assets/
+      - name: PyPI serves the files that were built
+        run: python scripts/release_assets.py pypi --version "$VERSION" --sums release-assets/python-SHA256SUMS.txt
+      - name: Fresh install from PyPI, then the gate
+        run: |
+          python -m venv "$RUNNER_TEMP/venv"
+          if [[ -d "$RUNNER_TEMP/venv/Scripts" ]]; then bin="$RUNNER_TEMP/venv/Scripts"; else bin="$RUNNER_TEMP/venv/bin"; fi
+          for attempt in 1 2 3 4 5 6; do
+            "$bin/python" -m pip install --no-cache-dir "flywheel-verify==$VERSION" && break
+            if [[ "$attempt" == 6 ]]; then exit 1; fi
+            sleep 30
+          done
+          mkdir "$RUNNER_TEMP/gate" && cd "$RUNNER_TEMP/gate"
+          test "$("$bin/flywheel" --version)" = "flywheel $VERSION"
+          "$bin/flywheel" gate | tee gate.txt
+          grep -q "^verdict=PASS rewitness=MATCH" gate.txt
