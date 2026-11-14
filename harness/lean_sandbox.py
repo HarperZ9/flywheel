@@ -128,6 +128,7 @@ def _run_posix(argv, cwd, timeout, env, lim) -> tuple:
 def _run_windows(argv, writable, cwd, timeout, env, lim) -> tuple:
     try:
         from . import lean_sandbox_win as win
+        from .lean_env import lean_env
         from .execution_input_protection import \
             ExecutionInputProtectionUnavailable
     except (ImportError, OSError) as exc:
@@ -136,7 +137,7 @@ def _run_windows(argv, writable, cwd, timeout, env, lim) -> tuple:
     out_path, err_path = writable / ".compile.out", writable / ".compile.err"
     try:
         rc, acct = win.run(argv, writable=writable, cwd=cwd, timeout=timeout,
-                           env=dict(env if env is not None else os.environ),
+                           env=lean_env(env),   # the allow-list, never os.environ
                            lim=lim, stdout_path=out_path, stderr_path=err_path)
     except (ExecutionInputProtectionUnavailable, OSError) as exc:
         return None, f"the Windows sandbox could not be applied ({exc})", \

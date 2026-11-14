@@ -161,7 +161,8 @@ class LiveExternal:
             if (base / module).exists() or (base / f"{module}.olean").exists():
                 return None, (f"the search path entry {entry} also holds a "
                               f"module named {module}")
-        env = dict(os.environ)
+        from .lean_env import lean_env
+        env = lean_env()                # never the harness's whole environment
         env["LEAN_PATH"] = os.pathsep.join(entries)
         # lean4export links the toolchain's shared runtime, which Windows
         # finds through PATH.

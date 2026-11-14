@@ -212,6 +212,7 @@ Fixes
 - Fixed: `flywheel gateway-key revoke` ignored a credential store that did not delete the key and still printed that it had. It now exits 1 and says so; the key is refused either way. On Linux and macOS the key list file is written owner-only.
 - Fixed: the gateway's upstream transports followed redirects, which re-sends the provider key header to the new address. They follow none now; a redirect comes back as an error with its status.
 - Fixed: a gateway key (`fwk_...`) that reaches log or error text is redacted. An upstream can no longer put `x_receipt` or `x_flywheel` on a relayed stream event.
+- Fixed: Lean child processes inherited the whole environment of the process that started them, so a candidate proof that evaluates `IO.getEnv` could print a provider key or another variable into `kernel_output`. Every Lean spawn (compile, binding check, replay, second kernel, export check, version probes) now gets an allow-listed environment from `harness/lean_env.py`. See `docs/PROOF-AND-FORMATS.md`, "The environment a Lean process gets". If you relied on a custom variable reaching Lean, it no longer does; `LEAN_PATH`, `LEAN_SYSROOT`, `ELAN_HOME`, `ELAN_TOOLCHAIN`, `LEAN_NUM_THREADS` and `LEAN_STACK_SIZE_KB` still do.
 
 ## 1.9.0 (2026-10-15)
 

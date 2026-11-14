@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Any
 
 from .. import safe_program
+from ..lean_env import lean_env
 
 SCHEMA = "flywheel.lean-check/v1"
 
@@ -64,7 +65,8 @@ def _probe_lean() -> str:
     """
     try:
         command, env = safe_program.launch(["lean", "--version"])
-        result = subprocess.run(command, capture_output=True, text=True, timeout=10, env=env)
+        result = subprocess.run(command, capture_output=True, text=True, timeout=10,
+                                env=lean_env(env))
         if result.returncode == 0:
             return result.stdout.strip().split("\n")[0]
     except (OSError, subprocess.SubprocessError):
@@ -139,7 +141,7 @@ def check_lean_file(path: Path, *, timeout: int = 60) -> LeanCheckResult:
         command, env = safe_program.launch(["lean", str(path)], cwd=path.parent)
         result = subprocess.run(
             command, capture_output=True, text=True, timeout=timeout,
-            cwd=str(path.parent), env=env,
+            cwd=str(path.parent), env=lean_env(env),    # candidate code runs here
         )
         elapsed = time.monotonic() - start
         if result.returncode == 0:
