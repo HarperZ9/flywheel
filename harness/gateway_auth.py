@@ -89,8 +89,8 @@ def check(headers: Mapping, method: str, token: str, *,
     offered = auth[7:] if auth.startswith("Bearer ") else (headers.get("x-api-key", "") or "")
     if not offered:
         return False, "no_token"
-    if not compare_digest(offered, token):
-        return False, "bad_token"
+    if not compare_digest(offered.encode("utf-8"), token.encode("utf-8")):
+        return False, "bad_token"       # bytes: a str with a non-ASCII character raises
     if method.upper() in STATE_CHANGING:
         ctype = (headers.get("Content-Type", "") or "").split(";", 1)[0].strip().lower()
         if ctype not in JSON_CONTENT_TYPES:

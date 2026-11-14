@@ -29,7 +29,7 @@ def open_stream(method, url, headers, body, timeout):
     endpoints_http._FAULT.last = None
     req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
     try:
-        resp = urllib.request.urlopen(req, timeout=timeout)
+        resp = endpoints_http.send(req, timeout)    # follows no redirect
     except urllib.error.HTTPError as e:
         obj = body_from_http_error(e)
         endpoints_http._FAULT.last = (obj, endpoints_http._header_map(getattr(e, "headers", None)))

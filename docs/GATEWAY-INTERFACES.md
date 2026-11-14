@@ -496,12 +496,42 @@ completion endpoints.
 
 ## Keys and budgets
 
-A virtual key is a local credential you mint for one tool or one teammate.
-It opens the three model interface paths (`/v1/messages`,
+A virtual key is a local credential you mint for one tool, or for one
+teammate, that reaches this gateway on the same machine or over a link you
+trust. "Who a key is for, and the network" below says what that means. It
+opens the three model interface paths (`/v1/messages`,
 `/v1/messages/count_tokens`, `/v1/responses`) and no other gateway route. Each
 key has a name, optional limits and an optional list of models, and the
 gateway keeps running totals for it. The gateway token keeps working on those
 paths as the owner, with no budget.
+
+### Who a key is for, and the network
+
+A key is for a tool running on the same machine as the gateway: a coding
+agent, a script, a CI step. Give each tool its own key and the ledger shows
+what each one did.
+
+A teammate on another machine is a different case, because the gateway
+speaks plain HTTP. On the network the key, every prompt and every reply
+cross in clear text, and anyone on the path can read them and reuse the key.
+
+- The gateway listens on 127.0.0.1 unless you start it with `--host ADDR`.
+  It then prints a `REMOTE` line naming the address.
+- A request is accepted only when its `Host` header is on the allow-list. The
+  list holds the loopback names; `--allow-host NAME` adds one, for example
+  the name a tunnel gives the gateway.
+- For use from another machine, put TLS in front: either an SSH tunnel from
+  the teammate's machine (`ssh -N -L 8799:127.0.0.1:8799 user@gateway-host`,
+  after which the tool uses `http://127.0.0.1:8799` and the gateway stays on
+  loopback), or a reverse proxy or tunnel that terminates HTTPS and forwards
+  to the gateway, with its public name given to `--allow-host`. Any tool
+  that does this works; none is required.
+- A key that crossed a network without TLS should be revoked:
+  `flywheel gateway-key revoke NAME`, then create a new one.
+
+A key holder can spend up to the key's limits on your provider account and
+can see whatever the models return. Give a key the limits, the model list
+and the allow-lists that fit what its holder is supposed to do.
 
 ### Create a key
 
@@ -731,16 +761,49 @@ so it holds when the key list is the file that could not be written. If the
 ledger itself cannot take the failure entry, the failure is logged at error
 level with the caller and the cause, and the client is still told.
 
-### What is not covered
+### Every remaining budget limit
 
-- Rate limits. A key has totals, not a requests-per-minute limit.
-- A provider account per key. Every key spends from the gateway's own
-  credential for the upstream.
-- More than one machine. The totals live in one Flywheel home. Two gateways
-  on two machines do not share them.
-- Changing a limit in place. Create a new key, or reset the totals.
-- In-flight counts and reservations across gateways. They are held in one
-  gateway process.
+A budget is an operating limit for a tool you run. It is not a hard cap on
+what a provider can bill. What it leaves open, in full:
+
+- One call that runs alone can cross a limit by its own cost: its input plus
+  up to its output limit. The next call is refused.
+- Calls that run together reserve their output limit and a quarter of their
+  request bytes. They can cross a limit by the input each one used beyond
+  that reservation, over at most the key's in-flight limit (4 by default).
+- A call with no reported counts is charged a word estimate, which runs low
+  and is far too low for text without spaces.
+- An unfinished stream is charged an estimate of what was received, not the
+  provider's final count.
+- A call that fails after the provider answered, other than an unfinished
+  stream, is not charged.
+- Fees that are not tokens (web search per search, code execution per
+  container hour) are not counted. A key cannot cause them unless its
+  allow-list names the tool.
+- Totals, in-flight counts and reservations live in one Flywheel home and one
+  gateway process. Two machines do not share them.
+- There is no requests-per-minute limit, and no provider account per key:
+  every key spends from the gateway's own credential for the upstream.
+- A limit cannot be changed in place. Create a new key, or reset the totals.
+
+`docs/KNOWN-LIMITS-2.0.0.md` lists the other limits of this release.
+
+### Smaller protections
+
+- A request body nested too deep to parse gets 400, as any body that is not
+  JSON does.
+- A credential header with a character outside ASCII gets 401.
+- `flywheel gateway-key revoke` fails with exit code 1 when the credential
+  store did not delete the stored key. The key is refused either way, because
+  the key list marks it revoked.
+- On Linux and macOS the key list file is readable by its owner only.
+- A gateway key that reaches a log line or an error message is redacted.
+- The gateway follows no redirect from an upstream. A redirect would send
+  the provider key to the new address. An upstream base URL that redirects
+  fails with the redirect's status; set it to the final address.
+- On a stream passed through from an Anthropic upstream, the fields
+  `x_receipt` and `x_flywheel` come from the gateway only. An upstream event
+  that carries either is relayed without it.
 
 ### What was run
 

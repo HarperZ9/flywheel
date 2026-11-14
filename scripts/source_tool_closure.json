@@ -14,7 +14,7 @@
   "harness/evidence_json.py": "bafe71d923eaf7885185001dee8fb9e949c40cb548c0721ff2604d46533d8d46",
   "harness/gateway.py": "6b1b750f0f6ff2c90dfef1dd4707ccee64720f0aa9722e61f3b689314e7b8bd4",
   "harness/gateway_agent_failures.py": "07f401e312036b0a9eb87e594aa1376ae6befb1367371d4150832d56e3a81275",
-  "harness/gateway_auth.py": "66d8fb98920fcc4b1ad4e23486e7e453088c428c2d4b0f50f80c6b2523367c2a",
+  "harness/gateway_auth.py": "7ddec1c93c92089740b8dc722314f8230ea616221cd15156f2a73c58254fa776",
   "harness/gateway_bind.py": "176b068a23bec95235f926bb21adc253df50fddc3b7ec6608472a406c74adc3c",
   "harness/gateway_body_drain.py": "94ca12d6de88d8ade3fb43964d1469b14180cad802756e5d1744a752df4aa795",
   "harness/gateway_custody.py": "d600f10f454f9d30ed9d07f9859c2daf6a6e32a8b7d452bb2441b370512e98b9",
