@@ -262,6 +262,7 @@ class GatewayLedger(SessionLedger):
 
     def close(self) -> None:
         with self._lock:
+            _health.settle(self)        # a ledger that failed gets one more try to record it
             self._held.close()
 
 

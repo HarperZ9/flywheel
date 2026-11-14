@@ -11,7 +11,9 @@ had answered, on every call, for as long as it lasted.
   usable   is asked by `gateway_ledger.for_home` before every model call. A
            failed ledger comes back as None, which every model interface
            answers with 503 before it contacts an upstream
-           (gateway_ledger_gate). At most once a second it tries to resume.
+           (gateway_ledger_gate). At most once a second it tries to resume,
+           and once more when the ledger closes (`settle`), so a gateway that
+           stops while failed still leaves the record when the disk allows it.
   resume   reads the segment back from the disk. When it verifies and still
            begins with the entries this process holds, the gateway appends to
            it again, and its first entry is a `ledger_gap` that says what
@@ -112,6 +114,18 @@ def usable(ledger):
                        type(exc).__name__, exc)
             return None
     return ledger
+
+
+def settle(ledger) -> None:
+    """Before a ledger closes: if its writes had failed, try once more to record the gap."""
+    if ledger.failed is None:
+        return
+    try:
+        resume(ledger)
+    except (OSError, ValueError) as exc:
+        _LOG.error("gateway ledger closed while its writes still failed (%s: %s); %d append(s) "
+                   "were refused and the ledger does not record them", type(exc).__name__, exc,
+                   ledger.failed["refused"])
 
 
 def resume(ledger) -> None:

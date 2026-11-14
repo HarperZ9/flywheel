@@ -1,8 +1,8 @@
 """A ledger that fails after the gateway started stops model calls, and resumes cleanly.
 
-Independent review of 2.0.0, findings D2, A1 and N2.
+Independent review of 2.0.0, finding D2.
 
-D2. The ledger opened at start and a later write failed (a full disk). Every
+The ledger opened at start and a later write failed (a full disk). Every
 call still reached the upstream for as long as the failure lasted, and when
 writes came back the segment held duplicate sequence numbers. Now the first
 failed append marks the ledger failed: later calls answer 503 before any
@@ -10,26 +10,18 @@ upstream call, and a resumed ledger verifies and records the gap. Every model
 interface writes its entry after the upstream answered, so the one call that
 meets the failure has already reached the provider; these tests count it.
 
-A1. `verify` reported removed entries on an intact ledger while a gateway
-appended, because it read the segment before the head record.
-
-N2. A file named like a segment that is not one (`segment-backup.jsonl`,
-`segment-000001 - Copy.jsonl`) stopped the gateway at start or failed
-`verify`. Such a file is ignored and named.
-
 A real gateway on a loopback port, a stub upstream, the home's on-disk ledger.
 The full disk is simulated at the segment's file. No provider is called.
+`tests/test_gateway_ledger_live_verify.py` has findings A1 and N2.
 """
 import io
 import os
 import sys
-import threading
-import time
 import types
 
 import pytest
 
-from harness import gateway, gateway_ledger, gateway_ledger_cli, gateway_ledger_gate
+from harness import gateway, gateway_ledger, gateway_ledger_cli
 from tests import gateway_messages_support as support
 from tests.gateway_keys_support import (  # noqa: F401  (fixtures)
     BODIES, MESSAGES, keyed, post, served, stream_bytes, turn2)
@@ -206,6 +198,23 @@ def test_a_line_cut_short_by_the_failure_is_recorded_as_a_break(keyed, served, m
     assert "records a break" in capsys.readouterr().out
 
 
+@pytest.mark.parametrize("disk_back", [True, False])
+def test_a_gateway_that_stops_while_its_ledger_is_failed_records_the_gap_if_it_can(
+        keyed, served, monkeypatch, home, disk_back):
+    keys, _store = keyed
+    raw, _ = keys.create("ci-bot")
+    url, upstream, ledger, disk = _gateway(monkeypatch, served, turn2(2), home)
+    assert post(url, "/v1/messages", raw)[0] == 200
+    disk.full = True
+    assert post(url, "/v1/messages", raw)[0] == 500
+    disk.full = not disk_back
+    gateway_ledger.close_all()                  # the gateway stops; no call came in between
+    disk.full = False
+    kinds = [kind for _name, _seq, kind in _rows(home)]
+    assert kinds == (["endpoint_call", "ledger_gap"] if disk_back else ["endpoint_call"])
+    assert all(segment["ok"] for segment in gateway_ledger.check(home))
+
+
 def test_the_gateway_reaches_no_provider_when_the_new_module_cannot_be_imported(
         keyed, served, monkeypatch, home):
     keys, _store = keyed
@@ -224,73 +233,3 @@ def test_the_gateway_reaches_no_provider_when_the_new_module_cannot_be_imported(
             status = 0
         assert status in (0, 500)
     assert upstream.requests == []
-
-
-@pytest.mark.parametrize("name", ["segment-backup.jsonl", "segment-000001 - Copy.jsonl",
-                                  "segment-0000001.jsonl", "segment-000002.jsonl.bak"])
-def test_a_stray_file_in_the_ledger_folder_is_ignored_and_named(home, name, capsys):
-    ledger = gateway_ledger.for_home(home)
-    ledger.append("endpoint_call", "x", {})
-    gateway_ledger.close_all()
-    folder = home / "gateway-ledger"
-    (folder / name).write_bytes((folder / "segment-000001.jsonl").read_bytes())
-    found = gateway_ledger.check(home)
-    assert [(s["name"], s["ok"]) for s in found] == [("segment-000001.jsonl", True)]
-    assert gateway_ledger_cli.main(["verify"]) == 0
-    assert f"ignored {name!r}" in capsys.readouterr().out
-    lines = []
-    assert gateway_ledger_gate.startup(lambda: gateway_ledger.for_home(home), out=lines.append)
-    assert any("ignored" in line and name in line for line in lines), lines
-    gateway_ledger.for_home(home).append("endpoint_call", "y", {})     # and the chain goes on
-    gateway_ledger.close_all()
-    assert [s["entries"] for s in gateway_ledger.check(home)] == [2]
-
-
-def test_verify_holds_when_an_entry_is_appended_between_its_two_reads(home, monkeypatch):
-    """The forced order: the head record moves on after the segment was read."""
-    monkeypatch.setenv(gateway_ledger.SYNC_ENV, "0")
-    ledger = gateway_ledger.GatewayLedger(home)
-    for index in range(5):
-        ledger.append("endpoint_call", "x" * 64, {"n": index})
-    real = gateway_ledger.read_segment
-
-    def read_then_append(path):
-        found = real(path)
-        ledger.append("endpoint_call", "y" * 64, {})
-        return found
-    monkeypatch.setattr(gateway_ledger, "read_segment", read_then_append)
-    try:
-        found = gateway_ledger.check(home)
-    finally:
-        ledger.close()
-    assert [(s["ok"], s["problem"], s["entries"]) for s in found] == [(True, None, 5)]
-
-
-def test_verify_holds_on_a_ledger_that_a_writer_thread_appends_to(home, monkeypatch):
-    monkeypatch.setenv(gateway_ledger.SYNC_ENV, "0")
-    ledger = gateway_ledger.GatewayLedger(home)
-    for index in range(4000):
-        ledger.append("endpoint_call", "x" * 64, {"endpoint": "openai", "n": index})
-    stop = threading.Event()
-
-    def writer():
-        while not stop.is_set():
-            ledger.append("endpoint_call", "y" * 64, {"endpoint": "openai"})
-            time.sleep(0.002)
-    thread = threading.Thread(target=writer)
-    thread.start()
-    try:
-        problems = []
-        for _ in range(8):
-            found = gateway_ledger.check(home)                  # one read, no retry
-            problems += [s["problem"] for s in found if not s["ok"]]
-        monkeypatch.setattr(gateway_ledger_cli, "RETRY_AFTER", 0.01)
-        monkeypatch.setenv("FLYWHEEL_HOME", str(home))
-        codes = [gateway_ledger_cli.main(["verify"]) for _ in range(3)]
-    finally:
-        stop.set()
-        thread.join()
-        ledger.close()
-    assert [p for p in problems if "removed" in p] == [], problems
-    assert codes == [0, 0, 0]
-    assert all(s["ok"] for s in gateway_ledger.check(home))
