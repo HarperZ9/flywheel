@@ -735,7 +735,14 @@ markers. Output has no color and no spinners in either mode.
   wrong place on the way back to the provider. The text still arrives whole
   and in order.
 - This session has been tested with a scripted model and with recorded
-  provider streams. A run against each live hosted provider is not part of
-  the test suite, and no live streamed turn has been run.
+  provider replies. A run against each live hosted provider is not part of
+  the test suite, and none has been run. One run outside the suite used a
+  local Ollama 0.40.15 server with `qwen2.5:1.5b`, through its
+  OpenAI-compatible and Anthropic-compatible endpoints: a streamed reply, a
+  native tool call with its result sent back, the same call streamed, and
+  the Anthropic cache marks were all accepted, and the file the model asked
+  for was written. That run shows the two wire paths work against a real
+  server. It does not show how the hosted providers themselves behave, and
+  the Gemini path has only been replayed.
 - Azure OpenAI, Amazon Bedrock, Google Vertex AI and the subscription CLIs do
   not stream; their replies print whole.
