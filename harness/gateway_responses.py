@@ -100,9 +100,10 @@ def handle(body, headers, ledger, environ=None, caller=None) -> _turn.Response:
         model = upstream.backend.model
         if turn.stream:
             events = write.Events()
-            chunks = _stream(turn, call.stream(turn, upstream, ledger), ids, model, echo,
-                             events)
-            return _turn.Response(200, chunks=chunks, headers=out, fault=events.fault)
+            opened = call.stream(turn, upstream, ledger)
+            chunks = _stream(turn, opened, ids, model, echo, events)
+            return _turn.Response(200, chunks=chunks, headers=out, fault=events.fault,
+                                  close=opened.close)
         reply = call.complete(turn, upstream, ledger)
     except _turn.TurnRefused as refused:
         return _refused(refused, out)

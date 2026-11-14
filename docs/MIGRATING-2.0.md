@@ -235,6 +235,31 @@ What changes:
 To keep the 1.x behaviour, set `FLYWHEEL_NATIVE_TOOLS=0`. To use native calls
 on another host that supports them, set `FLYWHEEL_NATIVE_TOOLS=1`.
 
+### After the security review: a TOOL line in a native reply's text does not run
+
+When a request carried tool schemas, only the provider's native tool calls
+run. A `TOOL name {json}` line in the reply's own words is recorded with `> `
+in front of it and is not a call, in any permission mode. Before this change
+such a line ran, so a line the model quoted from a file, a tool's output or a
+web page could run as if the model had called it.
+
+If a reply writes a TOOL line and makes no native call, the session tells the
+model once that nothing ran and that it must use the function-calling
+interface. The ledger records that message as a `native_tools_notice` entry,
+a kind 1.x ledgers do not have.
+
+What you need to do: nothing, if your model on OpenAI, Anthropic or Gemini
+uses native calls. If you relied on a model writing TOOL lines to one of
+those hosts, or to a host you turned native calling on for with
+`FLYWHEEL_NATIVE_TOOLS=1`, choose one:
+
+- set `FLYWHEEL_NATIVE_TOOLS=0`, so the session uses the text protocol and
+  TOOL lines are the calls again;
+- or have the model call tools through the provider's function calling.
+
+Local models, subscription CLIs and every host that already used the text
+protocol are not affected.
+
 ### Anthropic requests are marked for prompt caching by default
 
 In 1.x a coding session sent Anthropic the system prompt as plain text and no
@@ -450,8 +475,9 @@ Flywheel home in `gateway-ledger/`, chained across restarts.
 - A call now waits for its entry to be committed to the disk, about 1 to 3 ms
   on the measured machine. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips that wait
   and accepts that a power loss can lose the newest entries.
-- Start one gateway per Flywheel home. A second one on the same home refuses
-  model calls with 500, because it cannot append to the ledger.
+- Start one gateway per Flywheel home. A second one on the same home answers
+  model calls with 503 and reaches no provider, because it cannot append to
+  the ledger. The gateway says at start whether the ledger opened.
 - Back up or remove `gateway-ledger/` as a whole folder. Editing a segment
   makes `verify` fail from then on.
 
@@ -507,6 +533,42 @@ what a provider can bill.
 - There is no requests-per-minute limit, and no provider account per key:
   every key spends from the gateway's own credential for the upstream.
 - A limit cannot be changed in place. Create a new key, or reset the totals.
+
+### After the confirmation review: an unavailable ledger, slow requests
+
+A second review of the fixes above changed four things you can meet.
+
+- **503 when the ledger is unavailable.** A gateway that cannot open or
+  write its ledger (a second gateway on the same home, another process
+  holding `gateway-ledger/writer.lock`, a folder that cannot be written)
+  answers `/v1/messages`, `/v1/messages/count_tokens`, `/v1/responses`,
+  `/v1/chat/completions` with a provider endpoint and `/api/route` with 503
+  and `retry-after: 5`, before any provider is contacted. Before this a
+  streamed call was served with no record, and a plain call was billed and
+  then answered 500. What to do: run one gateway per home, read the `ledger`
+  line the gateway prints at start, and treat 503 with the code
+  `ledger_unavailable` as a gateway to repair, not a provider outage.
+- **A read timeout.** A connection that sends nothing for 30 seconds while
+  the gateway waits for its request line, headers or body is closed (408 on
+  a model interface when the body stops). Writes have no timeout. What to
+  do: nothing for the usual clients. For a client that pauses longer between
+  its headers and its body, set `FLYWHEEL_GATEWAY_READ_TIMEOUT` to a larger
+  number of seconds, or to `0` to switch the timeout off.
+- **Limits are read again after the body.** A key that is revoked,
+  suspended or over a limit by the time its request body has arrived is
+  refused, whatever the totals were when the headers arrived. Nothing to do.
+- **An unfinished stream can cost more.** It is charged the provider's
+  output count when one had arrived, and tool-call arguments and thinking
+  count toward the estimate. A stream abandoned before its first byte is
+  recorded and charged for the prompt. Entries for a client that left carry
+  `"abandoned": true`.
+
+Smaller: no key can be named `owner`, the ledger's name for the gateway
+token (a key that already has that name keeps working; create one under
+another name and revoke it). `flywheel gateway-ledger verify` exits 1 when
+the head record exists and the segment files are gone; remove the whole
+`gateway-ledger` folder to retire a ledger. `flywheel gateway-ledger show`
+escapes control characters.
 
 ### After the security review: smaller changes
 

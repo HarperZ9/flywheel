@@ -30,6 +30,8 @@ import pytest
 from harness import lean_env, lean_export, lean_replay, lean_sandbox, proof_run
 from harness.infra import lean_adapter
 
+pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
+
 CANARY = "FLYWHEEL_TEST_CANARY_VARIABLE"
 VALUE = "canary-value-that-must-not-reach-a-lean-child"
 HARNESS = Path(lean_env.__file__).parent
@@ -137,6 +139,36 @@ def test_site_windows_sandbox(canary, monkeypatch, tmp_path):
     _clean(seen[0])
 
 
+_WITH_ENV = ("subprocess.run", "subprocess.Popen", "subprocess.check_output",
+             "subprocess.call", "subprocess.check_call", "spawn_killable",
+             "lean_replay.spawn_killable")
+_NO_ENV = ("os.system", "os.popen", "subprocess.getoutput", "subprocess.getstatusoutput")
+
+
+def _spawn_problems(name: str, text: str) -> list:
+    """What in one module's source starts a child outside the allow-list.
+
+    A call that takes `env=` must pass one built by `lean_env`. A call that
+    cannot take an environment (`os.system`, `os.popen`, `os.spawn*`,
+    `os.exec*`, `subprocess.getoutput`) always inherits the parent's, so it is
+    a problem wherever it appears."""
+    problems = []
+    for bad in ("dict(os.environ)", "**os.environ", "env=os.environ", "os.environ.copy()"):
+        if bad in text:
+            problems.append(f"{name}: {bad}")
+    for node in ast.walk(ast.parse(text)):
+        if not isinstance(node, ast.Call):
+            continue
+        called = ast.unparse(node.func)
+        if called in _NO_ENV or called.startswith(("os.spawn", "os.exec")):
+            problems.append(f"{name}:{node.lineno}: {called} cannot take an environment")
+        elif called in _WITH_ENV:
+            env = next((k.value for k in node.keywords if k.arg == "env"), None)
+            if env is None or "lean_env" not in ast.unparse(env):
+                problems.append(f"{name}:{node.lineno}: a spawn without lean_env")
+    return problems
+
+
 def test_no_lean_module_copies_the_parent_environment_for_a_child():
     """Every spawn in the Lean modules goes through the allow-list.
 
@@ -145,21 +177,33 @@ def test_no_lean_module_copies_the_parent_environment_for_a_child():
     may build an environment from `dict(os.environ)` or `{**os.environ}`."""
     problems = []
     for path in LEAN_MODULES:
-        if path.name == "lean_env.py":
-            continue
-        text = path.read_text(encoding="utf-8")
-        for bad in ("dict(os.environ)", "**os.environ", "env=os.environ", "os.environ.copy()"):
-            if bad in text:
-                problems.append(f"{path.name}: {bad}")
-        for node in ast.walk(ast.parse(text)):
-            if isinstance(node, ast.Call) and ast.unparse(node.func) in (
-                    "subprocess.run", "subprocess.Popen", "subprocess.check_output"):
-                env = next((k.value for k in node.keywords if k.arg == "env"), None)
-                if env is None or "lean_env" not in ast.unparse(env):
-                    problems.append(f"{path.name}:{node.lineno}: a spawn without lean_env")
+        if path.name != "lean_env.py":
+            problems += _spawn_problems(path.name, path.read_text(encoding="utf-8"))
     assert problems == []
     spawn = (HARNESS / "lean_replay.py").read_text(encoding="utf-8")
     assert "spawn_killable(argv, env=lean_env(env)" in spawn
+
+
+@pytest.mark.parametrize("line", [
+    "subprocess.call(['lean', 'x.lean'])",
+    "subprocess.check_call(['lean', 'x.lean'], env=dict(PATH='x'))",
+    "os.system('lean x.lean')",
+    "os.popen('lean x.lean')",
+    "os.spawnv(os.P_WAIT, 'lean', ['lean'])",
+    "subprocess.getoutput('lean --version')",
+    "spawn_killable(['lean'], env=env)",
+    "subprocess.run(['lean'])",
+])
+def test_the_scan_catches_every_way_to_start_a_child(line):
+    """The scan once knew `run`, `Popen` and `check_output` only."""
+    found = _spawn_problems("planted.py", f"import os, subprocess\n{line}\n")
+    assert len(found) == 1 and found[0].startswith("planted.py:2: ")
+
+
+def test_control_the_scan_passes_a_spawn_that_uses_the_allow_list():
+    for line in ("subprocess.call(['lean'], env=lean_env())",
+                 "spawn_killable(argv, env=lean_env(env), timeout=5)"):
+        assert _spawn_problems("ok.py", line + "\n") == []
 
 
 @pytest.mark.skipif(shutil.which("lean") is None, reason="no Lean toolchain installed")

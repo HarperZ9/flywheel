@@ -2313,6 +2313,7 @@ def main(argv=None) -> int:
     print(f"flywheel gateway: http://127.0.0.1:{a.port}  root={_Handler.root}")
     print(f"  bound     {', '.join(f'{h}:{a.port}' for h in bound)}")
     print(f"  token     {flywheel_home / 'gateway.token'}  (send as: Authorization: Bearer <token>)")
+    from harness.gateway_ledger_gate import startup as ledger_startup; ledger_startup(_router_ledger)  # says plainly whether model calls can be recorded
     print(f"  surface   Flywheel Desktop (the native client) talks to this gateway")
     print(f"  dev shell http://127.0.0.1:{a.port}/site/index.html  (dev/CI fallback only)")
     print(f"  world     http://127.0.0.1:{a.port}/api/world")

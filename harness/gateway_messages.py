@@ -179,7 +179,8 @@ def handle(body, headers, ledger, environ=None, caller=None) -> _turn.Response:
             stream = call.stream(turn, upstream, ledger, payload, extra)
             chunks = (_verbatim(turn, stream) if same
                       else _translated(turn, stream, model, message_id))
-            return _turn.Response(200, chunks=chunks, headers={"request-id": request_id})
+            return _turn.Response(200, chunks=chunks, close=stream.close,
+                                  headers={"request-id": request_id})
         reply = call.complete(turn, upstream, ledger, payload, extra)
     except _turn.TurnRefused as refused:
         return _refused(refused, request_id)

@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
-from harness import endpoints_tools as _native
+from harness import endpoints_tools as _native, endpoints_tools_prose as _prose
 from harness.local_loop import run_agent
 from harness.local_session import SessionLedger
 
@@ -175,7 +175,7 @@ class CodeSession:
                 resp = original(text)
             add_usage(self.usage, resp)
             return resp
-        self.agent.send = counted_send
+        self.agent.send = lambda text: _prose.checked(self, counted_send, text)
 
     def _record_decision(self, decision: dict) -> None:
         self.ledger.append("approval", json.dumps(decision, sort_keys=True), decision)

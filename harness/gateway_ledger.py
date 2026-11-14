@@ -54,6 +54,7 @@ SYNC_ENV = "FLYWHEEL_GATEWAY_LEDGER_SYNC"
 ROTATE_AT = 50_000                      # entries; a full segment is closed at the next start
 _HEAD_WIDTH = 200
 _FIELDS = ("seq", "kind", "content", "meta", "prev_hash", "entry_hash")
+GONE = "the head record is there and no segment file is: the segments were removed"
 
 
 class LedgerBusy(Exception):
@@ -139,6 +140,9 @@ def _against_head(home, path, header, entries) -> "str | None":
 def check(home) -> list:
     """Every segment, oldest first: {name, entries, head, ok, problem, header, rows}."""
     out, paths = [], segments(home)
+    if not paths and (folder(home) / HEAD).exists():
+        return [{"name": "(no segment)", "entries": 0, "ok": False, "head": "", "rows": [],
+                 "header": {}, "problem": GONE}]
     for index, path in enumerate(paths):
         header, entries, base, problem = read_segment(path)
         if problem is None and index == len(paths) - 1:
@@ -179,7 +183,8 @@ class GatewayLedger(SessionLedger):
 
     def _open(self, where: Path) -> None:
         paths = segments(self.home)
-        header, entries, base, problem = (None, [], "", None)
+        header, entries, base = None, [], ""
+        problem = GONE if not paths and (where / HEAD).exists() else None
         if paths:
             header, entries, base, problem = read_segment(paths[-1])
             if problem is None:
@@ -188,7 +193,7 @@ class GatewayLedger(SessionLedger):
             self.path, self.entries, self._base = paths[-1], entries, base
         else:
             if problem is not None:
-                self.found_broken = f"{paths[-1].name}: {problem}"
+                self.found_broken = f"{paths[-1].name if paths else HEAD}: {problem}"
                 _LOG.error("GATEWAY LEDGER BROKEN: %s. It is left as it is and not appended "
                            "to; a new segment records the break. Run `flywheel "
                            "gateway-ledger verify`.", self.found_broken)
@@ -202,7 +207,7 @@ class GatewayLedger(SessionLedger):
 
     def _start(self, where: Path, previous, previous_head, problem) -> None:
         number = int(previous[8:14]) + 1 if previous else 1
-        state = "none" if previous is None else ("broken" if problem else "verified")
+        state = "broken" if problem else ("none" if previous is None else "verified")
         header = json.dumps({
             "schema": SCHEMA, "segment": number, "previous": previous,
             "previous_head": previous_head, "previous_state": state,
