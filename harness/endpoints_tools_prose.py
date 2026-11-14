@@ -84,25 +84,38 @@ def _emit(session, event: dict) -> None:
                      event.get("type"), exc_info=True)
 
 
+def _sent(box, send, text: str) -> tuple:
+    """(reply, prose TOOL lines with no call, record that differs from its calls)."""
+    box.stray, box.unfaithful, box.turn = 0, False, None
+    resp = send(text)
+    stray, wrong = box.stray, box.unfaithful
+    box.stray, box.unfaithful = 0, False
+    return resp, stray, wrong
+
+
 def checked(session, send, text: str) -> dict:
-    """`send(text)`, plus one corrective exchange when the reply needs it."""
+    """`send(text)`, plus one corrective exchange when the reply needs it.
+
+    The reply goes back stamped with the native calls it may run (native_turn),
+    which is what the loop runs on a native turn.
+    """
     box = session.toolbox
     if box is None:
         return send(text)
-    box.stray = 0
-    resp = send(text)
-    stray, box.stray = box.stray, 0
-    if not stray or _told(session.ledger):
-        return resp
+    from .native_turn import UNFAITHFUL, stamp
+    resp, stray, wrong = _sent(box, send, text)
+    if not (stray or wrong) or _told(session.ledger):
+        return stamp(resp, box)
     written = resp["content"][0]["text"] if resp.get("content") else ""
     session.ledger.append("assistant", written, {
         "backend": resp.get("backend"),
         "receipt": resp.get("x_receipt", {}).get("receipt_id")})
-    session.ledger.append(NOTICE, CORRECTION, {"lines": stray})
-    _LOG.info("a native reply wrote %d TOOL line(s) in its text and made no call; "
-              "nothing ran and the model was told to use the interface", stray)
+    meta = {"lines": stray, "reason": "call_not_recorded_as_made"} if wrong else {"lines": stray}
+    session.ledger.append(NOTICE, UNFAITHFUL if wrong else CORRECTION, meta)
+    _LOG.info("a native reply %s; nothing ran and the model was told once",
+              "could not be recorded as the calls it made" if wrong
+              else f"wrote {stray} TOOL line(s) in its text and made no call")
     _emit(session, {"type": "assistant", "text": written})
     _emit(session, {"type": NOTICE, "lines": stray})
-    resp = send(CORRECTION)
-    box.stray = 0
-    return resp
+    resp, _stray, _wrong = _sent(box, send, UNFAITHFUL if wrong else CORRECTION)
+    return stamp(resp, box)
