@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "telos-toolkit",
+  "displayName": "Project Telos Toolkit",
+  "version": "0.1.0",
+  "description": "Bundles the Project Telos flagship MCP servers (crucible, gather, index, forum, learn) plus a workspace-navigation skill and slash commands so an agent knows where everything lives and how to verify it.",
+  "author": {
+    "name": "Zain Dana Harper",
+    "url": "https://github.com/HarperZ9"
+  },
+  "homepage": "https://github.com/HarperZ9/flywheel/tree/main/plugins/telos-toolkit",
+  "repository": "https://github.com/HarperZ9/flywheel",
+  "license": "FSL-1.1-MIT",
+  "keywords": ["telos", "accountability", "mcp", "verification", "workspace", "crucible", "gather", "index", "forum", "learn"],
+  "userConfig": {
+    "learn_mcp_path": {
+      "type": "file",
+      "title": "learn MCP server path (src/mcp.mjs)",
+      "description": "Absolute path to the learn package's src/mcp.mjs. The @harperz9/learn npm package ships this file but exposes only the `learn` CLI bin, so the MCP stdio server must be launched by file path. Find it after install with: npm root -g then look under @harperz9/learn/src/mcp.mjs. Leave blank to disable the learn MCP server; the other four still load.",
+      "required": false
+    }
+  }
+}
