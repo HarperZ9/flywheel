@@ -43,6 +43,9 @@ ALLOWED = (
     "docs/schemas/environment-incentive-manifest-v1.json",   # the v1 schema, beside v2
     "desktop/assets/rowan/action-cues/*",
     "desktop/lib/assistant/rowan_action_cue_*",
+    # the pages that tell a reader what the older name became
+    "docs/MIGRATING-2.0.md",
+    "docs/VERSIONING.md",
     # historical documents, left as written
     "CHANGELOG.md",
     "RELEASE-NOTES-*.md",
