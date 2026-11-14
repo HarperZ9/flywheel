@@ -26,12 +26,35 @@ from .provider_fault_boundary import (body_from_http_error, limit_fields,
 _FAULT = threading.local()
 
 
+_URLOPEN = urllib.request.urlopen
+
+
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None                     # the 3xx comes back as the answer
+
+
+_OPENER = urllib.request.build_opener(_NoRedirect)
+
+
+def send(req, timeout):
+    """Open a request and follow no redirect.
+
+    urllib would re-send the request headers, the provider key among them, to
+    wherever a 301, 302, 303, 307 or 308 points. The redirect is returned as
+    an HTTP error instead, so the key reaches only the configured host. A
+    test that replaced `urllib.request.urlopen` still gets its replacement."""
+    if urllib.request.urlopen is not _URLOPEN:
+        return urllib.request.urlopen(req, timeout=timeout)
+    return _OPENER.open(req, timeout=timeout)
+
+
 def _http(method, url, headers, body, timeout):
     """(method,url,headers,body,timeout)->(status,json). Injectable for tests."""
     _FAULT.last = None
     req = urllib.request.Request(url, data=body, method=method, headers=headers or {})
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as r:
+        with send(req, timeout) as r:
             raw = r.read()
             return r.status, (json.loads(raw) if raw else {})
     except urllib.error.HTTPError as e:

@@ -138,6 +138,8 @@ class Keys:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             tmp.write_text(json.dumps({"version": 1, "keys": rows}, indent=2, sort_keys=True),
                            encoding="utf-8")
+            if os.name != "nt":
+                os.chmod(tmp, 0o600)        # names, limits and totals: the owner's only
             for attempt in range(5):        # a reader in another process holds it open
                 try:
                     return os.replace(tmp, self.path)
@@ -203,6 +205,10 @@ class Keys:
             rows[name]["revoked"] = True
             self._write(rows)
             self.store.delete(f"{SLOT}@{name}")
+            if self.store.get(f"{SLOT}@{name}"):    # the flag blocks it; the secret remains
+                raise KeysError(f"gateway key '{name}' is marked revoked and is refused, but "
+                                "the credential store did not delete the stored key; delete "
+                                f"the entry {SLOT}@{name} there by hand")
         return rows[name]
 
     def reset(self, name: str) -> dict:

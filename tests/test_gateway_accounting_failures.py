@@ -16,6 +16,8 @@ from tests import gateway_messages_support as support
 from tests.gateway_keys_support import (  # noqa: F401  (fixtures)
     BODIES, keyed, post, served, stream_bytes, turn2)
 
+pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
+
 PATHS = ["/v1/messages", "/v1/responses"]
 
 
