@@ -33,6 +33,7 @@ from . import gateway_messages_wire as wire, gateway_turn as _turn
 
 _LOG = logging.getLogger(__name__)
 _FORWARDED = ("anthropic-version", "anthropic-beta")
+_OURS = frozenset({"x_receipt", "x_flywheel"})
 
 
 def _passed(headers) -> dict:
@@ -70,6 +71,10 @@ def _verbatim(turn, stream):
             if kind == "message_stop":
                 continue                    # held back: it goes last, with the receipt
             said = said or kind == "error"
+            if isinstance(data, dict) and (_OURS & data.keys()):
+                yield wire.sse(kind or "message", {key: value for key, value in data.items()
+                                                   if key not in _OURS})
+                continue                    # only the gateway writes these fields
             yield raw
     except _turn.UpstreamFailed as failed:
         if not said:

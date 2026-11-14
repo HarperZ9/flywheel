@@ -449,6 +449,34 @@ jobs:
         # texts and the calibration record is one data point, not a threshold.
         run: python scripts/check_writing.py --gate README.md scripts/check_writing.py scripts/writing_profiles.py scripts/writing_lists.py scripts/writing_pysource.py scripts/writing_readability.py
 
+  gateway_sdk_clients:
+    name: the gateway answers the anthropic and openai SDK clients
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Install the two SDKs the tests were written against
+        # Test-only. The package itself keeps zero runtime dependencies. The
+        # versions are the ones the tests name; raise them on purpose.
+        run: python -m pip install pytest pytest-timeout anthropic==0.95.0 openai==2.36.0
+      - name: The SDK tests run, and none is skipped
+        # These files use importorskip, so on a job without the SDKs they pass
+        # by skipping. Here a skip is a failure. A loopback gateway and a stub
+        # upstream: no provider is called and no key is used.
+        run: |
+          python -m pytest tests/test_gateway_messages_sdk.py tests/test_gateway_responses_sdk.py tests/test_gateway_keys_sdk.py -rs --junitxml=sdk.xml
+          python - <<'PY'
+          import sys, xml.etree.ElementTree as ET
+          root = ET.parse("sdk.xml").getroot()
+          suite = root if root.tag == "testsuite" else root.find("testsuite")
+          tests, skipped = int(suite.get("tests")), int(suite.get("skipped"))
+          print(f"{tests} tests, {skipped} skipped")
+          sys.exit(1 if skipped or not tests else 0)
+          PY
+
   verifier_on_the_old_interpreter:
     name: the verifier runs one version below the package floor
     runs-on: ubuntu-latest

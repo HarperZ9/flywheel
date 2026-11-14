@@ -50,6 +50,7 @@ BOUNDARY_PATTERNS: "list[tuple[str, str]]" = [
     ("groq_api_key", r"gsk_[A-Za-z0-9]{20,}"),
     ("huggingface_token", r"hf_[A-Za-z0-9]{20,}"),
     ("xai_api_key", r"xai-[A-Za-z0-9]{20,}"),
+    ("flywheel_gateway_key", r"fwk_[A-Za-z0-9_-]{20,}"),
     # A vendor not named above, kept last so a named shape wins the match.
     ("vendor_prefixed_key", r"sk-[A-Za-z0-9]{2,16}-[A-Za-z0-9_-]{16,}"),
 ]

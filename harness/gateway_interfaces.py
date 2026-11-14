@@ -78,7 +78,8 @@ def _body(handler):
         return None
     try:
         body = json.loads(handler.rfile.read(length) or b"null")
-    except ValueError:
+    except (ValueError, RecursionError) as exc:     # not JSON, or nested too deep to parse
+        _LOG.info("gateway request body refused (%s)", type(exc).__name__)
         return None
     return body if isinstance(body, dict) else None
 
