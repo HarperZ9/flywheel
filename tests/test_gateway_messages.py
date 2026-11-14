@@ -9,7 +9,6 @@ Wire formats, read 2026-11-13:
   https://platform.claude.com/docs/en/api/messages/create
   https://platform.claude.com/docs/en/build-with-claude/streaming
   https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls
-  https://platform.claude.com/docs/en/build-with-claude/prompt-caching
   https://platform.claude.com/docs/en/build-with-claude/token-counting
   https://code.claude.com/docs/en/llm-gateway-protocol.md (headers to forward,
       count_tokens is optional)

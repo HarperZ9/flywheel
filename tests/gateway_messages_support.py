@@ -12,7 +12,7 @@ Wire formats, read 2026-11-13:
   https://platform.claude.com/docs/en/build-with-claude/streaming
   https://platform.claude.com/docs/en/api/errors
   https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls
-  https://platform.claude.com/docs/en/build-with-claude/prompt-caching (usage cache fields)
+      (the Message usage object, with the cache fields)
 """
 import json
 import threading
