@@ -1,0 +1,28 @@
+{
+ "type": "message",
+ "role": "assistant",
+ "model": "gpt-5.3-codex-spark",
+ "content": [
+  {
+   "type": "text",
+   "text": "I will write the note."
+  },
+  {
+   "type": "tool_use",
+   "id": "call_fixtureWrite01",
+   "name": "write_file",
+   "input": {
+    "path": "n.txt",
+    "content": "hi"
+   }
+  }
+ ],
+ "stop_reason": "tool_use",
+ "stop_sequence": null,
+ "usage": {
+  "input_tokens": 502,
+  "output_tokens": 38,
+  "cache_creation_input_tokens": null,
+  "cache_read_input_tokens": null
+ }
+}

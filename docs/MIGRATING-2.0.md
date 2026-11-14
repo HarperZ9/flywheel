@@ -110,3 +110,34 @@ What changes:
   stops sending them to that host.
 
 To keep the 1.x behaviour, set `FLYWHEEL_PROMPT_CACHE=0`.
+
+## The gateway
+
+### The gateway answers /v1/messages itself
+
+In 1.x the gateway passed `POST /v1/messages` through to the local serve
+endpoint. That endpoint flattened the conversation into one prompt for the
+local model, ignored tools, and reported word counts as usage.
+
+In 2.0 the gateway answers the path. It routes the request to the upstream
+named by the `model` field, carries tools and streaming, reports the
+provider's token counts, and writes each call to the gateway ledger.
+
+What stays the same: the path, the gateway token, and the Messages request and
+response format. The serve endpoint still answers `/v1/messages` on its own
+port.
+
+What changes:
+
+- The `model` field decides where the request goes. A gateway endpoint name
+  such as `ollama:qwen2.5:1.5b` or `anthropic` is used as written. Any other
+  name needs `FLYWHEEL_GATEWAY_UPSTREAM` set where the gateway runs, or the
+  request is refused with 404 `not_found_error`.
+- A request the old path accepted loosely is now checked. `max_tokens` is
+  required, and a `tool_result` must answer a `tool_use` in the turn before it.
+- `usage` holds the provider's counts. It no longer holds word counts.
+- The gateway token is also accepted in the `x-api-key` header.
+
+To reach the local model's flattened-prompt Messages endpoint as before, send
+the request to the serve endpoint's own address. `docs/GATEWAY-INTERFACES.md`
+describes the new behaviour in full.

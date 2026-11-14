@@ -1,0 +1,10 @@
+{
+ "model": "claude-sonnet-5",
+ "max_tokens": 64,
+ "messages": [
+  {
+   "role": "user",
+   "content": "What changed?"
+  }
+ ]
+}

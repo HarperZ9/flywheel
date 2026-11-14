@@ -5,6 +5,14 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Gateway: Anthropic Messages
+- The local gateway answers `POST /v1/messages` itself, with and without streaming. Claude Code and Anthropic SDK clients can use it as their base URL. It carries text, system prompts, tool definitions, `tool_use` and `tool_result` blocks, `tool_choice`, and usage with the cache fields. See `docs/GATEWAY-INTERFACES.md`.
+- The `model` field names a gateway endpoint (`anthropic`, `openai:gpt-4o`, `ollama:qwen2.5:1.5b`). Any other model name goes to the endpoint set in `FLYWHEEL_GATEWAY_UPSTREAM`. An Anthropic upstream gets the request body unchanged apart from the model, and its reply and stream events come back as sent. OpenAI-compatible and Gemini upstreams get the turn in their own format.
+- Each served call appends an `endpoint_call` entry to the gateway ledger and returns a receipt as `x_receipt`. A call that fails after the upstream was contacted appends `endpoint_call_failed`. Usage holds the provider's counts and is never estimated.
+- The gateway token is accepted in `x-api-key` as well as `Authorization: Bearer`. `POST /v1/messages/count_tokens` is forwarded to an Anthropic upstream and is 404 for any other.
+- Changed: `/v1/messages` on the gateway used to be proxied to the local serve endpoint. See `docs/MIGRATING-2.0.md`, "The gateway answers /v1/messages itself".
+- Tested by replaying recorded requests and replies, and with the `anthropic` Python SDK against a gateway on a loopback port with a stub upstream. Not run: any hosted provider, and Claude Code itself against the gateway.
+
 Prompt caching
 - `flywheel code` marks Anthropic requests for prompt caching: one mark on the system prompt, covering the tools and the system text, and one at the top level that the provider moves forward with the conversation. On by default in a coding session; `FLYWHEEL_PROMPT_CACHE=0` turns the marks off. OpenAI and Gemini cache by themselves and need nothing sent.
 - `/cost` and the `-p` JSON `usage` object show `cache_read_tokens` and `cache_write_tokens` when the provider reported them, for Anthropic, OpenAI-compatible hosts and Gemini. Nothing is estimated: a reply with no cache figure adds none. The harness-config entry gains `prompt_cache`.

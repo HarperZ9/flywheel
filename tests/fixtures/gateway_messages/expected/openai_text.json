@@ -1,0 +1,19 @@
+{
+ "type": "message",
+ "role": "assistant",
+ "model": "gpt-5.3-codex-spark",
+ "content": [
+  {
+   "type": "text",
+   "text": "Wrote n.txt.\nNothing else changed."
+  }
+ ],
+ "stop_reason": "end_turn",
+ "stop_sequence": null,
+ "usage": {
+  "input_tokens": 451,
+  "output_tokens": 9,
+  "cache_creation_input_tokens": null,
+  "cache_read_input_tokens": null
+ }
+}

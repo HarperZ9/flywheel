@@ -1,0 +1,73 @@
+{
+ "contents": [
+  {
+   "role": "user",
+   "parts": [
+    {
+     "text": "write a note"
+    }
+   ]
+  },
+  {
+   "role": "model",
+   "parts": [
+    {
+     "text": "I will write the note."
+    },
+    {
+     "functionCall": {
+      "name": "write_file",
+      "args": {
+       "path": "n.txt",
+       "content": "hi"
+      }
+     }
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "parts": [
+    {
+     "functionResponse": {
+      "name": "write_file",
+      "response": {
+       "output": "wrote 2 bytes"
+      }
+     }
+    },
+    {
+     "text": "What changed?"
+    }
+   ]
+  }
+ ],
+ "generationConfig": {
+  "maxOutputTokens": 64
+ },
+ "tools": [
+  {
+   "functionDeclarations": [
+    {
+     "name": "write_file",
+     "description": "Write a file in the workspace.",
+     "parametersJsonSchema": {
+      "type": "object",
+      "properties": {
+       "path": {
+        "type": "string"
+       },
+       "content": {
+        "type": "string"
+       }
+      },
+      "required": [
+       "path",
+       "content"
+      ]
+     }
+    }
+   ]
+  }
+ ]
+}
