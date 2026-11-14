@@ -1,6 +1,7 @@
 """Diff-scoped mutation: only the change's lines are mutated, only the tests that
 reach a line run against its mutant, and survivors are named. There is no score
 field to optimize."""
+import importlib.util
 import random
 import subprocess
 import textwrap
@@ -74,8 +75,18 @@ WEAK = """
 def test_a_weak_test_leaves_named_survivors_on_changed_lines(tmp_path):
     weak = audit_suite_diff(_repo(tmp_path, WEAK), "HEAD~1", "HEAD", seed=3)
     assert weak["schema"] == "flywheel.suite-audit-diff/v1"
-    assert weak["status"] == "complete" and weak["selection"] == "coverage"
-    assert [(s["line"], s["mutant"]) for s in weak["survivors"]] ==         [(10, "if (x >= hi):"), (8, "if (not (x < lo)):")]
+    # coverage.py narrows which tests run for each mutant. Without it every
+    # selected test runs for every mutant, and the survivors are the same.
+    have_coverage = importlib.util.find_spec("coverage") is not None
+    assert weak["status"] == "complete"
+    assert weak["selection"] == ("coverage" if have_coverage else "all-selected")
+    found = [(s["line"], s["mutant"]) for s in weak["survivors"]]
+    named = [(10, "if (x >= hi):"), (8, "if (not (x < lo)):")]
+    if have_coverage:
+        assert found == named
+    else:
+        # Lines no test reaches are mutated too, and their mutants survive.
+        assert set(named) <= set(found)
     assert "kill_rate" not in weak and "score" not in weak
     assert weak["seed"] == 3 and weak["scope"]
 
