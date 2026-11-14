@@ -64,6 +64,9 @@ def build(out: Path) -> Path:
     with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as z:
         def put(name, data):
             info = zipfile.ZipInfo(name, EPOCH)
+            # zipfile records the system that made the archive. Fixed here, so a
+            # build on Linux is the same bytes as a build on Windows.
+            info.create_system = 0
             info.compress_type = zipfile.ZIP_DEFLATED
             z.writestr(info, data)
         put("[Content_Types].xml", CONTENT_TYPES)
