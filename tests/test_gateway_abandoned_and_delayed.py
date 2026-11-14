@@ -269,3 +269,15 @@ def test_control_a_prompt_request_is_served_under_the_timeout(keyed, served, mon
     monkeypatch.setenv(gateway_read_timeout.ENV, "0.4")
     url, upstream, _ledger = served(turn2(1))
     assert post(url, "/v1/messages", raw)[0] == 200 and len(upstream.requests) == 1
+
+
+def test_a_close_hook_that_fails_is_logged_with_its_cause(caplog):
+    """The client has gone by then, so the failure must reach the log."""
+    from harness.gateway_turn import Response
+
+    def broken():
+        raise OSError("the ledger file is gone")
+    response = Response(200, chunks=(chunk for chunk in ()), close=broken)
+    with caplog.at_level("ERROR", logger="harness.gateway_interfaces"):
+        gateway_interfaces.send(_Gone(), response)
+    assert "could not be closed and recorded (OSError): the ledger file is gone" in caplog.text

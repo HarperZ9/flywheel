@@ -65,7 +65,11 @@ def _send_stream(handler, response) -> None:
     finally:
         response.chunks.close()
         if response.close is not None:      # the explicit hook: runs when nothing was read
-            response.close()
+            try:
+                response.close()
+            except Exception as exc:        # noqa: BLE001 - the client is gone; say what failed
+                _LOG.error("gateway stream could not be closed and recorded (%s): %s",
+                           type(exc).__name__, redacted_text(str(exc)))
 
 
 def send(handler, response) -> None:
