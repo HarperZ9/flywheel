@@ -149,7 +149,6 @@ jobs:
       run:
         shell: bash
     env:
-      FLYWHEEL_HOME: ${{ runner.temp }}/flywheel-home
       OPENAI_API_KEY: ci-stub-not-a-key
       CODEX_BASE_URL: http://127.0.0.1:8099/v1
       VERSION: ${{ needs.plan.outputs.version }}
@@ -162,6 +161,8 @@ jobs:
         with:
           name: release-assets
           path: release-assets/
+      - name: Keep Flywheel's state in the runner's temporary folder
+        run: echo "FLYWHEEL_HOME=$RUNNER_TEMP/flywheel-home" >> "$GITHUB_ENV"
       - name: Gate | scope migration (source tree)
         run: python scripts/check_scope_migration.py
       - name: Gate | every asset matches its sums file
@@ -325,7 +326,6 @@ jobs:
       run:
         shell: bash
     env:
-      FLYWHEEL_HOME: ${{ runner.temp }}/flywheel-home
       VERSION: ${{ needs.plan.outputs.version }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -336,6 +336,8 @@ jobs:
         with:
           name: release-assets
           path: release-assets/
+      - name: Keep Flywheel's state in the runner's temporary folder
+        run: echo "FLYWHEEL_HOME=$RUNNER_TEMP/flywheel-home" >> "$GITHUB_ENV"
       - name: PyPI serves the files that were built
         run: python scripts/release_assets.py pypi --version "$VERSION" --sums release-assets/python-SHA256SUMS.txt
       - name: Fresh install from PyPI, then the gate
