@@ -938,8 +938,11 @@ and is never cut.
 A ledger that opened at start can fail later: the disk fills, or a write is
 refused. The first append that fails marks the ledger failed. From then on
 every model call is answered 503 with the code `ledger_unavailable` before
-any provider is contacted, as when the ledger cannot be opened. At most once
-a second the gateway tries to resume.
+any provider is contacted, as when the ledger cannot be opened. When a call
+comes in, at most once a second, the gateway tries the ledger again and
+serves that call if the write works. It tries once more when it stops, so a
+gateway that is shut down during the failure still records the gap if the
+disk allows it by then.
 
 Every model interface writes its entry after the provider has answered,
 because the entry holds the hash of the reply. So the one call that meets
