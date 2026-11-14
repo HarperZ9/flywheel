@@ -117,11 +117,12 @@ def _parser() -> argparse.ArgumentParser:
 
 
 def main(argv: "list[str] | None" = None, *, store=None, environ=None) -> int:
-    parser = _parser()
-    args = parser.parse_args(list(sys.argv[1:] if argv is None else argv))
-    if args.verb is None:
-        parser.print_help()
-        return 2
+    argv = list(sys.argv[1:] if argv is None else argv)
+    if not argv or argv[0] in ("-h", "--help", "help"):
+        print("usage: flywheel gateway-key <command>\n" + USAGE,
+              file=sys.stdout if argv else sys.stderr)
+        return 0 if argv else 2
+    args = _parser().parse_args(argv)
     try:
         keys = _keys(environ, store)
         if args.verb == "create":
