@@ -48,7 +48,7 @@ def _stall_the_next_admission(monkeypatch, skip: int = 0):
         seen.append(1)
         if len(seen) == skip + 1:
             stalled.set()                       # its row is read; admission is next
-            go.wait(3.0)
+            go.wait(20.0)
         return real(caller, path, body)
     monkeypatch.setattr(gateway_key_policy, "capped", capped)
     return stalled, go
@@ -86,15 +86,15 @@ def test_a_call_that_ends_in_the_pause_keeps_its_slot_until_the_admission(
     B holds. With two locks B saw no reservation and an old total, and was served."""
     keys, _store = keyed
     raw, _ = keys.create("ci-bot", token_limit=400)
-    reached, reply = threading.Event(), json.dumps(plain_object("openai", "turn2")).encode()
-    calls = []
+    reached, answer = threading.Event(), threading.Event()
+    reply, calls = json.dumps(plain_object("openai", "turn2")).encode(), []
 
     class Slow(BaseHTTPRequestHandler):
         def do_POST(self):
             self.rfile.read(int(self.headers.get("Content-Length") or 0))
             calls.append(self.path)
             reached.set()
-            time.sleep(0.6)                     # C is in flight for this long
+            answer.wait(15)                     # C is in flight until B has read the row
             self.send_response(200)
             self.send_header("Content-Type", "application/json")
             self.send_header("Content-Length", str(len(reply)))
@@ -118,8 +118,10 @@ def test_a_call_that_ends_in_the_pause_keeps_its_slot_until_the_admission(
             b = threading.Thread(
                 target=lambda: result.update(b=post(url, "/v1/messages", raw, ASK)[0]))
             b.start()
-            assert stalled.wait(5)              # B has read the row: C is not charged yet
-            c.join(10)                          # C's reply has reached its client
+            assert stalled.wait(10)             # B has read the row: C is not charged yet
+            assert keys.row("ci-bot")["totals"]["tokens"] == 0
+            answer.set()                        # the provider answers C
+            c.join(15)                          # C's reply has reached its client
             assert result.get("c") == 200
             assert keys.row("ci-bot")["totals"]["tokens"] == TURN2_TOKENS   # and C is charged
             go.set()

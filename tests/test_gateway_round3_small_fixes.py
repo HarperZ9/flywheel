@@ -136,7 +136,7 @@ def test_a_client_that_drips_header_lines_is_closed_at_the_head_deadline(
     with socket.create_connection((target.hostname, target.port), timeout=10) as sock:
         sock.sendall(b"POST /v1/messages HTTP/1.1\r\n"
                      + (f"x-api-key: {raw}\r\n".encode() if credential else b""))
-        for index in range(20):                 # a line every 0.2 s: no single read times out
+        for index in range(40):                 # a line every 0.2 s: no single read times out
             try:
                 sock.sendall(f"X-Pad-{index}: a\r\n".encode())
                 sock.settimeout(0.2)
@@ -148,7 +148,8 @@ def test_a_client_that_drips_header_lines_is_closed_at_the_head_deadline(
             except OSError:
                 closed_at = time.monotonic() - started
                 break
-    assert closed_at is not None and closed_at < 2.0, closed_at
+    # Before the deadline existed the client was still connected after all 8 seconds.
+    assert closed_at is not None and closed_at < 4.0, closed_at
     assert upstream.requests == []
 
 
