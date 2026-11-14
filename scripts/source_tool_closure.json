@@ -32,7 +32,7 @@
   "harness/lane_settings_route.py": "7a6c06446bc7425adb23d0e48a898b08e6645be38ae4ba69871d206f2a835003",
   "harness/limit_signal.py": "3b2cdf35ae90d966a68156492ba414a6abe3328e10f52ec4527179615a7744dd",
   "harness/local_agent.py": "d1d8a408708d10d738a3378f57d5b36230f8c3e43714815278b581da39793cfb",
-  "harness/local_loop.py": "a81f8532dd9aefe8255eb1ffadb64d5585a89d94d28fb3be8687231e2fafdff1",
+  "harness/local_loop.py": "f10dd99e063ef7f5bfe02c24ac71bdf0520f41867551f5d07c890e3fb5f08e48",
   "harness/local_read_file.py": "ac6a1adc173f5b434aa996f71b52dde42cca0d01d87baf73f4bad88cbc505096",
   "harness/local_read_handle.py": "4e2dd32b44616678c00c88eaf7e642af9b45ae48778b750a274b2443113b1168",
   "harness/local_serving.py": "0ac9945938bbcc9bd50ef2cf92eab314af40444c492c157aecfebfbbff85e6c9",

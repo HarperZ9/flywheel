@@ -50,7 +50,7 @@ _LOG = logging.getLogger(__name__)
 FIRST_PARTY = ("api.openai.com", "api.anthropic.com", "generativelanguage.googleapis.com")
 ENV = "FLYWHEEL_NATIVE_TOOLS"            # "0" off, "1" on for every hosted backend
 _NO_NATIVE: set = set()                  # (base_url, model) that refused tool schemas
-_WORD = re.compile(r"^\w+$")
+_WORD = re.compile(r"\w+\Z")
 KEEP = 256                               # native replies remembered per session
 
 # What a native request says in place of the text protocol's instructions
@@ -96,6 +96,8 @@ class Toolbox:
     cache: bool = True                     # provider prompt caching (endpoints_cache)
     replies: list = field(default_factory=list)
     stray: int = 0                         # prose TOOL lines in the last native reply with no call
+    turn: "tuple | None" = None            # (record, calls) of the last native reply (native_turn)
+    unfaithful: bool = False               # that record did not read back as its calls
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def remember(self, reply: Reply) -> None:
@@ -157,10 +159,14 @@ def refused(backend, status: int, obj, payload: dict) -> bool:
 
 
 def canonical(prose: str, calls: list) -> str:
-    """The reply as the text protocol writes it: prose, then one TOOL line per call."""
+    """The reply as the text protocol writes it: prose, then one TOOL line per call.
+
+    Each call is one physical line whatever its arguments hold (native_turn.one_line).
+    """
     if not calls:
         return prose
-    lines = [f"TOOL {c['name']} {json.dumps(c['arguments'], ensure_ascii=False)}" for c in calls]
+    from .native_turn import one_line
+    lines = [f"TOOL {c['name']} {one_line(c['arguments'])}" for c in calls]
     head = prose if not prose or prose.endswith("\n") else prose + "\n"
     return head + "\n".join(lines)
 
@@ -224,7 +230,8 @@ def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool,
 
     `native` says the request carried tool schemas. Then only `calls` are
     calls: a line of `prose` that reads as one is marked and does not run
-    (endpoints_tools_prose). A text-protocol reply is returned as it came.
+    (endpoints_tools_prose), and the record must read back as exactly `calls`
+    or nothing runs (native_turn). A text-protocol reply is returned as it came.
     """
     box = _ACTIVE.get()
     if box is None:
@@ -246,6 +253,9 @@ def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool,
         prose, marked = inert(prose)
         box.stray = 0 if calls else marked
     text = canonical(prose, calls)
-    if calls and raw is not None:
+    if native:
+        from .native_turn import settle
+        text = settle(box, text, calls)
+    if calls and raw is not None and not box.unfaithful:
         box.remember(Reply(text, dialect, raw, [dict(c) for c in calls]))
     return text

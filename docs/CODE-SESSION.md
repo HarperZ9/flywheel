@@ -561,6 +561,18 @@ every form the text protocol accepts, including the ones it repairs (a line
 in backticks, `TOOL:` with a colon, single-quoted JSON). A native call in the
 same reply runs as usual.
 
+The same holds for text inside a call's arguments. A call is recorded as one
+line whatever its arguments hold: the characters a line reader cuts on
+(U+0085, U+2028 and U+2029 as well as the usual line ends) are written as JSON
+escapes, and the tool receives the argument unchanged. When the reply is
+absorbed, the session reads its own record back and compares it with the
+provider's tool-call objects: the count, the names and the arguments. The
+calls that run on a native turn are those objects, and the repair step for
+malformed TOOL lines is never applied to a native reply. If the record does
+not read back as the objects, nothing runs, every line that reads as a call is
+marked as quoted text, and the model gets one message saying so (a
+`native_tools_notice` entry with the reason `call_not_recorded_as_made`).
+
 When a native reply writes a TOOL line in its text and makes no native call,
 nothing runs. The session records the reply, then sends the model one message
 saying that nothing ran and that tools are called through the function-calling
