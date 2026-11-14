@@ -5,6 +5,11 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Prompt caching
+- `flywheel code` marks Anthropic requests for prompt caching: one mark on the system prompt, covering the tools and the system text, and one at the top level that the provider moves forward with the conversation. On by default in a coding session; `FLYWHEEL_PROMPT_CACHE=0` turns the marks off. OpenAI and Gemini cache by themselves and need nothing sent.
+- `/cost` and the `-p` JSON `usage` object show `cache_read_tokens` and `cache_write_tokens` when the provider reported them, for Anthropic, OpenAI-compatible hosts and Gemini. Nothing is estimated: a reply with no cache figure adds none. The harness-config entry gains `prompt_cache`.
+- Tested with replayed replies. Token counts with caching on and off for a fixed 20-turn script against a live provider: not run. See `docs/CODE-SESSION.md`, "Prompt caching".
+
 Native function calling
 - `flywheel code` declares its tools to OpenAI, Anthropic and Gemini as JSON schemas and reads their native tool calls, on by default for the three first-party hosts. `FLYWHEEL_NATIVE_TOOLS=1` turns it on for every hosted backend and `FLYWHEEL_NATIVE_TOOLS=0` turns it off. The text protocol (`TOOL name {json}` lines) stays for local models, subscription CLIs, the cloud backends, and any host that refuses tool schemas.
 - A native call is recorded as the TOOL line the text protocol would have carried, so the ledger entries, receipt ids, permission prompts and results are the same either way. The harness-config entry gains `native_tools`.

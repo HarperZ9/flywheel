@@ -145,7 +145,7 @@ def test_results_go_back_in_each_providers_own_shape(tmp_path):
     output = "wrote 2 bytes to n.txt"
     first, second = sent["anthropic"]
     assert {"name", "description", "input_schema"} == set(first["tools"][0])
-    assert first["system"].endswith("do not write TOOL lines yourself.")
+    assert first["system"][0]["text"].endswith("do not write TOOL lines yourself.")
     assert second["messages"][1] == {"role": "assistant",
                                      "content": plain_object("anthropic", "tool_use")["content"]}
     assert second["messages"][2] == {"role": "user", "content": [

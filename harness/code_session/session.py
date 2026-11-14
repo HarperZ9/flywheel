@@ -30,6 +30,9 @@ PLAN_NOTE = ("[plan mode: you can read and search but not write files or run com
              "and how you would check them.]")
 
 
+CACHE_KEYS = ("cache_read_tokens", "cache_write_tokens")
+
+
 def new_usage() -> dict:
     return {"model_calls": 0, "input_tokens": 0, "output_tokens": 0, "uncounted_calls": 0}
 
@@ -42,6 +45,9 @@ def add_usage(total: dict, resp: dict) -> None:
     if counted:
         total["input_tokens"] += int(counted.get("input_tokens", 0))
         total["output_tokens"] += int(counted.get("output_tokens", 0))
+        for key in CACHE_KEYS:              # present only when a provider reported it
+            if key in counted:
+                total[key] = total.get(key, 0) + int(counted[key])
     else:
         total["uncounted_calls"] += 1
 
@@ -151,9 +157,11 @@ class CodeSession:
             "background", json.dumps({"event": kind, **data}, sort_keys=True), {"event": kind}))
         if self.toolbox is None:
             import os
+            from harness.endpoints_cache import on_from_env
             from .tool_specs import for_executor
             self.toolbox = _native.Toolbox(specs=lambda: for_executor(self.executor),
-                                           mode=_native.mode_from_env(os.environ))
+                                           mode=_native.mode_from_env(os.environ),
+                                           cache=on_from_env(os.environ))
         original = self.agent.send
 
         def counted_send(text):

@@ -80,6 +80,7 @@ class Toolbox:
     """One session's native tool state: what to offer, and what came back."""
     specs: "callable"                      # () -> [{"name", "description", "parameters"}]
     mode: str = "auto"                     # "auto", "on" or "off"
+    cache: bool = True                     # provider prompt caching (endpoints_cache)
     replies: list = field(default_factory=list)
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 

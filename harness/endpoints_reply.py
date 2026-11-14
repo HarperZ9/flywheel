@@ -39,6 +39,26 @@ def _empty_openai(backend, status, obj) -> BackendError:
     return BackendError(f"{backend.name} returned {status} with no message content{detail}")
 
 
+_CACHE_KEYS = (("cache_read", "cache_read_tokens"), ("cache_write", "cache_write_tokens"))
+
+
+def cache_counts(gen: dict) -> dict:
+    """Add the provider's cache token counts to the pair a session totals.
+
+    The observation record already reads them under one name per meaning,
+    whatever the provider calls them. A count is added only when the provider
+    sent one, so a reply with no cache figure carries none and a reader can
+    tell "no cache activity reported" from "zero tokens read".
+    """
+    pair, usage = gen.get("token_usage"), gen.get("usage")
+    counts = usage.get("counts") if isinstance(usage, dict) else None
+    if isinstance(pair, dict) and isinstance(counts, dict):
+        for meaning, key in _CACHE_KEYS:
+            if type(counts.get(meaning)) is int:
+                pair[key] = counts[meaning]
+    return gen
+
+
 def openai_reply(backend, status, obj, payload, seed) -> dict:
     """An OpenAI-compatible chat completion object."""
     try:
@@ -56,9 +76,9 @@ def openai_reply(backend, status, obj, payload, seed) -> dict:
         text = ""                  # a pure tool-call turn carries no prose
     out["text"] = text
     out.update(_usage(from_openai(obj)))
-    return _observed(out, obj, dialect="openai", requested_model=backend.model,
-                     keep_reasoning=backend.keep_reasoning, request=payload,
-                     kind=backend.name)
+    return cache_counts(_observed(out, obj, dialect="openai", requested_model=backend.model,
+                                  keep_reasoning=backend.keep_reasoning, request=payload,
+                                  kind=backend.name))
 
 
 def anthropic_reply(backend, status, obj, payload, seed) -> dict:
@@ -69,8 +89,9 @@ def anthropic_reply(backend, status, obj, payload, seed) -> dict:
         raise _response_error(backend.name, status, obj, kind="anthropic")
     out = {"text": text, "model_ref": f"{backend.name}:{backend.model}", "seed": seed,
            **_usage(from_anthropic(obj))}
-    return _observed(out, obj, dialect="anthropic", requested_model=backend.model,
-                     keep_reasoning=backend.keep_reasoning, request=payload)
+    return cache_counts(_observed(out, obj, dialect="anthropic",
+                                  requested_model=backend.model,
+                                  keep_reasoning=backend.keep_reasoning, request=payload))
 
 
 def gemini_reply(backend, status, obj, payload, seed) -> dict:
@@ -87,5 +108,5 @@ def gemini_reply(backend, status, obj, payload, seed) -> dict:
         raise _response_error(backend.name, status, obj, kind="gemini")
     out = {"text": text, "model_ref": f"{backend.name}:{backend.model}", "seed": seed,
            **_usage(from_gemini(obj))}
-    return _observed(out, obj, dialect="gemini", requested_model=backend.model,
-                     keep_reasoning=backend.keep_reasoning, request=payload)
+    return cache_counts(_observed(out, obj, dialect="gemini", requested_model=backend.model,
+                                  keep_reasoning=backend.keep_reasoning, request=payload))
