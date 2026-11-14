@@ -16,6 +16,8 @@ import pytest
 from tests import gateway_messages_support as support
 from tests.gateway_keys_support import MESSAGES, keyed, served  # noqa: F401  (fixtures)
 
+pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
+
 WEB_SEARCH = [{"type": "web_search_20250305", "name": "web_search"}]
 CUSTOM = [{"name": "read", "description": "Read a file.",
            "input_schema": {"type": "object", "properties": {}}}]

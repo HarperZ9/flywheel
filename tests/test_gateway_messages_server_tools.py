@@ -33,6 +33,8 @@ from harness.endpoints_assemble import AnthropicAssembler
 from tests import gateway_messages_support as support
 from tests.gateway_keys_support import MESSAGES, keyed, post, served  # noqa: F401
 
+pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
+
 TOOLS = [{"type": "web_search_20250305", "name": "web_search", "max_uses": 5}]
 REPORTED = 6039 + 931                    # the fixture's input and output counts
 STREAM = support.raw("upstream/anthropic_server_tool.sse")

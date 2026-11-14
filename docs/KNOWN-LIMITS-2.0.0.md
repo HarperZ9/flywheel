@@ -2,7 +2,7 @@
 
 An independent security review of the 2.0 gateway and coding session ran on
 2026-11-14 and ranked 22 findings. The two that blocked the release and the
-five marked "fix before release" are fixed, with seven of the smaller ones.
+five marked "fix before release" are fixed, with eight of the smaller ones.
 This page lists what was left as it is, with the reason, so that nobody has
 to find it again. `docs/GATEWAY-INTERFACES.md` has the gateway's behaviour in
 full.
@@ -24,7 +24,6 @@ full.
 | `/v1/messages/count_tokens` does not apply the pass-through allow-lists | A key can send any `anthropic-beta` value on a token-count request. | The request runs no tool and the provider does not bill it. |
 | Token-count requests and in-flight slots | `count_tokens` takes no in-flight slot and no reservation. | It is not billed. |
 | Removed hook wrappers exit 1 quietly | After an upgrade, a client configured with an old hook path captures nothing until `flywheel traces doctor` is run, if the client hides hook errors. | Printing the doctor's line at `flywheel up` is a small change that was not made in time. |
-| The SDK compatibility tests may be skipped on CI | The tests that drive the gateway with the `anthropic` and `openai` Python SDKs skip when the packages are not installed. Whether CI installs them was not confirmed. | It needs a CI job that installs both and fails on a skip. |
 | Upstream redirects are refused, not followed | An upstream base URL that answers with a redirect now fails with that status. Set the base URL to the final address. | Following a redirect would re-send the provider key to the new host. |
 
 ## Budget limits in one list
