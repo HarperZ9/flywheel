@@ -475,8 +475,9 @@ Flywheel home in `gateway-ledger/`, chained across restarts.
 - A call now waits for its entry to be committed to the disk, about 1 to 3 ms
   on the measured machine. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips that wait
   and accepts that a power loss can lose the newest entries.
-- Start one gateway per Flywheel home. A second one on the same home refuses
-  model calls with 500, because it cannot append to the ledger.
+- Start one gateway per Flywheel home. A second one on the same home answers
+  model calls with 503 and reaches no provider, because it cannot append to
+  the ledger. The gateway says at start whether the ledger opened.
 - Back up or remove `gateway-ledger/` as a whole folder. Editing a segment
   makes `verify` fail from then on.
 
@@ -532,6 +533,43 @@ what a provider can bill.
 - There is no requests-per-minute limit, and no provider account per key:
   every key spends from the gateway's own credential for the upstream.
 - A limit cannot be changed in place. Create a new key, or reset the totals.
+
+### After the confirmation review: an unavailable ledger, slow requests
+
+A second review of the fixes above changed four things you can meet.
+
+- **503 when the ledger is unavailable.** A gateway that cannot open or
+  write its ledger (a second gateway on the same home, another process
+  holding `gateway-ledger/writer.lock`, a folder that cannot be written)
+  answers `/v1/messages`, `/v1/messages/count_tokens`, `/v1/responses`,
+  `/v1/chat/completions` with a provider endpoint and `/api/route` with 503
+  and `retry-after: 5`, before any provider is contacted. Before this a
+  streamed call was served with no record, and a plain call was billed and
+  then answered 500. What to do: run one gateway per home, read the `ledger`
+  line the gateway prints at start, and treat 503 with the code
+  `ledger_unavailable` as a gateway to repair, not a provider outage.
+- **A read timeout.** A connection that sends nothing for 30 seconds while
+  the gateway waits for its request line, headers or body is closed (408 on
+  a model interface when the body stops). A client that stops reading a
+  stream for 30 seconds is disconnected, and the call is recorded as
+  abandoned and charged. What to do: nothing for the usual clients. For a
+  client that pauses longer, set `FLYWHEEL_GATEWAY_READ_TIMEOUT` to a larger
+  number of seconds, or to `0` to switch the timeout off.
+- **Limits are read again after the body.** A key that is revoked,
+  suspended or over a limit by the time its request body has arrived is
+  refused, whatever the totals were when the headers arrived. Nothing to do.
+- **An unfinished stream can cost more.** It is charged the provider's
+  output count when one had arrived, and tool-call arguments and thinking
+  count toward the estimate. A stream abandoned before its first byte is
+  recorded and charged for the prompt. Entries for a client that left carry
+  `"abandoned": true`.
+
+Smaller: no key can be named `owner`, the ledger's name for the gateway
+token (a key that already has that name keeps working; create one under
+another name and revoke it). `flywheel gateway-ledger verify` exits 1 when
+the head record exists and the segment files are gone; remove the whole
+`gateway-ledger` folder to retire a ledger. `flywheel gateway-ledger show`
+escapes control characters.
 
 ### After the security review: smaller changes
 
