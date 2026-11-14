@@ -8,8 +8,9 @@ documented order. `error` writes the error body and `status_error` picks its
 Usage. `input_tokens` is the whole prompt as OpenAI counts it: the neutral
 uncached input plus the cache counts. `input_tokens_details.cached_tokens` is
 the provider's cache-read count. The format types both detail counts as
-integers, so a count the provider did not send is 0 and the body says so in
-`x_flywheel`. `output_tokens_details.reasoning_tokens` is always 0: the neutral
+integers, so a cache count the provider did not send is 0 and the body says
+so in `x_flywheel`. When the provider sent no counts at all, `usage` is null
+and `x_flywheel.usage_reported` is false. `output_tokens_details.reasoning_tokens` is always 0: the neutral
 reply carries no reasoning count.
 
 Wire format, read 2026-11-14. platform.openai.com refused the fetch (403), so:
@@ -47,8 +48,11 @@ def sse(event: str, data: dict) -> bytes:
     return f"event: {event}\ndata: {json.dumps(data)}\n\n".encode("utf-8")
 
 
-def usage(reply) -> dict:
-    """The provider's counts under the Responses names."""
+def usage(reply) -> "dict | None":
+    """The provider's counts under the Responses names, or None when it sent
+    none: the `openai` SDK (2.36.0) types `Response.usage` as optional."""
+    if not reply.usage_reported:
+        return None
     counts = reply.usage
     cached = counts.get("cache_read") or 0
     total_in = (counts.get("input") or 0) + cached + (counts.get("cache_write") or 0)
@@ -58,14 +62,13 @@ def usage(reply) -> dict:
             "total_tokens": total_in + out}
 
 
-def unreported(reply) -> dict:
-    """`x_flywheel` flags for counts the provider did not send."""
-    flags = {}
-    if not reply.usage_reported:
-        flags["usage_reported"] = False
-    if reply.usage.get("cache_read") is None:
-        flags["cached_tokens_reported"] = False
-    return {"x_flywheel": flags} if flags else {}
+def flags(reply) -> dict:
+    """`x_flywheel`: `usage_reported` on every reply, and `cached_tokens_reported`
+    false when the counts came without a cache-read count."""
+    said = {"usage_reported": reply.usage_reported}
+    if reply.usage_reported and reply.usage.get("cache_read") is None:
+        said["cached_tokens_reported"] = False
+    return {"x_flywheel": said}
 
 
 def _status(reply) -> str:
@@ -123,7 +126,7 @@ def response(reply, ids, model: str, echo: dict, receipt: dict) -> dict:
     reason = _INCOMPLETE.get(reply.stop_reason)
     body.update(output=output(reply, ids), usage=usage(reply),
                 incomplete_details={"reason": reason} if reason else None)
-    return {**body, **unreported(reply), "x_receipt": receipt}
+    return {**body, **flags(reply), "x_receipt": receipt}
 
 
 def failed(ids, model: str, echo: dict, text: str) -> dict:

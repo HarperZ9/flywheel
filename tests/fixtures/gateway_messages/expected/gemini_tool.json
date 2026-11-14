@@ -24,5 +24,8 @@
   "output_tokens": 36,
   "cache_creation_input_tokens": null,
   "cache_read_input_tokens": null
+ },
+ "x_flywheel": {
+  "usage_reported": true
  }
 }

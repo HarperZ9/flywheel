@@ -19,9 +19,13 @@ of input_tokens. A count the provider did not send is None, never an estimate.
 
 Ledger. A served call appends `endpoint_call` with the meta keys the
 OpenAI-chat path writes (endpoint, model_ref, seed, prompt_sha, response_sha)
-plus `interface`. A call that fails after the upstream was contacted appends
-`endpoint_call_failed`. A request refused before any upstream call appends
-nothing.
+plus `interface`, `usage_reported` and the caller: `key` is `owner` for the
+gateway token, or a virtual key's name with `key_fp`, `charged_tokens` and,
+when the charge is the word estimate, `estimated`. A call that fails after
+the upstream was contacted appends `endpoint_call_failed` with the caller. A
+request refused before any upstream call appends nothing, except a virtual
+key's budget or allow-list refusal, which appends `endpoint_call_refused`
+(gateway_key_gate).
 """
 from __future__ import annotations
 
@@ -76,6 +80,7 @@ class Turn:
     stop: list = field(default_factory=list)
     stream: bool = False
     uncarried: list = field(default_factory=list)   # content only the same dialect carries
+    caller: object = None               # gateway_key_gate.Caller; None is the owner
     _form: "tuple | None" = field(default=None, repr=False)
 
     def text_form(self) -> tuple:
@@ -215,10 +220,13 @@ def record(ledger, upstream: Upstream, turn: Turn, reply: Reply) -> None:
     from .proposer import prompt_hash
     if ledger is None:
         raise RuntimeError("the gateway ledger is unavailable; the reply was not served")
-    sha = prompt_hash(reply_text(reply))
+    from .gateway_key_gate import Bill
+    sha, bill = prompt_hash(reply_text(reply)), Bill(turn, reply)
     meta = {"endpoint": upstream.name, "interface": turn.interface,
             "model_ref": reply.model_ref, "seed": 0,
-            "prompt_sha": prompt_sha(turn), "response_sha": sha}
+            "prompt_sha": prompt_sha(turn), "response_sha": sha,
+            "usage_reported": reply.usage_reported, **bill.meta}
+    bill.settle()                       # a call that cannot be charged is not served
     with _APPEND:
         ledger.append("endpoint_call", sha, meta)
 
@@ -229,8 +237,10 @@ def record_failed(ledger, upstream: Upstream, turn: Turn, reason: str, detail=""
     _LOG.warning("gateway %s call to %s failed (%s): %s", turn.interface, upstream.name,
                  reason, redacted_text(str(detail)))
     if ledger is not None:
+        from .gateway_key_gate import OWNER
         meta = {"endpoint": upstream.name, "interface": turn.interface,
-                "prompt_sha": prompt_sha(turn), "reason": reason}
+                "prompt_sha": prompt_sha(turn), "reason": reason,
+                **(turn.caller or OWNER).meta}
         with _APPEND:
             ledger.append("endpoint_call_failed", reason, meta)
 

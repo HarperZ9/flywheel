@@ -5,6 +5,20 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Gateway: virtual keys and budgets
+- `flywheel gateway-key create NAME` mints a local key for one tool or teammate, with an optional token limit, an optional spend limit at prices you set (USD per million tokens; no price table ships) and an optional list of models. `list`, `show`, `revoke` and `reset` manage it. The key is printed once. It is kept in the system credential store; a file in the Flywheel home holds its fingerprint, limits and running totals.
+- A virtual key opens `/v1/messages`, `/v1/messages/count_tokens` and `/v1/responses` and no other gateway route. The gateway token keeps working there as the owner, with no budget.
+- A call is refused before anything is sent upstream when the key's totals are at or over a limit or the model is not on its list. A reached limit is 400 `invalid_request_error` on Messages and 429 `insufficient_quota` on Responses, following each provider's documentation. The check reads the totals so far, so one call can cross a limit and the next is refused.
+- Totals come from the provider's reported usage, cache tokens included, each counted once. A streamed call is charged when the stream finishes. A call with no reported counts is charged the whitespace word estimate and marked `estimated`.
+- Ledger entries for Messages and Responses calls name the caller: `"key": "owner"`, or the key's name with its fingerprint. A budget or model refusal appends `endpoint_call_refused`. No entry, log line or error holds a key.
+- Not covered: rate limits, a provider account per key, and totals shared across machines.
+- Tested against a gateway on a loopback port with a stub upstream and an in-memory credential store, and with the `anthropic` and `openai` Python SDKs holding a key. Not run: any hosted provider, Claude Code or Codex CLI holding a key, and the real credential store. See `docs/GATEWAY-INTERFACES.md`, "Keys and budgets".
+
+Usage on every served endpoint
+- Every served reply carries `"x_flywheel": {"usage_reported": true}` or `false`: `/v1/messages`, `/v1/responses` and `/v1/chat/completions` on the gateway, and the model server's `/chat/completions`. The ledger entry of a Messages or Responses call records the same flag.
+- Changed: `/v1/responses` sends `"usage": null` when the provider reported no counts. It sent zeros before. `/v1/messages` keeps zeros, because the Messages format and the `anthropic` SDK require integers.
+- Changed: the model server's `POST /chat/completions` sends `"usage": null` with `x_usage_estimate` when the model reported no counts. It sent `"usage": {}` before. See `docs/MIGRATING-2.0.md`, "Usage on every served endpoint".
+
 Gateway: OpenAI Responses
 - The local gateway answers `POST /v1/responses` itself, with and without streaming. An OpenAI SDK client can use it as its base URL (`http://127.0.0.1:8799/v1`, with the gateway token as the API key). It carries `input` as a string or as items (`message`, `function_call`, `function_call_output`), `instructions`, `function` tools, `tool_choice`, `max_output_tokens`, `temperature`, `top_p`, and usage with `input_tokens_details.cached_tokens`. See `docs/GATEWAY-INTERFACES.md`, "OpenAI Responses".
 - The gateway stores no responses and runs no built-in tools. `previous_response_id`, `conversation`, `background`, tools other than `function`, and image, file and audio inputs are refused with 400 `invalid_request_error`, and `param` names the field. `reasoning` items in `input` are dropped. `store` is accepted and has no effect.

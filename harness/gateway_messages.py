@@ -78,7 +78,7 @@ def _verbatim(turn, stream):
     finally:
         stream.close()
     reply = stream.reply
-    yield wire.sse("message_stop", {"type": "message_stop", **wire.unreported(reply),
+    yield wire.sse("message_stop", {"type": "message_stop", **wire.flags(reply),
                                     "x_receipt": _turn.receipt(turn, reply)})
 
 
@@ -113,7 +113,7 @@ def _closing(turn, reply, shown: str):
     yield wire.sse("message_delta", {
         "type": "message_delta",
         "delta": {"stop_reason": wire.stop_reason(reply), "stop_sequence": None},
-        "usage": wire.usage(reply), **wire.unreported(reply)})
+        "usage": wire.usage(reply), **wire.flags(reply)})
     yield wire.sse("message_stop", {"type": "message_stop",
                                     "x_receipt": _turn.receipt(turn, reply)})
 
@@ -153,13 +153,14 @@ def _uncarried(turn, upstream) -> None:
             "send it to an Anthropic endpoint or leave it out"))
 
 
-def handle(body, headers, ledger, environ=None) -> _turn.Response:
-    """Answer one POST /v1/messages request."""
+def handle(body, headers, ledger, environ=None, caller=None) -> _turn.Response:
+    """Answer one POST /v1/messages request. `caller` is who the call is charged to."""
     from . import gateway_turn_call as call
     request_id, same = f"req_fw_{uuid.uuid4().hex[:24]}", False
     message_id = f"msg_fw_{uuid.uuid4().hex[:24]}"
     try:
         turn = wire.parse(body)
+        turn.caller = caller
         upstream = _turn.resolve_upstream(turn.model, environ)
         same, model = upstream.dialect == "anthropic", upstream.backend.model
         payload = extra = None
@@ -178,7 +179,7 @@ def handle(body, headers, ledger, environ=None) -> _turn.Response:
     except _turn.UpstreamFailed as failed:
         return _failed(failed, same, request_id)
     receipt = _turn.receipt(turn, reply)
-    answer = ({**reply.raw, **wire.unreported(reply), "x_receipt": receipt} if same
+    answer = ({**reply.raw, **wire.flags(reply), "x_receipt": receipt} if same
               else wire.message(reply, model, message_id, receipt))
     return _turn.Response(200, answer, headers={
         "request-id": request_id, "x-receipt-id": receipt["receipt_id"]})

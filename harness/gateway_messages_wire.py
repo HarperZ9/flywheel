@@ -189,8 +189,12 @@ def usage(reply) -> dict:
             "cache_read_input_tokens": counts.get("cache_read")}
 
 
-def unreported(reply) -> dict:
-    return {} if reply.usage_reported else {"x_flywheel": {"usage_reported": False}}
+def flags(reply) -> dict:
+    """`x_flywheel.usage_reported`, on every reply: false marks counts that are
+    0 because the provider sent none. The `anthropic` SDK (0.95.0,
+    types/usage.py) types input_tokens and output_tokens as required integers,
+    so null is not sent here."""
+    return {"x_flywheel": {"usage_reported": reply.usage_reported}}
 
 
 def content(reply) -> list:
@@ -203,7 +207,7 @@ def message(reply, model: str, message_id: str, receipt: dict) -> dict:
     """A `Reply` as a Message object, with the receipt as an extension field."""
     return {"id": message_id, "type": "message", "role": "assistant", "model": model,
             "content": content(reply), "stop_reason": _STOP[reply.stop_reason],
-            "stop_sequence": None, "usage": usage(reply), **unreported(reply),
+            "stop_sequence": None, "usage": usage(reply), **flags(reply),
             "x_receipt": receipt}
 
 

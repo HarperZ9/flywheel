@@ -201,6 +201,7 @@ def _completion_body(receipt, out, prompt):
                          "message": {"role": "assistant", "content": out.text},
                          "finish_reason": "stop"}],
             "usage": token_usage.openai_usage(pair),
+            "x_flywheel": {"usage_reported": pair is not None},
             token_usage.ESTIMATE_FIELD: token_usage.estimate(prompt, out.text),
             "x_receipt": receipt}
 

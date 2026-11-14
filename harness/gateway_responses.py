@@ -88,13 +88,14 @@ def _stream(turn, stream, ids, model: str, echo: dict, events):
     yield from _closing(turn, stream.reply, ids, model, echo, events, shown)
 
 
-def handle(body, headers, ledger, environ=None) -> _turn.Response:
-    """Answer one POST /v1/responses request."""
+def handle(body, headers, ledger, environ=None, caller=None) -> _turn.Response:
+    """Answer one POST /v1/responses request. `caller` is who the call is charged to."""
     from . import gateway_turn_call as call
     ids, upstream = write.Ids(uuid.uuid4().hex[:24]), None
     out = {"x-request-id": f"req_fw_{uuid.uuid4().hex[:24]}"}
     try:
         turn, echo = wire.parse(body)
+        turn.caller = caller
         upstream = _turn.resolve_upstream(turn.model, environ)
         model = upstream.backend.model
         if turn.stream:

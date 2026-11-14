@@ -9,8 +9,9 @@ chunk by chunk as the upstream produces it.
   /v1/messages/count_tokens  token counting, forwarded to an Anthropic upstream
   /v1/responses              OpenAI Responses (gateway_responses)
 
-These routes need the gateway token and nothing more. They do not use the
-per-operation grant flow that guards /v1/chat/completions.
+These routes need the gateway token or a virtual key (gateway_keys) and
+nothing more. They do not use the per-operation grant flow that guards
+/v1/chat/completions, and a virtual key opens no other route.
 """
 from __future__ import annotations
 
@@ -83,18 +84,25 @@ def _body(handler):
 
 
 def serve(handler, path: str, ledger) -> None:
-    """Answer one request on a path in PATHS."""
+    """Answer one request on a path in PATHS.
+
+    The caller is settled first (gateway_key_gate): the gateway token is the
+    owner, a virtual key is a named caller whose allow-list and limits are
+    checked here, before either interface sends anything upstream."""
+    from . import gateway_key_gate as gate
+    body = _body(handler)
+    caller, refusal = gate.enter(handler, path, body, ledger)
+    if refusal is not None:
+        return send(handler, refusal)
+    headers = {str(name).lower(): value for name, value in handler.headers.items()}
     if path == "/v1/responses":
         from . import gateway_responses
-        sent = {str(name).lower(): value for name, value in handler.headers.items()}
-        return send(handler, gateway_responses.handle(_body(handler), sent, ledger))
+        return send(handler, gateway_responses.handle(body, headers, ledger, caller=caller))
     from . import gateway_messages
     from .gateway_messages_wire import error
     from .gateway_turn import Response
-    body = _body(handler)
     if body is None:
         return send(handler, Response(400, error(400, "request body must be a JSON object")))
-    headers = {str(name).lower(): value for name, value in handler.headers.items()}
-    answer = (gateway_messages.count_tokens if path.endswith("/count_tokens")
-              else gateway_messages.handle)
-    return send(handler, answer(body, headers, ledger))
+    if path.endswith("/count_tokens"):
+        return send(handler, gateway_messages.count_tokens(body, headers, ledger))
+    return send(handler, gateway_messages.handle(body, headers, ledger, caller=caller))

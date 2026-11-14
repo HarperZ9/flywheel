@@ -12,6 +12,10 @@ written to the gateway's hash-chained ledger and returned with a receipt.
 | `POST /v1/chat/completions` | OpenAI chat | served, behind a per-operation grant |
 | `POST /v1/responses` | OpenAI Responses | served by the gateway, for the subset below |
 
+The Messages and Responses paths also accept a virtual key: a local key you
+mint for one tool, with a token or spend limit and a list of models. See
+"Keys and budgets" at the end of this page.
+
 ## Anthropic Messages
 
 The gateway serves `POST /v1/messages` with and without `stream`. It carries:
@@ -137,7 +141,10 @@ estimated. For an upstream that counts cached input inside its prompt total,
 `input_tokens` is that total minus the cached part, so the three input fields
 add up the way the Messages format defines. A cache count the provider did not
 send is `null`. When the provider sent no input or output count, both are `0`
-and the body carries `"x_flywheel": {"usage_reported": false}`.
+and the body carries `"x_flywheel": {"usage_reported": false}`. A reply with
+counts carries the same field set to `true`, including a reply passed through
+from an Anthropic upstream. "Usage on every endpoint" below gives the rule and
+why Messages sends `0` where other formats send `null`.
 
 In a translated stream the counts arrive on the `message_delta` event, because
 the upstream reports them at the end.
@@ -147,11 +154,13 @@ the upstream reports them at the end.
 Every served call appends an `endpoint_call` entry to the gateway ledger with
 the endpoint, the model reference, the prompt hash, the response hash and
 `"interface": "anthropic-messages"`. The same conversation sent through
-`/v1/chat/completions` leaves an entry with the same hashes.
+`/v1/chat/completions` leaves an entry with the same hashes. The entry also
+records `usage_reported` and who made the call (`key`).
 
 A call that fails after the upstream was contacted appends
 `endpoint_call_failed` with a reason code. A request refused before any
-upstream call appends nothing.
+upstream call appends nothing, with one exception: a virtual key refused for
+its budget or its model list appends `endpoint_call_refused`.
 
 The receipt rides as `x_receipt` on a plain reply and on the `message_stop`
 event of a stream. Its id is also in the `x-receipt-id` response header of a
@@ -178,11 +187,13 @@ shows approximate figures there.
 
 ### Authentication
 
-These routes need the gateway token, in `Authorization: Bearer` or in
-`x-api-key`, and a JSON content type. The Host check that guards every gateway
-route applies. They do not use the per-operation grant flow that guards
-`/v1/chat/completions`. A wrong or missing token gets the gateway's own 401
-body, which the Anthropic SDK reports as `AuthenticationError`.
+These routes need the gateway token or a virtual key, in
+`Authorization: Bearer` or in `x-api-key`, and a JSON content type. The Host
+check that guards every gateway route applies. They do not use the
+per-operation grant flow that guards `/v1/chat/completions`. A wrong or
+missing credential gets the gateway's own 401 body, which the Anthropic SDK
+reports as `AuthenticationError`. Virtual keys are described under "Keys and
+budgets".
 
 ### Limits
 
@@ -347,12 +358,16 @@ Responses format defines it. `input_tokens_details.cached_tokens` is the
 provider's cache-read count. For an Anthropic upstream the three input counts
 it reports are added up to give `input_tokens`.
 
-The format types its counts as integers, so a missing count cannot be `null`.
-When the provider sent no cache count, `cached_tokens` is `0` and the body
-carries `"x_flywheel": {"cached_tokens_reported": false}`. When it sent no
-input or output count, those are `0` and `x_flywheel` also carries
-`"usage_reported": false`. `output_tokens_details.reasoning_tokens` is always
-`0`, because the gateway does not carry a reasoning count.
+When the provider sent no input or output count, `usage` is `null` and the
+body carries `"x_flywheel": {"usage_reported": false}`. The format allows a
+missing `usage`, and the `openai` SDK types it as optional. A reply with
+counts carries `"usage_reported": true`.
+
+Inside a `usage` object the format types every count as an integer. When the
+provider sent counts without a cache count, `cached_tokens` is `0` and
+`x_flywheel` also carries `"cached_tokens_reported": false`.
+`output_tokens_details.reasoning_tokens` is always `0`, because the gateway
+does not carry a reasoning count.
 
 ### Streaming
 
@@ -381,9 +396,11 @@ follows. The `openai` SDK yields this event to the caller and does not raise.
 Every served call appends an `endpoint_call` entry to the gateway ledger with
 `"interface": "openai-responses"`. The same text conversation sent through
 `/v1/chat/completions` or `/v1/messages` leaves an entry with the same
-hashes. A call that fails after the upstream was contacted appends
+hashes. The entry also records `usage_reported` and who made the call
+(`key`). A call that fails after the upstream was contacted appends
 `endpoint_call_failed`. A request refused before any upstream call appends
-nothing.
+nothing, except a virtual key refused for its budget or its model list, which
+appends `endpoint_call_refused`.
 
 The receipt rides as `x_receipt` on the Response object, both in a plain body
 and inside the last event of a stream. Its id is also in the `x-receipt-id`
@@ -406,9 +423,9 @@ own 401 body, which the `openai` SDK reports as `AuthenticationError`.
 
 ### Authentication
 
-The route needs the gateway token in `Authorization: Bearer` and a JSON
-content type, like the Messages routes. It does not use the per-operation
-grant flow that guards `/v1/chat/completions`.
+The route needs the gateway token or a virtual key in `Authorization: Bearer`
+and a JSON content type, like the Messages routes. It does not use the
+per-operation grant flow that guards `/v1/chat/completions`.
 
 ### Where the format was read
 
@@ -445,3 +462,197 @@ request with one function tool and `tool_choice` `required` returned a
 `endpoint_call` entry with `"interface": "openai-responses"`, and the ledger
 chain verified. This was one run on one small model, started from the test
 harness and not from `flywheel up`.
+
+## Usage on every endpoint
+
+One rule covers every endpoint Flywheel serves: `/v1/messages`,
+`/v1/responses` and `/v1/chat/completions` on the gateway, and the local model
+server's own `/chat/completions`. `usage` holds the provider's token counts and
+never an estimate. Each reply carries `"x_flywheel": {"usage_reported": true}`
+or `false`, and the ledger entry of a Messages or Responses call records the
+same flag as `usage_reported`, so a real zero and a missing count can be told
+apart. When the provider sent no counts, `usage` is `null` where the format
+allows it: chat completions and Responses. The `openai` SDK 2.36.0 types
+`Response.usage` and `ChatCompletion.usage` as optional. The Messages format
+does not allow it. The `anthropic` SDK 0.95.0 types `input_tokens` and
+`output_tokens` as required integers and fails validation on `null`, so
+Messages sends `0` for both with the flag set to `false`. The whitespace word
+estimate appears only under its own name, `x_usage_estimate`, on the two chat
+completion endpoints.
+
+## Keys and budgets
+
+A virtual key is a local credential you mint for one tool or one teammate.
+It opens the three model interface paths (`/v1/messages`,
+`/v1/messages/count_tokens`, `/v1/responses`) and no other gateway route. Each
+key has a name, optional limits and an optional list of models, and the
+gateway keeps running totals for it. The gateway token keeps working on those
+paths as the owner, with no budget.
+
+### Create a key
+
+```
+flywheel gateway-key create ci-bot --token-limit 2000000
+flywheel gateway-key create teammate --spend-limit 25 --price-in 3 --price-out 15
+flywheel gateway-key create linter --models claude-haiku-4-5,ollama:qwen2.5:1.5b
+```
+
+The key is printed once, by `create`, and never again. It starts with `fwk_`.
+If you lose it, revoke the key and create another.
+
+| Option | Meaning |
+|---|---|
+| `--token-limit N` | Refuse calls once the key has used N tokens. |
+| `--spend-limit USD` | Refuse calls once the key has spent this much. Needs both prices. |
+| `--price-in USD`, `--price-out USD` | Your prices per million input and output tokens. |
+| `--models a,b,c` | The model names the key may send. Without it, any model. |
+
+Flywheel ships no price table. Spend is computed from the prices you put on
+the key, so a spend limit without both prices is refused at creation.
+
+The other commands:
+
+```
+flywheel gateway-key list            # every key: state, fingerprint, totals
+flywheel gateway-key show ci-bot     # one key in full, with what is left
+flywheel gateway-key revoke ci-bot   # stop the key; its totals are kept
+flywheel gateway-key reset ci-bot    # zero the key's running totals
+```
+
+### Give the key to a tool
+
+The key goes where the gateway token would go. `<key>` stands for the value
+`create` printed.
+
+Claude Code:
+
+```bash
+export ANTHROPIC_BASE_URL=http://127.0.0.1:8799
+export ANTHROPIC_AUTH_TOKEN="<key>"
+```
+
+The `anthropic` SDK:
+
+```python
+client = anthropic.Anthropic(base_url="http://127.0.0.1:8799", api_key="<key>")
+```
+
+The `openai` SDK:
+
+```python
+client = OpenAI(base_url="http://127.0.0.1:8799/v1", api_key="<key>")
+```
+
+The gateway reads the key from `Authorization: Bearer` or from `x-api-key`.
+It is never sent upstream. The upstream call uses the gateway's own credential
+for that provider, as it does for the owner.
+
+### What is stored where
+
+The key itself goes into the system credential store: Windows Credential
+Manager, the macOS keychain, or the Secret Service on Linux. It is not written
+to a file. Where no credential store is available, `create` is refused and
+says which tool is missing.
+
+`gateway-keys.json` in the Flywheel home holds the facts that are not secret:
+the name, a fingerprint (the first 16 hex characters of the key's SHA-256),
+the limits, prices and model list, the created time, the revoked flag and the
+running totals.
+
+The credential store decides whether a key is real. The gateway finds a
+candidate by fingerprint in the file and then compares the offered key with
+the stored one. A process that can write the file and nothing else cannot
+mint a working key. `revoke` deletes the stored key as well as setting the
+flag, so editing the flag back does not revive it.
+
+### What counts against a limit
+
+Totals come from the provider's own usage report for each served call.
+`tokens` is every token the provider counted, each once: uncached input,
+cache read, cache write and output. For a provider that counts cached input
+inside its prompt total, the cached part is not added a second time.
+
+Spend is input-side tokens (uncached input, cache read and cache write) at
+the key's input price, plus output tokens at its output price. Providers
+usually bill cache reads below the input price and cache writes above it, so
+this figure is your own estimate of cost and not a bill.
+
+A streamed call is charged when its stream finishes. A call that fails is
+not charged. Token counting is checked against the key and never charged.
+
+**The crossing rule.** The check runs before the call and reads the totals so
+far. A call that starts under the limit runs to the end, so one call can
+cross a limit. The next call is refused. The gateway does not try to predict
+whether a request's `max_tokens` would fit in what is left.
+
+**The estimate rule.** When the provider sent no token counts, the key is
+charged the whitespace word estimate of the prompt and the reply, the same
+figure `x_usage_estimate` names. The charge is counted apart in the key's
+totals (`estimated_calls`, `estimated_tokens`) and the ledger entry carries
+`"estimated": true`. Words are fewer than tokens for the same text, so an
+estimated charge runs low. An unreported count is never treated as free.
+
+### When a call is refused
+
+A refused call sends nothing upstream. The message names the key and the
+limit.
+
+| Case | Messages | Responses |
+|---|---|---|
+| A limit is reached | 400 `invalid_request_error` | 429, `type` `insufficient_quota`, `code` `key_budget_exceeded` |
+| The model is not on the key's list | 403 `permission_error` | 403, `code` `model_not_allowed` |
+| The key is revoked or unknown | 401 | 401 |
+
+The limit statuses follow each provider's own documentation. The Claude API
+errors page says the API returns 400 when usage reaches a spend limit you
+set. The OpenAI error-codes guide lists spend limits under 429 and says the
+broader `error.type` can be `insufficient_quota`. Both pages were read on
+2026-11-14. A limit refusal also carries `x-should-retry: false`, which stops
+the official SDKs from retrying a call that cannot succeed.
+
+A revoked or unknown key is turned away by the gateway's authentication
+check, before the interface runs, so the 401 body is the gateway's own
+(`{"error": "unauthorized", "reason": "bad_token"}`). Both SDKs report it as
+`AuthenticationError`. No error message repeats the value that was offered.
+
+The model list is matched against the `model` string the client sent,
+exactly as written. The upstream that name resolves to is not consulted, so
+list the names your tool sends.
+
+### What the ledger shows
+
+An `endpoint_call` entry names who made the call: `"key": "owner"` for the
+gateway token, or the key's name with `key_fp`, its fingerprint. An entry for
+a key also carries `charged_tokens`. `endpoint_call_failed` names the caller
+the same way. A limit or model refusal appends `endpoint_call_refused` with
+the interface, the key, its fingerprint and the reason (`token_limit`,
+`spend_limit` or `model_not_allowed`). It carries no hashes, and it is never a
+completed-call entry. No entry holds a key.
+
+### What is not covered
+
+- Rate limits. A key has totals, not a requests-per-minute limit.
+- A provider account per key. Every key spends from the gateway's own
+  credential for the upstream.
+- More than one machine. The totals live in one Flywheel home. Two gateways
+  on two machines do not share them.
+- Changing a limit in place. Create a new key, or reset the totals.
+- Two calls that start together can both pass the check and both run.
+- A stream the client abandons. It is recorded as `endpoint_call_failed` with
+  reason `client_disconnected` and is not charged, although the upstream may
+  have billed for the part it produced.
+
+### What was run
+
+Verified against a real gateway on a loopback port with a stub upstream and an
+in-memory credential store: exact totals from recorded provider counts on
+both interfaces, streamed and not; the refusal after a crossing with no
+further upstream request; ledger attribution for two keys and the owner; a
+revoked key, an unknown key and a key on other routes; the model list; totals
+across a new store instance and 200 parallel debits; a forged index row; the
+estimate charge; and the `anthropic` and `openai` Python SDKs holding a key.
+A search of the ledger, the log records, every response, the index file and
+the CLI output finds the key only in the output of `create`.
+
+Not run: any hosted provider, Claude Code or Codex CLI holding a key, and the
+real system credential store.

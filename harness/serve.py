@@ -39,10 +39,10 @@ os.environ.setdefault("BITSANDBYTES_NOWELCOME", "1")
 
 try:
     from .messages_api import (error_response, make_receipt, resolve_model,
-                               translate_request, translate_response)
+                               translate_request, translate_response, token_usage)
 except ImportError:  # pragma: no cover - supports `python harness/serve.py`
     from messages_api import (error_response, make_receipt, resolve_model,
-                              translate_request, translate_response)
+                              translate_request, translate_response, token_usage)
 
 torch = None
 
@@ -349,7 +349,7 @@ class _H(BaseHTTPRequestHandler):
                             "finish_reason": "stop",
                         },
                     ],
-                    "usage": {},
+                    **token_usage.chat_usage(payload, prompt),
                     "x_receipt": receipt,
                 }
                 self._send(200, reply, {"X-Receipt-Id": receipt["receipt_id"]})

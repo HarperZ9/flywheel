@@ -38,6 +38,9 @@ Read the matching section if one of these is true:
    stated-limit audit detector.** See "Verdicts and audits".
 10. **A client sends `POST /v1/messages` to the gateway.** The gateway now
     answers it and routes by the `model` field. See "The gateway".
+11. **A client reads `usage` from the model server's `POST /chat/completions`.**
+    It is `null` when the model reported no counts, where 1.x sent `{}`. See
+    "Usage on every served endpoint".
 
 You never need to convert a stored record. Every sealed, anchored or saved
 1.x record verifies in 2.x with its original bytes.
@@ -313,6 +316,48 @@ Response object, or an error in the OpenAI error shape. The gateway serves a
 subset of the format. `previous_response_id`, built-in tools, and image and
 file inputs are refused with 400 `invalid_request_error`, and the error names
 the field. `docs/GATEWAY-INTERFACES.md` has the full table under "The subset".
+
+### Usage on every served endpoint
+
+One rule now covers every endpoint Flywheel serves. `usage` holds the
+provider's token counts and never an estimate. Every reply carries
+`"x_flywheel": {"usage_reported": true}` or `false`. When the provider sent no
+counts, `usage` is `null` where the wire format allows it, and zeros with the
+flag set to `false` where it does not.
+
+| Endpoint | `usage` when the provider sent no counts | Flag |
+|---|---|---|
+| Gateway `POST /v1/chat/completions` | `null`, with `x_usage_estimate` | `x_flywheel.usage_reported` |
+| Gateway `POST /v1/responses` | `null` | `x_flywheel.usage_reported` |
+| Gateway `POST /v1/messages` | `input_tokens` and `output_tokens` are `0` | `x_flywheel.usage_reported` |
+| Model server `POST /chat/completions` | `null`, with `x_usage_estimate` | `x_flywheel.usage_reported` |
+
+Messages is the exception because its format requires integers. The
+`anthropic` SDK 0.95.0 types both counts as required and fails validation on
+`null`. The `openai` SDK 2.36.0 types `usage` as optional on a Response and on
+a chat completion.
+
+What changes from 1.x:
+
+- The model server's own `POST /chat/completions` sent `"usage": {}`. It now
+  sends `"usage": null` and the word counts under `x_usage_estimate`, or the
+  model's token counts when it reported them. This replaces the line in the
+  next section that says the empty object is unchanged.
+- `x_flywheel` is a new field on each of the four replies. A client that
+  rejects unknown fields needs to allow it.
+
+What you need to do: read `usage` as an object or `null`, and read
+`x_flywheel.usage_reported` when a zero must be told apart from a missing
+count. An empty object no longer appears.
+
+### Virtual keys on the gateway
+
+New in 2.0, and nothing changes unless you create a key. `flywheel
+gateway-key create NAME` mints a local key with a token or spend limit for a
+tool that sits behind the gateway. The gateway token works as before.
+Gateway ledger entries for Messages and Responses calls gain `key` and
+`usage_reported`. `docs/GATEWAY-INTERFACES.md`, "Keys and budgets", has the
+details.
 
 ## The `usage` field of a served response
 

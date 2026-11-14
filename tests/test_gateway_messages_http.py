@@ -181,7 +181,9 @@ def _equivalent(chat, messages) -> None:
     assert chat.kind == messages.kind == "endpoint_call"
     assert chat.content == messages.content
     assert messages.meta.get("interface") == "anthropic-messages"
-    assert chat.meta == {key: value for key, value in messages.meta.items() if key != "interface"}
+    assert messages.meta.get("key") == "owner" and messages.meta.get("usage_reported") is True
+    assert chat.meta == {key: value for key, value in messages.meta.items()
+                         if key not in ("interface", "key", "usage_reported")}
 
 
 def test_chat_and_messages_leave_equal_ledger_entries(monkeypatch):
