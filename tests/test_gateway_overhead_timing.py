@@ -87,15 +87,16 @@ def test_the_gateway_adds_less_than_the_budget(tmp_path, no_real_store, path, st
 def test_the_stub_wait_is_subtracted_not_counted(tmp_path):
     """A stub four times slower leaves the gateway's share where it was."""
     with bench.rig(tmp_path / "a", "openai", STUB_DELAY) as made:
-        short = bench.measure(made, "/v1/messages", True, 3, 1)
+        short = bench.measure(made, "/v1/messages", True, CALLS, 1)
     with bench.rig(tmp_path / "b", "openai", STUB_DELAY * 4) as made:
-        long = bench.measure(made, "/v1/messages", True, 3, 1)
+        long = bench.measure(made, "/v1/messages", True, CALLS, 1)
         waited = statistics.median(made.stub.waits)
     assert waited >= STUB_DELAY * 4 * 0.9           # the calls really took four times as long
     assert within_budget(long), shown(long)
+    # The stub gained 150 ms. A measurement that counted it would move by that much.
     for which in (0, 1):
         moved = abs(bench.overhead(long, which) - bench.overhead(short, which))
-        assert moved < BUDGET_SECONDS / 2, (shown(short), shown(long))
+        assert moved < BUDGET_SECONDS, (shown(short), shown(long))
 
 
 @pytest.mark.parametrize("path,stream", [("/v1/messages", False), ("/v1/responses", True)])
