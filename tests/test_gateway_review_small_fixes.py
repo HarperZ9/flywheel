@@ -25,6 +25,8 @@ from harness.provider_fault_boundary import redacted_text
 from tests import gateway_messages_support as support
 from tests.gateway_keys_support import MESSAGES, keyed, post, served  # noqa: F401
 
+pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
+
 PATHS = ["/v1/messages", "/v1/responses"]
 
 

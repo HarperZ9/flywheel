@@ -20,16 +20,33 @@ import argparse
 import json
 import os
 import sys
+import time
 
 from harness import gateway_ledger
 
 USAGE = __doc__.split("\n\n", 1)[1].rstrip()
 OWNER = "owner"
+RETRY_AFTER = 0.25                      # seconds before `_checked` reads a second time
+_CONTROL = {code: f"\\x{code:02x}" for code in [*range(32), 127]}
 
 
 def _home(environ=None) -> str:
     from harness.lane_workdir import flywheel_home
     return str(flywheel_home(os.environ if environ is None else environ))
+
+
+def _checked(home) -> list:
+    """`gateway_ledger.check`, read once more when the first read finds a problem.
+
+    A running gateway appends while this reads: a line can be half written,
+    and the head record can be ahead of the segment that was read just before
+    it. A second read a moment later settles both. A ledger that is broken on
+    disk is broken on the second read too."""
+    found = gateway_ledger.check(home)
+    if all(segment["ok"] for segment in found):
+        return found
+    time.sleep(RETRY_AFTER)
+    return gateway_ledger.check(home)
 
 
 def render_verify(found: list) -> tuple:
@@ -41,7 +58,8 @@ def render_verify(found: list) -> tuple:
         header = segment["header"]
         if header.get("previous_state") == "broken":
             ok = False
-            lines.append(f"  {segment['name']}  records a break in {header.get('previous')}: "
+            lines.append(f"  {segment['name']}  records a break in "
+                         f"{header.get('previous') or 'the ledger before it'}: "
                          f"{header.get('reason')}")
         state = "ok" if segment["ok"] else f"BROKEN: {segment['problem']}"
         ok = ok and segment["ok"]
@@ -66,14 +84,20 @@ def rows(found: list, key=None, kind=None, last=None) -> list:
     return out[-last:] if last else out
 
 
+def _plain(value) -> str:
+    """A value as `show` prints it: control and non-ASCII characters escaped, so a
+    model name or reason an upstream chose cannot write to the operator's terminal."""
+    return str(value).encode("ascii", "backslashreplace").decode("ascii").translate(_CONTROL)
+
+
 def _line(row: dict) -> str:
     meta = row["meta"]
-    parts = [f"{row['segment'][8:14]}:{row['seq']:<6}", f"{row['kind']:<22}",
-             f"key={meta.get('key', OWNER)}"]
+    parts = [f"{_plain(row['segment'])[8:14]}:{row['seq']:<6}", f"{_plain(row['kind']):<22}",
+             f"key={_plain(meta.get('key', OWNER))}"]
     for name in ("interface", "model_ref", "endpoint", "reason", "charged_tokens",
                  "response_sha"):
         if name in meta and not (name == "endpoint" and "model_ref" in meta):
-            parts.append(f"{name}={meta[name]}")
+            parts.append(f"{name}={_plain(meta[name])}")
     return "  ".join(parts)
 
 
@@ -99,7 +123,7 @@ def main(argv: "list[str] | None" = None, *, environ=None) -> int:
               file=sys.stdout if argv else sys.stderr)
         return 0 if argv else 2
     args = _parser().parse_args(argv)
-    found = gateway_ledger.check(_home(environ))
+    found = _checked(_home(environ))
     text, ok = render_verify(found)
     if args.verb == "verify":
         print(text)

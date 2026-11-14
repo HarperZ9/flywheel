@@ -170,6 +170,27 @@ def _check(caller: Caller, model) -> "tuple | None":
     return None
 
 
+def _reread(caller: Caller) -> bool:
+    """Read the key's row again; False when the key is no longer live.
+
+    `admits` read the row when the request headers arrived. The body can
+    arrive much later, and other calls on the key are charged in between, so
+    the limits, the allow-lists and the suspension flag are checked against
+    the row as it is now. A store that cannot be read admits nobody."""
+    try:
+        row = caller.keys.row(caller.name)
+    except Exception as exc:   # noqa: BLE001 - a broken store admits nobody
+        _LOG.warning("gateway key %s could not be read again before admission (%s); the "
+                     "request was not admitted", caller.name, type(exc).__name__)
+        return False
+    if row.get("revoked") or row.get("fingerprint") != caller.fingerprint:
+        _LOG.info("gateway key %s was revoked or replaced before its request body arrived",
+                  caller.name)
+        return False
+    caller.row = row
+    return True
+
+
 def enter(handler, path: str, body, ledger) -> tuple:
     """(caller, None) to go on, or (caller, Response) to refuse before any upstream call."""
     caller = _caller(handler)
@@ -178,6 +199,9 @@ def enter(handler, path: str, body, ledger) -> tuple:
                               "live gateway key")
     if caller.row is None:
         return caller, None
+    if not _reread(caller):             # revoked or gone while the body was on its way
+        return None, _refusal(path, 401, "the credential is not the gateway token or a "
+                              "live gateway key")
     refused, busy = _check(caller, body.get("model") if isinstance(body, dict) else None), False
     if refused is None and not path.endswith("/count_tokens"):
         from . import gateway_key_policy as policy

@@ -197,7 +197,8 @@ headers. A stream that stops before the upstream's end marker ends with an
 answer returned. For any other upstream the gateway answers 404
 `not_found_error` and makes no count. Claude Code treats the endpoint as
 optional and falls back to its own character-based estimate, so `/context`
-shows approximate figures there.
+shows approximate figures there. A token-count request leaves no ledger entry
+and is not charged to a key, although the upstream is contacted.
 
 ### Authentication
 
@@ -646,6 +647,8 @@ limit.
 | A limit is reached | 400 `invalid_request_error` | 429, `type` `insufficient_quota`, `code` `key_budget_exceeded` |
 | The model is not on the key's list | 403 `permission_error` | 403, `code` `model_not_allowed` |
 | The key is revoked or unknown | 401 | 401 |
+| The gateway ledger cannot be opened or written | 503 `api_error`, `retry-after: 5` | 503, `code` `ledger_unavailable`, `retry-after: 5` |
+| The request body stops arriving for the read timeout | 408 | 408, `code` `request_timeout` |
 
 The limit statuses follow each provider's own documentation. The Claude API
 errors page says the API returns 400 when usage reaches a spend limit you
@@ -725,17 +728,51 @@ is what bounds those: a key that may not send a provider-run tool cannot
 cause its fee. For a key that may, the ledger entry of each served call
 carries the provider's `server_tool_use` counts.
 
+### A key's limits are read again when the body has arrived
+
+The gateway finds a request's key when its headers arrive. It reads the
+key's row again after the whole body has been read, immediately before the
+limit check, the output cap and the in-flight admission. A request that sent
+its headers while the key was under a limit and its body later is checked
+against the totals as they are then. A key that was revoked while the body
+was on its way gets 401, and one that was suspended gets 403. Neither
+reaches an upstream.
+
+A client may not stay silent while the gateway waits for its request. Every
+read of the request line, the headers and the body must get some bytes
+within the read timeout, 30 seconds by default.
+`FLYWHEEL_GATEWAY_READ_TIMEOUT` sets another number of seconds, and `0` or
+`off` removes the timeout. A connection that sends no request line or header
+in that time is closed. A body that stops arriving on a model interface is
+answered 408, and nothing is sent upstream. The timeout is per read, so a
+client that keeps sending a few bytes holds its connection for longer; it
+holds a gateway thread and gains no spend. The timeout applies to the
+requests of every route of the gateway. Writes have no timeout: a client
+that stops reading a stream keeps its connection, and its in-flight slot,
+until it closes.
+
 ### An unfinished stream is charged
 
 A stream the client closes before its end is recorded as
-`endpoint_call_failed` with reason `client_disconnected`, and the key is
-charged for what was received: the input the provider reported at the start
-of the stream when it did (an Anthropic upstream), else the word estimate of
-the prompt, plus the word estimate of the text that had arrived. The entry
-carries `charged_tokens` and `"estimated": true`. A stream the upstream cuts
-after it began (`stream_incomplete`) is charged the same way. A stream that
-is closed before its first event is charged for the prompt. If that charge
-cannot be written, the entry says `"charge_failed": true`.
+`endpoint_call_failed` with reason `client_disconnected` and
+`"abandoned": true`, and the key is charged for what was received:
+
+- input: the count the provider had reported when the stream stopped
+  (`message_start` of an Anthropic upstream, the usage chunk of an
+  OpenAI-format stream, `usageMetadata` of Gemini), else the word estimate of
+  the prompt;
+- output: the larger of the provider's reported output count, when one had
+  arrived (`message_delta` of an Anthropic upstream), and the word estimate
+  of everything received: text, tool-call arguments and thinking.
+
+The entry carries `charged_tokens` and `"estimated": true`. A stream the
+upstream cuts after it began (`stream_incomplete`) is charged the same way.
+
+A client can also leave before the stream's first byte: it resets its
+connection while the upstream is still opening the stream, and the gateway
+finds out when it writes the response headers. That call is recorded and
+charged as well, for the prompt, because the provider was called. If a
+charge cannot be written, the entry says `"charge_failed": true`.
 
 ### When a call cannot be charged or recorded
 
@@ -773,7 +810,8 @@ what a provider can bill. What it leaves open, in full:
   that reservation, over at most the key's in-flight limit (4 by default).
 - A call with no reported counts is charged a word estimate, which runs low
   and is far too low for text without spaces.
-- An unfinished stream is charged an estimate of what was received, not the
+- An unfinished stream is charged the provider's output count when one had
+  arrived, and otherwise a word estimate of what was received. Neither is the
   provider's final count.
 - A call that fails after the provider answered, other than an unfinished
   stream, is not charged.
@@ -851,10 +889,22 @@ flywheel gateway-ledger show --kind endpoint_call_failed --last 20 --json
 the segment before it and the last segment against the head record, and names
 the line that is wrong. `show --key NAME` lists only the entries whose `key`
 is that name: served calls, failed calls and refusals. Entries that name no
-key (the chat path) count as the owner's. `show` exits 1 when the ledger does
-not verify, after printing the entries that do. Both commands only read and
-can run while the gateway is running. The ledger has no HTTP route, so a
-virtual key cannot read it.
+key (the chat path) count as the owner's. No key can be named `owner`:
+`flywheel gateway-key create owner` is refused, so that filter lists the
+gateway token's calls only. `show` exits 1 when the ledger does not verify,
+after printing the entries that do. Both commands only read and can run
+while the gateway is running. The ledger has no HTTP route, so a virtual key
+cannot read it.
+
+`verify` fails when the head record is there and no segment file is: the
+segments were removed. A home that has never recorded a call has neither
+file and passes. When a read finds a problem, `verify` reads once more a
+quarter of a second later before it reports it, because a gateway that
+appends during the first read can look like a removed entry or a line cut
+short. `show` prints control characters and characters outside ASCII in a
+recorded string (a model name an upstream chose, for one) as escapes such as
+`\x1b`, so a record cannot write to your terminal. `show --json` prints
+JSON, which escapes control characters itself.
 
 ### When an entry reaches the disk
 
@@ -884,8 +934,25 @@ segment. A segment that reaches 50,000 entries is closed at the next start,
 and the next segment's header carries its head hash.
 
 One gateway process appends to a home's ledger. A second gateway started on
-the same home cannot take the writer lock; it logs that at error level and
-refuses model calls with 500 instead of serving them without a record.
+the same home cannot take the writer lock. The same state arises when any
+other process holds `writer.lock`, and when the `gateway-ledger` folder
+cannot be created or written. In each case the gateway logs the cause at
+error level and answers model calls with 503 and `retry-after: 5` before it
+contacts any upstream: `/v1/messages` (plain and streamed),
+`/v1/messages/count_tokens`, `/v1/responses` (plain and streamed),
+`/v1/chat/completions` with a provider endpoint, and `/api/route`. Nothing is
+served without a record, and nothing is billed. The gateway tries the ledger
+again on every call, so the refusals end when the other process stops or the
+folder becomes writable.
+
+The gateway opens the ledger when it starts and prints one line. `ledger`
+with the segment file and its entry count means calls will be recorded.
+`LEDGER UNAVAILABLE` means every model call will answer 503 until the cause
+is removed. A head record with no segment file is reported as a broken
+ledger at start, the same way a changed byte is.
+
+The local model on the chat path (`flywheel`, `serve`, `local`) does not
+write to this ledger and is not refused.
 
 ### What the ledger does not show
 

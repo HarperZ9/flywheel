@@ -7,7 +7,6 @@ import json
 import math
 import time
 import urllib.error
-from .model_selection_required import model_selection_response
 
 
 def _route_block(entry: dict, roster: dict, endpoint: str) -> tuple[dict, int] | None:
@@ -42,13 +41,14 @@ def route_request(
         return blocked
     try:
         from harness.endpoint_registry import make_endpoint_proposer
+        from harness.gateway_ledger_gate import required, typed_refusal  # no ledger, no call
     except Exception:
         from endpoint_registry import make_endpoint_proposer
     try:
         kw = {"model": model} if model else {}
-        prop = make_endpoint_proposer(endpoint, ledger=router_ledger(), **kw)
+        prop = make_endpoint_proposer(endpoint, ledger=required(router_ledger), **kw)
     except Exception as e:
-        if (typed := model_selection_response(e)) is not None:
+        if (typed := typed_refusal(e)) is not None:
             return typed
         return {"error": f"cannot build a proposer for {endpoint!r}: {e}"}, 502
     try:
@@ -103,18 +103,18 @@ def resolve_proposer(
         if blocked is not None:
             return None, blocked[0]["error"], blocked[1]
     try:
-        from harness.endpoint_registry import make_authorized_endpoint_proposer, make_endpoint_proposer
+        from harness.endpoint_registry import make_authorized_endpoint_proposer, make_endpoint_proposer; from harness.gateway_ledger_gate import required, typed_refusal
     except Exception:
         from endpoint_registry import make_authorized_endpoint_proposer, make_endpoint_proposer
     try:
         factory = (make_endpoint_proposer if credential_bindings is None else
                    make_authorized_endpoint_proposer)
-        kwargs = {"model": sub, "ledger": router_ledger()}
+        kwargs = {"model": sub, "ledger": required(router_ledger)}
         if credential_bindings is not None:
             kwargs["credential_bindings"] = credential_bindings
         return factory(name, **kwargs), None, 200
     except Exception as e:
-        if (typed := model_selection_response(e)) is not None:
+        if (typed := typed_refusal(e)) is not None:
             return None, typed[0], typed[1]
         return None, f"cannot build proposer for {name!r}: {e}", 502
 

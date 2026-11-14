@@ -117,6 +117,7 @@ class Response:
     chunks: object = None               # an iterator of bytes, for an event stream
     headers: dict = field(default_factory=dict)
     fault: object = None                # text -> the interface's stream error event
+    close: object = None                # called when a stream is done, read or not
 
 
 @dataclass
@@ -261,6 +262,8 @@ def record_failed(ledger, upstream: Upstream, turn: Turn, reason: str, detail=""
         meta = {"endpoint": upstream.name, "interface": turn.interface,
                 "prompt_sha": prompt_sha(turn), "reason": reason,
                 **(turn.caller or OWNER).meta}
+        if reason == "client_disconnected":
+            meta["abandoned"] = True    # the client left; the provider was still called
         if partial is not None:
             from .gateway_unaccounted import partial_charge
             meta.update(partial_charge(turn, reason, *partial))
