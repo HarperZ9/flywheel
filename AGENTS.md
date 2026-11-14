@@ -24,7 +24,10 @@ archived and read-only; nothing lands there.
 ## Shipping surfaces (one version, one tag)
 - PyPI: `flywheel-verify`, the engine; installing it puts the `flywheel`
   command on PATH. Published by `.github/workflows/publish.yml` on a `v*` tag
-  via Trusted Publishing.
+  via Trusted Publishing. The same workflow runs the release gates against
+  the built wheel first, then creates the GitHub Release with the notes file
+  and the assets a runner can build. Start it by hand for a dry run that
+  publishes nothing. Steps: [docs/RELEASING.md](docs/RELEASING.md).
 - Windows installer: built by `.github/workflows/desktop-release.yml` on the
   same tag, engine frozen from this repo, SHA-256 receipt attached to the
   GitHub Release.

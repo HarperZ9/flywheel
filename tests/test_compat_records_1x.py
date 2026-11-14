@@ -24,6 +24,9 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 import verify_compat_records as V  # noqa: E402
 
+# Run by publish.yml against the built wheel before a release is published.
+pytestmark = pytest.mark.release_gate
+
 RELEASES = [p.name for p in V.record_folders()]
 OLD, NEW = "does_" + "not_prove", "scope"
 
