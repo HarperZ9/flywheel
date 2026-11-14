@@ -163,9 +163,10 @@ class Keys:
     def create(self, name: str, *, token_limit=None, spend_limit=None, price_in=None,
                price_out=None, models=()) -> tuple:
         """Mint a key. Returns (raw key, row); the raw key is not kept anywhere else."""
-        if not isinstance(name, str) or not _NAME.match(name):
+        if not isinstance(name, str) or not _NAME.match(name) or name.lower() == "owner":
             raise KeysError("a key name is 1 to 32 characters: letters, digits, dot, dash "
-                            "or underscore, starting with a letter or digit")
+                            "or underscore, starting with a letter or digit, and not `owner`, "
+                            "which is the ledger's name for the gateway token's own calls")
         row = {"token_limit": _amount(token_limit, "--token-limit", whole=True),
                "spend_limit": _amount(spend_limit, "--spend-limit"),
                "price_in": _amount(price_in, "--price-in"),

@@ -140,6 +140,8 @@ class BodyDrainMixin:
 
     def setup(self) -> None:
         super().setup()  # type: ignore[misc]
+        from .gateway_read_timeout import arm
+        arm(self)                         # a connection that goes silent is closed
         self.rfile = CountingReader(self.rfile)
 
     def parse_request(self) -> bool:

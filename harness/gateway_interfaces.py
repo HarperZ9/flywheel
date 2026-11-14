@@ -39,11 +39,17 @@ def _fault(response, text: str) -> bytes:
 
 
 def _send_stream(handler, response) -> None:
+    """Write an event stream. The upstream was opened before this runs, so the
+    `finally` covers the header write as well: a client that reset its
+    connection before the headers left never starts the chunk generator, and a
+    generator that never started runs no `finally` of its own. `response.close`
+    closes the upstream stream either way, which records the call."""
     from .provider_fault_boundary import redacted_text
-    _head(handler, 200, "text/event-stream", {"Cache-Control": "no-cache", **response.headers})
-    handler.close_connection = True         # the stream ends when the socket closes
-    handler.end_headers()
     try:
+        _head(handler, 200, "text/event-stream",
+              {"Cache-Control": "no-cache", **response.headers})
+        handler.close_connection = True     # the stream ends when the socket closes
+        handler.end_headers()
         for chunk in response.chunks:
             handler.wfile.write(chunk)
             handler.wfile.flush()
@@ -58,6 +64,8 @@ def _send_stream(handler, response) -> None:
             _LOG.info("gateway stream error event not delivered; the client had gone")
     finally:
         response.chunks.close()
+        if response.close is not None:      # the explicit hook: runs when nothing was read
+            response.close()
 
 
 def send(handler, response) -> None:
@@ -89,9 +97,20 @@ def serve(handler, path: str, ledger) -> None:
 
     The caller is settled first (gateway_key_gate): the gateway token is the
     owner, a virtual key is a named caller whose allow-list and limits are
-    checked here, before either interface sends anything upstream."""
+    checked here, before either interface sends anything upstream.
+
+    Two refusals come before that. With no ledger to record the call in, the
+    answer is 503 (gateway_ledger_gate). A body that stops arriving is answered
+    408 (gateway_read_timeout). Neither reaches an upstream."""
     from . import gateway_key_gate as gate
-    body = _body(handler)
+    if ledger is None:
+        from .gateway_ledger_gate import refusal as no_ledger
+        return send(handler, no_ledger(path))
+    try:
+        body = _body(handler)
+    except TimeoutError:
+        from .gateway_read_timeout import timed_out
+        return send(handler, timed_out(handler, path))
     caller, refusal = gate.enter(handler, path, body, ledger)
     if refusal is not None:
         return send(handler, refusal)

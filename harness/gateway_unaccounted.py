@@ -10,6 +10,7 @@ stream that began and did not finish.
 """
 from __future__ import annotations
 
+import json
 import logging
 
 from .gateway_turn import _APPEND, AccountingFailed, prompt_sha
@@ -60,15 +61,66 @@ def unaccounted(ledger, upstream, turn, bill, sha, cause, delivered,
         f"(delivered_unrecorded_charge){held}", status=500, reason=reason)
 
 
+def _beside_text(assembler) -> str:
+    """What a stream carried besides its text: tool-call arguments and thinking.
+
+    Read from whichever assembler the upstream's format uses. A provider
+    bills these as output, so an unfinished stream is charged for them too."""
+    parts = []
+    for block in (getattr(assembler, "blocks", None) or {}).values():       # Anthropic
+        parts.append(block.get("thinking"))
+        if block.get("input"):
+            parts.append(json.dumps(block["input"]))
+    held = getattr(assembler, "partial", None)                  # arguments still arriving
+    parts.extend(held.values() if isinstance(held, dict) else [])
+    for call in (getattr(assembler, "calls", None) or {}).values():         # OpenAI format
+        parts.append((call.get("function") or {}).get("arguments"))
+    extra = getattr(assembler, "extra", None)                   # reasoning text
+    parts.extend(extra.values() if isinstance(extra, dict) else [])
+    for part in getattr(assembler, "parts", None) or []:                    # Gemini
+        if isinstance(part, dict):
+            if part.get("thought") is True:
+                parts.append(part.get("text"))
+            if isinstance(part.get("functionCall"), dict):
+                parts.append(json.dumps(part["functionCall"].get("args") or {}))
+    return " ".join(part for part in parts if isinstance(part, str) and part)
+
+
+def _reported(assembler) -> dict:
+    """The counts the provider had sent before the stream stopped, under our names."""
+    message = getattr(assembler, "message", None)
+    found = message.get("usage") if isinstance(message, dict) else None     # Anthropic
+    names = {"input": "input_tokens", "output": "output_tokens",
+             "cache_read": "cache_read_input_tokens",
+             "cache_write": "cache_creation_input_tokens"}
+    if not isinstance(found, dict):
+        found = getattr(assembler, "usage", None)                           # OpenAI format
+        names = {"input": "prompt_tokens", "output": "completion_tokens"}
+    if not isinstance(found, dict):
+        found = (getattr(assembler, "last", None) or {}).get("usageMetadata")   # Gemini
+        names = {"input": "promptTokenCount", "output": "candidatesTokenCount"}
+    if not isinstance(found, dict):
+        return {}
+    return {ours: found[theirs] for ours, theirs in names.items()
+            if type(found.get(theirs)) is int}
+
+
 def partial_charge(turn, reason: str, assembler, pieces) -> dict:
     """Charge a key for a stream that did not finish; returns the entry's extra meta.
 
     A stream the client closed, or one the upstream cut after it began, has
-    cost the provider account something. The key pays the input the provider
-    reported at the start of the stream when it did (Anthropic's
-    `message_start`), else the word estimate of the prompt, plus the word
-    estimate of the text that was received. The entry is marked `estimated`.
-    A stream the upstream cut before any event is not charged."""
+    cost the provider account something. The key pays
+
+      input   the count the provider had reported when the stream stopped
+              (Anthropic's `message_start`, the usage chunk of an OpenAI-format
+              stream, Gemini's `usageMetadata`), else the word estimate of the
+              prompt;
+      output  the larger of the provider's reported output count, when one had
+              arrived (Anthropic's `message_delta`), and the word estimate of
+              everything received: text, tool-call arguments and thinking.
+
+    The entry is marked `estimated`. A stream the upstream cut before any
+    event is not charged."""
     caller = turn.caller
     if caller is None or caller.row is None:
         return {}
@@ -76,15 +128,14 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
         return {}
     from . import token_usage
     system, prompt = turn.text_form()
-    words = token_usage.estimate(f"{system}\n{prompt}", "".join(p for p in pieces if p))
+    received = " ".join(filter(None, ["".join(p for p in pieces if p), _beside_text(assembler)]))
+    words = token_usage.estimate(f"{system}\n{prompt}", received)
     counts = {"input": words["prompt_words"], "output": words["completion_words"]}
-    message = getattr(assembler, "message", None)
-    usage = message.get("usage") if isinstance(message, dict) else None
-    if isinstance(usage, dict) and type(usage.get("input_tokens")) is int:
-        counts["input"] = usage["input_tokens"]
-        for ours, theirs in (("cache_read", "cache_read_input_tokens"),
-                             ("cache_write", "cache_creation_input_tokens")):
-            counts[ours] = usage[theirs] if type(usage.get(theirs)) is int else 0
+    reported = _reported(assembler)
+    if "input" in reported:
+        counts.update(input=reported["input"], cache_read=reported.get("cache_read", 0),
+                      cache_write=reported.get("cache_write", 0))
+    counts["output"] = max(counts["output"], reported.get("output", 0))
     try:
         caller.keys.debit(caller.name, counts, True)
     except Exception as exc:  # noqa: BLE001 - the entry below says the charge is missing
