@@ -3,11 +3,11 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
-## Unreleased
+## 2.0.0 (RELEASE-DATE)
 
-These entries become 2.0.0. They are grouped by what a change means for someone
-who uses Flywheel. `docs/MIGRATING-2.0.md` has the steps for each change that
-needs one.
+The coding session streams replies from hosted providers, calls tools through each provider's function calling and marks Anthropic requests for prompt caching. The local gateway answers the Anthropic Messages and OpenAI Responses formats itself and can give a tool a key with a budget. Records name what a result covers in a `scope` field, which replaces `does_not_prove`; every record a 1.x release wrote still verifies.
+
+The entries are grouped by what a change means for someone who uses Flywheel. `docs/MIGRATING-2.0.md` has the steps for each change that needs one, and `RELEASE-NOTES-2.0.0.md` has the limits.
 
 ### What you can do now
 
@@ -118,7 +118,10 @@ Research and measurement tools
 - Data: the 2026 H0 Distance Network record in `dataset/physics_tension_claims.jsonl`. (#432)
 - buildc byte-witness packets carry a `scope` block: the steps the bridge ran, and `inconclusive` when `buildc receipt verify` timed out. A timeout now has its own failure code, `buildc_verification_budget_exhausted`. See `docs/features/inconclusive-budget.md`. (#441)
 
-Release from one tag
+Diff-scoped mutation audit (#461)
+- `harness.suite_audit.audit_suite_diff(repo, base, head)` mutates only the lines a change added or edited, one mutant per line, runs the tests that reach each line, and names each survivor by file, line, original and mutant. It gives no score: a survivor is a prompt for review. It works in a scratch copy of the head commit. With `coverage.py` installed it runs only the tests that cover a mutated line; without it, every selected test runs for every mutant. Python and pytest only.
+
+Release from one tag (#463)
 - Pushing a version tag now builds the wheel and the sdist, runs the release gates against the built wheel on Linux and Windows, publishes to PyPI, and creates the GitHub release with the notes file and its assets. For 1.9.0 the release and most of its assets were put together by hand. See `docs/RELEASING.md`.
 - The gates run with the wheel installed in a clean environment and the checkout's `harness` folder moved away: the scope migration check, every asset against its sums file, the 1.x record check with its byte-flip controls, every test marked `release_gate` (the 50 ms budgets for the coding session and the gateway, and the one-second budget for the record check), `flywheel gate`, and one coding request against a scripted model. Nothing is published unless all of them pass.
 - The release carries the wheel, the sdist, the plugin and skill zips, the source tools plugin and the VS Code extension, each in a sums file. The zips and the extension are built twice and must be the same bytes. The Windows installer and the native MCPB companion are still built by `desktop-release.yml` and added after their sums are checked.
