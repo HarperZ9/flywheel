@@ -96,3 +96,11 @@ def openai_usage(pair) -> "dict | None":
 def anthropic_usage(pair) -> "dict | None":
     """An Anthropic-shaped usage object from a provider pair, or None."""
     return _pair(_get(pair, "input_tokens"), _get(pair, "output_tokens"))
+
+
+def chat_usage(gen, prompt) -> dict:
+    """The usage fields of an OpenAI-shaped chat completion built from `gen`:
+    the provider's counts or None, the named estimate, and the flag."""
+    counted = openai_usage(reported(gen))
+    return {"usage": counted, ESTIMATE_FIELD: estimate(prompt, _get(gen, "text") or ""),
+            "x_flywheel": {"usage_reported": counted is not None}}

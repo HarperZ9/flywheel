@@ -132,7 +132,7 @@ def test_cached_tokens_are_reported_inside_input_tokens(monkeypatch):
     assert usage["input_tokens"] == upstream["usage"]["prompt_tokens"] == 451
     assert usage["input_tokens_details"] == {"cached_tokens": 400}
     assert usage["total_tokens"] == usage["input_tokens"] + usage["output_tokens"] == 460
-    assert "x_flywheel" not in answer.body
+    assert answer.body["x_flywheel"] == {"usage_reported": True}
 
 
 def test_anthropic_cache_counts_are_added_back_into_input_tokens(monkeypatch):
@@ -147,14 +147,13 @@ def test_anthropic_cache_counts_are_added_back_into_input_tokens(monkeypatch):
     assert answer.body["usage"]["input_tokens_details"]["cached_tokens"] == 2051
 
 
-def test_no_upstream_counts_means_zero_and_a_flag_never_an_estimate(monkeypatch):
-    answer, _backend, _ledger = _ask(
+def test_no_upstream_counts_means_null_usage_and_a_flag_never_an_estimate(monkeypatch):
+    answer, _backend, ledger = _ask(
         monkeypatch, "openai", "requests/text.json",
         plain=[support.upstream_load("upstream/openai_no_usage.json")])
-    usage = answer.body["usage"]
-    assert usage["input_tokens"] == usage["output_tokens"] == usage["total_tokens"] == 0
-    assert answer.body["x_flywheel"] == {"usage_reported": False,
-                                         "cached_tokens_reported": False}
+    assert "usage" in answer.body and answer.body["usage"] is None
+    assert answer.body["x_flywheel"] == {"usage_reported": False}
+    assert ledger.entries[0].meta["usage_reported"] is False
 
 
 def test_a_reply_cut_by_the_token_limit_is_incomplete(monkeypatch):

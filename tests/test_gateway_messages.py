@@ -136,7 +136,9 @@ def test_anthropic_upstream_gets_the_body_verbatim_with_only_the_model_replaced(
     assert seen["headers"]["x-api-key"] == "test-key"       # never the client's gateway token
     assert support.TOKEN not in str(seen)
     upstream = support.load("upstream/anthropic_cached.json")
-    assert {k: v for k, v in answer.body.items() if k != "x_receipt"} == upstream
+    added = {"x_receipt", "x_flywheel"}         # the two fields the gateway adds
+    assert {k: v for k, v in answer.body.items() if k not in added} == upstream
+    assert answer.body["x_flywheel"] == {"usage_reported": True}
     assert answer.body["usage"]["cache_read_input_tokens"] == 2051
     assert ledger.entries[0].meta["model_ref"] == "anthropic:claude-sonnet-5"
 
@@ -154,6 +156,7 @@ def test_no_upstream_counts_means_zero_and_a_flag_never_an_estimate(monkeypatch)
                                      plain=[support.load("upstream/openai_no_usage.json")])
     assert answer.body["usage"]["input_tokens"] == answer.body["usage"]["output_tokens"] == 0
     assert answer.body["x_flywheel"] == {"usage_reported": False}
+    assert _ledger.entries[0].meta["usage_reported"] is False
 
 
 @pytest.mark.parametrize("request_name, upstream, expected", [
