@@ -2,7 +2,7 @@
 
 This page lists every change in 2.0 that can affect a script, a config file,
 a stored record or a habit carried over from 1.x. Most people upgrade and
-carry on. Sections are added here as later parts of 2.0 land.
+carry on.
 
 2.0.0 shipped these changes without a deprecation release before it. The
 [versioning page](VERSIONING.md) records that as a dated exception and says
@@ -10,8 +10,11 @@ which releases still get fixes.
 
 ## What you need to do
 
-Nothing, if you use `flywheel code`, the desktop app or the gateway by hand.
-Read the matching section if one of these is true:
+Nothing, if you use the desktop app or the gateway by hand. If you use
+`flywheel code` with a hosted provider, read items 5 to 7: three defaults
+changed. Read the matching section if one of these is true:
+
+Records and scripts
 
 1. **A script or program reads `does_not_prove` from Flywheel JSON.** Read
    `scope` in records written by 2.0, and keep reading the older name in
@@ -21,26 +24,52 @@ Read the matching section if one of these is true:
    [schema page](MIGRATING-2.0-SCHEMAS.md).
 3. **An MCP client reads the output of Flywheel's receipt tools.** The output
    schema is `flywheel.receipt-operations/v2`.
-4. **A client reads `usage` from the gateway or the agent response.** It now
-   holds provider token counts or `null`. See "The `usage` field of a served
-   response".
+4. **Python code imports `harness`.** Some names changed. See "Python names".
+
+The coding session
+
 5. **You relied on commands in `flywheel code` being unable to write in the
    project.** They can now. Set `FLYWHEEL_WORKSPACE_WRITES=0` to keep the 1.x
    behaviour. See "Commands may write in the project folder".
-6. **A proxy sits between Flywheel and a hosted provider.** It must pass
+6. **You pay Anthropic for the tokens a coding session uses.** Requests are
+   now marked for prompt caching, which changes how the provider bills them:
+   a cache write costs more than plain input and a cache read costs far less.
+   Set `FLYWHEEL_PROMPT_CACHE=0` to keep the 1.x requests. See "Anthropic
+   requests are marked for prompt caching by default".
+7. **You use `flywheel code` with OpenAI, Anthropic or Gemini.** Replies
+   stream, and tools are declared to those three hosts as JSON schemas, both
+   by default. `FLYWHEEL_STREAM=0` and `FLYWHEEL_NATIVE_TOOLS=0` restore the
+   1.x requests. See "The coding session on hosted models".
+8. **A proxy sits between Flywheel and a hosted provider.** It must pass
    server-sent events, `tools` lists and Anthropic `cache_control` marks, or
    you switch each off. See "The coding session on hosted models".
-7. **A hook mount names `wrapper_scaffold_hook.py` or
-   `wrapper_turn_receipt_hook.py`.** Mount the module. See "Removed: the two
-   old hook scripts".
-8. **Python code imports `harness`.** Some names changed. See "Python names".
-9. **A custom certificate family stops on a budget, or you rely on the
-   stated-limit audit detector.** See "Verdicts and audits".
-10. **A client sends `POST /v1/messages` to the gateway.** The gateway now
-    answers it and routes by the `model` field. See "The gateway".
-11. **A client reads `usage` from the model server's `POST /chat/completions`.**
-    It is `null` when the model reported no counts, where 1.x sent `{}`. See
-    "Usage on every served endpoint".
+9. **A program parses the `body` of a hosted backend's error object.** The
+   text is scrubbed, and the rate-limit and quota codes are in
+   `limit_fields`. See "The error object of a hosted backend".
+10. **A hook mount names `wrapper_scaffold_hook.py` or
+    `wrapper_turn_receipt_hook.py`.** Mount the module. See "Removed: the two
+    old hook scripts".
+11. **A custom certificate family stops on a budget, or you rely on the
+    stated-limit audit detector.** See "Verdicts and audits".
+
+Served endpoints and the gateway
+
+12. **A client reads `usage` from any endpoint Flywheel serves.** It now holds
+    the provider's token counts and never a word count. When the provider
+    sent none it is `null`, or zeros on the gateway's `/v1/messages`, and an
+    empty object no longer appears. Every reply also carries a new field,
+    `x_flywheel`; a client that rejects unknown fields needs to allow it. See
+    "The `usage` field of a served response" and "Usage on every served
+    endpoint".
+13. **A client sends `POST /v1/messages` to the gateway.** The gateway now
+    answers it and routes by the `model` field. See "The gateway answers
+    /v1/messages itself".
+14. **A client sends `POST /v1/responses` to the gateway and expects 404.**
+    The gateway now answers it in the OpenAI Responses format. See "The
+    gateway answers /v1/responses itself".
+
+Virtual keys are new and change nothing until you create one. If you do, read
+"Virtual keys on the gateway" for what a budget does not cover.
 
 You never need to convert a stored record. Every sealed, anchored or saved
 1.x record verifies in 2.x with its original bytes.
@@ -269,6 +298,53 @@ false}` in the machine policy file; the pin outranks the variable. The cases
 in which the project stays read-only by itself are listed in
 [the coding session page](CODE-SESSION.md), "Keeping the project read-only".
 
+## The `usage` field of a served response
+
+In 1.x two responses carried whitespace word counts in `usage`, in the place
+where OpenAI and Anthropic clients read tokens:
+
+- the gateway's chat completion (`POST /v1/chat/completions`), as
+  `prompt_tokens`, `completion_tokens` and `total_tokens`;
+- the Messages-shaped response of the local agent and the local model server
+  (`POST /v1/messages`), as `input_tokens` and `output_tokens`.
+
+In 2.0 `usage` carries the token counts the provider reported, or it is
+`null`.
+
+| Response | 1.x `usage` | 2.0 `usage` | 2.0 word counts |
+|---|---|---|---|
+| Gateway chat completion | word counts | `{"prompt_tokens", "completion_tokens", "total_tokens"}` from the provider, or `null` | `x_usage_estimate` |
+| Messages-shaped response of the local agent and model server | word counts | `{"input_tokens", "output_tokens"}` from the provider, or `null` | `x_usage_estimate` |
+
+`x_usage_estimate` is
+`{"method": "whitespace_words", "prompt_words": N, "completion_words": M}`.
+It is always present. Its keys say words, so nothing can read it as tokens by
+accident.
+
+What stays the same:
+
+- `x_token_usage` on the agent response. It still carries the provider's
+  counts, with the cache counts when the provider sent them.
+- The `usage` object of `flywheel code -p --output-format json`. It already
+  held provider counts and an `uncounted_calls` figure.
+- Receipts and ledger entries. Neither held the word counts.
+
+What you need to do:
+
+- A script that read `usage` for a rough size now gets real token counts,
+  which are larger than word counts for the same text. If you want the old
+  figure, read `x_usage_estimate`.
+- Handle `null`. A provider that sends no usage block, such as the local
+  transformers server, gives `usage: null`. Flywheel does not fill the gap
+  with an estimate that looks measured.
+- The counts are the provider's own. Anthropic reports input tokens without
+  the cached part and OpenAI reports them with it. Flywheel copies the figure
+  and converts nothing.
+
+The gateway's own `/v1/messages` and `/v1/responses`, and the model server's
+`POST /chat/completions`, follow the same rule. The table for all of them is
+under "Usage on every served endpoint".
+
 ## The gateway
 
 ### The gateway answers /v1/messages itself
@@ -341,8 +417,7 @@ What changes from 1.x:
 
 - The model server's own `POST /chat/completions` sent `"usage": {}`. It now
   sends `"usage": null` and the word counts under `x_usage_estimate`, or the
-  model's token counts when it reported them. This replaces the line in the
-  next section that says the empty object is unchanged.
+  model's token counts when it reported them.
 - `x_flywheel` is a new field on each of the four replies. A client that
   rejects unknown fields needs to allow it.
 
@@ -356,53 +431,16 @@ New in 2.0, and nothing changes unless you create a key. `flywheel
 gateway-key create NAME` mints a local key with a token or spend limit for a
 tool that sits behind the gateway. The gateway token works as before.
 Gateway ledger entries for Messages and Responses calls gain `key` and
-`usage_reported`. `docs/GATEWAY-INTERFACES.md`, "Keys and budgets", has the
-details.
+`usage_reported`.
 
-## The `usage` field of a served response
-
-In 1.x two responses carried whitespace word counts in `usage`, in the place
-where OpenAI and Anthropic clients read tokens:
-
-- the gateway's chat completion (`POST /v1/chat/completions`), as
-  `prompt_tokens`, `completion_tokens` and `total_tokens`;
-- the Messages-shaped response of the local agent and the local model server
-  (`POST /v1/messages`), as `input_tokens` and `output_tokens`.
-
-In 2.0 `usage` carries the token counts the provider reported, or it is
-`null`.
-
-| Response | 1.x `usage` | 2.0 `usage` | 2.0 word counts |
-|---|---|---|---|
-| Gateway chat completion | word counts | `{"prompt_tokens", "completion_tokens", "total_tokens"}` from the provider, or `null` | `x_usage_estimate` |
-| Messages-shaped response | word counts | `{"input_tokens", "output_tokens"}` from the provider, or `null` | `x_usage_estimate` |
-
-`x_usage_estimate` is
-`{"method": "whitespace_words", "prompt_words": N, "completion_words": M}`.
-It is always present. Its keys say words, so nothing can read it as tokens by
-accident.
-
-What stays the same:
-
-- `x_token_usage` on the agent response. It still carries the provider's
-  counts, with the cache counts when the provider sent them.
-- The `usage` object of `flywheel code -p --output-format json`. It already
-  held provider counts and an `uncounted_calls` figure.
-- Receipts and ledger entries. Neither held the word counts.
-- The local model server's own `POST /chat/completions`. Its `usage` was an
-  empty object in 1.x and still is.
-
-What you need to do:
-
-- A script that read `usage` for a rough size now gets real token counts,
-  which are larger than word counts for the same text. If you want the old
-  figure, read `x_usage_estimate`.
-- Handle `null`. A provider that sends no usage block, such as the local
-  transformers server, gives `usage: null`. Flywheel does not fill the gap
-  with an estimate that looks measured.
-- The counts are the provider's own. Anthropic reports input tokens without
-  the cached part and OpenAI reports them with it. Flywheel copies the figure
-  and converts nothing.
+A budget has known gaps. The check reads the totals so far, so one call can
+cross a limit before the next is refused, and two calls that start together
+can both pass. A stream the client abandons is not charged, although the
+provider may have billed for the part it produced. A call with no reported
+counts is charged the word estimate, which runs low, and is marked
+`estimated`. Rate limits, a provider account per key and totals shared
+across machines are not covered. `docs/GATEWAY-INTERFACES.md`, "Keys and
+budgets", has the details.
 
 ## The error object of a hosted backend
 

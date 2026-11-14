@@ -26,6 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 REPO = Path(__file__).resolve().parent.parent
 RECORD = REPO / "docs" / "benchmarks" / "report.json"
 
+from scripts.benchmark_gateway import section_html as gateway_html  # noqa: E402
 from scripts.benchmark_head_to_head import load_record, section_html  # noqa: E402
 from scripts.benchmark_matrix import matrix_html  # noqa: E402
 from scripts.benchmark_shared import esc as _esc  # noqa: E402
@@ -165,6 +166,8 @@ matrix, and the measurements that were not taken, for the Flywheel engine.">
 
 {section_html(load_record())}
 
+{gateway_html()}
+
 <section id="matrix">
   <h2>Against {len(doc["peers"])} named peers</h2>
   <p class="lede">One row per capability. The Flywheel column is a check
@@ -192,7 +195,8 @@ python scripts/build_benchmark_page.py</pre>
 </section>
 
 <footer>flywheel &middot; offline suite numbers from docs/benchmarks/report.json;
-  head-to-head numbers from docs/benchmarks/graded-metrics.json</footer>
+  head-to-head numbers from docs/benchmarks/graded-metrics.json; gateway overhead
+  from docs/benchmarks/gateway-overhead.json</footer>
 </div>
 <script>
 (function(){{

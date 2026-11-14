@@ -5,15 +5,29 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
-Gateway: overhead figure and timing gate
-- Measured what the gateway adds to one call on `/v1/messages` and `/v1/responses`: a median of 1.3 to 2.0 ms with the gateway token and 2.6 to 3.4 ms with a virtual key, to the end of the reply. One Windows 11 machine, 2026-11-14, one client, one request at a time, a loopback stub in place of the provider, 30 warm calls per case. The table, the method and what the figure leaves out are in `docs/BENCHMARKS.md`, "Gateway overhead".
-- `python scripts/bench_gateway_overhead.py` reruns the measurement and writes `docs/benchmarks/gateway-overhead.json`. No provider is called.
-- `tests/test_gateway_overhead_timing.py` fails when the median of five warm calls is 50 ms or more over the stub, for both interfaces, streamed and not, with the gateway token and with a virtual key. Two controls keep the check able to fail: 200 ms added inside the gateway breaks the budget, and a stub four times slower leaves the overhead where it was.
-- Changed: after a virtual key's call is charged, the gateway on Windows opens the key list once on a separate thread. On the measured machine the first open of that file after a change waited about 6 ms, and that open was the next call's key check. A plain call with a key went from 8.9 ms to 2.6 ms over the stub. Every check and every debit still reads the file, and a call that starts within a few milliseconds of the previous debit still waits.
-- Found and not changed: more than one call in twenty took 20 to 27 ms. On Windows a socket connect made with a timeout sometimes comes back about 15 ms late, and the gateway's connection to the upstream is made that way. A blocking connect was never late in the same check. On GitHub's Windows runners the late connect landed on most calls: medians of 11.6 to 23.6 ms, against 1.1 to 3.9 ms on Linux.
-- Not measured: provider network time and TLS, the system credential store read for a key, concurrency, connection reuse, any hosted provider, and any other machine. The figures are not comparable with figures published at a request rate.
+These entries become 2.0.0. They are grouped by what a change means for someone
+who uses Flywheel. `docs/MIGRATING-2.0.md` has the steps for each change that
+needs one.
 
-Gateway: virtual keys and budgets
+### What you can do now
+
+Gateway: Anthropic Messages (#455)
+- The local gateway answers `POST /v1/messages` itself, with and without streaming. Claude Code and Anthropic SDK clients can use it as their base URL. It carries text, system prompts, tool definitions, `tool_use` and `tool_result` blocks, `tool_choice`, and usage with the cache fields. See `docs/GATEWAY-INTERFACES.md`.
+- The `model` field names a gateway endpoint (`anthropic`, `openai:gpt-4o`, `ollama:qwen2.5:1.5b`). Any other model name goes to the endpoint set in `FLYWHEEL_GATEWAY_UPSTREAM`. An Anthropic upstream gets the request body unchanged apart from the model, and its reply and stream events come back as sent. OpenAI-compatible and Gemini upstreams get the turn in their own format.
+- Each served call appends an `endpoint_call` entry to the gateway ledger and returns a receipt as `x_receipt`. A call that fails after the upstream was contacted appends `endpoint_call_failed`. Usage holds the provider's counts and is never estimated.
+- The gateway token is accepted in `x-api-key` as well as `Authorization: Bearer`. `POST /v1/messages/count_tokens` is forwarded to an Anthropic upstream and is 404 for any other.
+- Changed: `/v1/messages` on the gateway used to be proxied to the local serve endpoint. See `docs/MIGRATING-2.0.md`, "The gateway answers /v1/messages itself".
+- Tested by replaying recorded requests and replies, and with the `anthropic` Python SDK against a gateway on a loopback port with a stub upstream. Not run: any hosted provider, and Claude Code itself against the gateway.
+
+Gateway: OpenAI Responses (#457)
+- The local gateway answers `POST /v1/responses` itself, with and without streaming. An OpenAI SDK client can use it as its base URL (`http://127.0.0.1:8799/v1`, with the gateway token as the API key). It carries `input` as a string or as items (`message`, `function_call`, `function_call_output`), `instructions`, `function` tools, `tool_choice`, `max_output_tokens`, `temperature`, `top_p`, and usage with `input_tokens_details.cached_tokens`. See `docs/GATEWAY-INTERFACES.md`, "OpenAI Responses".
+- The gateway stores no responses and runs no built-in tools. `previous_response_id`, `conversation`, `background`, tools other than `function`, and image, file and audio inputs are refused with 400 `invalid_request_error`, and `param` names the field. `reasoning` items in `input` are dropped. `store` is accepted and has no effect.
+- Routing is the rule `/v1/messages` uses: a gateway endpoint name in `model`, or `FLYWHEEL_GATEWAY_UPSTREAM` for any other name. OpenAI-compatible, Anthropic and Gemini upstreams each get the turn in their own format. No upstream is called on `/v1/responses`.
+- Each served call appends an `endpoint_call` entry with `"interface": "openai-responses"` and returns a receipt as `x_receipt` on the Response object. A stream that stops early ends with `response.failed` and leaves `endpoint_call_failed`. Usage holds the provider's counts and is never estimated.
+- Changed: `/v1/responses` on the gateway used to be proxied to the local serve endpoint, which answered 404. See `docs/MIGRATING-2.0.md`, "The gateway answers /v1/responses itself".
+- Tested by replaying recorded requests and replies, and with the `openai` Python SDK against a gateway on a loopback port with a stub upstream. One local run with Ollama (`qwen2.5:1.5b`) answered a plain, a streamed and a function-call request through both `/v1/responses` and `/v1/messages`. Not run: any hosted provider, and Codex CLI.
+
+Gateway: virtual keys and budgets (#458)
 - `flywheel gateway-key create NAME` mints a local key for one tool or teammate, with an optional token limit, an optional spend limit at prices you set (USD per million tokens; no price table ships) and an optional list of models. `list`, `show`, `revoke` and `reset` manage it. The key is printed once. It is kept in the system credential store; a file in the Flywheel home holds its fingerprint, limits and running totals.
 - A virtual key opens `/v1/messages`, `/v1/messages/count_tokens` and `/v1/responses` and no other gateway route. The gateway token keeps working there as the owner, with no budget.
 - A call is refused before anything is sent upstream when the key's totals are at or over a limit or the model is not on its list. A reached limit is 400 `invalid_request_error` on Messages and 429 `insufficient_quota` on Responses, following each provider's documentation. The check reads the totals so far, so one call can cross a limit and the next is refused.
@@ -22,125 +36,155 @@ Gateway: virtual keys and budgets
 - Not covered: rate limits, a provider account per key, and totals shared across machines.
 - Tested against a gateway on a loopback port with a stub upstream and an in-memory credential store, and with the `anthropic` and `openai` Python SDKs holding a key. Not run: any hosted provider, Claude Code or Codex CLI holding a key, and the real credential store. See `docs/GATEWAY-INTERFACES.md`, "Keys and budgets".
 
-Usage on every served endpoint
-- Every served reply carries `"x_flywheel": {"usage_reported": true}` or `false`: `/v1/messages`, `/v1/responses` and `/v1/chat/completions` on the gateway, and the model server's `/chat/completions`. The ledger entry of a Messages or Responses call records the same flag.
-- Changed: `/v1/responses` sends `"usage": null` when the provider reported no counts. It sent zeros before. `/v1/messages` keeps zeros, because the Messages format and the `anthropic` SDK require integers.
-- Changed: the model server's `POST /chat/completions` sends `"usage": null` with `x_usage_estimate` when the model reported no counts. It sent `"usage": {}` before. See `docs/MIGRATING-2.0.md`, "Usage on every served endpoint".
+Gateway: overhead figure and timing gate (#459)
+- Measured what the gateway adds to one call on `/v1/messages` and `/v1/responses`: a median of 1.3 to 2.0 ms with the gateway token and 2.6 to 3.4 ms with a virtual key, to the end of the reply. One Windows 11 machine, 2026-11-14, one client, one request at a time, a loopback stub in place of the provider, 30 warm calls per case. The table, the method and what the figure leaves out are in `docs/BENCHMARKS.md`, "Gateway overhead".
+- `python scripts/bench_gateway_overhead.py` reruns the measurement and writes `docs/benchmarks/gateway-overhead.json`. No provider is called.
+- `tests/test_gateway_overhead_timing.py` fails when the median of five warm calls is 50 ms or more over the stub, for both interfaces, streamed and not, with the gateway token and with a virtual key. Two controls keep the check able to fail: 200 ms added inside the gateway breaks the budget, and a stub four times slower leaves the overhead where it was.
+- Found and not changed: more than one call in twenty took 20 to 27 ms. On Windows a socket connect made with a timeout sometimes comes back about 15 ms late, and the gateway's connection to the upstream is made that way. A blocking connect was never late in the same check. On GitHub's Windows runners the late connect landed on most calls: medians of 11.6 to 23.6 ms, against 1.1 to 3.9 ms on Linux.
+- Not measured: provider network time and TLS, the system credential store read for a key, concurrency, connection reuse, any hosted provider, and any other machine. The figures are not comparable with figures published at a request rate.
 
-Gateway: OpenAI Responses
-- The local gateway answers `POST /v1/responses` itself, with and without streaming. An OpenAI SDK client can use it as its base URL (`http://127.0.0.1:8799/v1`, with the gateway token as the API key). It carries `input` as a string or as items (`message`, `function_call`, `function_call_output`), `instructions`, `function` tools, `tool_choice`, `max_output_tokens`, `temperature`, `top_p`, and usage with `input_tokens_details.cached_tokens`. See `docs/GATEWAY-INTERFACES.md`, "OpenAI Responses".
-- The gateway stores no responses and runs no built-in tools. `previous_response_id`, `conversation`, `background`, tools other than `function`, and image, file and audio inputs are refused with 400 `invalid_request_error`, and `param` names the field. `reasoning` items in `input` are dropped. `store` is accepted and has no effect.
-- Routing is the rule `/v1/messages` uses: a gateway endpoint name in `model`, or `FLYWHEEL_GATEWAY_UPSTREAM` for any other name. OpenAI-compatible, Anthropic and Gemini upstreams each get the turn in their own format. No upstream is called on `/v1/responses`.
-- Each served call appends an `endpoint_call` entry with `"interface": "openai-responses"` and returns a receipt as `x_receipt` on the Response object. A stream that stops early ends with `response.failed` and leaves `endpoint_call_failed`. Usage holds the provider's counts and is never estimated.
-- Changed: `/v1/responses` on the gateway used to be proxied to the local serve endpoint, which answered 404. See `docs/MIGRATING-2.0.md`, "The gateway answers /v1/responses itself".
-- Tested by replaying recorded requests and replies, and with the `openai` Python SDK against a gateway on a loopback port with a stub upstream. One local run with Ollama (`qwen2.5:1.5b`) answered a plain, a streamed and a function-call request through both `/v1/responses` and `/v1/messages`. Not run: any hosted provider, and Codex CLI.
+Hosted streaming (#450)
+- In the interactive `flywheel code` session, replies from Anthropic, OpenAI, OpenAI-compatible hosts (DeepSeek, OpenRouter, GLM) and Gemini print as the model writes them. The stream is rebuilt into the provider's ordinary response and read by the same code as a plain reply, so the ledger entry, receipt id, conversation and provider token counts are the same either way. `FLYWHEEL_STREAM=0` turns it off. Azure, Bedrock, Vertex and the subscription CLIs still print whole.
+- A hosted stream that is cut short after it began fails the turn: nothing from it is recorded, a tool call it was in the middle of does not run, and the session does not send a second request by itself. A stream that never began is asked once more without streaming. The interrupted-stream note now reads `[stream interrupted; the text above is not the reply]`.
+- Flywheel's own time before the first streamed text is held under 50 ms by a test against a local stand-in that delays its first byte (measured median 1.6 to 1.9 ms, slowest turn 38 ms, 30 turns per dialect on Windows 11). Tested by replaying recorded streams in each provider's documented format; a live streamed turn per provider was not run. See `docs/CODE-SESSION.md`, "Output as it arrives", and `docs/MIGRATING-2.0.md`.
 
-Gateway: Anthropic Messages
-- The local gateway answers `POST /v1/messages` itself, with and without streaming. Claude Code and Anthropic SDK clients can use it as their base URL. It carries text, system prompts, tool definitions, `tool_use` and `tool_result` blocks, `tool_choice`, and usage with the cache fields. See `docs/GATEWAY-INTERFACES.md`.
-- The `model` field names a gateway endpoint (`anthropic`, `openai:gpt-4o`, `ollama:qwen2.5:1.5b`). Any other model name goes to the endpoint set in `FLYWHEEL_GATEWAY_UPSTREAM`. An Anthropic upstream gets the request body unchanged apart from the model, and its reply and stream events come back as sent. OpenAI-compatible and Gemini upstreams get the turn in their own format.
-- Each served call appends an `endpoint_call` entry to the gateway ledger and returns a receipt as `x_receipt`. A call that fails after the upstream was contacted appends `endpoint_call_failed`. Usage holds the provider's counts and is never estimated.
-- The gateway token is accepted in `x-api-key` as well as `Authorization: Bearer`. `POST /v1/messages/count_tokens` is forwarded to an Anthropic upstream and is 404 for any other.
-- Changed: `/v1/messages` on the gateway used to be proxied to the local serve endpoint. See `docs/MIGRATING-2.0.md`, "The gateway answers /v1/messages itself".
-- Tested by replaying recorded requests and replies, and with the `anthropic` Python SDK against a gateway on a loopback port with a stub upstream. Not run: any hosted provider, and Claude Code itself against the gateway.
-
-Prompt caching
-- `flywheel code` marks Anthropic requests for prompt caching: one mark on the system prompt, covering the tools and the system text, and one at the top level that the provider moves forward with the conversation. On by default in a coding session; `FLYWHEEL_PROMPT_CACHE=0` turns the marks off. OpenAI and Gemini cache by themselves and need nothing sent.
-- `/cost` and the `-p` JSON `usage` object show `cache_read_tokens` and `cache_write_tokens` when the provider reported them, for Anthropic, OpenAI-compatible hosts and Gemini. Nothing is estimated: a reply with no cache figure adds none. The harness-config entry gains `prompt_cache`.
-- Tested with replayed replies. Token counts with caching on and off for a fixed 20-turn script against a live provider: not run. See `docs/CODE-SESSION.md`, "Prompt caching".
-
-Native function calling
+Native function calling (#451)
 - `flywheel code` declares its tools to OpenAI, Anthropic and Gemini as JSON schemas and reads their native tool calls, on by default for the three first-party hosts. `FLYWHEEL_NATIVE_TOOLS=1` turns it on for every hosted backend and `FLYWHEEL_NATIVE_TOOLS=0` turns it off. The text protocol (`TOOL name {json}` lines) stays for local models, subscription CLIs, the cloud backends, and any host that refuses tool schemas.
 - A native call is recorded as the TOOL line the text protocol would have carried, so the ledger entries, receipt ids, permission prompts and results are the same either way. The harness-config entry gains `native_tools`.
 - A reply that carries a tool result the session did not produce is refused, as is a native call with arguments that are not a JSON object. Nothing from a refused reply runs.
 - Tested by replaying recorded replies in each provider's documented format; a native call against a live provider was not run. See `docs/CODE-SESSION.md`, "How tool calls travel".
 
-Hosted streaming
-- In the interactive `flywheel code` session, replies from Anthropic, OpenAI, OpenAI-compatible hosts (DeepSeek, OpenRouter, GLM) and Gemini print as the model writes them. The stream is rebuilt into the provider's ordinary response and read by the same code as a plain reply, so the ledger entry, receipt id, conversation and provider token counts are the same either way. `FLYWHEEL_STREAM=0` turns it off. Azure, Bedrock, Vertex and the subscription CLIs still print whole.
-- A hosted stream that is cut short after it began fails the turn: nothing from it is recorded, a tool call it was in the middle of does not run, and the session does not send a second request by itself. A stream that never began is asked once more without streaming. The interrupted-stream note now reads `[stream interrupted; the text above is not the reply]`.
-- Flywheel's own time before the first streamed text is held under 50 ms by a test against a local stand-in that delays its first byte (measured median 1.6 to 1.9 ms, slowest turn 38 ms, 30 turns per dialect on Windows 11). Tested by replaying recorded streams in each provider's documented format; a live streamed turn per provider was not run. See `docs/CODE-SESSION.md`, "Output as it arrives", and `docs/MIGRATING-2.0.md`.
+Prompt caching (#452)
+- `flywheel code` marks Anthropic requests for prompt caching: one mark on the system prompt, covering the tools and the system text, and one at the top level that the provider moves forward with the conversation. On by default in a coding session; `FLYWHEEL_PROMPT_CACHE=0` turns the marks off. OpenAI and Gemini cache by themselves and need nothing sent.
+- `/cost` and the `-p` JSON `usage` object show `cache_read_tokens` and `cache_write_tokens` when the provider reported them, for Anthropic, OpenAI-compatible hosts and Gemini. Nothing is estimated: a reply with no cache figure adds none. The harness-config entry gains `prompt_cache`.
+- Tested with replayed replies. Token counts with caching on and off for a fixed 20-turn script against a live provider: not run. See `docs/CODE-SESSION.md`, "Prompt caching".
 
-Writable workspace
+Writable workspace (#448)
 - In `flywheel code`, a `run` command may write in the project folder and its own scratch folder, so installs, builds, formatters and `git commit` work. The rest of the disk stays closed to it, and so do paths reached through `..` or a link.
 - Git hooks, git config lines that start a program, and the session's permission, hook and MCP files are compared before and after each command; a change is put back and the command is reported as failed.
 - `FLYWHEEL_WORKSPACE_WRITES=0` or the machine policy key `allow_workspace_writes: false` keeps the project read-only to commands. Background jobs run with the project read-only. On Linux and macOS a read-only project is now enforced by the sandbox; before, the folder was writable there despite the documentation.
 - `git add` and `git commit` work in a linked worktree (`flywheel code --worktree`): the session opens the worktree's own git folder and the main repository's `objects`, `refs` and `logs`, and nothing else there. A guarded file that cannot be put back puts a hold on the project. A Windows folder the account cannot label runs read-only with the reason, where it used to refuse every command.
 - Tested in the real sandbox on Windows. On Linux and macOS the sandbox arguments are tested; no command was run there for this change.
 
-Output as it arrives
+Output as it arrives (#448)
 - In the interactive `flywheel code` session, a command's output prints while the command runs. Model text prints as it is written when the backend can stream (Ollama; hosted providers are under "Hosted streaming" above). The ledger and the recorded results are unchanged. `FLYWHEEL_STREAM=0` turns it off.
 
-Provider boundary
-- A failed call to a hosted model ends its error line with one plain sentence: whether trying again could help, and the wait the provider asked for when it sent one. Flywheel does not retry on its own. The retry deadline now reaches errors from the hosted chat backends as well as the proposers.
-- The error object carries no unredacted provider text: its `body` is scrubbed for key shapes, and the run budget reads the error type, code and status from a separate `limit_fields` value. Usage records and kept reasoning text are scrubbed the same way, and each call's record names which request gates were open (`gates`), so an absent figure states its cause. The local `serve` and `ollama` backends still quote their server's error text as it arrived.
-- `FLYWHEEL_KEEP_REASONING=1` keeps reasoning text on the record. The default is unchanged: no text.
+Accounts and peer sessions
+- Named accounts per provider: `flywheel setup --provider NAME --account LABEL`, `flywheel auth list`, `auth use` and `auth remove`. A key stored before this change is the account named `default`. `flywheel setup` tests a key with the provider before it stores it (`--no-check` skips the test). The system credential store is used on macOS (Keychain) and Linux (Secret Service) as well as Windows. `flywheel --help`, unknown-command messages, `down` and `why` on a gate envelope were fixed. (#449)
+- Peer sessions: Flywheel finds Claude Code and Codex transcript files on the machine and reports counts, digests and file age, read-only and without transcript text (`python -m harness.peer_session_cli`, `GET /api/peer-sessions`, a Peers view in the desktop app). Hosted backends return a `usage` record with the provider's block verbatim and a `reasoning` record; Gemini answers leave out thought parts. (#444)
 
-Distance to criticality
-- `harness.measure.criticality` measures d2, the KL divergence rate in bits per step from a series' best-fit AR model to the nearest critical AR model of the same order (Sooter et al. 2026, PNAS, CC BY 4.0). d_beta uses an exact closed form derived here, checked against numerical minimisation of the paper's integral. Standard library only; a clean-room implementation (the authors' toolkit is CC BY-NC 4.0 and was only read). `sliding` detrends with the past only by default, because a two-sided smoother let a leap fake an early warning in a learning-curve study. The paper's Hawkes, Langevin, AR(1), white-noise and bursty benchmarks reproduce under a preregistered study. See `docs/features/criticality.md`.
+Reader guarantee for 1.x records (#454)
+- `docs/VERSIONING.md` states that every 2.x release reads and verifies every record a 1.x release wrote, and records the 2.0.0 exception: the breaking changes shipped without a deprecation release (author's decision, 2026-11-14). 1.9.x gets security fixes for 90 days after 2.0.0.
+- `tests/fixtures/compat/records-1.x` holds one sealed record set from each 1.x minor (1.0.0, 1.0.4, 1.1.2, 1.2.1, 1.3.4, 1.4.0, 1.5.1, 1.6.0, 1.7.0, 1.8.0, 1.9.0), each written by that release from its PyPI wheel. `python scripts/verify_compat_records.py` verifies them; `--control` flips one byte at every offset of every file (51,084 changes, none may read MATCH) and gives each receipt the scope list under both names (each must be refused). A reader that answers MATCH to everything fails both controls.
+- Found by the byte control: `harness_version` is outside both receipt digests in v3, v4 and v5, so a receipt alone cannot show that field was edited. The fixture check binds it to the release folder and the sums file. The receipt format is unchanged.
 
-Reviewer independence
-- `harness.reviewer_independence` measures how much evidence a second reader shares with the first and says whether adding it buys a catch: `p * acc * (1 - overlap)` against a 0.05 floor, with Wilson bounds when `p` and `acc` come as counts. PASS adds the reader, FAIL says it is redundant, and an interval across the floor is UNVERIFIABLE. The rule and its reference numbers come from the society lane's measurements; tests reproduce them. See `docs/features/reviewer-independence.md`.
-
-Inconclusive on a spent budget
-- A certificate check that reports valid but stopped on `budget` or `timeout` is UNDECIDED with the new reason `BUDGET_EXHAUSTED`, never PASS. A declared `bound` still passes with the bound in coverage; a counterexample found before the budget ran out is still FAIL. No shipped family stops on a budget today, so no current verdict changes. `Coverage` moved to `harness/certificates/coverage.py` and is re-exported from `base`.
-- buildc byte-witness packets carry a `scope` block: the steps the bridge ran, and `inconclusive` when `buildc receipt verify` timed out. A timeout now has its own failure code, `buildc_verification_budget_exhausted`. See `docs/features/inconclusive-budget.md`.
-
-Prompt redaction
-- `python -m harness.prompt_redact` swaps the home folder, login name, machine name, email addresses, deny-list matches and credentials for stable placeholders (`~`, `USER`, `HOST`, `EMAIL-n`, `ID-n`, `[REDACTED:...]`) before text reaches a hosted model. `filter` mode works on stdin; `hook` mode is a Claude Code `UserPromptSubmit` hook that blocks a prompt naming local identifiers and shows the redacted copy to resubmit. Tool results are not covered yet. See `docs/features/prompt-redaction.md`.
-
-Publish privacy
-- `scripts/publish_metadata_gate.py` blocks a publish that adds personal metadata. The 1,370 findings already in the tree are frozen as counts in `project-docs/records/2026-11-04-publish-metadata-baseline.json`; a file that grows its count, a new file with a finding, or any hit from the machine name, the git global email or the untracked deny list fails. The baseline only shrinks. `publish_public.py` runs it on the staging tree before any push and takes `--deny-list`; CI runs it on the checkout. The export no longer copies `scripts/.publish-denylist.txt`, which it would have shipped. See `docs/features/publish-metadata.md`.
-
-Datapipe
-- `harness.datapipe` takes one external data source from download to a shareable export with a receipt at each stage: a terms gate that needs a saved snapshot and a verbatim licence quote, `datapipe.record/1` rows with cell-level provenance, cleaning checks that flag and never delete, a revertible change log, and an export that blocks anything not cleared for redistribution. See `docs/DATAPIPE.md`.
-
-Shared contract (the spine)
+Shared contract (the spine) (#437)
 - `harness/spine` gives every tool one receipt shape. `docs/spec/spine-record.md` is the text of record. The verdict vocabulary is Flywheel's four (PASS, FAIL, UNDECIDED, UNVERIFIABLE); the MATCH/DRIFT set, the organ-bundle statuses and the gate decisions map onto it by one table, and each record keeps its source term beside the spine verdict.
 - A spine record is `flywheel.spine-record/1`, schema version 1, hash-chained by `harness/hash_chain.py` under canonical-record/1. `hash_chain` gained a `digest` parameter for that; its default is unchanged, so every existing chain seals byte for byte as before.
 - Optional cause-and-effect fields: intervention, run, twin digest, twin, effect, interval and placebo. The verifier refuses a twin that differs in a second field, an effect that is not run minus twin, a twin that does not match its digest and an interval that excludes its own effect. An effect claimed without a twin digest is UNVERIFIABLE. A placebo whose interval excludes zero marks the pairing CONFOUNDED.
 - `python -m harness.spine verify FILE.json` rechecks a record or a chain offline. It rechecks emet witness receipts, crucible assessments and gather digests by their own published recipes. The test fixtures were emitted by each tool's own code at a pinned commit. The spine is on the verifier entry-point list, so the C2 import-closure check holds it.
 
-Canonical records and studyrun
+Canonical records and studyrun (#433, #436)
 - `docs/spec/canonical-record.md` defines `canonical-record/1`, one byte form for hashed records. `harness/canonical_record.py` is the reference code. The golden vectors in `tests/data/canonical_vectors.json` are CC0, so other repos test against them without sharing code.
 - studyrun gains `studyrun.spec/2`, verdict paths for keys that hold a dot, a power gate, planted-truth fitting, autochecks for limits, constants and post hoc files (`audit`, exit 4), forecast scoring, and `ext_sha256` in new locks. Older specs and locks run and verify as before; a sweep of 570 existing specs gives identical check results, plan hashes and verdicts under the old and new code.
 - `harness.studyrun` runs one study end to end: preregistration first, every input and code file hashed, analysis and controls run, hashes checked again, verdicts scored, manifest written, one ledger entry appended. See `docs/STUDYRUN.md`. A spec names what the study covers under `ledger.scope`.
 - `tests/data/stats_vectors.json` holds CC0 vectors for Holm, Bonferroni, Benjamini-Hochberg, the binomial tail and Wilson. Trace observation's Holm and the studyrun bounds test against them.
 
-Breaks taken with the record vocabulary (2.0)
-- The `usage` field of the gateway chat completion and of the Messages-shaped agent response carries the provider's token counts, or `null` when the provider reported none. In 1.x it carried whitespace word counts. The word counts moved to `x_usage_estimate` (`method`, `prompt_words`, `completion_words`). `x_token_usage` is unchanged. See `docs/MIGRATING-2.0.md`, "The `usage` field of a served response".
-- Removed: `scripts/hooks/wrapper_scaffold_hook.py` and `scripts/hooks/wrapper_turn_receipt_hook.py` no longer forward to the capture hook module. Each is a stub that names `python -m harness.capture_hooks` and exits 1, and `flywheel traces doctor` reports a mount that still names one as a failure. See `docs/MIGRATING-2.0.md`, "Removed: the two old hook scripts".
-- Reviewed and kept: the `utf8` charset spelling, superstack's vendored receipt field, the PyPI name, the `agent-client-protocol` pin, `x_token_usage` and the text tool protocol. No break is left waiting for 3.0. The table is in `docs/MIGRATING-2.0.md`.
-Reader guarantee for 1.x records (2.0)
-- `docs/VERSIONING.md` states that every 2.x release reads and verifies every record a 1.x release wrote, and records the 2.0.0 exception: the breaking changes shipped without a deprecation release (author's decision, 2026-11-14). 1.9.x gets security fixes for 90 days after 2.0.0.
-- `tests/fixtures/compat/records-1.x` holds one sealed record set from each 1.x minor (1.0.0, 1.0.4, 1.1.2, 1.2.1, 1.3.4, 1.4.0, 1.5.1, 1.6.0, 1.7.0, 1.8.0, 1.9.0), each written by that release from its PyPI wheel. `python scripts/verify_compat_records.py` verifies them; `--control` flips one byte at every offset of every file (51,084 changes, none may read MATCH) and gives each receipt the scope list under both names (each must be refused). A reader that answers MATCH to everything fails both controls.
-- Found by the byte control: `harness_version` is outside both receipt digests in v3, v4 and v5, so a receipt alone cannot show that field was edited. The fixture check binds it to the release folder and the sums file. The receipt format is unchanged.
+Datapipe (#434)
+- `harness.datapipe` takes one external data source from download to a shareable export with a receipt at each stage: a terms gate that needs a saved snapshot and a verbatim licence quote, `datapipe.record/1` rows with cell-level provenance, cleaning checks that flag and never delete, a revertible change log, and an export that blocks anything not cleared for redistribution. See `docs/DATAPIPE.md`.
 
-Migration note and stale pages (2.0)
-- `docs/MIGRATING-2.0.md` is complete for what is on main: a "what you need to do" list, the record vocabulary with a table of every renamed field and code, the workspace default, the hosted defaults, the `usage` field, the hosted error object, verdicts and audits, the removed hook scripts, and how to check an upgrade. `docs/MIGRATING-2.0-SCHEMAS.md` lists all 15 receipt code pairs and all 158 schema rows; `scripts/gen_migration_tables.py` writes it from `harness/receipt_scope.py` and `project-docs/SCOPE-MIGRATION.md`, and a test fails when it is stale. Both pages are on the docs site.
-- `project-docs/STATE.md` has a 2026-11-14 entry that says where current state is written and marks the older entries as history. `docs/RELEASE-NEXT.md` is retired with a pointer to this file.
+Prompt redaction (#440)
+- `python -m harness.prompt_redact` swaps the home folder, login name, machine name, email addresses, deny-list matches and credentials for stable placeholders (`~`, `USER`, `HOST`, `EMAIL-n`, `ID-n`, `[REDACTED:...]`) before text reaches a hosted model. `filter` mode works on stdin; `hook` mode is a Claude Code `UserPromptSubmit` hook that blocks a prompt naming local identifiers and shows the redacted copy to resubmit. Tool results are not covered yet. See `docs/features/prompt-redaction.md`.
 
-Also on main since 1.9.0
-- Named accounts per provider: `flywheel setup --provider NAME --account LABEL`, `flywheel auth list`, `auth use` and `auth remove`. A key stored before this change is the account named `default`. `flywheel setup` tests a key with the provider before it stores it (`--no-check` skips the test). The system credential store is used on macOS (Keychain) and Linux (Secret Service) as well as Windows. `flywheel --help`, unknown-command messages, `down` and `why` on a gate envelope were fixed. (#449)
-- Peer sessions: Flywheel finds Claude Code and Codex transcript files on the machine and reports counts, digests and file age, read-only and without transcript text (`python -m harness.peer_session_cli`, `GET /api/peer-sessions`, a Peers view in the desktop app). Hosted backends return a `usage` record with the provider's block verbatim and a `reasoning` record; Gemini answers leave out thought parts. (#444)
-- Signed job results (the PySyft receipt): the verifier recomputes `receipt_id`, checks that `key_id` belongs to the pinned key, and checks the envelope schema. Before this, 81 single-bit changes to the fixture read MATCH; now none does. (#419)
+Publish privacy (#438, #439)
+- `scripts/publish_metadata_gate.py` blocks a publish that adds personal metadata. The 1,370 findings already in the tree are frozen as counts in `project-docs/records/2026-11-04-publish-metadata-baseline.json`; a file that grows its count, a new file with a finding, or any hit from the machine name, the git global email or the untracked deny list fails. The baseline only shrinks. `publish_public.py` runs it on the staging tree before any push and takes `--deny-list`; CI runs it on the checkout. The export no longer copies `scripts/.publish-denylist.txt`, which it would have shipped. See `docs/features/publish-metadata.md`.
+
+Distance to criticality (#443)
+- `harness.measure.criticality` measures d2, the KL divergence rate in bits per step from a series' best-fit AR model to the nearest critical AR model of the same order (Sooter et al. 2026, PNAS, CC BY 4.0). d_beta uses an exact closed form derived here, checked against numerical minimisation of the paper's integral. Standard library only; a clean-room implementation (the authors' toolkit is CC BY-NC 4.0 and was only read). `sliding` detrends with the past only by default, because a two-sided smoother let a leap fake an early warning in a learning-curve study. The paper's Hawkes, Langevin, AR(1), white-noise and bursty benchmarks reproduce under a preregistered study. See `docs/features/criticality.md`.
+
+Reviewer independence (#442)
+- `harness.reviewer_independence` measures how much evidence a second reader shares with the first and says whether adding it buys a catch: `p * acc * (1 - overlap)` against a 0.05 floor, with Wilson bounds when `p` and `acc` come as counts. PASS adds the reader, FAIL says it is redundant, and an interval across the floor is UNVERIFIABLE. The rule and its reference numbers come from the society lane's measurements; tests reproduce them. See `docs/features/reviewer-independence.md`.
+
+Checks and reports (#421)
+- Eval results and the harness-config hash record the serving runtime: framework, GPU, dtype, compile mode, batch shape, determinism flags and capture hooks. A rerun reports DRIFT on an output mismatch only when both runs used the same deterministic runtime. See `docs/features/eval-runtime-and-access.md`.
+- Eval results record which of six access surfaces the evaluator had, and `claim_scope` rejects a claim that needs access the run did not have.
+- New `coverage` and `differential` checks, and 16 partial-check false accepts added to the corpus. 15 of the 16 are caught, and 53 of 56 across the corpus, with 0 false rejects on 376 known-good items. See `docs/features/checks.md`.
+
+Research and measurement tools
 - Self-improving harness: a gated Propose-Probe-Compose loop under `harness/self_improve_*.py`, with a sealed receipt for each gate decision, quarantine for lessons and planted-edit controls. v2 puts the incumbent in the selection pool and gates at file, hunk and line level. Both versions have a preregistered head-to-head on a substitute benchmark, on CPU with scripted editors; the results are in `project-docs/records/`. (#422, #423)
 - Steered-agent false-accept test: `harness/agent_false_accept` measures how often each guard stops a destructive tool call from a steered model, with mock tools only. On 28 held-out tasks the request-versus-action check caught 64 of 66 harmful calls and the schema check caught 1 of 66. (#431)
 - `python -m harness.recall_index`: a deterministic distiller and recall index for agent session transcripts, with no model calls. It answers "not found" when the record holds no answer. See `docs/RECALL-INDEX.md`. (#435)
 - `CITATION.cff`, and a discover gate that stops a release missing its README opening, run command, package keywords, citation file or changelog summary. (#428)
 - Data: the 2026 H0 Distance Network record in `dataset/physics_tension_claims.jsonl`. (#432)
-- Docs and tests: the README opens with what Flywheel does and links the verification pilot; each lane page says what the lane does with its proof beside it (#424 to #427). The recheck runner test and the POSIX sandbox test no longer depend on the host (#420, #446).
+- buildc byte-witness packets carry a `scope` block: the steps the bridge ran, and `inconclusive` when `buildc receipt verify` timed out. A timeout now has its own failure code, `buildc_verification_budget_exhausted`. See `docs/features/inconclusive-budget.md`. (#441)
 
-Scope field (migration from `does_not_prove`)
+### What changed
+
+Each of these changes a default or an output. The setting that restores the 1.x
+behaviour, where one exists, is named in the entry above or in the migration page.
+
+Defaults in the coding session
+- Commands may write in the project folder. `FLYWHEEL_WORKSPACE_WRITES=0` keeps it read-only. (#448)
+- Replies from hosted providers stream. `FLYWHEEL_STREAM=0` turns it off. (#450)
+- Tools are declared to OpenAI, Anthropic and Gemini as JSON schemas. `FLYWHEEL_NATIVE_TOOLS=0` keeps the text protocol. (#451)
+- Anthropic requests carry prompt-cache marks, which changes how the provider bills them: a cache write costs more than plain input and a cache read far less. `FLYWHEEL_PROMPT_CACHE=0` sends the 1.x requests. No saving has been measured by Flywheel. (#452)
+
+Usage on every served endpoint (#458)
+- Every served reply carries `"x_flywheel": {"usage_reported": true}` or `false`: `/v1/messages`, `/v1/responses` and `/v1/chat/completions` on the gateway, and the model server's `/chat/completions`. The ledger entry of a Messages or Responses call records the same flag.
+- Changed: `/v1/responses` sends `"usage": null` when the provider reported no counts. It sent zeros before. `/v1/messages` keeps zeros, because the Messages format and the `anthropic` SDK require integers.
+- Changed: the model server's `POST /chat/completions` sends `"usage": null` with `x_usage_estimate` when the model reported no counts. It sent `"usage": {}` before. See `docs/MIGRATING-2.0.md`, "Usage on every served endpoint".
+
+Provider boundary (#444, #445, #447)
+- A failed call to a hosted model ends its error line with one plain sentence: whether trying again could help, and the wait the provider asked for when it sent one. Flywheel does not retry on its own. The retry deadline now reaches errors from the hosted chat backends as well as the proposers.
+- The error object carries no unredacted provider text: its `body` is scrubbed for key shapes, and the run budget reads the error type, code and status from a separate `limit_fields` value. Usage records and kept reasoning text are scrubbed the same way, and each call's record names which request gates were open (`gates`), so an absent figure states its cause. The local `serve` and `ollama` backends still quote their server's error text as it arrived.
+- `FLYWHEEL_KEEP_REASONING=1` keeps reasoning text on the record. The default is unchanged: no text.
+
+Reports and documents
+- `SECURITY.md` states which versions get fixes (2.x, and 1.9.x for security fixes for 90 days after 2.0.0) and how to report a vulnerability privately. Private vulnerability reporting is enabled on the repository.
+- `site/benchmarks.html` carries the gateway overhead table that `docs/BENCHMARKS.md` already had.
+- Text, Markdown, LaTeX and HTML reports print their limits under one plain heading, "limits" or "## Limits". The `--limits` help in `flywheel acp`, `dap` and `lsp` says "print the limits of a run record". The bundled `reproduce.py` says what MATCH covers. (#429)
+- Changed: after a virtual key's call is charged, the gateway on Windows opens the key list once on a separate thread. On the measured machine the first open of that file after a change waited about 6 ms, and that open was the next call's key check. A plain call with a key went from 8.9 ms to 2.6 ms over the stub. Every check and every debit still reads the file, and a call that starts within a few milliseconds of the previous debit still waits. (#459)
+- `docs/MIGRATING-2.0.md` is complete for what is on main: a "what you need to do" list, the record vocabulary with a table of every renamed field and code, the workspace default, the hosted defaults, the `usage` field, the hosted error object, verdicts and audits, the removed hook scripts, and how to check an upgrade. `docs/MIGRATING-2.0-SCHEMAS.md` lists all 15 receipt code pairs and all 158 schema rows; `scripts/gen_migration_tables.py` writes it from `harness/receipt_scope.py` and `project-docs/SCOPE-MIGRATION.md`, and a test fails when it is stale. Both pages are on the docs site. (#456)
+- `project-docs/STATE.md` has a 2026-11-14 entry that says where current state is written and marks the older entries as history. `docs/RELEASE-NEXT.md` is retired with a pointer to this file. (#456)
+- The README opens with what Flywheel does and links the verification pilot; each lane page says what the lane does with its proof beside it. (#424 to #427)
+
+### What broke
+
+Breaking changes, each with a section in `docs/MIGRATING-2.0.md`. 2.0.0 ships them
+without a deprecation release before it; `docs/VERSIONING.md` records that as a
+dated exception. Every record a 1.x release wrote still verifies with its original bytes.
+
+Scope field: `does_not_prove` is now `scope` (#430)
 - Every record names what its result covers in a `scope` field, in plain positive words. The field replaces `does_not_prove`, whose entries were limits phrased as negatives. Each value was rewritten from what the module checks; codes such as `NOT_PROVES_EXACTNESS` became codes for the covered property, emitted when it holds (`PREDICATE_EXACT`). Certificate results carry `BOUND_FROM_SUBMITTED_OBJECT`: the verified object's value bounds the optimum from one side.
 - Every schema whose records changed moved up one version: receipts to `flywheel.receipt/v5`, routed receipts to v2, QA cards to v3, and the gateway, bulletin, evidence, writing, trace and statistics records listed in `project-docs/SCOPE-MIGRATION.md`. Writers emit the new version. Readers accept both versions and read each with its own vocabulary, so v3 and v4 receipts, v1 records and every sealed or anchored artifact still verify with their original bytes.
 - `harness/scope.py` (`scope_of`, `scope_list`) reads either name; the desktop app has the same helper. `scripts/check_scope_migration.py` runs in CI and keeps the older name to the readers, the sealed artifacts and historical documents. `tests/test_scope_migration.py` checks both readers, the old-version artifacts, and the bytes of 71 kept artifacts.
 - Printed headings say `scope:`. Records in superstack's vendored receipt format keep their field until superstack moves.
 
-Checks and reports
-- Eval results and the harness-config hash record the serving runtime: framework, GPU, dtype, compile mode, batch shape, determinism flags and capture hooks. A rerun reports DRIFT on an output mismatch only when both runs used the same deterministic runtime. See `docs/features/eval-runtime-and-access.md`.
-- Eval results record which of six access surfaces the evaluator had, and `claim_scope` rejects a claim that needs access the run did not have.
-- New `coverage` and `differential` checks, and 16 partial-check false accepts added to the corpus. 15 of the 16 are caught, and 53 of 56 across the corpus, with 0 false rejects on 376 known-good items. See `docs/features/checks.md`.
-- Text, Markdown, LaTeX and HTML reports print their limits under one plain heading, "limits" or "## Limits". The `--limits` help in `flywheel acp`, `dap` and `lsp` says "print the limits of a run record". The bundled `reproduce.py` says what MATCH covers.
-- `audit run` runs two starter detectors: receipt integrity and unbacked claims. The detector that asked each work product for a stated limit is removed.
+Served `usage`, and the two old hook scripts (#453)
+- The `usage` field of the gateway chat completion and of the Messages-shaped agent response carries the provider's token counts, or `null` when the provider reported none. In 1.x it carried whitespace word counts. The word counts moved to `x_usage_estimate` (`method`, `prompt_words`, `completion_words`). `x_token_usage` is unchanged. See `docs/MIGRATING-2.0.md`, "The `usage` field of a served response".
+- Removed: `scripts/hooks/wrapper_scaffold_hook.py` and `scripts/hooks/wrapper_turn_receipt_hook.py` no longer forward to the capture hook module. Each is a stub that names `python -m harness.capture_hooks` and exits 1, and `flywheel traces doctor` reports a mount that still names one as a failure. See `docs/MIGRATING-2.0.md`, "Removed: the two old hook scripts".
+- Reviewed and kept: the `utf8` charset spelling, superstack's vendored receipt field, the PyPI name, the `agent-client-protocol` pin, `x_token_usage` and the text tool protocol. No break is left waiting for 3.0. The table is in `docs/MIGRATING-2.0.md`.
+
+Gateway paths
+- `POST /v1/messages` on the gateway is answered by the gateway and routed by the `model` field. In 1.x it was passed to the local serve endpoint. `max_tokens` is now required. (#455)
+- `POST /v1/responses` on the gateway returns a Response object or an OpenAI-shaped error. In 1.x it returned 404. (#457)
+- The model server's `POST /chat/completions` sends `"usage": null` where 1.x sent `{}`. (#458)
+
+Verdicts and audits
+- A certificate check that reports valid but stopped on `budget` or `timeout` is UNDECIDED with the new reason `BUDGET_EXHAUSTED`, never PASS. A declared `bound` still passes with the bound in coverage; a counterexample found before the budget ran out is still FAIL. No shipped family stops on a budget today, so no current verdict changes. `Coverage` moved to `harness/certificates/coverage.py` and is re-exported from `base`. (#441)
+- `audit run` runs two starter detectors: receipt integrity and unbacked claims. The detector that asked each work product for a stated limit is removed. (#429)
+
+Hosted error object
+- A program that parsed provider text out of the error object's `body` reads `limit_fields`. The entry is under "Provider boundary" above. (#447)
+
+### What was fixed
+
+Fixes
+- Signed job results (the PySyft receipt): the verifier recomputes `receipt_id`, checks that `key_id` belongs to the pinned key, and checks the envelope schema. Before this, 81 single-bit changes to the fixture read MATCH; now none does. (#419)
+- `flywheel --help`, unknown-command messages, `down`, and `why` on a gate envelope. (#449)
+- On Linux and macOS a read-only project is enforced by the sandbox. In 1.x the folder was writable there, whatever the documentation said. (#448)
+- A Windows folder the account cannot label runs read-only with the reason, where it used to refuse every command. (#448)
+- The recheck runner test and the POSIX sandbox test no longer depend on the host. (#420, #446)
 
 ## 1.9.0 (2026-10-15)
 
