@@ -186,6 +186,12 @@ Fixes
 - A Windows folder the account cannot label runs read-only with the reason, where it used to refuse every command. (#448)
 - The recheck runner test and the POSIX sandbox test no longer depend on the host. (#420, #446)
 
+### Fixed after the security review (2026-11-14)
+- Fixed: `/v1/messages` in front of an Anthropic upstream broke on tools the provider runs itself. A streamed reply with a `server_tool_use` block was cut, and a reply with a `web_search_tool_result` or other provider result block was recorded as failed with nothing charged, although a stream had delivered it. Such replies are now delivered as sent, recorded as `endpoint_call` and charged from the reported usage, and the entry carries the provider's `server_tool_use` counts. Unknown block and delta types are relayed untouched. A block of the exact type `tool_result` is still refused. The coding session keeps its broader rule.
+- Fixed: a reply could be delivered with no ledger entry when the debit or the ledger append failed after the upstream answered. The ledger now gets `endpoint_call_failed` with reason `charge_failed` or `ledger_failed` and the response hash, and the client gets 500 naming the cause. For a stream whose text had already left, the entry says `delivered_unrecorded_charge`, the stream ends with an error event that says so, and the key is suspended until `flywheel gateway-key clear NAME`.
+- New: `flywheel gateway-key clear NAME` lifts a suspension. `list` and `show` print the state `suspended`.
+- Tested with replay fixtures written from the Claude API documentation (read 2026-11-14) against a gateway on a loopback port. Not run: any hosted provider.
+
 ## 1.9.0 (2026-10-15)
 
 Behaviour changes

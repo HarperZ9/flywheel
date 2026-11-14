@@ -77,7 +77,9 @@ def read(upstream, obj, payload: dict):
     gen = _stream.DIALECTS[dialect].reply(backend, 200, obj, payload, 0)
     try:
         found, _raw, claimed, _needs_id = _wire._IN[dialect](obj, gen)
-        finish = _finish(dialect, obj)
+        if dialect == "anthropic":          # only the exact type is the client's to produce;
+            claimed = any(block.get("type") == "tool_result" for block in obj["content"])
+        finish = _finish(dialect, obj)      # *_tool_result blocks are the provider's own tools
     except _SHAPE as exc:
         raise MalformedBackendOutput(
             f"{backend.name} reply is not in the documented shape "
@@ -238,7 +240,7 @@ def _relay(turn, upstream, ledger, lines, body):
         _turn.record_failed(ledger, upstream, turn, "client_disconnected",
                             "the client closed the stream before the reply was complete")
         raise
-    _turn.record(ledger, upstream, turn, reply)
+    _turn.record(ledger, upstream, turn, reply, delivered=True)
     return reply
 
 
