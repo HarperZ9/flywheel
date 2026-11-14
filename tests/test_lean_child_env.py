@@ -19,6 +19,7 @@ environment the child is given:
 """
 import ast
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -58,13 +59,11 @@ def test_the_allow_list_drops_the_canary_and_keeps_what_lean_needs(canary):
 
 
 def test_control_the_parent_does_hold_the_canary(canary):
-    import os
     assert os.environ[CANARY] == VALUE
 
 
 @pytest.mark.parametrize("given", [None, "copy"])
 def test_a_real_child_started_by_the_lean_spawn_helper_has_no_canary(canary, given):
-    import os
     env = None if given is None else dict(os.environ)
     code, out = lean_replay.run_killable(
         [sys.executable, "-c", "import json, os; print(json.dumps(dict(os.environ)))"],
@@ -98,6 +97,10 @@ def test_site_proof_run(canary, monkeypatch, tmp_path):
 def test_site_infra_lean_adapter(canary, monkeypatch, tmp_path):
     seen = _Seen()
     monkeypatch.setattr(lean_adapter.subprocess, "run", seen.run)
+    # Stand in for the PATH lookup, so the site is reached where no Lean is installed.
+    # It hands back the parent's whole environment, which the site must still filter.
+    monkeypatch.setattr(lean_adapter.safe_program, "launch",
+                        lambda command, **kwargs: (list(command), dict(os.environ)))
     lean_adapter.reset_lean_probe()
     try:
         assert lean_adapter.lean_version()
@@ -121,6 +124,7 @@ def test_site_lean_export(canary, monkeypatch):
     _clean(seen.envs[0])
 
 
+@pytest.mark.skipif(os.name != "nt", reason="the Windows sandbox path")
 def test_site_windows_sandbox(canary, monkeypatch, tmp_path):
     from harness import lean_sandbox_win
     seen = []
