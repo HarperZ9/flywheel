@@ -14,6 +14,10 @@ reply's prose. From there the loop is the one that always ran. So a call that
 arrives natively and the same call written as text produce the same ledger
 entries, the same permission prompts and the same results.
 
+On a native turn the tool-call objects are the only calls. A `TOOL name
+{json}` line in the reply's own words is marked as quoted text before the
+calls are written out, so it never runs (endpoints_tools_prose).
+
 A session turns this on by holding a `Toolbox` and wrapping its model calls
 in `active(toolbox)`. A backend called with no toolbox in force behaves as it
 did before this module existed.
@@ -91,6 +95,7 @@ class Toolbox:
     mode: str = "auto"                     # "auto", "on" or "off"
     cache: bool = True                     # provider prompt caching (endpoints_cache)
     replies: list = field(default_factory=list)
+    stray: int = 0                         # prose TOOL lines in the last native reply with no call
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def remember(self, reply: Reply) -> None:
@@ -213,8 +218,14 @@ def matched(box: Toolbox, dialect: str, messages: list) -> dict:
     return found
 
 
-def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool) -> str:
-    """Check a native reply, remember it, and return its text-protocol form."""
+def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool,
+           native: bool = True) -> str:
+    """Check a native reply, remember it, and return its text-protocol form.
+
+    `native` says the request carried tool schemas. Then only `calls` are
+    calls: a line of `prose` that reads as one is marked and does not run
+    (endpoints_tools_prose). A text-protocol reply is returned as it came.
+    """
     box = _ACTIVE.get()
     if box is None:
         return prose
@@ -230,6 +241,10 @@ def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool) -
         if not _WORD.match(str(call.get("name") or "")):
             raise MalformedBackendOutput(
                 f"{backend.name} called a tool whose name the session cannot carry")
+    if native:
+        from .endpoints_tools_prose import inert
+        prose, marked = inert(prose)
+        box.stray = 0 if calls else marked
     text = canonical(prose, calls)
     if calls and raw is not None:
         box.remember(Reply(text, dialect, raw, [dict(c) for c in calls]))

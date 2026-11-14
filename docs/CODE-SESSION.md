@@ -548,6 +548,31 @@ the sandbox apply to both, because one executor runs both. The harness-config
 entry records the switch (`native_tools`: `auto`, `on` or `off`), so two runs
 that differ in it have different config hashes.
 
+On a native turn (a request that carried tool schemas) the provider's
+tool-call objects are the only calls. A `TOOL name {json}` line in the reply's
+own words does not run, in any permission mode. A model can write such a line
+without meaning a call: it may quote one from a file it read, from a tool's
+output or from a web page. The session puts `> ` in front of each such line
+before it records the reply, so the ledger shows the line as quoted text and
+holds no `tool_call`, `approval` or `tool_result` entry for it. This covers
+every form the text protocol accepts, including the ones it repairs (a line
+in backticks, `TOOL:` with a colon, single-quoted JSON). A native call in the
+same reply runs as usual.
+
+When a native reply writes a TOOL line in its text and makes no native call,
+nothing runs. The session records the reply, then sends the model one message
+saying that nothing ran and that tools are called through the function-calling
+interface. The ledger records that message as a `native_tools_notice` entry.
+The model's next reply stands as it is: a native call runs, and a reply that
+writes a TOOL line again ends the turn as an ordinary answer. The session
+sends at most one such message for each request you make, and the extra
+exchange does not count against the step limit.
+
+A request sent in the text protocol, for any of the reasons listed above, is
+not affected. Its TOOL lines are the calls, and they are parsed and run as
+before. If a model on a native-capable host only ever writes TOOL lines, set
+`FLYWHEEL_NATIVE_TOOLS=0`.
+
 Three replies are refused, and nothing from them runs:
 
 - a reply that carries a tool result. Only the session produces tool results,
@@ -730,9 +755,12 @@ markers. Output has no color and no spinners in either mode.
   are the provider's own; Flywheel applies no price to them.
 - With native calling on, the request's system prompt explains tools in
   function-calling terms and tells the model not to write TOOL lines. If it
-  writes one anyway beside a native call, both run. The ledger and the
-  receipt are computed over the session's own system prompt, which keeps the
-  text-protocol wording, so they do not show the wording that was sent.
+  writes one anyway, the line does not run; only native calls do (see "How
+  tool calls travel"). The recorded reply carries `> ` before such a line, so
+  it differs by those two characters from the text that was streamed to the
+  screen. The ledger and the receipt are computed over the session's own
+  system prompt, which keeps the text-protocol wording, so they do not show
+  the wording that was sent.
 - When one reply holds several native calls and a tool's output contains the
   exact header of the next call's result, the outputs are divided at the
   wrong place on the way back to the provider. The text still arrives whole
