@@ -1,0 +1,57 @@
+{
+ "model": "gpt-5.3-codex-spark",
+ "max_tokens": 64,
+ "messages": [
+  {
+   "role": "user",
+   "content": "write a note"
+  },
+  {
+   "role": "assistant",
+   "content": "I will write the note.",
+   "tool_calls": [
+    {
+     "id": "toolu_01FixtureWrite",
+     "type": "function",
+     "function": {
+      "name": "write_file",
+      "arguments": "{\"path\": \"n.txt\", \"content\": \"hi\"}"
+     }
+    }
+   ]
+  },
+  {
+   "role": "tool",
+   "tool_call_id": "toolu_01FixtureWrite",
+   "content": "wrote 2 bytes"
+  },
+  {
+   "role": "user",
+   "content": "What changed?"
+  }
+ ],
+ "tools": [
+  {
+   "type": "function",
+   "function": {
+    "name": "write_file",
+    "description": "Write a file in the workspace.",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "path": {
+       "type": "string"
+      },
+      "content": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "path",
+      "content"
+     ]
+    }
+   }
+  }
+ ]
+}

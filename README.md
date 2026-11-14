@@ -88,6 +88,10 @@ start: `gateway.token` in the Flywheel home, `~/.flywheel` by default. Send it
 as `Authorization: Bearer <token>`.
 [GETTING-STARTED.md](GETTING-STARTED.md) has a worked example.
 
+The gateway also answers the Anthropic Messages format on `/v1/messages`, so
+Claude Code and Anthropic SDK clients can use it as their base URL.
+[docs/GATEWAY-INTERFACES.md](docs/GATEWAY-INTERFACES.md) has the settings.
+
 ## How it compares
 
 - **LiteLLM** and **OpenRouter** route requests to many models. Flywheel does

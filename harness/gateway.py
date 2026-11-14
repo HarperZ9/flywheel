@@ -1490,8 +1490,8 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
             except Exception:
                 req = {}
             return self._json(*openai_embeddings(req))
-        if (p.startswith("/v1/")                   # OpenAI-compatible, proxied to the endpoint
-                or p == "/generate"):                # the raw generate call, proxied
+        if p in ("/v1/messages", "/v1/messages/count_tokens", "/v1/responses"): from harness.gateway_interfaces import serve; return serve(self, p, _router_ledger())  # Messages and Responses, answered here
+        if p.startswith("/v1/") or p == "/generate":  # OpenAI-compatible and raw generate, proxied to the endpoint
             return self._proxy(self.serve_url.rstrip("/") + p)
         if p == "/api/relay/start":                  # Relay run launch is not admitted in the bundled release
             return _relay_start_not_admitted(self)

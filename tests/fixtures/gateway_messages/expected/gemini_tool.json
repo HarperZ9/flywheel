@@ -1,0 +1,28 @@
+{
+ "type": "message",
+ "role": "assistant",
+ "model": "gemini-2.5-flash",
+ "content": [
+  {
+   "type": "text",
+   "text": "I will write the note."
+  },
+  {
+   "type": "tool_use",
+   "id": "<generated>",
+   "name": "write_file",
+   "input": {
+    "path": "n.txt",
+    "content": "hi"
+   }
+  }
+ ],
+ "stop_reason": "tool_use",
+ "stop_sequence": null,
+ "usage": {
+  "input_tokens": 510,
+  "output_tokens": 36,
+  "cache_creation_input_tokens": null,
+  "cache_read_input_tokens": null
+ }
+}
