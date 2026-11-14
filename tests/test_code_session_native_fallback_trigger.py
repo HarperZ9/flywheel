@@ -185,6 +185,13 @@ def test_the_terminal_prints_the_notice(capsys):
     ("tools are not supported with this model", True),
     ("\"auto\" tool choice requires --enable-auto-tool-choice and --tool-call-parser", True),
     ("Unsupported parameter: 'tools' is not supported with this model.", True),
+    ("'tools' is not supported with this model.", True),
+    ("The functions parameter is not available for this model", True),
+    # Documented Claude API errors that are about something else (errors page, same day).
+    ("tool_choice: type \"tool\" and \"any\" are not supported for this model.", False),
+    ("This model does not support assistant message prefill.", False),
+    ("adaptive thinking is not supported on this model", False),
+    ("Invalid value: function is not supported in this context window", False),
     ("maximum context length is 8192 tokens (functions included); tools are not supported "
      "beyond it", False),
     ("Rate limit reached for requests with tools", False),

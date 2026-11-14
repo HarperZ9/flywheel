@@ -42,7 +42,8 @@ import re
 KIND = "native_tools_fallback"           # ledger kind of the notice
 _SAYS = re.compile(
     r"does(?: not|n't) support (?:tool|function)"
-    r"|(?:tool|function)[\w '\"`-]{0,24} (?:is|are) not (?:supported|enabled|available)"
+    r"|(?:\btools?|\btool (?:use|calling|calls)|\bfunction calling|\bfunctions?(?: parameter)?"
+    r"|['\"`]tools['\"`]) (?:is|are) not (?:supported|enabled|available)"
     r"|no endpoints found that support tool"
     r"|tool choice requires"
     r"|unsupported parameter: ['\"`]?(?:tools|functions)")
