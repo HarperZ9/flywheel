@@ -152,5 +152,6 @@ def incoming(dialect: str, backend, obj, gen: dict) -> dict:
     calls, raw, claimed, needs_id = _IN[dialect](obj, gen)
     if needs_id and not all(isinstance(c.get("id"), str) and c["id"] for c in calls):
         raw = None                       # cannot be answered natively; travels as text
-    gen["text"] = _tools.absorb(dialect, backend, gen["text"], calls, raw, claimed)
+    gen["text"] = _tools.absorb(dialect, backend, gen["text"], calls, raw, claimed,
+                                native=_tools.offered(backend) is not None)
     return gen

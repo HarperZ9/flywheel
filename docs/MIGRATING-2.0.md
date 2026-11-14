@@ -235,6 +235,31 @@ What changes:
 To keep the 1.x behaviour, set `FLYWHEEL_NATIVE_TOOLS=0`. To use native calls
 on another host that supports them, set `FLYWHEEL_NATIVE_TOOLS=1`.
 
+### After the security review: a TOOL line in a native reply's text does not run
+
+When a request carried tool schemas, only the provider's native tool calls
+run. A `TOOL name {json}` line in the reply's own words is recorded with `> `
+in front of it and is not a call, in any permission mode. Before this change
+such a line ran, so a line the model quoted from a file, a tool's output or a
+web page could run as if the model had called it.
+
+If a reply writes a TOOL line and makes no native call, the session tells the
+model once that nothing ran and that it must use the function-calling
+interface. The ledger records that message as a `native_tools_notice` entry,
+a kind 1.x ledgers do not have.
+
+What you need to do: nothing, if your model on OpenAI, Anthropic or Gemini
+uses native calls. If you relied on a model writing TOOL lines to one of
+those hosts, or to a host you turned native calling on for with
+`FLYWHEEL_NATIVE_TOOLS=1`, choose one:
+
+- set `FLYWHEEL_NATIVE_TOOLS=0`, so the session uses the text protocol and
+  TOOL lines are the calls again;
+- or have the model call tools through the provider's function calling.
+
+Local models, subscription CLIs and every host that already used the text
+protocol are not affected.
+
 ### Anthropic requests are marked for prompt caching by default
 
 In 1.x a coding session sent Anthropic the system prompt as plain text and no
