@@ -1,0 +1,5 @@
+{
+ "model": "gpt-5.3-codex",
+ "input": "What changed?",
+ "max_output_tokens": 64
+}

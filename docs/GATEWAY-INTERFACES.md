@@ -10,7 +10,7 @@ written to the gateway's hash-chained ledger and returned with a receipt.
 | `POST /v1/messages` | Anthropic Messages | served by the gateway |
 | `POST /v1/messages/count_tokens` | Anthropic token counting | forwarded to an Anthropic upstream |
 | `POST /v1/chat/completions` | OpenAI chat | served, behind a per-operation grant |
-| `POST /v1/responses` | OpenAI Responses | not served yet, see below |
+| `POST /v1/responses` | OpenAI Responses | served by the gateway, for the subset below |
 
 ## Anthropic Messages
 
@@ -205,12 +205,243 @@ formats covered are OpenAI-compatible chat, Anthropic and Gemini.
 Not run: any hosted provider, Claude Code itself against the gateway, and
 Gemini over a real socket (its path is replay only).
 
-A run against a local model server (Ollama) was planned and not done: the
-test machine had less free memory than the run needs. So no real model server
-has answered through this interface yet.
+One run against a real model server was done on 2026-11-14, with a local
+Ollama serving `qwen2.5:1.5b` and `FLYWHEEL_GATEWAY_UPSTREAM` set to
+`ollama:qwen2.5:1.5b`. The `anthropic` SDK sent three requests through the
+gateway's HTTP handler on a loopback port. A plain request returned text with
+`end_turn` and the server's token counts. A streamed request delivered 29
+text pieces. A request with one tool and `tool_choice` `any` returned a
+`tool_use` block with the arguments the prompt asked for. Each call left an
+`endpoint_call` entry with `"interface": "anthropic-messages"`. This was one
+run on one small model, started from the test harness and not from
+`flywheel up`.
 
 ## OpenAI Responses
 
-`POST /v1/responses` is not served by the gateway yet. The path is still
-proxied to the local serve endpoint, as in 1.x. This section will describe the
-Responses interface when it lands on the same turn core as Messages.
+The gateway serves `POST /v1/responses` with and without `stream`. It carries
+the part of the Responses format that coding tools use: text, instructions,
+function tools, function calls and their outputs, and usage. The rest is
+refused with an error that names the field or the item type. The table under
+"The subset" lists every case.
+
+### Point an OpenAI SDK client at the gateway
+
+The base URL ends in `/v1`. The API key is the gateway token: the file
+`gateway.token` in the Flywheel home, `~/.flywheel` by default.
+
+```python
+from openai import OpenAI
+
+client = OpenAI(
+    base_url="http://127.0.0.1:8799/v1",
+    api_key=open("/path/to/gateway.token").read().strip(),
+)
+response = client.responses.create(
+    model="ollama:qwen2.5:1.5b",
+    instructions="Answer in one sentence.",
+    input="Say hello.",
+)
+print(response.output_text)
+```
+
+The client also reads both values from the environment:
+
+```bash
+export OPENAI_BASE_URL=http://127.0.0.1:8799/v1
+export OPENAI_API_KEY="$(cat ~/.flywheel/gateway.token)"
+```
+
+```powershell
+$env:OPENAI_BASE_URL = "http://127.0.0.1:8799/v1"
+$env:OPENAI_API_KEY = Get-Content "$HOME\.flywheel\gateway.token"
+```
+
+The SDK sends the key as `Authorization: Bearer`. Pass `stream=True` to
+`client.responses.create` to read the events one by one. Source for the
+arguments and the two variables: the
+[openai-python README](https://github.com/openai/openai-python/blob/main/README.md),
+read 2026-11-14, and the `openai` Python SDK 2.36.0.
+
+### Codex CLI
+
+Codex CLI was not run against the gateway. Its configuration page documents a
+custom provider in `config.toml` with these keys: `model_provider` set to the
+provider id, and a `[model_providers.<id>]` table holding `name`, `base_url`,
+`env_key` (the name of the environment variable that holds the key) and
+`wire_api = "responses"`. Source:
+[Codex advanced configuration](https://developers.openai.com/codex/config-advanced),
+read 2026-11-14. Two things were not checked: whether Codex appends `/v1` to
+`base_url`, and which tool types Codex sends. A request that carries a tool
+type outside the subset is refused, and the error names the type.
+
+### Which upstream answers
+
+The routing rule is the one Messages uses, described under "Which upstream
+answers" above. A gateway endpoint name in `model` is used as written. Any
+other name, such as `gpt-5.3-codex`, goes to the endpoint named by
+`FLYWHEEL_GATEWAY_UPSTREAM`. With the variable unset, an unknown name gets 404
+with `param` set to `model`.
+
+Every upstream is reached by translation. The request is rewritten in the
+upstream's own format: chat completions for an OpenAI-compatible upstream,
+Messages for Anthropic, `generateContent` for Gemini. The reply is written
+back as a Response object. There is no pass-through path, because no upstream
+the gateway knows is called on `/v1/responses`. An OpenAI upstream is called
+on `/v1/chat/completions`.
+
+### The subset
+
+| Request feature | What the gateway does |
+|---|---|
+| `input` as a string | carried, as one user turn |
+| `input` items of type `message`, with or without the `type` field | carried |
+| `input_text` and `output_text` content parts, or a plain string | carried |
+| `system` and `developer` messages in `input` | carried, joined to `instructions` as system text |
+| `function_call` items | carried |
+| `function_call_output` items, with a string or `input_text` parts | carried |
+| `instructions` | carried |
+| `tools` of type `function` | carried; `strict` is not sent |
+| `tool_choice` `auto`, `none`, `required`, or one named function | carried (Gemini: only `auto` and `none`) |
+| `parallel_tool_calls` | carried (not to Gemini) |
+| `max_output_tokens`, `temperature`, `top_p`, `stream` | carried |
+| `reasoning` items in `input` | dropped |
+| `store`, `metadata`, `include`, `reasoning`, `truncation`, `user`, `prompt_cache_key`, `service_tier`, `stream_options`, and fields this table does not name | ignored |
+| `previous_response_id`, `conversation` | refused |
+| `background`, `prompt`, `context_management` | refused |
+| `text.format` other than `text` | refused |
+| tools of any other type: `web_search`, `file_search`, `computer_use_preview`, `code_interpreter`, `mcp`, `image_generation`, `custom`, and the rest | refused |
+| `input_image`, `input_file`, `input_audio` and other content parts | refused |
+| `item_reference` and every other item type | refused |
+
+Notes on the choices:
+
+- The gateway stores no responses. That is why `previous_response_id` and
+  `conversation` are refused: send the whole conversation in `input`. `store`
+  is accepted and has no effect, and the Response object always says
+  `"store": false`. `metadata` is echoed back.
+- A `reasoning` item belongs to the provider that made it, and no upstream on
+  this path can read another provider's. Refusing it would end a conversation
+  that began on that provider, so the item is left out and the conversation
+  goes on. The gateway never returns a reasoning item itself.
+- With no `max_output_tokens` the gateway sends a limit of 4096 upstream,
+  because two of the three upstream formats require one. Set the field to
+  raise it.
+- The flat item list becomes alternating turns. A `function_call` joins the
+  assistant turn before it. A `function_call_output` must come directly after
+  the calls it answers.
+
+### The Response object
+
+A reply has one `message` item when the model wrote text, followed by one
+`function_call` item per call. `status` is `completed`, or `incomplete` with
+`incomplete_details.reason` set to `max_output_tokens` or `content_filter`.
+`model` is the model that served the call. The request's `instructions`,
+`tools`, `tool_choice`, `temperature`, `top_p` and `max_output_tokens` are
+echoed.
+
+### Usage
+
+`usage` holds the provider's own counts. No count is estimated.
+`input_tokens` is the whole prompt, cached part included, which is how the
+Responses format defines it. `input_tokens_details.cached_tokens` is the
+provider's cache-read count. For an Anthropic upstream the three input counts
+it reports are added up to give `input_tokens`.
+
+The format types its counts as integers, so a missing count cannot be `null`.
+When the provider sent no cache count, `cached_tokens` is `0` and the body
+carries `"x_flywheel": {"cached_tokens_reported": false}`. When it sent no
+input or output count, those are `0` and `x_flywheel` also carries
+`"usage_reported": false`. `output_tokens_details.reasoning_tokens` is always
+`0`, because the gateway does not carry a reasoning count.
+
+### Streaming
+
+Events arrive in the documented order, each with a `sequence_number` that
+starts at 0: `response.created`, `response.in_progress`,
+`response.output_item.added`, `response.content_part.added`, one
+`response.output_text.delta` per piece of text as the upstream sends it,
+`response.output_text.done`, `response.content_part.done`,
+`response.output_item.done`, and last `response.completed` with the whole
+Response object and its usage. A reply cut by the token limit ends with
+`response.incomplete` in its place.
+
+A function call adds `response.output_item.added`,
+`response.function_call_arguments.delta`,
+`response.function_call_arguments.done` and `response.output_item.done`. The
+arguments arrive in one delta when the upstream finishes, not as they are
+generated.
+
+A stream that stops before the upstream's end marker ends with
+`response.failed`. That event carries a Response object with `status`
+`failed` and `error.code` `server_error`, and no `response.completed`
+follows. The `openai` SDK yields this event to the caller and does not raise.
+
+### Ledger and receipt
+
+Every served call appends an `endpoint_call` entry to the gateway ledger with
+`"interface": "openai-responses"`. The same text conversation sent through
+`/v1/chat/completions` or `/v1/messages` leaves an entry with the same
+hashes. A call that fails after the upstream was contacted appends
+`endpoint_call_failed`. A request refused before any upstream call appends
+nothing.
+
+The receipt rides as `x_receipt` on the Response object, both in a plain body
+and inside the last event of a stream. Its id is also in the `x-receipt-id`
+header of a plain reply.
+
+### Errors
+
+Errors use the OpenAI error body, `{"error": {"message", "type", "param",
+"code"}}`. A malformed or unsupported request is 400 `invalid_request_error`,
+and `param` names the field, for example `input.3.call_id` or
+`previous_response_id`. A `function_call_output` that names a `call_id` the
+calls before it did not produce is refused the same way. An unknown model is
+404. The `type` is `rate_limit_error` for 429, `service_unavailable_error`
+for 503 and `server_error` for other 5xx statuses.
+
+An upstream error keeps its status. An OpenAI-compatible upstream's error body
+is returned as sent, with secrets scrubbed. Another upstream's error is
+rewritten in this shape. A wrong or missing gateway token gets the gateway's
+own 401 body, which the `openai` SDK reports as `AuthenticationError`.
+
+### Authentication
+
+The route needs the gateway token in `Authorization: Bearer` and a JSON
+content type, like the Messages routes. It does not use the per-operation
+grant flow that guards `/v1/chat/completions`.
+
+### Where the format was read
+
+`platform.openai.com` refused a scripted fetch on 2026-11-14, so the reference
+pages there were not read. The format comes from three places: the published
+OpenAPI document in
+[openai/openai-openapi](https://github.com/openai/openai-openapi), the type
+definitions in the `openai` Python SDK 2.36.0, which are generated from that
+document, and the function-calling, streaming and error-code guides on
+`developers.openai.com`.
+
+### What was run
+
+Verified by replay, with no provider called: recorded requests and replies go
+through the handler function, and through a real gateway on a loopback port
+against a loopback stub upstream, for OpenAI-compatible, Anthropic and Gemini
+upstreams. The `openai` Python SDK 2.36.0 runs `responses.create`, `stream=True`,
+the `responses.stream` helper, a function-call round trip and the typed errors
+against that gateway. The recorded Response objects and stream events also
+validate against the SDK's own models.
+
+Not run: any hosted provider, Codex CLI, and any client other than the
+`openai` Python SDK.
+
+One run against a real model server was done on 2026-11-14, with a local
+Ollama serving `qwen2.5:1.5b` and `FLYWHEEL_GATEWAY_UPSTREAM` set to
+`ollama:qwen2.5:1.5b`. The `openai` SDK sent four requests through the
+gateway's HTTP handler on a loopback port. A plain request returned
+`completed` with text and the server's token counts. A streamed request ran
+from `response.created` to `response.completed` with 10 text deltas. A
+request with one function tool and `tool_choice` `required` returned a
+`function_call` item, and the follow-up request carrying its
+`function_call_output` returned text that used the output. Each call left an
+`endpoint_call` entry with `"interface": "openai-responses"`, and the ledger
+chain verified. This was one run on one small model, started from the test
+harness and not from `flywheel up`.

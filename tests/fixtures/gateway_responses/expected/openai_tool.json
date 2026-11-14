@@ -1,0 +1,83 @@
+{
+ "id": "resp_fw_TOKEN",
+ "object": "response",
+ "status": "completed",
+ "error": null,
+ "incomplete_details": null,
+ "instructions": null,
+ "max_output_tokens": 64,
+ "model": "gpt-5.3-codex-spark",
+ "output": [
+  {
+   "id": "msg_fw_TOKEN_0",
+   "type": "message",
+   "status": "completed",
+   "role": "assistant",
+   "content": [
+    {
+     "type": "output_text",
+     "text": "I will write the note.",
+     "annotations": []
+    }
+   ]
+  },
+  {
+   "id": "fc_fw_TOKEN_1",
+   "type": "function_call",
+   "status": "completed",
+   "call_id": "call_fixtureWrite01",
+   "name": "write_file",
+   "arguments": "{\"path\": \"n.txt\", \"content\": \"hi\"}"
+  }
+ ],
+ "parallel_tool_calls": false,
+ "previous_response_id": null,
+ "store": false,
+ "temperature": null,
+ "text": {
+  "format": {
+   "type": "text"
+  }
+ },
+ "tool_choice": "required",
+ "tools": [
+  {
+   "type": "function",
+   "name": "write_file",
+   "description": "Write a file in the workspace.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "content": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path",
+     "content"
+    ]
+   },
+   "strict": false
+  }
+ ],
+ "top_p": null,
+ "truncation": "disabled",
+ "usage": {
+  "input_tokens": 502,
+  "input_tokens_details": {
+   "cached_tokens": 0
+  },
+  "output_tokens": 38,
+  "output_tokens_details": {
+   "reasoning_tokens": 0
+  },
+  "total_tokens": 540
+ },
+ "metadata": {},
+ "x_flywheel": {
+  "cached_tokens_reported": false
+ }
+}

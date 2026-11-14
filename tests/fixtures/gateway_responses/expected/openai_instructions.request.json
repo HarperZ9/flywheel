@@ -1,0 +1,16 @@
+{
+ "model": "gpt-5.3-codex-spark",
+ "messages": [
+  {
+   "role": "system",
+   "content": "Be brief.\nAnswer in English."
+  },
+  {
+   "role": "user",
+   "content": "What changed?"
+  }
+ ],
+ "max_tokens": 64,
+ "temperature": 0.2,
+ "top_p": 0.9
+}

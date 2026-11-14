@@ -1,7 +1,7 @@
 """gateway_turn.py -- one neutral model turn behind every gateway interface.
 
-The gateway answers more than one wire format: Anthropic Messages here, OpenAI
-Responses next. Each interface parses its request into a `Turn`, picks an
+The gateway answers more than one wire format: Anthropic Messages and OpenAI
+Responses. Each interface parses its request into a `Turn`, picks an
 upstream with `resolve_upstream`, sends the turn (gateway_turn_call) and
 renders the `Reply` in its own format. What every interface shares lives in
 this module: the turn and reply shapes, the upstream choice, the tool-result
@@ -107,6 +107,7 @@ class Response:
     body: "dict | None" = None
     chunks: object = None               # an iterator of bytes, for an event stream
     headers: dict = field(default_factory=dict)
+    fault: object = None                # text -> the interface's stream error event
 
 
 @dataclass

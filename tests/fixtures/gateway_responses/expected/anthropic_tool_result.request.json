@@ -1,0 +1,63 @@
+{
+ "model": "claude-sonnet-5",
+ "max_tokens": 64,
+ "messages": [
+  {
+   "role": "user",
+   "content": "write a note"
+  },
+  {
+   "role": "assistant",
+   "content": [
+    {
+     "type": "text",
+     "text": "I will write the note."
+    },
+    {
+     "type": "tool_use",
+     "id": "call_fixtureWrite01",
+     "name": "write_file",
+     "input": {
+      "path": "n.txt",
+      "content": "hi"
+     }
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "content": [
+    {
+     "type": "tool_result",
+     "tool_use_id": "call_fixtureWrite01",
+     "content": "wrote 2 bytes"
+    },
+    {
+     "type": "text",
+     "text": "What changed?"
+    }
+   ]
+  }
+ ],
+ "tools": [
+  {
+   "name": "write_file",
+   "description": "Write a file in the workspace.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "content": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path",
+     "content"
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,36 @@
+{
+ "model": "gpt-5.3-codex-spark",
+ "messages": [
+  {
+   "role": "user",
+   "content": "write a note"
+  }
+ ],
+ "max_tokens": 64,
+ "tools": [
+  {
+   "type": "function",
+   "function": {
+    "name": "write_file",
+    "description": "Write a file in the workspace.",
+    "parameters": {
+     "type": "object",
+     "properties": {
+      "path": {
+       "type": "string"
+      },
+      "content": {
+       "type": "string"
+      }
+     },
+     "required": [
+      "path",
+      "content"
+     ]
+    }
+   }
+  }
+ ],
+ "tool_choice": "required",
+ "parallel_tool_calls": false
+}

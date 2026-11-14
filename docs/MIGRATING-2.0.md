@@ -297,6 +297,23 @@ To reach the local model's flattened-prompt Messages endpoint as before, send
 the request to the serve endpoint's own address. `docs/GATEWAY-INTERFACES.md`
 describes the new behaviour in full.
 
+### The gateway answers /v1/responses itself
+
+In 1.x the gateway passed `POST /v1/responses` through to the local serve
+endpoint. That endpoint has no Responses handler, so the request came back as
+404 `not found`.
+
+In 2.0 the gateway answers the path in the OpenAI Responses format. It routes
+the request to the upstream named by the `model` field, the same way
+`/v1/messages` does, and writes each call to the gateway ledger. An OpenAI
+SDK client can use the gateway as its base URL, with `/v1` at the end.
+
+What changes for a caller that relied on the old 404: the path now returns a
+Response object, or an error in the OpenAI error shape. The gateway serves a
+subset of the format. `previous_response_id`, built-in tools, and image and
+file inputs are refused with 400 `invalid_request_error`, and the error names
+the field. `docs/GATEWAY-INTERFACES.md` has the full table under "The subset".
+
 ## The `usage` field of a served response
 
 In 1.x two responses carried whitespace word counts in `usage`, in the place
