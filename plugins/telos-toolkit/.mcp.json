@@ -1,0 +1,29 @@
+{
+  "mcpServers": {
+    "crucible": {
+      "type": "stdio",
+      "command": "crucible",
+      "args": ["mcp"]
+    },
+    "gather": {
+      "type": "stdio",
+      "command": "gather",
+      "args": ["mcp"]
+    },
+    "index": {
+      "type": "stdio",
+      "command": "index",
+      "args": ["mcp"]
+    },
+    "forum": {
+      "type": "stdio",
+      "command": "forum",
+      "args": ["mcp"]
+    },
+    "learn": {
+      "type": "stdio",
+      "command": "node",
+      "args": ["${user_config.learn_mcp_path}"]
+    }
+  }
+}

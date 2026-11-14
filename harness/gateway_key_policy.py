@@ -47,7 +47,10 @@ _LOG = logging.getLogger(__name__)
 DEFAULT_IN_FLIGHT = 4
 _HELD, _HELD_LOCK = {}, threading.Lock()    # key fingerprint -> when it was stopped
 DEFAULT_OUTPUT = 4096                   # reserved when a request names no output limit
-_LOCK, _RUNNING = threading.Lock(), {}  # key fingerprint -> [[input, output], ...]
+_LOCK, _RUNNING = threading.RLock(), {}     # key fingerprint -> [[input, output], ...]
+# Held by gateway_key_gate.enter from the second read of a key's row to `admit`.
+# `release` takes the same lock, so a call cannot leave between the two.
+ADMISSION = _LOCK
 LISTS = {"betas": "--allow-beta", "server_tools": "--allow-server-tool"}
 
 

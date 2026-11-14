@@ -113,8 +113,8 @@ def run_agent(agent, goal: str, executor: ToolExecutor,
             "receipt": resp.get("x_receipt", {}).get("receipt_id")})
         _emit(type="assistant", step=step, text=text)
 
-        from .tool_rescue import rescue_tool_calls
-        calls, repairs = rescue_tool_calls(text, with_preamble=True)
+        from .native_turn import turn_calls     # a native turn runs its tool-call objects only
+        calls, repairs = turn_calls(resp, text)
         for rep in repairs:
             ledger.append("tool_rescue", json.dumps(rep, sort_keys=True))
             _emit(type="tool_rescue", transform=rep["transform"])

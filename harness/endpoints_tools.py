@@ -24,14 +24,14 @@ did before this module existed.
 
 The text protocol stays the fallback in four cases: the switch is off, the
 host is not one whose function calling was checked (see FIRST_PARTY), the
-host refuses tool schemas (learned from its own error and remembered), or an
+host says the model cannot take tool schemas (learned from its own error,
+remembered, and shown once; endpoints_tools_fallback), or an
 earlier turn cannot be matched to the native reply it came from (after a
 resume or a compaction), in which case that turn travels as text.
 """
 from __future__ import annotations
 
 import contextvars
-import json
 import logging
 import re
 import threading
@@ -42,6 +42,8 @@ from dataclasses import dataclass, field
 from .local_agent import MalformedBackendOutput
 
 _ACTIVE = contextvars.ContextVar("flywheel_native_tools", default=None)
+# Whether the request now being answered on this thread carried the session's tool schemas.
+REQUEST_NATIVE = contextvars.ContextVar("flywheel_native_request", default=False)
 _LOG = logging.getLogger(__name__)
 
 # Hosts whose function-calling wire format this module was written against.
@@ -50,7 +52,7 @@ _LOG = logging.getLogger(__name__)
 FIRST_PARTY = ("api.openai.com", "api.anthropic.com", "generativelanguage.googleapis.com")
 ENV = "FLYWHEEL_NATIVE_TOOLS"            # "0" off, "1" on for every hosted backend
 _NO_NATIVE: set = set()                  # (base_url, model) that refused tool schemas
-_WORD = re.compile(r"^\w+$")
+_WORD = re.compile(r"\w+\Z")
 KEEP = 256                               # native replies remembered per session
 
 # What a native request says in place of the text protocol's instructions
@@ -96,6 +98,9 @@ class Toolbox:
     cache: bool = True                     # provider prompt caching (endpoints_cache)
     replies: list = field(default_factory=list)
     stray: int = 0                         # prose TOOL lines in the last native reply with no call
+    turn: "tuple | None" = None            # (record, calls) of the last native reply (native_turn)
+    unfaithful: bool = False               # that record did not read back as its calls
+    notices: list = field(default_factory=list)   # fallback notices not yet shown
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def remember(self, reply: Reply) -> None:
@@ -137,30 +142,39 @@ def offered(backend) -> "tuple[Toolbox, list] | None":
 
 
 def refused(backend, status: int, obj, payload: dict) -> bool:
-    """True when a host turned down the tool schemas this module sent.
+    """True when a host said the model cannot take the tool schemas this module sent.
 
-    The host is remembered, so the caller rebuilds the request and it goes
-    out in the text protocol, now and for the rest of the process.
+    Only an error that says tools or function calling are unsupported counts
+    (endpoints_tools_fallback); any other 400 is the caller's error to raise.
+    The model is remembered, so the caller rebuilds the request and it goes
+    out in the text protocol, now and for the rest of the process, and the
+    session shows and records one notice.
     """
-    if _ACTIVE.get() is None or status not in (400, 404, 422) or "tools" not in payload:
+    box = _ACTIVE.get()
+    if box is None or status not in (400, 404, 422) or "tools" not in payload:
         return False
     from .endpoints import _error_message
+    from .endpoints_tools_fallback import notice, unsupported
     from .provider_fault_boundary import redacted_text
-    message = _error_message(obj).lower()
-    if "tool" not in message and "function" not in message:
+    if not unsupported(obj):
         return False
     _NO_NATIVE.add((backend.base_url, backend.model))
+    box.notices.append(notice(backend, status))
     _LOG.warning("%s (%s) refused tool schemas with status %s: %s; using the text "
                  "protocol for this model", backend.name, backend.model, status,
-                 redacted_text(message))
+                 redacted_text(_error_message(obj).lower()))
     return True
 
 
 def canonical(prose: str, calls: list) -> str:
-    """The reply as the text protocol writes it: prose, then one TOOL line per call."""
+    """The reply as the text protocol writes it: prose, then one TOOL line per call.
+
+    Each call is one physical line whatever its arguments hold (native_turn.one_line).
+    """
     if not calls:
         return prose
-    lines = [f"TOOL {c['name']} {json.dumps(c['arguments'], ensure_ascii=False)}" for c in calls]
+    from .native_turn import one_line
+    lines = [f"TOOL {c['name']} {one_line(c['arguments'])}" for c in calls]
     head = prose if not prose or prose.endswith("\n") else prose + "\n"
     return head + "\n".join(lines)
 
@@ -224,7 +238,8 @@ def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool,
 
     `native` says the request carried tool schemas. Then only `calls` are
     calls: a line of `prose` that reads as one is marked and does not run
-    (endpoints_tools_prose). A text-protocol reply is returned as it came.
+    (endpoints_tools_prose), and the record must read back as exactly `calls`
+    or nothing runs (native_turn). A text-protocol reply is returned as it came.
     """
     box = _ACTIVE.get()
     if box is None:
@@ -246,6 +261,9 @@ def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool,
         prose, marked = inert(prose)
         box.stray = 0 if calls else marked
     text = canonical(prose, calls)
-    if calls and raw is not None:
+    if native:
+        from .native_turn import settle
+        text = settle(box, text, calls)
+    if calls and raw is not None and not box.unfaithful:
         box.remember(Reply(text, dialect, raw, [dict(c) for c in calls]))
     return text
