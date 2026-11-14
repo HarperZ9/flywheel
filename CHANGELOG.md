@@ -5,6 +5,14 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+Gateway: OpenAI Responses
+- The local gateway answers `POST /v1/responses` itself, with and without streaming. An OpenAI SDK client can use it as its base URL (`http://127.0.0.1:8799/v1`, with the gateway token as the API key). It carries `input` as a string or as items (`message`, `function_call`, `function_call_output`), `instructions`, `function` tools, `tool_choice`, `max_output_tokens`, `temperature`, `top_p`, and usage with `input_tokens_details.cached_tokens`. See `docs/GATEWAY-INTERFACES.md`, "OpenAI Responses".
+- The gateway stores no responses and runs no built-in tools. `previous_response_id`, `conversation`, `background`, tools other than `function`, and image, file and audio inputs are refused with 400 `invalid_request_error`, and `param` names the field. `reasoning` items in `input` are dropped. `store` is accepted and has no effect.
+- Routing is the rule `/v1/messages` uses: a gateway endpoint name in `model`, or `FLYWHEEL_GATEWAY_UPSTREAM` for any other name. OpenAI-compatible, Anthropic and Gemini upstreams each get the turn in their own format. No upstream is called on `/v1/responses`.
+- Each served call appends an `endpoint_call` entry with `"interface": "openai-responses"` and returns a receipt as `x_receipt` on the Response object. A stream that stops early ends with `response.failed` and leaves `endpoint_call_failed`. Usage holds the provider's counts and is never estimated.
+- Changed: `/v1/responses` on the gateway used to be proxied to the local serve endpoint, which answered 404. See `docs/MIGRATING-2.0.md`, "The gateway answers /v1/responses itself".
+- Tested by replaying recorded requests and replies, and with the `openai` Python SDK against a gateway on a loopback port with a stub upstream. Not run: any hosted provider, Codex CLI, and a local model server.
+
 Gateway: Anthropic Messages
 - The local gateway answers `POST /v1/messages` itself, with and without streaming. Claude Code and Anthropic SDK clients can use it as their base URL. It carries text, system prompts, tool definitions, `tool_use` and `tool_result` blocks, `tool_choice`, and usage with the cache fields. See `docs/GATEWAY-INTERFACES.md`.
 - The `model` field names a gateway endpoint (`anthropic`, `openai:gpt-4o`, `ollama:qwen2.5:1.5b`). Any other model name goes to the endpoint set in `FLYWHEEL_GATEWAY_UPSTREAM`. An Anthropic upstream gets the request body unchanged apart from the model, and its reply and stream events come back as sent. OpenAI-compatible and Gemini upstreams get the turn in their own format.
