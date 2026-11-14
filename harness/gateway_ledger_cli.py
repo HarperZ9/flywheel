@@ -26,7 +26,7 @@ from harness import gateway_ledger
 
 USAGE = __doc__.split("\n\n", 1)[1].rstrip()
 OWNER = "owner"
-RETRY_AFTER = 0.25                      # seconds before the one second look of `_checked`
+RETRY_AFTER = 0.25                      # seconds before `_checked` reads a second time
 _CONTROL = {code: f"\\x{code:02x}" for code in [*range(32), 127]}
 
 

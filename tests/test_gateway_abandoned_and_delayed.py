@@ -14,6 +14,7 @@ Three behaviours, each over real loopback sockets against a stub upstream:
 No provider is called.
 """
 import json
+import os
 import socket
 import struct
 import threading
@@ -31,6 +32,8 @@ from tests.gateway_keys_support import (  # noqa: F401  (fixtures)
 pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
 
 PATHS = ["/v1/messages", "/v1/responses"]
+# struct linger {on, seconds 0}: two shorts on Windows, two ints elsewhere
+_LINGER_NOW = struct.pack("hh" if os.name == "nt" else "ii", 1, 0)
 
 
 def _head(path: str, key: str, length: int) -> bytes:
@@ -161,7 +164,7 @@ def test_a_client_that_resets_while_the_upstream_is_opening_is_charged(
             sock = socket.create_connection((target.hostname, target.port), timeout=10)
             sock.sendall(_head(path, raw, len(body)) + body)
             time.sleep(0.2)
-            sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("hh", 1, 0))
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, _LINGER_NOW)
             sock.close()                        # an abortive close: the peer sees a reset
             _settled(ledger, 1)
             assert len(seen) == 1, "the provider was called once"
