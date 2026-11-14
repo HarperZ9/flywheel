@@ -68,9 +68,11 @@ What stays the same:
 
 What changes:
 
-- Requests to the three hosts above carry a `tools` list and one more
-  paragraph at the end of the system prompt. A proxy that rewrites or rejects
-  `tools` will see different traffic.
+- Requests to the three hosts above carry a `tools` list, and the part of the
+  system prompt that explains how to call a tool is worded for function
+  calling. A proxy that rewrites or rejects `tools` will see different
+  traffic. The system prompt on the record, and the receipt computed over it,
+  keep the 1.x wording.
 - The harness-config ledger entry has a new field, `native_tools`, so the
   config hash of a 2.0 session differs from a 1.x session with the same
   settings. The hash already included the Flywheel version, so hashes never
@@ -81,3 +83,30 @@ What changes:
 
 To keep the 1.x behaviour, set `FLYWHEEL_NATIVE_TOOLS=0`. To use native calls
 on another host that supports them, set `FLYWHEEL_NATIVE_TOOLS=1`.
+
+### Anthropic requests are marked for prompt caching by default
+
+In 1.x a coding session sent Anthropic the system prompt as plain text and no
+cache marks. In 2.0 it sends the system prompt as one text block with a cache
+mark and adds a second mark at the top level of the request.
+
+What stays the same: the ledger, the receipts, and every request to a provider
+other than Anthropic.
+
+What changes:
+
+- Billing on Anthropic. The provider bills a cache write above its normal
+  input rate and a cache read far below it. A session with many model calls
+  pays less; a session with a single short call can pay slightly more. No
+  saving has been measured by Flywheel.
+- The `usage` object of `flywheel code -p --output-format json`, and the saved
+  session's usage, can carry two new fields, `cache_read_tokens` and
+  `cache_write_tokens`. They appear only when a provider reported them. This
+  applies to OpenAI-compatible hosts and Gemini too, which cache by
+  themselves.
+- The harness-config ledger entry has a new field, `prompt_cache`.
+- A proxy in front of Anthropic that rejects `cache_control` gets one request
+  it refuses; Flywheel then sends the request again without the marks and
+  stops sending them to that host.
+
+To keep the 1.x behaviour, set `FLYWHEEL_PROMPT_CACHE=0`.

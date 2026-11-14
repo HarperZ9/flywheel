@@ -39,6 +39,42 @@ compatible, Anthropic, Gemini) and Ollama's native counts. `/cost` shows them.
 A call whose backend reported no counts is listed as uncounted; nothing is
 estimated, and no price is applied.
 
+### Prompt caching
+
+Every model call in a session sends the same long start again: the tool
+schemas, the system prompt and the conversation so far. A provider can keep
+that start and charge less to read it back.
+
+| Provider | What Flywheel sends | Counts reported |
+|---|---|---|
+| Anthropic | Two cache marks: one on the system prompt, which covers the tools and the system text, and one at the top level of the request, which the provider keeps on the newest block as the conversation grows | tokens read from cache and tokens written to cache |
+| OpenAI and OpenAI-compatible hosts | Nothing. The provider caches by itself where it supports caching | tokens read from cache, and tokens written where the host reports them |
+| Gemini | Nothing. Implicit caching is the provider's default on 2.5 and newer models | tokens read from cache |
+
+Caching is on by default. `FLYWHEEL_PROMPT_CACHE=0` stops Flywheel from
+sending the Anthropic marks; it cannot turn off caching a provider does by
+itself. A host that refuses the marks is asked again without them, with one
+warning.
+
+`/cost` and the `usage` object of a `-p` JSON result show `cache_read_tokens`
+and `cache_write_tokens` when a provider reported them. A reply with no cache
+figure adds none, so a missing field means the provider said nothing, and a
+zero means it said zero. Providers count differently: Anthropic's input count
+leaves cached tokens out, so its total input is input plus cache read plus
+cache write; OpenAI and Gemini include cached tokens in the input count.
+
+What caching costs and saves is the provider's pricing. On Anthropic a cache
+write is billed above the normal input rate and a cache read far below it, so
+a session with one short turn can cost slightly more with the marks, and a
+session with many model calls costs less. A prompt shorter than the provider's
+minimum is not cached and no error is returned. The marks change the request
+only; the ledger and the receipts are the same with caching on or off. The
+harness-config entry records the switch as `prompt_cache`.
+
+Tested by replaying replies that carry each provider's cache fields. Token
+counts with caching on and off for a fixed 20-turn script against a live
+provider: not run.
+
 ## Models
 
 The session uses the first model it can reach, in this order: a local server
@@ -615,8 +651,8 @@ permission mode, rules and hooks; max steps, compaction budget, max tokens,
 temperature and seed; the backend preference and which backend and model
 answered; the test command; the Flywheel version). A `harness_config` ledger
 entry holds the settings whenever the hash changes, and `-p` JSON results carry
-it as `harness_config_sha256`. The native function calling switch is one of the
-settings. Two runs with equal hashes ran the same harness,
+it as `harness_config_sha256`. The native function calling and prompt caching switches are
+among the settings. Two runs with equal hashes ran the same harness,
 so a difference between them comes from the model or the task, not from
 Flywheel's settings. The user's own words and an "always" answer given at a
 prompt are not in the hash.
@@ -690,14 +726,26 @@ markers. Output has no color and no spinners in either mode.
   Anthropic and Gemini hosts only. Other hosts use the text protocol unless
   `FLYWHEEL_NATIVE_TOOLS=1` is set. Azure OpenAI, Amazon Bedrock, Google Vertex
   AI, Ollama and the subscription CLIs always use the text protocol.
-- With native calling on, the model is told not to write TOOL lines. If it
-  writes one anyway beside a native call, both run.
+- No figure for what prompt caching saves has been measured. The counts shown
+  are the provider's own; Flywheel applies no price to them.
+- With native calling on, the request's system prompt explains tools in
+  function-calling terms and tells the model not to write TOOL lines. If it
+  writes one anyway beside a native call, both run. The ledger and the
+  receipt are computed over the session's own system prompt, which keeps the
+  text-protocol wording, so they do not show the wording that was sent.
 - When one reply holds several native calls and a tool's output contains the
   exact header of the next call's result, the outputs are divided at the
   wrong place on the way back to the provider. The text still arrives whole
   and in order.
 - This session has been tested with a scripted model and with recorded
-  provider streams. A run against each live hosted provider is not part of
-  the test suite, and no live streamed turn has been run.
+  provider replies. A run against each live hosted provider is not part of
+  the test suite, and none has been run. One run outside the suite used a
+  local Ollama 0.40.15 server with `qwen2.5:1.5b`, through its
+  OpenAI-compatible and Anthropic-compatible endpoints: a streamed reply, a
+  native tool call with its result sent back, the same call streamed, and
+  the Anthropic cache marks were all accepted, and the file the model asked
+  for was written. That run shows the two wire paths work against a real
+  server. It does not show how the hosted providers themselves behave, and
+  the Gemini path has only been replayed.
 - Azure OpenAI, Amazon Bedrock, Google Vertex AI and the subscription CLIs do
   not stream; their replies print whole.

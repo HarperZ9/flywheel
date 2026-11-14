@@ -142,10 +142,17 @@ def test_results_go_back_in_each_providers_own_shape(tmp_path):
         session, made, _asked, _root = _session(tmp_path, provider, "native")
         session.turn("write a note")
         sent[provider] = _requests(made)
+        text, text_backend, _a, _r = _session(tmp_path, provider, "text")
+        text.turn("write a note")
+        assert "emitting lines in this exact format" in json.dumps(_requests(text_backend)[0])
     output = "wrote 2 bytes to n.txt"
     first, second = sent["anthropic"]
     assert {"name", "description", "input_schema"} == set(first["tools"][0])
-    assert first["system"].endswith("do not write TOOL lines yourself.")
+    wire_system = first["system"][0]["text"]
+    assert wire_system.endswith("do not write TOOL lines yourself.")
+    assert "Tools are available through the function-calling interface." in wire_system
+    assert "emitting lines in this exact format" not in wire_system     # text protocol wording
+    assert "emitting lines in this exact format" in session.agent.system   # the record keeps it
     assert second["messages"][1] == {"role": "assistant",
                                      "content": plain_object("anthropic", "tool_use")["content"]}
     assert second["messages"][2] == {"role": "user", "content": [

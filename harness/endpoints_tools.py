@@ -49,9 +49,18 @@ _NO_NATIVE: set = set()                  # (base_url, model) that refused tool s
 _WORD = re.compile(r"^\w+$")
 KEEP = 256                               # native replies remembered per session
 
-NOTE = ("Function calling is on for this conversation. Call a tool through the "
-        "function-calling interface. The TOOL line format described above names the same "
-        "tools and arguments; do not write TOOL lines yourself.")
+# What a native request says in place of the text protocol's instructions
+# (local_tools.TOOLS_SYSTEM). The advice is the same; only the way to call
+# changes. Sent on the wire only: the session's own system prompt, and the
+# receipt computed over it, keep the text-protocol wording.
+GUIDE = ("Tools are available through the function-calling interface. Prefer repo_map then "
+         "read_file to locate code, and edit_file (the 'old' text must be unique) over "
+         "write_file for changes. After you receive the tool results, continue. When you "
+         "have the final answer and need no more tools, reply with the answer and call no "
+         "tool. Keep tool use minimal.")
+NOTE = ("Call tools through the function-calling interface only. Where these instructions "
+        "show a tool as a line `TOOL name {json}`, the line names the tool and its "
+        "arguments; do not write TOOL lines yourself.")
 # The loop's own message that carries tool results back (harness/local_loop.py).
 RESULTS_HEAD = "TOOL RESULTS:\n"
 RESULTS_TAIL = ("\n\nContinue if you need more tools, otherwise give the final "
@@ -80,6 +89,7 @@ class Toolbox:
     """One session's native tool state: what to offer, and what came back."""
     specs: "callable"                      # () -> [{"name", "description", "parameters"}]
     mode: str = "auto"                     # "auto", "on" or "off"
+    cache: bool = True                     # provider prompt caching (endpoints_cache)
     replies: list = field(default_factory=list)
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 

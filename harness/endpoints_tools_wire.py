@@ -22,10 +22,13 @@ Wire formats, read 2026-11-13:
 """
 from __future__ import annotations
 
-from . import endpoints_tools as _tools
+from . import endpoints_cache as _cache, endpoints_tools as _tools
 
 
 def _noted(system: str) -> str:
+    """The system prompt for a native request: call through the interface, not as text."""
+    from .local_tools import TOOLS_SYSTEM
+    system = system.replace(TOOLS_SYSTEM, _tools.GUIDE)
     return f"{system}\n\n{_tools.NOTE}" if system else _tools.NOTE
 
 
@@ -98,16 +101,19 @@ _OUT = {"openai": _openai_out, "anthropic": _anthropic_out, "gemini": _gemini_ou
 
 
 def outgoing(dialect: str, backend, messages: list, system: str, payload: dict) -> dict:
-    """The request body to send: native when a toolbox is in force, else unchanged."""
+    """The request body to send: native and cache-marked when a session asks for it."""
     offer = _tools.offered(backend)
-    if offer is None:
-        return payload
-    box, specs = offer
-    found = _tools.matched(box, dialect, list(messages))
-    return _OUT[dialect](found, specs, list(messages), system, payload)
+    if offer is not None:
+        box, specs = offer
+        found = _tools.matched(box, dialect, list(messages))
+        payload = _OUT[dialect](found, specs, list(messages), system, payload)
+    return _cache.marked(dialect, backend, payload)
 
 
-refused = _tools.refused
+def refused(backend, status: int, obj, payload: dict) -> bool:
+    """True when the host turned down something a session added; ask again without it."""
+    return (_tools.refused(backend, status, obj, payload)
+            or _cache.refused(backend, status, obj, payload))
 
 
 def _openai_in(obj, gen) -> tuple:
