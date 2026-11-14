@@ -1,0 +1,35 @@
+{
+ "model": "claude-sonnet-5",
+ "max_tokens": 64,
+ "tools": [
+  {
+   "name": "write_file",
+   "description": "Write a file in the workspace.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "content": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path",
+     "content"
+    ]
+   }
+  }
+ ],
+ "tool_choice": {
+  "type": "any",
+  "disable_parallel_tool_use": true
+ },
+ "messages": [
+  {
+   "role": "user",
+   "content": "write a note"
+  }
+ ]
+}

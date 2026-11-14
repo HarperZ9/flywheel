@@ -1,0 +1,68 @@
+{
+ "model": "claude-sonnet-5",
+ "max_tokens": 64,
+ "tools": [
+  {
+   "name": "write_file",
+   "description": "Write a file in the workspace.",
+   "input_schema": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "content": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path",
+     "content"
+    ]
+   }
+  }
+ ],
+ "messages": [
+  {
+   "role": "user",
+   "content": "write a note"
+  },
+  {
+   "role": "assistant",
+   "content": [
+    {
+     "type": "thinking",
+     "thinking": "The user wants a note.",
+     "signature": "EuYBFixtureSignature"
+    },
+    {
+     "type": "text",
+     "text": "I will write the note."
+    },
+    {
+     "type": "tool_use",
+     "id": "toolu_01FixtureWrite",
+     "name": "write_file",
+     "input": {
+      "path": "n.txt",
+      "content": "hi"
+     }
+    }
+   ]
+  },
+  {
+   "role": "user",
+   "content": [
+    {
+     "type": "tool_result",
+     "tool_use_id": "toolu_01FixtureWrite",
+     "content": "wrote 2 bytes"
+    },
+    {
+     "type": "text",
+     "text": "What changed?"
+    }
+   ]
+  }
+ ]
+}

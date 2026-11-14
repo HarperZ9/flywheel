@@ -36,6 +36,8 @@ Read the matching section if one of these is true:
 8. **Python code imports `harness`.** Some names changed. See "Python names".
 9. **A custom certificate family stops on a budget, or you rely on the
    stated-limit audit detector.** See "Verdicts and audits".
+10. **A client sends `POST /v1/messages` to the gateway.** The gateway now
+    answers it and routes by the `model` field. See "The gateway".
 
 You never need to convert a stored record. Every sealed, anchored or saved
 1.x record verifies in 2.x with its original bytes.
@@ -263,6 +265,37 @@ administrator can pin it for a machine with `{"allow_workspace_writes":
 false}` in the machine policy file; the pin outranks the variable. The cases
 in which the project stays read-only by itself are listed in
 [the coding session page](CODE-SESSION.md), "Keeping the project read-only".
+
+## The gateway
+
+### The gateway answers /v1/messages itself
+
+In 1.x the gateway passed `POST /v1/messages` through to the local serve
+endpoint. That endpoint flattened the conversation into one prompt for the
+local model, ignored tools, and reported word counts as usage.
+
+In 2.0 the gateway answers the path. It routes the request to the upstream
+named by the `model` field, carries tools and streaming, reports the
+provider's token counts, and writes each call to the gateway ledger.
+
+What stays the same: the path, the gateway token, and the Messages request and
+response format. The serve endpoint still answers `/v1/messages` on its own
+port.
+
+What changes:
+
+- The `model` field decides where the request goes. A gateway endpoint name
+  such as `ollama:qwen2.5:1.5b` or `anthropic` is used as written. Any other
+  name needs `FLYWHEEL_GATEWAY_UPSTREAM` set where the gateway runs, or the
+  request is refused with 404 `not_found_error`.
+- A request the old path accepted loosely is now checked. `max_tokens` is
+  required, and a `tool_result` must answer a `tool_use` in the turn before it.
+- `usage` holds the provider's counts. It no longer holds word counts.
+- The gateway token is also accepted in the `x-api-key` header.
+
+To reach the local model's flattened-prompt Messages endpoint as before, send
+the request to the serve endpoint's own address. `docs/GATEWAY-INTERFACES.md`
+describes the new behaviour in full.
 
 ## The `usage` field of a served response
 

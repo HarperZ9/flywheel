@@ -1,0 +1,27 @@
+{
+ "id": "chatcmpl-fixture-2",
+ "object": "chat.completion",
+ "created": 1794268190,
+ "model": "gpt-5.3-codex-spark",
+ "system_fingerprint": "fp_fixture01",
+ "choices": [
+  {
+   "index": 0,
+   "message": {
+    "role": "assistant",
+    "content": "Wrote n.txt.\nNothing else changed.",
+    "refusal": null
+   },
+   "logprobs": null,
+   "finish_reason": "stop"
+  }
+ ],
+ "usage": {
+  "prompt_tokens": 451,
+  "completion_tokens": 9,
+  "total_tokens": 460,
+  "prompt_tokens_details": {
+   "cached_tokens": 400
+  }
+ }
+}

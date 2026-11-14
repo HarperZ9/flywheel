@@ -1,0 +1,7 @@
+data: {"id":"chatcmpl-fixture-2","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"role":"assistant","content":""},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-2","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"Wrote n.t"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-2","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{"content":"xt.\nNothi"},"logprobs":null,"finish_reason":null}],"usage":null}
+
+data: {"id":"chatcmpl-fixture-2","object":"chat.completion.chunk","created":1794268190,"model":"gpt-5.3-codex-spark","system_fingerprint":"fp_fixture01","choices":[{"index":0,"delta":{

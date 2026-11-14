@@ -8,8 +8,10 @@ header is checked.
 
 Three layers, all cheap:
 
-  1. A bearer token the caller must know. Compared with compare_digest so the
-     comparison time does not reveal how much of a guess was right.
+  1. A bearer token the caller must know, sent as `Authorization: Bearer` or,
+     by clients of the Anthropic interface, as `x-api-key`. Compared with
+     compare_digest so the comparison time does not reveal how much of a
+     guess was right.
   2. A Host allowlist. This is what defeats DNS rebinding, and it does not
      assume the token stayed secret.
   3. A JSON content-type requirement on state-changing methods. A form-encoded
@@ -83,9 +85,11 @@ def check(headers: Mapping, method: str, token: str, *,
     if _host_of(headers) not in allowed_hosts:
         return False, "bad_host"
     auth = headers.get("Authorization", "") or ""
-    if not auth.startswith("Bearer "):
+    # Anthropic clients send the credential as x-api-key; it is the same token.
+    offered = auth[7:] if auth.startswith("Bearer ") else (headers.get("x-api-key", "") or "")
+    if not offered:
         return False, "no_token"
-    if not compare_digest(auth[7:], token):
+    if not compare_digest(offered, token):
         return False, "bad_token"
     if method.upper() in STATE_CHANGING:
         ctype = (headers.get("Content-Type", "") or "").split(";", 1)[0].strip().lower()
