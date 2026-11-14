@@ -89,9 +89,11 @@ the project. Use git for that.
 An independent security review of the gateway and the coding session ran on
 2026-11-14, before this release. Its two release blockers and its five
 "fix before release" findings are fixed, with nine smaller ones (#462, #465,
-#466, #467, #468, #469). A second reviewer then checked those fixes and found
-nine further items, three of them marked "should fix before release". All
-nine are fixed (#470). You will notice these:
+#466, #467, #468, and #469 for the last of them). A second reviewer checked
+the first five of those pull requests and found nine further items, three of
+them marked "should fix before release". All nine are fixed (#470). The two
+later pull requests, #469 and #470, were tested by their authors and have
+not had a second review. You will notice these:
 
 - **The gateway ledger is a file.** It lives in `gateway-ledger/` under the
   Flywheel home and is chained across restarts. Start one gateway per
