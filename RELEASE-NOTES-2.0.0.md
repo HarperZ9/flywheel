@@ -88,14 +88,22 @@ the project. Use git for that.
 
 An independent security review of the gateway and the coding session ran on
 2026-11-14, before this release. Its two release blockers and its five
-"fix before release" findings are fixed, with eight smaller ones (#462, #465,
-#466, #467, #468). You will notice these:
+"fix before release" findings are fixed, with nine smaller ones (#462, #465,
+#466, #467, #468, #469). A second reviewer then checked those fixes and found
+nine further items, three of them marked "should fix before release". All
+nine are fixed (#470). You will notice these:
 
 - **The gateway ledger is a file.** It lives in `gateway-ledger/` under the
   Flywheel home and is chained across restarts. Start one gateway per
-  Flywheel home: a second one on the same home refuses model calls with 500.
-  Back up or remove the folder as a whole. Editing a segment makes `verify`
-  fail from then on.
+  Flywheel home. Back up or remove the folder as a whole. Editing a segment,
+  or deleting one and leaving the head record, makes `verify` fail from then
+  on.
+- **No ledger, no model call.** A gateway that cannot open or write its
+  ledger answers model calls with 503 and `retry-after: 5` before it
+  contacts a provider. That happens to a second gateway on the same home, or
+  when the `gateway-ledger` folder cannot be written. The gateway prints at
+  start whether the ledger opened: look for the `ledger` line, and for
+  `LEDGER UNAVAILABLE`.
 - **Each entry is committed to the disk before the reply is sent.** That
   commit (fsync) is on by default and took a median of 1.2 ms and 2.9 ms on
   the two drives measured. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips it and
@@ -111,8 +119,28 @@ An independent security review of the gateway and the coding session ran on
   `--in-flight N`. One more call gets 429 with `retry-after: 1`. Each running
   call also reserves its output limit against the key's budget.
 - **An unfinished stream is charged.** A client that closes a stream before
-  the end is charged for what was received. Before, such a call cost the key
+  the end is charged for what was received: the provider's output count when
+  one had arrived, else an estimate of the text, tool-call arguments and
+  thinking. A client that resets its connection before the first byte is
+  recorded and charged for the prompt. Before, such calls cost the key
   nothing.
+- **A key's limits are read again when the request body has arrived.** A
+  key that was revoked, suspended or over a limit by then is refused, even if
+  the request's headers came earlier.
+- **A client that goes silent during its request is disconnected after 30
+  seconds.** A client that sends headers and no body gets 408 on a model
+  interface. `FLYWHEEL_GATEWAY_READ_TIMEOUT` sets another number of seconds;
+  `0` switches the timeout off. Writes have no timeout.
+- **In a native tool turn, a `TOOL name {json}` line in the model's text does
+  not run.** When the session offered its tools through the provider's
+  function calling, only the provider's tool-call objects run. A line the
+  model quotes from a file or a tool's output is recorded as quoted text. If
+  a model writes such lines and makes no native call, it is told once to use
+  the native interface. If you relied on text TOOL lines with OpenAI,
+  Anthropic or Gemini, set `FLYWHEEL_NATIVE_TOOLS=0`, which uses the text
+  protocol as 1.x did.
+- **No key can be named `owner`.** That is the ledger's name for calls made
+  with the gateway token.
 - **A redirecting upstream fails.** The gateway no longer follows a redirect
   from a provider address, because that would send the provider key to the
   new host. Set the endpoint's base URL to the final address.
@@ -209,8 +237,11 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
 - **Gateway overhead was measured on one Windows machine**, one request at a
   time, against a loopback stub: a median of 3.5 to 4.7 ms with the gateway
   token and 4.8 to 5.4 ms with a virtual key, to the end of the reply. About
-  2 ms of that is the ledger entry being committed to the disk. Provider
-  network time, concurrency and other machines are outside the figure.
+  2 ms of that is the ledger entry being committed to the disk. The figures
+  were taken before the gateway read a key's row a second time (#470); that
+  read took 0.16 ms on the same machine and the table was not measured again.
+  Provider network time, concurrency and other machines are outside the
+  figure.
   [docs/BENCHMARKS.md](docs/BENCHMARKS.md) has the table.
 - **On Linux and macOS the command sandbox was tested by its arguments.** No
   command was run there for the writable-workspace change.
@@ -233,9 +264,11 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
   is refused. Calls that run together can cross it by the input each used
   beyond its reservation, over at most the key's in-flight limit. A call with
   no reported counts is charged a word estimate, which runs low for text
-  without spaces. An unfinished stream is charged an estimate. A reply the
-  gateway refuses after the provider answered is not charged. Set a spending
-  limit at the provider as well.
+  without spaces. An unfinished stream is charged the provider's output
+  count when one had arrived and an estimate otherwise; one abandoned before
+  its first byte is charged for the prompt only, although the provider may
+  bill output it had started. A reply the gateway refuses after the provider
+  answered is not charged. Set a spending limit at the provider as well.
 - **Fees that are not tokens are not counted**, such as web search per search
   and code execution per container hour. A key cannot cause them unless its
   allow-list names the tool.
@@ -249,11 +282,21 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
 - **Other pass-through fields are not allow-listed.** A key can still set
   `service_tier`, `container`, `thinking` and other Messages fields on a
   request to an Anthropic upstream, and any `anthropic-beta` value on a
-  token-count request.
-- **Key totals are a running sum in a file** (`gateway-keys.json`) that any
-  process of the same user can rewrite. Check them against the gateway
-  ledger. Totals, in-flight counts and reservations are not shared across
-  machines.
+  token-count request. A field that changes the price of a token is not seen
+  by a spend limit, which uses the prices you gave the key; a token limit is
+  not affected. A token-count request is not charged and leaves no ledger
+  entry.
+- **Key totals and settings are in a file** (`gateway-keys.json`) that any
+  process of the same user can rewrite: limits, totals, allow-lists, the
+  output cap, the in-flight limit and the suspension flag. Check the totals
+  against the gateway ledger. Totals, in-flight counts and reservations are
+  not shared across machines.
+- **The read timeout is per read, and covers reads only.** A client that
+  keeps sending a few bytes holds its connection and a gateway thread for
+  longer than 30 seconds, and a client that stops reading a stream keeps its
+  in-flight slot until it closes. Neither gains spend. Put a proxy with a
+  request deadline in front of a gateway that clients you do not run can
+  reach.
 - **The gateway speaks plain HTTP on the loopback address.** For use from
   another machine put TLS in front, for example an SSH tunnel.
   [docs/GATEWAY-INTERFACES.md](docs/GATEWAY-INTERFACES.md) has the steps.
@@ -261,12 +304,28 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
 
 ### The gateway ledger and receipts
 
+- **One gateway process per Flywheel home.** A second gateway on the same
+  home answers every model call with 503. Give it its own `FLYWHEEL_HOME`.
+- **The 503 covers the routes that write to the ledger**: `/v1/messages`,
+  `/v1/messages/count_tokens`, `/v1/responses`, `/v1/chat/completions` with a
+  provider endpoint, and `/api/route`. The local model on the chat path and
+  the gateway's own agent, companion and evaluation routes never wrote to
+  this ledger and are not refused.
 - **A gateway that stops between a provider's reply and the ledger append
   leaves no entry.** The provider billed the call and the ledger does not
   show it.
-- **`verify` catches a changed byte, a removed entry and a cut line.** A
-  process of the same user that rewrites a segment and its head record
-  together is not detected by the files alone.
+- **A stream's text leaves before its ledger entry exists.** The entry holds
+  the hash of the whole reply and is on disk before the stream's last event.
+  Treat a stream without its last event as unrecorded.
+- **On a pass-through stream, a reply the gateway refuses at its end has
+  already reached the client.** The refusal is an error event, no receipt
+  and a failed entry. Do not act on a streamed reply that has no `x_receipt`.
+- **`FLYWHEEL_GATEWAY_LEDGER_SYNC=0` trades durability for speed.** A power
+  loss can then lose the newest entries.
+- **`verify` catches a changed byte, a removed entry, a cut line and a
+  missing segment.** A process of the same user that rewrites a segment and
+  its head record together, or removes the whole folder, is not detected by
+  the files alone. `flywheel anchor` has an outside party witness a head.
 - **The receipt covers the gateway's reading of a reply, not the bytes
   delivered.** On Messages pass-through, thinking blocks, citations and
   provider tool blocks reach the client and are outside the receipt's hash.
@@ -277,10 +336,18 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
 
 ### The coding session
 
-- **A `TOOL name {json}` line quoted in a native reply's prose runs as a
-  call.** It goes through the same permission prompt as any call and is
-  recorded as a call. Read the prompt before you approve, and prefer `ask` or
-  `edit` mode over `auto` when the model reads text you do not trust.
+- **Tool output that contains the next call's result header can move where
+  one result ends and the next begins.** When one native reply holds several
+  calls, the outputs can be divided at the wrong place on the way back to
+  the provider. The text arrives whole and in order, and the ledger and what
+  you are asked do not change. With the text protocol
+  (`FLYWHEEL_NATIVE_TOOLS=0`, or a provider without function calling) a
+  `TOOL` line in the model's text still runs as a call, through the same
+  permission prompt as any call; prefer `ask` or `edit` mode over `auto`
+  there when the model reads text you do not trust.
+- **A Lean child process can see profile and toolchain paths.** It gets the
+  variables it needs to start (home and temp folders, locale, `PATH`, the
+  toolchain names) and no provider key. Proof code can print those paths.
 - **A removed hook wrapper exits 1 quietly.** After the upgrade, a client
   still configured with one of the two old hook paths captures nothing if it
   hides hook errors. Run `flywheel traces doctor` once after upgrading.
