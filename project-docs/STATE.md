@@ -8,7 +8,44 @@
 > Update on every material step. If context is lost: read PROJECT.md, then
 > this. (`ROADMAP.md` is the original program framing, kept for history.)
 
-Last updated: 2026-09-11
+Last updated: 2026-11-14
+
+## 2026-11-14 -- 1.9.0 released, 2.0.0 in preparation; this log is historical below this entry
+
+This file was not updated between 2026-09-11 (0.6.2) and today. Releases
+1.0.0 to 1.9.0 shipped in that time. Their record is `CHANGELOG.md` and the
+`RELEASE-NOTES-<version>.md` files, which are complete where this log has a
+gap. Every entry below this one describes the project as it was on its date
+and is kept as written.
+
+Where the current state is written:
+
+- What is on `main` and not yet released: `CHANGELOG.md`, "Unreleased".
+- What changes for a user in 2.0: `docs/MIGRATING-2.0.md`, with the schema
+  list in `docs/MIGRATING-2.0-SCHEMAS.md`.
+- The compatibility promise, the 2.0.0 exception to the deprecation rule,
+  and which releases get fixes: `docs/VERSIONING.md`.
+- The record-vocabulary checklist: `project-docs/SCOPE-MIGRATION.md`.
+- The synthesized overview: `PROJECT.md`.
+
+State today:
+
+- `pyproject.toml` says 1.9.0. The next release is 2.0.0, a major, because
+  `main` renames the field that says what a record covers to `scope` and takes the other
+  breaking changes with it. No 1.9.1 or 1.10.0 is planned.
+- On `main` for 2.0: the `scope` vocabulary and schema version moves, the
+  spine record, canonical records, the writable workspace in `flywheel
+  code`, hosted streaming, native function calling, prompt caching, provider
+  token counts in the served `usage` field, and the removal of the two old
+  hook scripts.
+- A record set written by each 1.x minor is kept under
+  `tests/fixtures/compat/records-1.x` and verified on every change.
+- Not done for 2.0: the version bump, tag and publish; a run of the fixture
+  check against the built 2.0.0 wheel in a clean environment; live calls to
+  the hosted providers for the streaming, function-calling and caching
+  paths, which are tested by replay.
+- From the 2026-09-11 entry, one item is still open: `windows-publish.yml`
+  has no caller, so the installer is attached to a release by hand.
 
 ## 2026-09-11 -- 0.6.2 on main, Rowan in place, and an honest 1.0 readiness read
 

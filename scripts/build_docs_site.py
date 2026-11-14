@@ -37,6 +37,9 @@ PAGES = (  # (group, title, source, page)
     ("Reference", "Troubleshooting", "docs/TROUBLESHOOTING.md", "troubleshooting.html"),
     ("Project", "Licensing", "docs/LICENSING.md", "licensing.html"),
     ("Project", "Versions and compatibility", "docs/VERSIONING.md", "versioning.html"),
+    ("Project", "Moving from 1.x to 2.0", "docs/MIGRATING-2.0.md", "migrating-2.0.html"),
+    ("Project", "Schemas changed in 2.0", "docs/MIGRATING-2.0-SCHEMAS.md",
+     "migrating-2.0-schemas.html"),
     ("Project", "Support", "SUPPORT.md", "support.html"),
     ("Project", "Changelog", "CHANGELOG.md", "changelog.html"),
 )

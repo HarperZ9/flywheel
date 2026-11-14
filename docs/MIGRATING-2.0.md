@@ -1,12 +1,131 @@
 # Moving from Flywheel 1.x to 2.0
 
-Draft. This page collects every change in 2.0 that can affect a script, a
-config file or a habit carried over from 1.x. Sections are added as each part
-of 2.0 lands, so the page is incomplete until the release.
+This page lists every change in 2.0 that can affect a script, a config file,
+a stored record or a habit carried over from 1.x. Most people upgrade and
+carry on. Sections are added here as later parts of 2.0 land.
 
-Most people upgrade and carry on. You need this page if you parse Flywheel's
-JSON output, wrap `flywheel code` in a script, or relied on a default that 2.0
-changes.
+2.0.0 shipped these changes without a deprecation release before it. The
+[versioning page](VERSIONING.md) records that as a dated exception and says
+which releases still get fixes.
+
+## What you need to do
+
+Nothing, if you use `flywheel code`, the desktop app or the gateway by hand.
+Read the matching section if one of these is true:
+
+1. **A script or program reads `does_not_prove` from Flywheel JSON.** Read
+   `scope` in records written by 2.0, and keep reading the older name in
+   records written by 1.x. See "Records: `does_not_prove` is now `scope`".
+2. **Something matches an exact schema string**, such as
+   `flywheel.receipt/v4`. Accept the new version too. The full list is on the
+   [schema page](MIGRATING-2.0-SCHEMAS.md).
+3. **An MCP client reads the output of Flywheel's receipt tools.** The output
+   schema is `flywheel.receipt-operations/v2`.
+4. **A client reads `usage` from the gateway or the agent response.** It now
+   holds provider token counts or `null`. See "The `usage` field of a served
+   response".
+5. **You relied on commands in `flywheel code` being unable to write in the
+   project.** They can now. Set `FLYWHEEL_WORKSPACE_WRITES=0` to keep the 1.x
+   behaviour. See "Commands may write in the project folder".
+6. **A proxy sits between Flywheel and a hosted provider.** It must pass
+   server-sent events, `tools` lists and Anthropic `cache_control` marks, or
+   you switch each off. See "The coding session on hosted models".
+7. **A hook mount names `wrapper_scaffold_hook.py` or
+   `wrapper_turn_receipt_hook.py`.** Mount the module. See "Removed: the two
+   old hook scripts".
+8. **Python code imports `harness`.** Some names changed. See "Python names".
+9. **A custom certificate family stops on a budget, or you rely on the
+   stated-limit audit detector.** See "Verdicts and audits".
+10. **A client sends `POST /v1/messages` to the gateway.** The gateway now
+    answers it and routes by the `model` field. See "The gateway".
+
+You never need to convert a stored record. Every sealed, anchored or saved
+1.x record verifies in 2.x with its original bytes.
+
+After upgrading, run the checks under "How to check an upgrade".
+
+## Records: `does_not_prove` is now `scope`
+
+In 1.x a record carried `does_not_prove`: a list, or sometimes a string, of
+limits, each written as a negative sentence or a `NOT_PROVES_*` code. In 2.0
+a record carries `scope` in the same place, and each entry says what the
+result covers.
+
+The rules:
+
+- A record written by 2.0 carries `scope`. It never carries both names.
+- The type is unchanged. A list stays a list and a string stays a string.
+- Every schema whose records changed moved up one version. A 2.0 writer emits
+  only the new version.
+- A 2.x reader accepts both versions and reads each with its own field name.
+  Where a reader enforces a field contract, a record that carries the other
+  version's name is refused.
+- Each value was rewritten. A limit that applied when a condition failed
+  became a coverage entry that is present when the condition holds. A
+  script that tested for a `NOT_PROVES_*` code must test for the absence of
+  the new code, or for the new code with the opposite meaning.
+
+### What was renamed
+
+| 1.x | 2.0 | Where it shows |
+|---|---|---|
+| field `does_not_prove` | field `scope` | Receipts, routed receipts, QA cards, witnesses, evidence packets, gateway and MCP outputs, bulletin, writing, trace and statistics records, reports |
+| field `extra_does_not_prove` | field `extra_scope` | `flywheel.receipt/v5` |
+| `NOT_PROVES_*` receipt codes | codes for the covered property, such as `PREDICATE_EXACT` | The receipt's list. All 15 pairs are on the [schema page](MIGRATING-2.0-SCHEMAS.md) |
+| `NOT_PROVES_OPTIMALITY` | `BOUND_FROM_SUBMITTED_OBJECT` | Certificate and oracle results |
+| failure code `schema_or_limits` | `schema_or_scope` | Signed job result verification |
+| `flywheel.receipt/v4` | `flywheel.receipt/v5` | Receipts. v3 and v4 are still read |
+| `flywheel.routed-receipt/v1` | `flywheel.routed-receipt/v2` | Routed receipts |
+| `flywheel.oracle-qa-card/v2` | `flywheel.oracle-qa-card/v3` | QA cards |
+| `flywheel.receipt-operations/v1` | `flywheel.receipt-operations/v2` | Output of the MCP receipt tools |
+| printed heading for the list | `scope:` | Text, Markdown, LaTeX and HTML reports |
+
+The [schema page](MIGRATING-2.0-SCHEMAS.md) lists every schema that moved,
+158 rows in all, with the records that have no version id and the ones that
+did not change. It is generated from the code and the migration checklist.
+
+### How to read old and new records
+
+In Python, use the shared reader. It accepts either name:
+
+```python
+from harness.scope import scope_list
+
+entries = scope_list(record)   # a list of strings, whichever name the record uses
+```
+
+In another language, look for the older name first:
+
+```
+entries = record["does_not_prove"] if "does_not_prove" in record else record.get("scope")
+```
+
+The older name goes first because a few 1.x records also carry an unrelated
+string label called `scope`.
+
+### What does not change
+
+- Every sealed, anchored, signed or saved 1.x record verifies with its
+  original bytes. The repository keeps a record set written by each 1.x minor
+  and verifies all of them on every change; see
+  [Versions and compatibility](VERSIONING.md), "Records stay checkable".
+- Records in superstack's receipt format keep `does_not_prove`. That format
+  belongs to superstack, and Flywheel reads and writes it unchanged.
+- The four verdicts (PASS, FAIL, UNDECIDED, UNVERIFIABLE) and the MATCH and
+  DRIFT recheck results.
+
+### Python names
+
+The Python modules under `harness` are not in the list of things the
+versioning page covers, so these are stated for convenience.
+
+| 1.x | 2.0 |
+|---|---|
+| `OracleResult.does_not_prove` | `OracleResult.scope` |
+| `Receipt.extra_does_not_prove` | `Receipt.extra_scope` |
+| `Receipt.does_not_prove()` | `Receipt.scope()` |
+| module constants named `DOES_NOT_PROVE` | `SCOPE` |
+| module functions named `does_not_prove()` | `scope()`, or a local name where `scope` was taken |
 
 ## The coding session on hosted models
 
@@ -111,6 +230,42 @@ What changes:
 
 To keep the 1.x behaviour, set `FLYWHEEL_PROMPT_CACHE=0`.
 
+## Commands may write in the project folder
+
+In 1.x a `run` command in `flywheel code` could read the project and could
+write nowhere in it. In 2.0 a command may write in the project folder and in
+its own scratch folder, so installs, builds, formatters and `git commit`
+work. The rest of the disk stays closed to it.
+
+What stays the same:
+
+- The permission mode still decides whether a command runs at all: refused in
+  `plan`, asked in `ask` and `edit`, run in `auto`. A deny rule wins over
+  every mode.
+- Git hooks, git config lines that start a program, and the session's
+  permission, hook and MCP files are guarded. Each is compared before and
+  after a command, a change is put back, and the command is reported as
+  failed.
+- Background jobs run with the project read-only.
+
+What changes:
+
+- A command can modify files in the tree outside the write tools. `/undo`
+  covers the write tools and does not put back what a command wrote. Use git
+  to review and revert those changes.
+- On Linux and macOS a read-only project is now enforced by the sandbox. In
+  1.x the folder was writable there, whatever the documentation said. A
+  command that worked on those systems only because of that gap now fails
+  when the project is read-only.
+- Each command's result ends with one line that says whether the workspace
+  was writable.
+
+To keep the 1.x behaviour, set `FLYWHEEL_WORKSPACE_WRITES=0`. An
+administrator can pin it for a machine with `{"allow_workspace_writes":
+false}` in the machine policy file; the pin outranks the variable. The cases
+in which the project stays read-only by itself are listed in
+[the coding session page](CODE-SESSION.md), "Keeping the project read-only".
+
 ## The gateway
 
 ### The gateway answers /v1/messages itself
@@ -187,6 +342,32 @@ What you need to do:
   the cached part and OpenAI reports them with it. Flywheel copies the figure
   and converts nothing.
 
+## The error object of a hosted backend
+
+When a call to a hosted model fails, the error object's `body` no longer
+carries the provider's text as it arrived. It is scrubbed for key shapes. The
+run budget reads the error type, code and status from a separate
+`limit_fields` value.
+
+What you need to do: a program that parsed provider text out of `body` to
+find a rate-limit or quota code reads `limit_fields`. The error line for
+people ends with one sentence that says whether trying again could help.
+Flywheel still does not retry by itself. The local `serve` and `ollama`
+backends quote their server's error text unchanged.
+
+## Verdicts and audits
+
+- A certificate check that reports valid and stopped on `budget` or
+  `timeout` reads UNDECIDED with the reason `BUDGET_EXHAUSTED`. In 1.x the
+  same result read PASS. No certificate family shipped with Flywheel stops on
+  a budget, so this reaches only a family you wrote. A declared `bound` still
+  passes, and a counterexample found before the budget ran out is still
+  FAIL.
+- `audit run` runs two starter detectors: receipt integrity and unbacked
+  claims. The detector that failed a work product with no stated limit is
+  removed. If you relied on that verdict, check for a `scope` list in your
+  own step.
+
 ## Removed: the two old hook scripts
 
 `scripts/hooks/wrapper_scaffold_hook.py` and
@@ -225,3 +406,14 @@ Each of these was reviewed for 2.0. None is a break that waits for 3.0.
 | The pin of `agent-client-protocol` below 1.0 in the Inspect contract check | Kept | The check needs the pinned interface. It is a test dependency and no installed user meets it. |
 | `x_token_usage` on the agent response | Kept | It carries cache counts that the provider-shaped `usage` object has no field for. |
 | The text tool protocol (`TOOL name {json}` lines) | Kept as the fallback | Local models and hosts without tool schemas need it. See "Tool calls use the provider's function calling by default". |
+
+## How to check an upgrade
+
+1. `flywheel --version` prints 2.0.0 or later.
+2. `flywheel doctor` reports no failure it did not report on 1.x.
+3. `flywheel gate` ends with `verdict=PASS rewitness=MATCH`.
+4. A record from your 1.x install still explains itself: run
+   `flywheel why PATH` on a receipt or a gate envelope you kept.
+5. From a checkout, `python scripts/verify_compat_records.py` verifies the
+   record set written by each 1.x minor and prints MATCH for every one.
+6. If you mount capture hooks, `flywheel traces doctor` passes.
