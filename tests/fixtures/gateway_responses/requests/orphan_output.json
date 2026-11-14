@@ -1,0 +1,59 @@
+{
+ "model": "gpt-5.3-codex",
+ "max_output_tokens": 64,
+ "tools": [
+  {
+   "type": "function",
+   "name": "write_file",
+   "description": "Write a file in the workspace.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "content": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path",
+     "content"
+    ]
+   },
+   "strict": false
+  }
+ ],
+ "input": [
+  {
+   "role": "user",
+   "content": "write a note"
+  },
+  {
+   "type": "message",
+   "id": "msg_fixture01",
+   "role": "assistant",
+   "status": "completed",
+   "content": [
+    {
+     "type": "output_text",
+     "text": "I will write the note.",
+     "annotations": []
+    }
+   ]
+  },
+  {
+   "type": "function_call",
+   "id": "fc_fixture01",
+   "call_id": "call_fixtureWrite01",
+   "name": "write_file",
+   "arguments": "{\"path\": \"n.txt\", \"content\": \"hi\"}",
+   "status": "completed"
+  },
+  {
+   "type": "function_call_output",
+   "call_id": "call_neverMade99",
+   "output": "wrote 2 bytes"
+  }
+ ]
+}

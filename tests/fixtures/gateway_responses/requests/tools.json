@@ -1,0 +1,30 @@
+{
+ "model": "gpt-5.3-codex",
+ "max_output_tokens": 64,
+ "tools": [
+  {
+   "type": "function",
+   "name": "write_file",
+   "description": "Write a file in the workspace.",
+   "parameters": {
+    "type": "object",
+    "properties": {
+     "path": {
+      "type": "string"
+     },
+     "content": {
+      "type": "string"
+     }
+    },
+    "required": [
+     "path",
+     "content"
+    ]
+   },
+   "strict": false
+  }
+ ],
+ "tool_choice": "required",
+ "parallel_tool_calls": false,
+ "input": "write a note"
+}

@@ -1,0 +1,24 @@
+{
+ "model": "gpt-5.3-codex",
+ "instructions": "Be brief.",
+ "max_output_tokens": 64,
+ "temperature": 0.2,
+ "top_p": 0.9,
+ "store": false,
+ "input": [
+  {
+   "role": "developer",
+   "content": "Answer in English."
+  },
+  {
+   "type": "message",
+   "role": "user",
+   "content": [
+    {
+     "type": "input_text",
+     "text": "What changed?"
+    }
+   ]
+  }
+ ]
+}

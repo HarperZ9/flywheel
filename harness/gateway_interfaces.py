@@ -7,8 +7,7 @@ chunk by chunk as the upstream produces it.
 
   /v1/messages               Anthropic Messages (gateway_messages)
   /v1/messages/count_tokens  token counting, forwarded to an Anthropic upstream
-  /v1/responses              proxied to the local serve endpoint as before,
-                             until the Responses interface lands
+  /v1/responses              OpenAI Responses (gateway_responses)
 
 These routes need the gateway token and nothing more. They do not use the
 per-operation grant flow that guards /v1/chat/completions.
@@ -30,6 +29,14 @@ def _head(handler, status: int, content_type: str, headers: dict) -> None:
     handler._cors()
 
 
+def _fault(response, text: str) -> bytes:
+    """The stream error event of the interface that made this response."""
+    if response.fault is not None:
+        return response.fault(text)
+    from .gateway_messages_wire import error, sse
+    return sse("error", error(500, text))
+
+
 def _send_stream(handler, response) -> None:
     from .provider_fault_boundary import redacted_text
     _head(handler, 200, "text/event-stream", {"Cache-Control": "no-cache", **response.headers})
@@ -44,10 +51,8 @@ def _send_stream(handler, response) -> None:
     except Exception as exc:                # a fault after the headers left
         _LOG.error("gateway stream failed (%s): %s", type(exc).__name__,
                    redacted_text(str(exc)))
-        from .gateway_messages_wire import error, sse
         try:
-            handler.wfile.write(sse("error", error(500, "internal error: "
-                                                   f"{type(exc).__name__}")))
+            handler.wfile.write(_fault(response, f"internal error: {type(exc).__name__}"))
         except OSError:
             _LOG.info("gateway stream error event not delivered; the client had gone")
     finally:
@@ -80,7 +85,9 @@ def _body(handler):
 def serve(handler, path: str, ledger) -> None:
     """Answer one request on a path in PATHS."""
     if path == "/v1/responses":
-        return handler._proxy(handler.serve_url.rstrip("/") + path)
+        from . import gateway_responses
+        sent = {str(name).lower(): value for name, value in handler.headers.items()}
+        return send(handler, gateway_responses.handle(_body(handler), sent, ledger))
     from . import gateway_messages
     from .gateway_messages_wire import error
     from .gateway_turn import Response
