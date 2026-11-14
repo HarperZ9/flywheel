@@ -18,9 +18,16 @@ made with a timeout sometimes comes back about 15 ms late, and the gateway
 connects to its upstream that way. The budget sits above the slowest warm
 calls in the published run, so a median would need most calls to be slower
 than the worst ones measured, and it is a quarter of the 200 ms the control
-adds. On CI (2026-11-14) Linux runners measured 1.2 to 3.9 ms; one Windows
-runner measured 2.1 to 7.0 ms and another 15.1 to 23.0 ms, before the test
-client stopped connecting with a timeout of its own.
+adds.
+
+On CI (2026-11-14, four runs) Linux runners measured medians of 1.1 to 3.9
+ms. Windows runners measured 2.1 to 7.0 ms in one run and 11.6 to 23.6 ms in
+three: there the late connect lands on most calls. The gateway opens one
+upstream connection per call, so that delay is paid at most once; the slowest
+call seen anywhere was 27.8 ms over the stub. That leaves the Windows runners
+about half the budget. If the upstream connect is made faster, lower the
+budget; do not raise it to hide a slower gateway. Each case prints what it
+measured, on a pass too, so a job log shows the room that was left.
 
 What the figure leaves out: the provider's network time and TLS, the system
 credential store (the key store here is in memory), the first call's module

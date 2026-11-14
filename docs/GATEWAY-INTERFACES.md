@@ -667,7 +667,9 @@ loopback stub in place of the provider, over 30 warm calls per case. The time
 to the first text of a stream is 1.2 to 1.6 ms over the stub for either
 caller. More than one call in twenty took 20 to 27 ms. Those calls waited on
 the gateway's own connection to the upstream: on Windows a connect made with a
-timeout sometimes comes back about 15 ms late. The first call after the
+timeout sometimes comes back about 15 ms late. On GitHub's Windows runners
+that landed on most calls, and the timing test measured medians of 11.6 to
+23.6 ms there against 1.1 to 3.9 ms on Linux. The first call after the
 gateway starts loads modules and took 62 to 66 ms more than the stub.
 
 The figures leave out the provider's network time and TLS, the system

@@ -277,8 +277,10 @@ measured machine that wait came back about 15 ms late in 62 to 85 of 200
 loopback connects, and a blocking connect was never late. The gateway's
 upstream connection carries a timeout. The benchmark client connects blocking,
 so calls sent to the stub alone stay within 0.5 ms of their own median at the
-95th percentile. Whether a connection to a remote provider is late in the same
-way was not measured.
+95th percentile. On GitHub's Windows runners the late connect landed on most
+calls: the timing test measured medians of 11.6 to 23.6 ms there in three runs
+of four on 2026-11-14, against 1.1 to 3.9 ms on its Linux runners. Whether a
+connection to a remote provider is late in the same way was not measured.
 
 ### The key list warm-up
 
