@@ -141,3 +141,87 @@ What changes:
 To reach the local model's flattened-prompt Messages endpoint as before, send
 the request to the serve endpoint's own address. `docs/GATEWAY-INTERFACES.md`
 describes the new behaviour in full.
+
+## The `usage` field of a served response
+
+In 1.x two responses carried whitespace word counts in `usage`, in the place
+where OpenAI and Anthropic clients read tokens:
+
+- the gateway's chat completion (`POST /v1/chat/completions`), as
+  `prompt_tokens`, `completion_tokens` and `total_tokens`;
+- the Messages-shaped response of the local agent and the local model server
+  (`POST /v1/messages`), as `input_tokens` and `output_tokens`.
+
+In 2.0 `usage` carries the token counts the provider reported, or it is
+`null`.
+
+| Response | 1.x `usage` | 2.0 `usage` | 2.0 word counts |
+|---|---|---|---|
+| Gateway chat completion | word counts | `{"prompt_tokens", "completion_tokens", "total_tokens"}` from the provider, or `null` | `x_usage_estimate` |
+| Messages-shaped response | word counts | `{"input_tokens", "output_tokens"}` from the provider, or `null` | `x_usage_estimate` |
+
+`x_usage_estimate` is
+`{"method": "whitespace_words", "prompt_words": N, "completion_words": M}`.
+It is always present. Its keys say words, so nothing can read it as tokens by
+accident.
+
+What stays the same:
+
+- `x_token_usage` on the agent response. It still carries the provider's
+  counts, with the cache counts when the provider sent them.
+- The `usage` object of `flywheel code -p --output-format json`. It already
+  held provider counts and an `uncounted_calls` figure.
+- Receipts and ledger entries. Neither held the word counts.
+- The local model server's own `POST /chat/completions`. Its `usage` was an
+  empty object in 1.x and still is.
+
+What you need to do:
+
+- A script that read `usage` for a rough size now gets real token counts,
+  which are larger than word counts for the same text. If you want the old
+  figure, read `x_usage_estimate`.
+- Handle `null`. A provider that sends no usage block, such as the local
+  transformers server, gives `usage: null`. Flywheel does not fill the gap
+  with an estimate that looks measured.
+- The counts are the provider's own. Anthropic reports input tokens without
+  the cached part and OpenAI reports them with it. Flywheel copies the figure
+  and converts nothing.
+
+## Removed: the two old hook scripts
+
+`scripts/hooks/wrapper_scaffold_hook.py` and
+`scripts/hooks/wrapper_turn_receipt_hook.py` were marked deprecated in 1.x
+and forwarded to the capture hook module. In 2.0 they forward nothing. Each
+file is a stub that writes one line naming the replacement and exits 1. A
+mount that still points at one captures no turn.
+
+| 1.x mount | 2.0 mount |
+|---|---|
+| `python scripts/hooks/wrapper_scaffold_hook.py` | `python -P -E -m harness.capture_hooks prompt --client claude-code` |
+| `python scripts/hooks/wrapper_turn_receipt_hook.py` | `python -P -E -m harness.capture_hooks stop --client claude-code` |
+
+What you need to do:
+
+1. Run `flywheel traces doctor`. A mount that names a removed script is
+   reported as a failure with the file it was found in.
+2. Run `flywheel traces hooks print-mount` and copy the lines it prints into
+   that settings file, in place of the old commands. The printed lines carry
+   the interpreter path for your install.
+3. Run `flywheel traces doctor` again and confirm the mount passes.
+
+The stubs stay in the repository so an old mount fails with a message that
+says what to do. A missing file would fail with an interpreter error that
+names no replacement.
+
+## Changes considered for 2.0 and left alone
+
+Each of these was reviewed for 2.0. None is a break that waits for 3.0.
+
+| Item | Decision | Reason |
+|---|---|---|
+| The `utf8` charset spelling in `Content-Length` framed messages | Kept | The LSP base protocol accepts it. Removing it would refuse valid clients. |
+| Records in superstack's vendored receipt format | Keep `does_not_prove` | That format belongs to superstack. Flywheel reads and writes it unchanged until superstack moves. |
+| The PyPI name `flywheel-verify` | Kept | The bare name belongs to another package. The command is still `flywheel`. |
+| The pin of `agent-client-protocol` below 1.0 in the Inspect contract check | Kept | The check needs the pinned interface. It is a test dependency and no installed user meets it. |
+| `x_token_usage` on the agent response | Kept | It carries cache counts that the provider-shaped `usage` object has no field for. |
+| The text tool protocol (`TOOL name {json}` lines) | Kept as the fallback | Local models and hosts without tool schemas need it. See "Tool calls use the provider's function calling by default". |

@@ -17,6 +17,11 @@ from __future__ import annotations
 import hashlib
 import json
 
+try:
+    from . import token_usage
+except ImportError:  # pragma: no cover - supports `python harness/serve.py`
+    import token_usage
+
 # claude-* / gpt-* names an agent client may request -> the locally served model.
 # Aliasing means a client asking for a frontier model name gets served, never 404.
 _TIER_PREFIXES = ("claude-opus", "claude-sonnet", "claude-haiku", "claude-fable",
@@ -120,8 +125,10 @@ def translate_response(gen: dict, req_params: dict, served_ref: str) -> dict:
         "content": [{"type": "text", "text": text}],
         "stop_reason": "end_turn",
         "stop_sequence": None,
-        "usage": {"input_tokens": len(req_params.get("prompt", "").split()),
-                  "output_tokens": len(text.split())},
+        # the provider's token counts, or None when it reported none; the
+        # word counts 1.x put here are the named estimate on the next line
+        "usage": token_usage.anthropic_usage(token_usage.reported(gen)),
+        token_usage.ESTIMATE_FIELD: token_usage.estimate(req_params.get("prompt", ""), text),
         "x_receipt": receipt,          # surfaced as the X-Receipt-Id header by serve.py
     }
 

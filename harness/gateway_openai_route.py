@@ -190,18 +190,18 @@ def _adaptive_order(candidates, rs):
 
 
 def _completion_body(receipt, out, prompt):
-    """Build the OpenAI-shaped chat completion body for one provider reply."""
-    prompt_tokens = len(prompt.split())
-    completion_tokens = len(str(out.text).split())
+    """The OpenAI-shaped completion body. `usage` is the provider's token
+    counts or None; the word counts are the named estimate beside it."""
+    from harness import token_usage
+    pair = token_usage.from_record(getattr(out, "usage", None))
     return {"id": "chatcmpl-" + receipt["receipt_id"],
             "object": "chat.completion", "created": int(time.time()),
             "model": out.model_ref,
             "choices": [{"index": 0,
                          "message": {"role": "assistant", "content": out.text},
                          "finish_reason": "stop"}],
-            "usage": {"prompt_tokens": prompt_tokens,
-                      "completion_tokens": completion_tokens,
-                      "total_tokens": prompt_tokens + completion_tokens},
+            "usage": token_usage.openai_usage(pair),
+            token_usage.ESTIMATE_FIELD: token_usage.estimate(prompt, out.text),
             "x_receipt": receipt}
 
 

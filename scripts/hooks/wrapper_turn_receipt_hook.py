@@ -1,22 +1,21 @@
-"""wrapper_turn_receipt_hook.py -- deprecated; runs the capture hook module.
+"""wrapper_turn_receipt_hook.py -- removed in Flywheel 2.0; this file only says so.
 
-This script used to POST the turn to /api/scaffold with no token, and the
-gateway refused it with a 401 the script hid. It now prints one deprecation
-line on stderr and runs `python -m harness.capture_hooks stop --client
-claude-code`, which authenticates, fails visibly and spools what it could not
-send. Mount the module directly; `flywheel traces hooks print-mount` prints
-the line. This wrapper stays for one release.
+In 1.x this script forwarded to `python -m harness.capture_hooks stop`
+and printed a deprecation line. In 2.0 it forwards nothing: it writes one
+line naming the replacement and exits 1, so a mount that still points here
+fails where the user can see it and captures nothing. Mount the module
+directly; `flywheel traces hooks print-mount` prints the line, and
+docs/MIGRATING-2.0.md has the steps.
 """
 from __future__ import annotations
 
-from pathlib import Path
 import sys
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-
-from harness.capture_hooks.__main__ import main  # noqa: E402
+MESSAGE = ("flywheel capture: wrapper_turn_receipt_hook.py was removed in Flywheel 2.0 and "
+           "captured nothing; mount python -m harness.capture_hooks stop "
+           "instead (flywheel traces hooks print-mount prints the line; see "
+           "docs/MIGRATING-2.0.md)\n")
 
 if __name__ == "__main__":
-    sys.stderr.write("flywheel capture: wrapper_turn_receipt_hook.py is deprecated; "
-                     "mount python -m harness.capture_hooks stop instead\n")
-    raise SystemExit(main(["stop", "--client", "claude-code", *sys.argv[1:]]))
+    sys.stderr.write(MESSAGE)
+    raise SystemExit(1)
