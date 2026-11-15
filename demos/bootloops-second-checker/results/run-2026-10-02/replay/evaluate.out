@@ -1,0 +1,24 @@
+  t=-3, dps=110  [0.7 s wall, measured]
+    J0 = -2.0589766979254918724182799691488449049958852132591171652425844676811576183594946409331691857618941814230305619
+    [BOUND] certified q-series truncation tails: psi1 <= 2.79e-549, Eichler <= 5.04e-540, t-series <= 2.89e-406 (rho = 0.635); nome dq_trunc <= 1.75e-407 (Newton-Kantorovich h = 8.98e-112 <= 1/4)
+    [cert] |J0 truncation error| <= 5.38e-406 < 1e-118 -- BOUND, not estimate (N = 700, escalations = 0, fail-closed at cap 8); Newton/roundoff nome floor <= 6.2e-111 (raising gate 1e-98); end-to-end roundoff gated by the D/D+40 crank
+    agreement vs stored 128-digit oracle (recomputed) = 111 digits [cap = min(dps, 128)]
+  t=-9, dps=110  [11.2 s wall, measured]
+    J0 = -1.6979464611954261219419261948835053057039346015060125104535582050775611024877819046960812360785531969330402745
+    [BOUND] certified q-series truncation tails: psi1 <= 5.73e-393, Eichler <= 1.58e-383, t-series <= 7.34e-284 (rho = 0.722); nome dq_trunc <= 1.7e-285 (Newton-Kantorovich h = 1.6e-111 <= 1/4)
+    [cert] |J0 truncation error| <= 9.1e-284 < 1e-118 -- BOUND, not estimate (N = 700, escalations = 0, fail-closed at cap 8); Newton/roundoff nome floor <= 1.65e-110 (raising gate 1e-98); end-to-end roundoff gated by the D/D+40 crank
+    agreement vs stored 128-digit oracle (recomputed) = 110 digits [cap = min(dps, 128)]
+  t=12, dps=110  [42.6 s wall, measured]
+    Re = -2.375804183161581644354590091869230582399079752089630675807902240939414429342368188604856641067993849333531893
+    Im = -4.5915809030764085059917091047911926064725476772484902124680632162033592129573825126580474150924580552355219597
+    [BOUND] certified q-series truncation tails: psi1 <= 9.44e-287, Eichler <= 7.8e-276, t-series <= 7.8e-168 (rho = 0.889); nome dq_trunc <= 3.82e-169 (Newton-Kantorovich h = 9.64e-108 <= 1/4)
+    [cert] |J0 truncation error| <= 1.97e-166 < 1e-118 -- BOUND, not estimate (N = 1421, escalations = 1, fail-closed at cap 8); Newton/roundoff nome floor <= 4.73e-109 (raising gate 1e-98); end-to-end roundoff gated by the D/D+40 crank
+    agreement vs stored 128-digit oracle (recomputed) = 109 digits [cap = min(dps, 128)]
+    [gate] crank D/D+40 (dps 110 -> 150) at t=-3: agreement = 111 digits (raising bar 104) PASS
+    [gate] crank D/D+40 (dps 110 -> 150) at t=-9: agreement = 110 digits (raising bar 104) PASS
+    [gate] crank D/D+40 (dps 110 -> 150) at t=12: agreement = 109 digits (raising bar 104) PASS
+[gate] PASS: all raising gates clear (crank D/D+40 >= dps-6; oracle table, where stored, >= min(dps,128)-8)
+
+real	2m4.921s
+user	0m0.030s
+sys	0m0.000s

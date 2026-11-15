@@ -1,0 +1,166 @@
+name: demos
+
+# Five evidence demos and receipts live under demos/ since they moved in from
+# their own repositories. This file runs the checks each one's CI ran there,
+# and only when a pull request or a push to main touches one of those folders
+# or this file.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "demos/flywheel-evidence-task/**"
+      - "demos/flywheel-receipt-demo/**"
+      - "demos/bootloops-second-checker/**"
+      - "demos/crewai-kickoff-replay-receipt/**"
+      - "demos/vllm-ci-forum-receipt/**"
+      - ".github/workflows/demos.yml"
+  pull_request:
+    paths:
+      - "demos/flywheel-evidence-task/**"
+      - "demos/flywheel-receipt-demo/**"
+      - "demos/bootloops-second-checker/**"
+      - "demos/crewai-kickoff-replay-receipt/**"
+      - "demos/vllm-ci-forum-receipt/**"
+      - ".github/workflows/demos.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  flywheel-evidence-task:
+    name: flywheel-evidence-task
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: demos/flywheel-evidence-task
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Plugin package consistency and corrupted-copy control
+        run: python scripts/check_plugin.py
+      - name: Art receipt digests
+        run: python scripts/check_art_receipts.py
+
+  flywheel-receipt-demo:
+    name: flywheel-receipt-demo
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: demos/flywheel-receipt-demo
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      # The demo is pinned to the published engine it was verified on, so it
+      # installs that wheel and does not use the harness in this checkout.
+      - name: Install the engine at the version the demo was verified on
+        run: python -m pip install flywheel-verify==1.0.0 pytest pytest-timeout
+      - name: Run the receipt demo (honest MATCH, forged DRIFT)
+        working-directory: demos/flywheel-receipt-demo/demo
+        run: python run_demo.py
+      - name: Art receipt digests
+        run: python scripts/check_art_receipts.py
+
+  bootloops-second-checker:
+    name: bootloops-second-checker (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: demos/bootloops-second-checker
+    steps:
+      # Windows leg: check out the way a default Git for Windows install does, so a
+      # line-ending rewrite of a sealed file fails here instead of on a reader's machine.
+      - name: Use the Git for Windows line-ending default
+        if: runner.os == 'Windows'
+        working-directory: .
+        run: git config --global core.autocrlf true
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Install pinned requirements
+        run: python -m pip install pytest-timeout -r requirements.txt
+      - name: Spec-derived checker tests
+        run: python -m pytest -q tests
+      - name: Sealed files are checked out byte for byte
+        if: ${{ !cancelled() }}
+        run: |
+          git ls-files -s -- ":(attr:-text)" | while read -r mode sha stage path; do
+            if [ "$(git hash-object --no-filters -- "$path")" != "$sha" ]; then
+              echo "checkout rewrote a sealed file: $path"
+              exit 1
+            fi
+          done
+          echo "every sealed file matches its committed blob"
+      # The seal itself: every run folder's SHA256SUMS must match its files. The
+      # .gitattributes pin in this folder keeps sealed bytes unchanged on the Windows leg.
+      - name: Run folders match their SHA256SUMS
+        if: ${{ !cancelled() }}
+        run: |
+          found=0
+          for sums in results/run-*/SHA256SUMS; do
+            found=1
+            echo "checking $sums"
+            (cd "$(dirname "$sums")" && sha256sum --strict -c --quiet SHA256SUMS) || exit 1
+          done
+          [ "$found" = 1 ] || { echo "no results/run-*/SHA256SUMS found"; exit 1; }
+          echo "every run folder matches its SHA256SUMS"
+      - name: Art receipt digests
+        if: runner.os == 'Linux'
+        run: python scripts/check_art_receipts.py
+
+  sealed-receipts:
+    # The copies of the two sealed publications. Each one's own verifier and
+    # its manifest must pass on the bytes in this repository. seal-watch keeps
+    # checking the published repositories from fresh clones every day.
+    name: ${{ matrix.demo }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - demo: crewai-kickoff-replay-receipt
+            verifier: python verify_public.py
+            manifest: SHA256SUMS
+          - demo: vllm-ci-forum-receipt
+            verifier: python verify_publication.py
+            manifest: SHA256SUMS.txt
+    defaults:
+      run:
+        shell: bash
+        working-directory: demos/${{ matrix.demo }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: The publication's own verifier
+        run: ${{ matrix.verifier }}
+      - name: Every file matches the sealed manifest
+        run: sha256sum --strict -c --quiet ${{ matrix.manifest }}

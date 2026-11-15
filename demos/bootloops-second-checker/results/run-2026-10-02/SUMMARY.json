@@ -1,0 +1,1050 @@
+{
+ "agreement": {
+  "disagreements": [],
+  "ms_per_row_max": {
+   "core": 12.8026,
+   "sc_js": 188.2235,
+   "sc_py": 31.2675
+  },
+  "ms_per_row_mean": {
+   "core": 0.3704,
+   "sc_js": 0.6696,
+   "sc_py": 5.0807
+  },
+  "n_corpora": 23,
+  "n_disagreements": 0,
+  "n_witnesses": 12187,
+  "note": "sc_js time is subprocess wall time divided by batch size, so it includes node start-up.",
+  "plain": {
+   "core": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   },
+   "sc_js": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   },
+   "sc_py": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   }
+  },
+  "table_mode": {
+   "table_core": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   },
+   "table_sc_py": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   }
+  }
+ },
+ "controls": {
+  "N3_accept_all_dummy_ok": 267,
+  "N3_harness_flags_dummies": true,
+  "N3_reject_all_dummy_ok": 2653,
+  "by_kind": {
+   "M1_coef_flip": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M2_coef_drop": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M3_coef_extra": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M4_prime_change": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M5_lam_flip": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M6_lam_drop": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M7_target_swap": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M8_row_alter": {
+    "core_ok": 91,
+    "expected": "reject",
+    "n": 91,
+    "sc_js_na": 0,
+    "sc_js_ok": 91,
+    "sc_py_ok": 91
+   },
+   "N1_row_shuffle": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "N2_lam_permute": {
+    "core_ok": 159,
+    "expected": "reject",
+    "n": 159,
+    "sc_js_na": 0,
+    "sc_js_ok": 159,
+    "sc_py_ok": 159
+   },
+   "X0_exhibit_ctrl_true_table": {
+    "core_ok": 267,
+    "expected": "pass",
+    "n": 267,
+    "sc_js_na": 267,
+    "sc_js_ok": 0,
+    "sc_py_ok": 267
+   },
+   "X1_exhibit_class_wrong_table": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 267,
+    "sc_js_ok": 0,
+    "sc_py_ok": 267
+   }
+  },
+  "failures": [],
+  "n_cases": 2920,
+  "per_corpus_sample": 12,
+  "seed": 20261002
+ },
+ "edge_cases": [
+  {
+   "agree": false,
+   "case": "E01_c_float_integral",
+   "core": "PASS",
+   "core_cli_rc": 0,
+   "core_reason": "",
+   "sc_js": "PASS",
+   "sc_py": "MALFORMED",
+   "sc_py_reason": "c[101]: float is not an integer",
+   "table_mode": false,
+   "what": "c value 15.0 (JSON float)"
+  },
+  {
+   "agree": false,
+   "case": "E02_c_float_fraction",
+   "core": "PASS",
+   "core_cli_rc": 0,
+   "core_reason": "",
+   "sc_js": "MALFORMED",
+   "sc_py": "MALFORMED",
+   "sc_py_reason": "c[101]: float is not an integer",
+   "table_mode": false,
+   "what": "c value 15.7 (non-integer)"
+  },
+  {
+   "agree": false,
+   "case": "E03_c_bool",
+   "core": "FAIL",
+   "core_cli_rc": 1,
+   "core_reason": "identity failed: residual != e_t - sum c_m e_m",
+   "sc_js": "MALFORMED",
+   "sc_py": "MALFORMED",
+   "sc_py_reason": "c[103]: boolean is not an integer",
+   "table_mode": false,
+   "what": "c value true"
+  },
+  {
+   "agree": false,
+   "case": "E04_version_number",
+   "core": "PASS",
+   "core_cli_rc": 0,
+   "core_reason": "",
+   "sc_js": "MALFORMED",
+   "sc_py": "MALFORMED",
+   "sc_py_reason": "receipt_version must be a string, got float",
+   "table_mode": false,
+   "what": "receipt_version as JSON number 1.0"
+  },
+  {
+   "agree": false,
+   "case": "E05_zero_c_table",
+   "core": "FAIL",
+   "core_cli_rc": 1,
+   "core_reason": "claimed table row != certified row (witness holds; the TABLE is wrong)",
+   "sc_js": "n/a",
+   "sc_py": "PASS",
+   "sc_py_reason": "",
+   "table_mode": true,
+   "what": "explicit zero c entry, table mode with the true row"
+  },
+  {
+   "agree": false,
+   "case": "E06_c_equal_p_table",
+   "core": "FAIL",
+   "core_cli_rc": 1,
+   "core_reason": "claimed table row != certified row (witness holds; the TABLE is wrong)",
+   "sc_js": "n/a",
+   "sc_py": "PASS",
+   "sc_py_reason": "",
+   "table_mode": true,
+   "what": "c entry equal to p (== 0 mod p), table mode"
+  },
+  {
+   "agree": false,
+   "case": "E07_c_on_target_col",
+   "core": "FAIL",
+   "core_cli_rc": 1,
+   "core_reason": "identity failed: residual != e_t - sum c_m e_m",
+   "sc_js": "PASS",
+   "sc_py": "PASS",
+   "sc_py_reason": "",
+   "table_mode": false,
+   "what": "c contains the target column (c[t]=5), lam scaled by 1-5"
+  },
+  {
+   "agree": false,
+   "case": "E08_dup_key_alias",
+   "core": "PASS",
+   "core_cli_rc": 0,
+   "core_reason": "",
+   "sc_js": "PASS",
+   "sc_py": "MALFORMED",
+   "sc_py_reason": "duplicate c column 101",
+   "table_mode": false,
+   "what": "c keys '101' and '0101' (same integer)"
+  },
+  {
+   "agree": false,
+   "case": "E09_negative_n_rows",
+   "core": "FAIL",
+   "core_cli_rc": 1,
+   "core_reason": "lam n_rows -1 != system rows 3",
+   "sc_js": "FAIL",
+   "sc_py": "MALFORMED",
+   "sc_py_reason": "lam.n_rows negative",
+   "table_mode": false,
+   "what": "lam.n_rows = -1 with empty idx/val"
+  },
+  {
+   "agree": false,
+   "case": "E10_lam_idx_float",
+   "core": "PASS",
+   "core_cli_rc": 0,
+   "core_reason": "",
+   "sc_js": "PASS",
+   "sc_py": "MALFORMED",
+   "sc_py_reason": "lam.idx entry: float is not an integer",
+   "table_mode": false,
+   "what": "lam.idx entries as floats"
+  },
+  {
+   "agree": true,
+   "case": "E11_nonprime_p",
+   "core": "PASS",
+   "core_cli_rc": 0,
+   "core_reason": "",
+   "sc_js": "PASS",
+   "sc_py": "PASS",
+   "sc_py_reason": "",
+   "table_mode": false,
+   "what": "p = 15 (composite) on a witness rewritten to hold mod 15"
+  },
+  {
+   "agree": true,
+   "case": "E12_p_string",
+   "core": "PASS",
+   "core_cli_rc": 0,
+   "core_reason": "",
+   "sc_js": "PASS",
+   "sc_py": "PASS",
+   "sc_py_reason": "",
+   "table_mode": false,
+   "what": "p given as a string"
+  },
+  {
+   "agree": true,
+   "case": "E13_fp_tamper",
+   "core": "PASS",
+   "core_cli_rc": 0,
+   "core_reason": "",
+   "sc_js": "PASS",
+   "sc_py": "PASS",
+   "sc_py_reason": "",
+   "table_mode": false,
+   "what": "system.fingerprint replaced with 64 zeros"
+  },
+  {
+   "agree": false,
+   "case": "E14_filename_c_prefix",
+   "core": "PASS",
+   "core_cli_rc": 1,
+   "core_cli_stderr": "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<bootloops>\\tools\\trust\\strata\\corpus_bench.py\", line 23, in <module>\n    import resource\nModuleNotFoundError: No module named 'resource'\n",
+   "sc_js": "PASS",
+   "sc_py": "PASS",
+   "table_mode": false,
+   "what": "valid v1 witness saved as c_*.json"
+  }
+ ],
+ "lean": {
+  "L1_modules": [
+   {
+    "axioms": [
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 13900.0,
+     "tactic execution": 280.0,
+     "type checking": 5710.0
+    },
+    "form": "column/decide +kernel",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 41.52,
+    "module": "Sample00",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 109.11
+   },
+   {
+    "axioms": [
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 25900.0,
+     "tactic execution": 1240.0,
+     "type checking": 873000.0
+    },
+    "form": "column/decide +kernel",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 45.52,
+    "module": "Sample01",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 181.74
+   },
+   {
+    "axioms": [
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 2710.0,
+     "tactic execution": 95.9,
+     "type checking": 815.0
+    },
+    "form": "column/decide +kernel",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 36.87,
+    "module": "Sample02",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 18.96
+   },
+   {
+    "axioms": [
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 652.0,
+     "tactic execution": 38.9,
+     "type checking": 206.0
+    },
+    "form": "column/decide +kernel",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 35.79,
+    "module": "Sample03",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 11.25
+   },
+   {
+    "axioms": [
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 274.0,
+     "tactic execution": 21.2,
+     "type checking": 90.9
+    },
+    "form": "column/decide +kernel",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 84.05,
+    "module": "Sample04",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 10.14
+   },
+   {
+    "axioms": [
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 976.0,
+     "tactic execution": 54.4,
+     "type checking": 383.0
+    },
+    "form": "column/decide +kernel",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 35.77,
+    "module": "Sample05",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 15.93
+   },
+   {
+    "axioms": [
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 1250.0,
+     "tactic execution": 51.0,
+     "type checking": 544.0
+    },
+    "form": "column/decide +kernel",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 35.39,
+    "module": "Sample06",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 12.76
+   },
+   {
+    "axioms": [
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 190.0,
+     "tactic execution": 13.8,
+     "type checking": 61.4
+    },
+    "form": "column/decide +kernel",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 34.71,
+    "module": "Sample07",
+    "n_rows": 4,
+    "ok": true,
+    "wall_s": 9.63
+   },
+   {
+    "axioms": [
+     "Classical.choice",
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 992.0,
+     "tactic execution": 2420.0,
+     "type checking": 143.0
+    },
+    "form": "linear/ring_nf+reduce_mod_char",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 34.89,
+    "module": "SampleLin00",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 10.15
+   },
+   {
+    "axioms": [
+     "Classical.choice",
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 1370.0,
+     "tactic execution": 2080.0,
+     "type checking": 224.0
+    },
+    "form": "linear/ring_nf+reduce_mod_char",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 34.61,
+    "module": "SampleLin01",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 11.8
+   },
+   {
+    "axioms": [
+     "Classical.choice",
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 1110.0,
+     "tactic execution": 2310.0,
+     "type checking": 207.0
+    },
+    "form": "linear/ring_nf+reduce_mod_char",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 34.81,
+    "module": "SampleLin02",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 10.59
+   },
+   {
+    "axioms": [
+     "Classical.choice",
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 970.0,
+     "tactic execution": 2029.9999999999998,
+     "type checking": 189.0
+    },
+    "form": "linear/ring_nf+reduce_mod_char",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 35.34,
+    "module": "SampleLin03",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 10.24
+   },
+   {
+    "axioms": [
+     "Classical.choice",
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 1220.0,
+     "tactic execution": 2510.0,
+     "type checking": 250.0
+    },
+    "form": "linear/ring_nf+reduce_mod_char",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 34.78,
+    "module": "SampleLin04",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 10.89
+   },
+   {
+    "axioms": [
+     "Classical.choice",
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 1250.0,
+     "tactic execution": 2260.0,
+     "type checking": 195.0
+    },
+    "form": "linear/ring_nf+reduce_mod_char",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 32.86,
+    "module": "SampleLin05",
+    "n_rows": 6,
+    "ok": true,
+    "wall_s": 10.76
+   },
+   {
+    "axioms": [
+     "Classical.choice",
+     "Quot.sound",
+     "propext"
+    ],
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 913.0,
+     "tactic execution": 1010.0,
+     "type checking": 74.1
+    },
+    "form": "linear/ring_nf+reduce_mod_char",
+    "leanchecker_rc": 0,
+    "leanchecker_s": 34.32,
+    "module": "SampleLin06",
+    "n_rows": 2,
+    "ok": true,
+    "wall_s": 10.18
+   }
+  ],
+  "L1_rows_checked": {
+   "column/decide +kernel": 46,
+   "linear/ring_nf+reduce_mod_char": 38
+  },
+  "L2_all_rejected": true,
+  "L2_negative": [
+   {
+    "form": "column",
+    "module": "Neg00Column",
+    "ok": false
+   },
+   {
+    "form": "linear",
+    "module": "Neg00Linear",
+    "ok": false
+   },
+   {
+    "form": "column",
+    "module": "Neg01Column",
+    "ok": false
+   },
+   {
+    "form": "linear",
+    "module": "Neg01Linear",
+    "ok": false
+   },
+   {
+    "form": "column",
+    "module": "Neg02Column",
+    "ok": false
+   },
+   {
+    "form": "linear",
+    "module": "Neg02Linear",
+    "ok": false
+   }
+  ],
+  "L3_scale": [],
+  "baseline_import_only_s": 9.13,
+  "sample_rows": 46
+ },
+ "lean_scale": {
+  "L1_modules": [],
+  "L1_rows_checked": {},
+  "L2_all_rejected": null,
+  "L2_negative": [],
+  "L3_scale": [
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 29.7,
+     "tactic execution": 0.703,
+     "type checking": 5.06
+    },
+    "errors": [],
+    "lam_nnz": 1,
+    "leanchecker_rc": 0,
+    "n_cols": 10,
+    "ok": true,
+    "tactic": "mono_decide_kernel",
+    "terms": 10,
+    "timeout": false,
+    "wall_s": 9.24
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 130.0,
+     "tactic execution": 1.43,
+     "type checking": 27.8
+    },
+    "errors": [],
+    "lam_nnz": 10,
+    "leanchecker_rc": 0,
+    "n_cols": 20,
+    "ok": true,
+    "tactic": "mono_decide_kernel",
+    "terms": 100,
+    "timeout": false,
+    "wall_s": 9.67
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 489.0,
+     "tactic execution": 12.3,
+     "type checking": 104.0
+    },
+    "errors": [],
+    "lam_nnz": 30,
+    "leanchecker_rc": 0,
+    "n_cols": 58,
+    "ok": true,
+    "tactic": "mono_decide_kernel",
+    "terms": 300,
+    "timeout": false,
+    "wall_s": 13.13
+   },
+   {
+    "axioms_ok": false,
+    "cumulative_ms": {
+     "elaboration": 1130.0,
+     "tactic execution": 0.709,
+     "type checking": 70.5
+    },
+    "errors": [
+     "<repo>\\lean\\ReceiptLean\\Gen\\Scale_mono_decide_kernel_1000.lean:213:2: error: failed to synthesize"
+    ],
+    "lam_nnz": 100,
+    "leanchecker_rc": null,
+    "n_cols": 199,
+    "ok": false,
+    "tactic": "mono_decide_kernel",
+    "terms": 1000,
+    "timeout": false,
+    "wall_s": 13.21
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 60.8,
+     "tactic execution": 4.74,
+     "type checking": 20.3
+    },
+    "errors": [],
+    "lam_nnz": 1,
+    "leanchecker_rc": 0,
+    "n_cols": 10,
+    "ok": true,
+    "tactic": "decide_kernel",
+    "terms": 10,
+    "timeout": false,
+    "wall_s": 9.05
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 222.0,
+     "tactic execution": 8.64,
+     "type checking": 63.2
+    },
+    "errors": [],
+    "lam_nnz": 10,
+    "leanchecker_rc": 0,
+    "n_cols": 20,
+    "ok": true,
+    "tactic": "decide_kernel",
+    "terms": 100,
+    "timeout": false,
+    "wall_s": 9.91
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 649.0,
+     "tactic execution": 24.9,
+     "type checking": 205.0
+    },
+    "errors": [],
+    "lam_nnz": 30,
+    "leanchecker_rc": 0,
+    "n_cols": 58,
+    "ok": true,
+    "tactic": "decide_kernel",
+    "terms": 300,
+    "timeout": false,
+    "wall_s": 10.93
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 2410.0,
+     "tactic execution": 88.6,
+     "type checking": 786.0
+    },
+    "errors": [],
+    "lam_nnz": 100,
+    "leanchecker_rc": 0,
+    "n_cols": 199,
+    "ok": true,
+    "tactic": "decide_kernel",
+    "terms": 1000,
+    "timeout": false,
+    "wall_s": 17.52
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 9820.0,
+     "tactic execution": 266.0,
+     "type checking": 4520.0
+    },
+    "errors": [],
+    "lam_nnz": 300,
+    "leanchecker_rc": 0,
+    "n_cols": 595,
+    "ok": true,
+    "tactic": "decide_kernel",
+    "terms": 3000,
+    "timeout": false,
+    "wall_s": 48.34
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 67400.0,
+     "tactic execution": 905.0,
+     "type checking": 47200.0
+    },
+    "errors": [],
+    "lam_nnz": 1000,
+    "leanchecker_rc": 0,
+    "n_cols": 1988,
+    "ok": true,
+    "tactic": "decide_kernel",
+    "terms": 10000,
+    "timeout": false,
+    "wall_s": 304.93
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {},
+    "errors": [],
+    "lam_nnz": 3000,
+    "leanchecker_rc": null,
+    "n_cols": 5951,
+    "ok": false,
+    "tactic": "decide_kernel",
+    "terms": 30000,
+    "timeout": true,
+    "wall_s": 900.06
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 60.8,
+     "tactic execution": 22.5,
+     "type checking": 12.6
+    },
+    "errors": [],
+    "lam_nnz": 1,
+    "leanchecker_rc": 0,
+    "n_cols": 10,
+    "ok": true,
+    "tactic": "decide",
+    "terms": 10,
+    "timeout": false,
+    "wall_s": 19.69
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 223.0,
+     "tactic execution": 61.2,
+     "type checking": 51.4
+    },
+    "errors": [],
+    "lam_nnz": 10,
+    "leanchecker_rc": 0,
+    "n_cols": 20,
+    "ok": true,
+    "tactic": "decide",
+    "terms": 100,
+    "timeout": false,
+    "wall_s": 13.33
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 715.0,
+     "tactic execution": 181.0,
+     "type checking": 166.0
+    },
+    "errors": [],
+    "lam_nnz": 30,
+    "leanchecker_rc": 0,
+    "n_cols": 58,
+    "ok": true,
+    "tactic": "decide",
+    "terms": 300,
+    "timeout": false,
+    "wall_s": 14.54
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 2760.0,
+     "tactic execution": 640.0,
+     "type checking": 747.0
+    },
+    "errors": [],
+    "lam_nnz": 100,
+    "leanchecker_rc": 0,
+    "n_cols": 199,
+    "ok": true,
+    "tactic": "decide",
+    "terms": 1000,
+    "timeout": false,
+    "wall_s": 21.72
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 11800.0,
+     "tactic execution": 1950.0,
+     "type checking": 5490.0
+    },
+    "errors": [],
+    "lam_nnz": 300,
+    "leanchecker_rc": 0,
+    "n_cols": 595,
+    "ok": true,
+    "tactic": "decide",
+    "terms": 3000,
+    "timeout": false,
+    "wall_s": 55.39
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 77300.0,
+     "tactic execution": 6470.0,
+     "type checking": 54500.0
+    },
+    "errors": [],
+    "lam_nnz": 1000,
+    "leanchecker_rc": 0,
+    "n_cols": 1988,
+    "ok": true,
+    "tactic": "decide",
+    "terms": 10000,
+    "timeout": false,
+    "wall_s": 295.93
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {},
+    "errors": [],
+    "lam_nnz": 3000,
+    "leanchecker_rc": null,
+    "n_cols": 5951,
+    "ok": false,
+    "tactic": "decide",
+    "terms": 30000,
+    "timeout": true,
+    "wall_s": 900.06
+   },
+   {
+    "axioms_ok": false,
+    "cumulative_ms": {
+     "elaboration": 200.0,
+     "tactic execution": 724.0,
+     "type checking": 15.2
+    },
+    "errors": [
+     "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:14:7: error: unsolved goals",
+     "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:17:7: error: unsolved goals",
+     "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:20:7: error: unsolved goals",
+     "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:23:7: error: unsolved goals",
+     "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:26:7: error: unsolved goals"
+    ],
+    "lam_nnz": 1,
+    "leanchecker_rc": null,
+    "n_cols": 10,
+    "ok": false,
+    "tactic": "norm_num",
+    "terms": 10,
+    "timeout": false,
+    "wall_s": 25.85
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 1050.0,
+     "tactic execution": 657.0,
+     "type checking": 46.5
+    },
+    "errors": [],
+    "lam_nnz": 1,
+    "leanchecker_rc": 0,
+    "n_cols": 10,
+    "ok": true,
+    "tactic": "ring",
+    "terms": 10,
+    "timeout": false,
+    "wall_s": 10.95
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {
+     "elaboration": 2400.0,
+     "tactic execution": 1110.0,
+     "type checking": 135.0
+    },
+    "errors": [],
+    "lam_nnz": 10,
+    "leanchecker_rc": 0,
+    "n_cols": 20,
+    "ok": true,
+    "tactic": "ring",
+    "terms": 100,
+    "timeout": false,
+    "wall_s": 15.22
+   },
+   {
+    "axioms_ok": true,
+    "cumulative_ms": {},
+    "errors": [],
+    "lam_nnz": 30,
+    "leanchecker_rc": null,
+    "n_cols": 58,
+    "ok": false,
+    "tactic": "ring",
+    "terms": 300,
+    "timeout": true,
+    "wall_s": 900.05
+   }
+  ],
+  "baseline_import_only_s": 9.13,
+  "sample_rows": 0
+ },
+ "replay_sunrise_digits": [
+  111,
+  110,
+  109
+ ]
+}

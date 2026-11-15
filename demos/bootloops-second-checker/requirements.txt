@@ -1,0 +1,5 @@
+# Pinned environment used for the reported run (Python 3.12.10, Windows 11; core legs also run on Linux).
+mpmath==1.3.0
+numpy==2.5.3
+sympy==1.14.0
+pytest==9.1.1

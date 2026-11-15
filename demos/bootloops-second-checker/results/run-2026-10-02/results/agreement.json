@@ -1,0 +1,51 @@
+{
+ "disagreements": [],
+ "ms_per_row_max": {
+  "core": 12.8026,
+  "sc_js": 188.2235,
+  "sc_py": 31.2675
+ },
+ "ms_per_row_mean": {
+  "core": 0.3704,
+  "sc_js": 0.6696,
+  "sc_py": 5.0807
+ },
+ "n_corpora": 23,
+ "n_disagreements": 0,
+ "n_witnesses": 12187,
+ "note": "sc_js time is subprocess wall time divided by batch size, so it includes node start-up.",
+ "plain": {
+  "core": {
+   "CRASH": 0,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "PASS": 12187
+  },
+  "sc_js": {
+   "CRASH": 0,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "PASS": 12187
+  },
+  "sc_py": {
+   "CRASH": 0,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "PASS": 12187
+  }
+ },
+ "table_mode": {
+  "table_core": {
+   "CRASH": 0,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "PASS": 12187
+  },
+  "table_sc_py": {
+   "CRASH": 0,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "PASS": 12187
+  }
+ }
+}

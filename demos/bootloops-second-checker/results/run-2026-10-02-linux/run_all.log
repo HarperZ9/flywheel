@@ -1,0 +1,868 @@
+..........                                                               [100%]
+10 passed in 0.02s
+int-s 2147483647 done
+int-s 2147483629 done
+int-m 2147483647 done
+int-m 2147483629 done
+int-l 2147483647 done
+int-l 2147483629 done
+{
+ "fixture_testcore": {
+  "CERTIFIED": 3
+ },
+ "int-l_2147483629_bl-winnow-native": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483629_bl-winnow-retrofit": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483629_sc-synth": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483647_bl-winnow-native": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483647_bl-winnow-retrofit": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483647_sc-synth": {
+  "CERTIFIED": 1460
+ },
+ "int-m_2147483629_bl-winnow-native": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483629_bl-winnow-retrofit": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483629_sc-synth": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483647_bl-winnow-native": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483647_bl-winnow-retrofit": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483647_sc-synth": {
+  "CERTIFIED": 376
+ },
+ "int-msq_2147483629_bl-receipt": {
+  "CERTIFIED": 376
+ },
+ "int-msq_2147483647_bl-receipt": {
+  "CERTIFIED": 376
+ },
+ "int-s_2147483629_bl-winnow-native": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483629_bl-winnow-retrofit": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483629_sc-synth": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483647_bl-winnow-native": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483647_bl-winnow-retrofit": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483647_sc-synth": {
+  "CERTIFIED": 52
+ },
+ "int-ssq_2147483629_bl-receipt": {
+  "CERTIFIED": 52
+ },
+ "int-ssq_2147483647_bl-receipt": {
+  "CERTIFIED": 52
+ }
+}
+fixture_testcore_bl-receipt: 3 witnesses
+int-l_2147483629_bl-winnow-native: 1460 witnesses
+int-l_2147483629_bl-winnow-retrofit: 1460 witnesses
+int-l_2147483629_sc-synth: 1460 witnesses
+int-l_2147483647_bl-winnow-native: 1460 witnesses
+int-l_2147483647_bl-winnow-retrofit: 1460 witnesses
+int-l_2147483647_sc-synth: 1460 witnesses
+int-m_2147483629_bl-winnow-native: 376 witnesses
+int-m_2147483629_bl-winnow-retrofit: 376 witnesses
+int-m_2147483629_sc-synth: 376 witnesses
+int-m_2147483647_bl-winnow-native: 376 witnesses
+int-m_2147483647_bl-winnow-retrofit: 376 witnesses
+int-m_2147483647_sc-synth: 376 witnesses
+int-msq_2147483629_bl-receipt: 376 witnesses
+int-msq_2147483647_bl-receipt: 376 witnesses
+int-s_2147483629_bl-winnow-native: 52 witnesses
+int-s_2147483629_bl-winnow-retrofit: 52 witnesses
+int-s_2147483629_sc-synth: 52 witnesses
+int-s_2147483647_bl-winnow-native: 52 witnesses
+int-s_2147483647_bl-winnow-retrofit: 52 witnesses
+int-s_2147483647_sc-synth: 52 witnesses
+int-ssq_2147483629_bl-receipt: 52 witnesses
+int-ssq_2147483647_bl-receipt: 52 witnesses
+{
+ "n_witnesses": 12187,
+ "n_corpora": 23,
+ "plain": {
+  "sc_py": {
+   "PASS": 12187,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "CRASH": 0
+  },
+  "sc_js": {
+   "PASS": 12187,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "CRASH": 0
+  },
+  "core": {
+   "PASS": 12187,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "CRASH": 0
+  }
+ },
+ "table_mode": {
+  "table_sc_py": {
+   "PASS": 12187,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "CRASH": 0
+  },
+  "table_core": {
+   "PASS": 12187,
+   "FAIL": 0,
+   "MALFORMED": 0,
+   "CRASH": 0
+  }
+ },
+ "n_disagreements": 0,
+ "ms_per_row_mean": {
+  "sc_py": 0.1335,
+  "sc_js": 0.4029,
+  "core": 0.1221
+ },
+ "ms_per_row_max": {
+  "sc_py": 7.6109,
+  "sc_js": 19.7913,
+  "core": 1.6815
+ },
+ "note": "sc_js time is subprocess wall time divided by batch size, so it includes node start-up."
+}
+fixture_testcore_bl-receipt controls done
+int-l_2147483629_bl-winnow-native controls done
+int-l_2147483629_bl-winnow-retrofit controls done
+int-l_2147483629_sc-synth controls done
+int-l_2147483647_bl-winnow-native controls done
+int-l_2147483647_bl-winnow-retrofit controls done
+int-l_2147483647_sc-synth controls done
+int-m_2147483629_bl-winnow-native controls done
+int-m_2147483629_bl-winnow-retrofit controls done
+int-m_2147483629_sc-synth controls done
+int-m_2147483647_bl-winnow-native controls done
+int-m_2147483647_bl-winnow-retrofit controls done
+int-m_2147483647_sc-synth controls done
+int-msq_2147483629_bl-receipt controls done
+int-msq_2147483647_bl-receipt controls done
+int-s_2147483629_bl-winnow-native controls done
+int-s_2147483629_bl-winnow-retrofit controls done
+int-s_2147483629_sc-synth controls done
+int-s_2147483647_bl-winnow-native controls done
+int-s_2147483647_bl-winnow-retrofit controls done
+int-s_2147483647_sc-synth controls done
+int-ssq_2147483629_bl-receipt controls done
+int-ssq_2147483647_bl-receipt controls done
+{
+ "N3_accept_all_dummy_ok": 267,
+ "N3_harness_flags_dummies": true,
+ "N3_reject_all_dummy_ok": 2653,
+ "by_kind": {
+  "M1_coef_flip": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 0,
+   "sc_js_ok": 267,
+   "sc_py_ok": 267
+  },
+  "M2_coef_drop": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 0,
+   "sc_js_ok": 267,
+   "sc_py_ok": 267
+  },
+  "M3_coef_extra": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 0,
+   "sc_js_ok": 267,
+   "sc_py_ok": 267
+  },
+  "M4_prime_change": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 0,
+   "sc_js_ok": 267,
+   "sc_py_ok": 267
+  },
+  "M5_lam_flip": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 0,
+   "sc_js_ok": 267,
+   "sc_py_ok": 267
+  },
+  "M6_lam_drop": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 0,
+   "sc_js_ok": 267,
+   "sc_py_ok": 267
+  },
+  "M7_target_swap": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 0,
+   "sc_js_ok": 267,
+   "sc_py_ok": 267
+  },
+  "M8_row_alter": {
+   "core_ok": 91,
+   "expected": "reject",
+   "n": 91,
+   "sc_js_na": 0,
+   "sc_js_ok": 91,
+   "sc_py_ok": 91
+  },
+  "N1_row_shuffle": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 0,
+   "sc_js_ok": 267,
+   "sc_py_ok": 267
+  },
+  "N2_lam_permute": {
+   "core_ok": 159,
+   "expected": "reject",
+   "n": 159,
+   "sc_js_na": 0,
+   "sc_js_ok": 159,
+   "sc_py_ok": 159
+  },
+  "X0_exhibit_ctrl_true_table": {
+   "core_ok": 267,
+   "expected": "pass",
+   "n": 267,
+   "sc_js_na": 267,
+   "sc_js_ok": 0,
+   "sc_py_ok": 267
+  },
+  "X1_exhibit_class_wrong_table": {
+   "core_ok": 267,
+   "expected": "reject",
+   "n": 267,
+   "sc_js_na": 267,
+   "sc_js_ok": 0,
+   "sc_py_ok": 267
+  }
+ },
+ "n_cases": 2920,
+ "per_corpus_sample": 12,
+ "seed": 20261002
+}
+n_failures 0
+E01_c_float_integral     sc_py=MALFORMED sc_js=PASS      core=PASS      cli_rc=0  c value 15.0 (JSON float)
+E02_c_float_fraction     sc_py=MALFORMED sc_js=MALFORMED core=PASS      cli_rc=0  c value 15.7 (non-integer)
+E03_c_bool               sc_py=MALFORMED sc_js=MALFORMED core=FAIL      cli_rc=1  c value true
+E04_version_number       sc_py=MALFORMED sc_js=MALFORMED core=PASS      cli_rc=0  receipt_version as JSON number 1.0
+E05_zero_c_table         sc_py=PASS      sc_js=n/a       core=FAIL      cli_rc=1  explicit zero c entry, table mode with the true row
+E06_c_equal_p_table      sc_py=PASS      sc_js=n/a       core=FAIL      cli_rc=1  c entry equal to p (== 0 mod p), table mode
+E07_c_on_target_col      sc_py=PASS      sc_js=PASS      core=FAIL      cli_rc=1  c contains the target column (c[t]=5), lam scaled by 1-5
+E08_dup_key_alias        sc_py=MALFORMED sc_js=PASS      core=PASS      cli_rc=0  c keys '101' and '0101' (same integer)
+E09_negative_n_rows      sc_py=MALFORMED sc_js=FAIL      core=FAIL      cli_rc=1  lam.n_rows = -1 with empty idx/val
+E10_lam_idx_float        sc_py=MALFORMED sc_js=PASS      core=PASS      cli_rc=0  lam.idx entries as floats
+E11_nonprime_p           sc_py=PASS      sc_js=PASS      core=PASS      cli_rc=0  p = 15 (composite) on a witness rewritten to hold mod 15
+E12_p_string             sc_py=PASS      sc_js=PASS      core=PASS      cli_rc=0  p given as a string
+E13_fp_tamper            sc_py=PASS      sc_js=PASS      core=PASS      cli_rc=0  system.fingerprint replaced with 64 zeros
+E14_filename_c_prefix    sc_py=PASS      sc_js=PASS      core=PASS      cli_rc=1  valid v1 witness saved as c_*.json
+sunrise-bundle.zip: OK
+sunrise-evaluate.py: OK
+sunrise-B34.py: OK
+sunrise-expression.md: OK
+sunrise_empl.py: OK
+sunrise-row09-evaluate.py: OK
+sunrise-row09-data.json: OK
+sunrise_empl_cont.py: OK
+frame_ode.py: OK
+sunrise-row10-evaluate.py: OK
+sunrise-row10-data.json: OK
+sunrise-row11-evaluate.py: OK
+sunrise-row11-data.json: OK
+sunrise-row12-evaluate.py: OK
+sunrise-row12-data.json: OK
+sunrise-row12-j43-refit.json: OK
+sunrise-genmass-evaluate.py: OK
+sunrise-m113-data.json: OK
+LICENSE: OK
+NOTICE: OK
+  t=-3, dps=110  [0.7 s wall, measured]
+    J0 = -2.0589766979254918724182799691488449049958852132591171652425844676811576183594946409331691857618941814230305619
+    [BOUND] certified q-series truncation tails: psi1 <= 2.79e-549, Eichler <= 5.04e-540, t-series <= 2.89e-406 (rho = 0.635); nome dq_trunc <= 1.75e-407 (Newton-Kantorovich h = 8.98e-112 <= 1/4)
+    [cert] |J0 truncation error| <= 5.38e-406 < 1e-118 -- BOUND, not estimate (N = 700, escalations = 0, fail-closed at cap 8); Newton/roundoff nome floor <= 6.2e-111 (raising gate 1e-98); end-to-end roundoff gated by the D/D+40 crank
+    agreement vs stored 128-digit oracle (recomputed) = 111 digits [cap = min(dps, 128)]
+  t=-9, dps=110  [5.9 s wall, measured]
+    J0 = -1.6979464611954261219419261948835053057039346015060125104535582050775611024877819046960812360785531969330402745
+    [BOUND] certified q-series truncation tails: psi1 <= 5.73e-393, Eichler <= 1.58e-383, t-series <= 7.34e-284 (rho = 0.722); nome dq_trunc <= 1.7e-285 (Newton-Kantorovich h = 1.6e-111 <= 1/4)
+    [cert] |J0 truncation error| <= 9.1e-284 < 1e-118 -- BOUND, not estimate (N = 700, escalations = 0, fail-closed at cap 8); Newton/roundoff nome floor <= 1.65e-110 (raising gate 1e-98); end-to-end roundoff gated by the D/D+40 crank
+    agreement vs stored 128-digit oracle (recomputed) = 110 digits [cap = min(dps, 128)]
+  t=12, dps=110  [17.8 s wall, measured]
+    Re = -2.375804183161581644354590091869230582399079752089630675807902240939414429342368188604856641067993849333531893
+    Im = -4.5915809030764085059917091047911926064725476772484902124680632162033592129573825126580474150924580552355219597
+    [BOUND] certified q-series truncation tails: psi1 <= 9.44e-287, Eichler <= 7.8e-276, t-series <= 7.8e-168 (rho = 0.889); nome dq_trunc <= 3.82e-169 (Newton-Kantorovich h = 9.64e-108 <= 1/4)
+    [cert] |J0 truncation error| <= 1.97e-166 < 1e-118 -- BOUND, not estimate (N = 1421, escalations = 1, fail-closed at cap 8); Newton/roundoff nome floor <= 4.73e-109 (raising gate 1e-98); end-to-end roundoff gated by the D/D+40 crank
+    agreement vs stored 128-digit oracle (recomputed) = 109 digits [cap = min(dps, 128)]
+    [gate] crank D/D+40 (dps 110 -> 150) at t=-3: agreement = 111 digits (raising bar 104) PASS
+    [gate] crank D/D+40 (dps 110 -> 150) at t=-9: agreement = 110 digits (raising bar 104) PASS
+    [gate] crank D/D+40 (dps 110 -> 150) at t=12: agreement = 109 digits (raising bar 104) PASS
+[gate] PASS: all raising gates clear (crank D/D+40 >= dps-6; oracle table, where stored, >= min(dps,128)-8)
+series jets: 0.07 s wall (measured), dps=60 (+15 guard)
+[cert] certified series-truncation tail: |dB_j|/|B_j| <= 5.89e-94 < 1e-68 -- BOUND, not estimate (N = 175, escalations = 0, fail-closed at cap 8)
+
+positive controls (independent closed forms, recomputed now):
+  B0: series vs closed form -> 75 digits (floor: working precision)
+  B1: series vs closed form -> 74 digits (floor: working precision)
+  B2: series vs closed form -> 75 digits (floor: working precision)
+
+held-out gate (AMFlow protocol literals, comparison ONLY):
+  B1: 75 digits vs 518-digit stored literal [cap = min(dps, 518) = 60]
+  B2: 75 digits vs 517-digit stored literal [cap = min(dps, 517) = 60]
+  B3: 76 digits vs 518-digit stored literal [cap = min(dps, 518) = 60]
+  B4: 75 digits vs 517-digit stored literal [cap = min(dps, 517) = 60]
+[gate] held-out table PASS: all >= min(dps, digits) - 8; a 1e-30 mutation of any GATE literal exits nonzero (mutation rc-gate)
+
+B3 = 21.2571759787571730846572060138585517472736535222722687188484
+B4 = -45.8313970491493720651890600365049717149093980284912060289716
+
+[gate] crank D/D+40 (dps 60 -> 100): min agreement over B0..B4 = 75 digits (raising bar 56) PASS
+J(-3) quadrature at dps=30: -2.05897669792549187241827996915
+published:                   -2.05897669792549187241827996915
+agreement: 32.47 digits
+info: downloading http<path>
+info: installing /root/.elan/toolchains/leanprover--lean4---v4.34.1
+info: mathlib: cloning http<path>
+info: mathlib: checking out revision 'd13f23b723b8a846827a245b89c10fc7d3f11612'
+info: plausible: cloning http<path>
+info: plausible: checking out revision '118aa17ee84656b8bd727fef7c458ee8c833385c'
+info: LeanSearchClient: cloning http<path>
+info: LeanSearchClient: checking out revision 'ddf04cf3949fa556442341e87d47f9f6e6074707'
+info: importGraph: cloning http<path>
+info: importGraph: checking out revision 'e928b72544873815af278d38681b31c0293588e3'
+info: proofwidgets: cloning http<path>
+info: proofwidgets: checking out revision '106ff4fafc74ef4ac99d81dbf3ab399118f497a5'
+info: aesop: cloning http<path>
+info: aesop: checking out revision '355695d523e41d0554926416cba2a2b3544fbbc9'
+info: Qq: cloning http<path>
+info: Qq: checking out revision '6a489d9af5d0c47e5b259e2e8bcdfc1811b5a259'
+info: batteries: cloning http<path>
+info: batteries: checking out revision 'f2effa3d803fda822b1f97b806c47cf2adfbcbc2'
+info: Cli: cloning http<path>
+info: Cli: checking out revision 'e92c9f15fdfacc8536f31cfb3b7ad26c3c8cd204'
+✔ [1/5] Built Cache.Cli (194ms)
+✔ [2/5] Built Cache.Lean (244ms)
+✔ [6/42] Built Cache.Cli:c.o (74ms)
+✔ [7/42] Built Cache.Env (181ms)
+✔ [8/42] Built Cache.Lean:c.o (84ms)
+✔ [9/42] Built Cache.Env:c.o (88ms)
+✔ [10/42] Built Cache.Infra (228ms)
+✔ [11/42] Built Batteries.Tactic.OpenPrivate (506ms)
+✔ [12/42] Built Cache.Infra:c.o (119ms)
+✔ [13/42] Built Batteries.Tactic.OpenPrivate:c.o (668ms)
+✔ [14/42] Built Cache.IO (765ms)
+✔ [15/42] Built Cache.Hashing (417ms)
+✔ [16/42] Built Cache.Hashing:c.o (237ms)
+✔ [17/42] Built Cache.IO:c.o (873ms)
+✔ [18/42] Built Cache.Requests (1.0s)
+✔ [19/42] Built Cache.Marker (298ms)
+✔ [20/42] Built Cache.Marker:c.o (58ms)
+✔ [21/42] Built Cache.Upload.Dest (338ms)
+✔ [22/42] Built Cache.Query (369ms)
+✔ [23/42] Built Cache.Upload.Dest:c.o (61ms)
+✔ [24/42] Built Cache.Query:c.o (158ms)
+✔ [25/42] Built Cache.Upload.Curl (328ms)
+✔ [26/42] Built Cache.Upload.Rclone (332ms)
+✔ [27/42] Built Cache.Warning (379ms)
+✔ [28/42] Built Cache.Upload.Curl:c.o (109ms)
+✔ [29/42] Built Cache.Upload.Rclone:c.o (102ms)
+✔ [30/42] Built Cache.Warning:c.o (143ms)
+✔ [31/42] Built Cache.Upload.Azure (320ms)
+✔ [32/42] Built Cache.Upload.S3 (394ms)
+✔ [33/42] Built Cache.Upload.Azure:c.o (69ms)
+✔ [34/42] Built Cache.Requests:c.o (1.6s)
+✔ [35/42] Built Cache.Upload.S3:c.o (171ms)
+✔ [36/42] Built Cache.Upload.Defs (315ms)
+✔ [37/42] Built Cache.Upload.Defs:c.o (72ms)
+✔ [38/42] Built Cache.Upload (278ms)
+✔ [39/42] Built Cache.Upload:c.o (56ms)
+✔ [40/42] Built Cache.Main (623ms)
+✔ [41/42] Built Cache.Main:c.o (497ms)
+✔ [42/42] Built cache:exe (471ms)
+Current branch: HEAD
+Using cache from origin: (some leanprover-community/mathlib4)
+Attempting to download 8908 file(s) from leanprover-community/mathlib4 cache at http<path>
+
+Downloaded: 1 file(s) [attempted 1/8908 = 0%, 96 KB/s], Decompressed: 0[K
+Downloaded: 51 file(s) [attempted 51/8908 = 0%, 123 KB/s], Decompressed: 10[K
+Downloaded: 77 file(s) [attempted 77/8908 = 0%, 715 KB/s], Decompressed: 22[K
+Downloaded: 118 file(s) [attempted 118/8908 = 1%, 251 KB/s], Decompressed: 63[K
+Downloaded: 164 file(s) [attempted 164/8908 = 1%, 79 KB/s], Decompressed: 63[K
+Downloaded: 205 file(s) [attempted 205/8908 = 2%, 765 KB/s], Decompressed: 111[K
+Downloaded: 239 file(s) [attempted 239/8908 = 2%, 185 KB/s], Decompressed: 111[K
+Downloaded: 275 file(s) [attempted 275/8908 = 3%, 162 KB/s], Decompressed: 176[K
+Downloaded: 318 file(s) [attempted 318/8908 = 3%, 897 KB/s], Decompressed: 251[K
+Downloaded: 357 file(s) [attempted 357/8908 = 4%, 300 KB/s], Decompressed: 251[K
+Downloaded: 396 file(s) [attempted 396/8908 = 4%, 295 KB/s], Decompressed: 318[K
+Downloaded: 434 file(s) [attempted 434/8908 = 4%, 55 KB/s], Decompressed: 318[K
+Downloaded: 468 file(s) [attempted 468/8908 = 5%, 72 KB/s], Decompressed: 384[K
+Downloaded: 507 file(s) [attempted 507/8908 = 5%, 583 KB/s], Decompressed: 384[K
+Downloaded: 548 file(s) [attempted 548/8908 = 6%, 113 KB/s], Decompressed: 446[K
+Downloaded: 584 file(s) [attempted 584/8908 = 6%, 168 KB/s], Decompressed: 509[K
+Downloaded: 622 file(s) [attempted 622/8908 = 6%, 278 KB/s], Decompressed: 509[K
+Downloaded: 666 file(s) [attempted 666/8908 = 7%, 559 KB/s], Decompressed: 579[K
+Downloaded: 704 file(s) [attempted 704/8908 = 7%, 90 KB/s], Decompressed: 579[K
+Downloaded: 738 file(s) [attempted 738/8908 = 8%, 223 KB/s], Decompressed: 656[K
+Downloaded: 769 file(s) [attempted 769/8908 = 8%, 73 KB/s], Decompressed: 656[K
+Downloaded: 806 file(s) [attempted 806/8908 = 9%, 136 KB/s], Decompressed: 721[K
+Downloaded: 830 file(s) [attempted 830/8908 = 9%, 105 KB/s], Decompressed: 774[K
+Downloaded: 863 file(s) [attempted 863/8908 = 9%, 754 KB/s], Decompressed: 774[K
+Downloaded: 897 file(s) [attempted 897/8908 = 10%, 40 KB/s], Decompressed: 820[K
+Downloaded: 938 file(s) [attempted 938/8908 = 10%, 59 KB/s], Decompressed: 868[K
+Downloaded: 974 file(s) [attempted 974/8908 = 10%, 565 KB/s], Decompressed: 868[K
+Downloaded: 1013 file(s) [attempted 1013/8908 = 11%, 307 KB/s], Decompressed: 924[K
+Downloaded: 1054 file(s) [attempted 1054/8908 = 11%, 575 KB/s], Decompressed: 924[K
+Downloaded: 1090 file(s) [attempted 1090/8908 = 12%, 134 KB/s], Decompressed: 998[K
+Downloaded: 1128 file(s) [attempted 1128/8908 = 12%, 364 KB/s], Decompressed: 1063[K
+Downloaded: 1165 file(s) [attempted 1165/8908 = 13%, 57 KB/s], Decompressed: 1063[K
+Downloaded: 1202 file(s) [attempted 1202/8908 = 13%, 136 KB/s], Decompressed: 1116[K
+Downloaded: 1242 file(s) [attempted 1242/8908 = 13%, 200 KB/s], Decompressed: 1174[K
+Downloaded: 1278 file(s) [attempted 1278/8908 = 14%, 530 KB/s], Decompressed: 1174[K
+Downloaded: 1314 file(s) [attempted 1314/8908 = 14%, 350 KB/s], Decompressed: 1227[K
+Downloaded: 1348 file(s) [attempted 1348/8908 = 15%, 262 KB/s], Decompressed: 1227[K
+Downloaded: 1386 file(s) [attempted 1386/8908 = 15%, 419 KB/s], Decompressed: 1302[K
+Downloaded: 1410 file(s) [attempted 1410/8908 = 15%, 69 KB/s], Decompressed: 1302[K
+Downloaded: 1451 file(s) [attempted 1451/8908 = 16%, 952 KB/s], Decompressed: 1362[K
+Downloaded: 1482 file(s) [attempted 1482/8908 = 16%, 388 KB/s], Decompressed: 1362[K
+Downloaded: 1511 file(s) [attempted 1511/8908 = 16%, 196 KB/s], Decompressed: 1446[K
+Downloaded: 1543 file(s) [attempted 1543/8908 = 17%, 142 KB/s], Decompressed: 1487[K
+Downloaded: 1584 file(s) [attempted 1584/8908 = 17%, 326 KB/s], Decompressed: 1487[K
+Downloaded: 1615 file(s) [attempted 1615/8908 = 18%, 82 KB/s], Decompressed: 1531[K
+Downloaded: 1656 file(s) [attempted 1656/8908 = 18%, 181 KB/s], Decompressed: 1591[K
+Downloaded: 1694 file(s) [attempted 1694/8908 = 19%, 302 KB/s], Decompressed: 1591[K
+Downloaded: 1733 file(s) [attempted 1733/8908 = 19%, 145 KB/s], Decompressed: 1653[K
+Downloaded: 1769 file(s) [attempted 1769/8908 = 19%, 135 KB/s], Decompressed: 1653[K
+Downloaded: 1812 file(s) [attempted 1812/8908 = 20%, 120 KB/s], Decompressed: 1714[K
+Downloaded: 1846 file(s) [attempted 1846/8908 = 20%, 173 KB/s], Decompressed: 1781[K
+Downloaded: 1889 file(s) [attempted 1889/8908 = 21%, 860 KB/s], Decompressed: 1781[K
+Downloaded: 1928 file(s) [attempted 1928/8908 = 21%, 455 KB/s], Decompressed: 1846[K
+Downloaded: 1959 file(s) [attempted 1959/8908 = 21%, 778 KB/s], Decompressed: 1846[K
+Downloaded: 2000 file(s) [attempted 2000/8908 = 22%, 42 KB/s], Decompressed: 1918[K
+Downloaded: 2034 file(s) [attempted 2034/8908 = 22%, 572 KB/s], Decompressed: 1918[K
+Downloaded: 2070 file(s) [attempted 2070/8908 = 23%, 300 KB/s], Decompressed: 1981[K
+Downloaded: 2104 file(s) [attempted 2104/8908 = 23%, 394 KB/s], Decompressed: 1981[K
+Downloaded: 2145 file(s) [attempted 2145/8908 = 24%, 239 KB/s], Decompressed: 1981[K
+Downloaded: 2183 file(s) [attempted 2183/8908 = 24%, 55 KB/s], Decompressed: 2068[K
+Downloaded: 2212 file(s) [attempted 2212/8908 = 24%, 81 KB/s], Decompressed: 2068[K
+Downloaded: 2248 file(s) [attempted 2248/8908 = 25%, 346 KB/s], Decompressed: 2150[K
+Downloaded: 2280 file(s) [attempted 2280/8908 = 25%, 456 KB/s], Decompressed: 2219[K
+Downloaded: 2309 file(s) [attempted 2309/8908 = 25%, 949 KB/s], Decompressed: 2219[K
+Downloaded: 2352 file(s) [attempted 2352/8908 = 26%, 72 KB/s], Decompressed: 2270[K
+Downloaded: 2383 file(s) [attempted 2383/8908 = 26%, 289 KB/s], Decompressed: 2270[K
+Downloaded: 2419 file(s) [attempted 2419/8908 = 27%, 773 KB/s], Decompressed: 2335[K
+Downloaded: 2460 file(s) [attempted 2460/8908 = 27%, 124 KB/s], Decompressed: 2335[K
+Downloaded: 2496 file(s) [attempted 2496/8908 = 28%, 357 KB/s], Decompressed: 2393[K
+Downloaded: 2540 file(s) [attempted 2540/8908 = 28%, 319 KB/s], Decompressed: 2393[K
+Downloaded: 2573 file(s) [attempted 2573/8908 = 28%, 68 KB/s], Decompressed: 2465[K
+Downloaded: 2610 file(s) [attempted 2610/8908 = 29%, 216 KB/s], Decompressed: 2465[K
+Downloaded: 2648 file(s) [attempted 2648/8908 = 29%, 403 KB/s], Decompressed: 2542[K
+Downloaded: 2687 file(s) [attempted 2687/8908 = 30%, 60 KB/s], Decompressed: 2542[K
+Downloaded: 2720 file(s) [attempted 2720/8908 = 30%, 541 KB/s], Decompressed: 2631[K
+Downloaded: 2759 file(s) [attempted 2759/8908 = 30%, 152 KB/s], Decompressed: 2689[K
+Downloaded: 2800 file(s) [attempted 2800/8908 = 31%, 516 KB/s], Decompressed: 2689[K
+Downloaded: 2838 file(s) [attempted 2838/8908 = 31%, 281 KB/s], Decompressed: 2756[K
+Downloaded: 2879 file(s) [attempted 2879/8908 = 32%, 244 KB/s], Decompressed: 2756[K
+Downloaded: 2918 file(s) [attempted 2918/8908 = 32%, 1438 KB/s], Decompressed: 2829[K
+Downloaded: 2961 file(s) [attempted 2961/8908 = 33%, 211 KB/s], Decompressed: 2829[K
+Downloaded: 3000 file(s) [attempted 3000/8908 = 33%, 1166 KB/s], Decompressed: 2908[K
+Downloaded: 3033 file(s) [attempted 3033/8908 = 34%, 929 KB/s], Decompressed: 2973[K
+Downloaded: 3072 file(s) [attempted 3072/8908 = 34%, 953 KB/s], Decompressed: 2973[K
+Downloaded: 3108 file(s) [attempted 3108/8908 = 34%, 891 KB/s], Decompressed: 3033[K
+Downloaded: 3142 file(s) [attempted 3142/8908 = 35%, 2709 KB/s], Decompressed: 3033[K
+Downloaded: 3185 file(s) [attempted 3185/8908 = 35%, 150 KB/s], Decompressed: 3091[K
+Downloaded: 3226 file(s) [attempted 3226/8908 = 36%, 360 KB/s], Decompressed: 3091[K
+Downloaded: 3267 file(s) [attempted 3267/8908 = 36%, 204 KB/s], Decompressed: 3159[K
+Downloaded: 3305 file(s) [attempted 3305/8908 = 37%, 226 KB/s], Decompressed: 3231[K
+Downloaded: 3342 file(s) [attempted 3342/8908 = 37%, 479 KB/s], Decompressed: 3231[K
+Downloaded: 3383 file(s) [attempted 3383/8908 = 37%, 156 KB/s], Decompressed: 3296[K
+Downloaded: 3419 file(s) [attempted 3419/8908 = 38%, 295 KB/s], Decompressed: 3296[K
+Downloaded: 3452 file(s) [attempted 3452/8908 = 38%, 355 KB/s], Decompressed: 3375[K
+Downloaded: 3491 file(s) [attempted 3491/8908 = 39%, 60 KB/s], Decompressed: 3375[K
+Downloaded: 3529 file(s) [attempted 3529/8908 = 39%, 106 KB/s], Decompressed: 3445[K
+Downloaded: 3566 file(s) [attempted 3566/8908 = 40%, 103 KB/s], Decompressed: 3501[K
+Downloaded: 3594 file(s) [attempted 3594/8908 = 40%, 326 KB/s], Decompressed: 3501[K
+Downloaded: 3631 file(s) [attempted 3631/8908 = 40%, 411 KB/s], Decompressed: 3563[K
+Downloaded: 3669 file(s) [attempted 3669/8908 = 41%, 468 KB/s], Decompressed: 3563[K
+Downloaded: 3712 file(s) [attempted 3712/8908 = 41%, 2908 KB/s], Decompressed: 3631[K
+Downloaded: 3749 file(s) [attempted 3749/8908 = 42%, 210 KB/s], Decompressed: 3631[K
+Downloaded: 3782 file(s) [attempted 3782/8908 = 42%, 391 KB/s], Decompressed: 3631[K
+Downloaded: 3818 file(s) [attempted 3818/8908 = 42%, 1466 KB/s], Decompressed: 3708[K
+Downloaded: 3859 file(s) [attempted 3859/8908 = 43%, 1220 KB/s], Decompressed: 3708[K
+Downloaded: 3903 file(s) [attempted 3903/8908 = 43%, 52 KB/s], Decompressed: 3809[K
+Downloaded: 3936 file(s) [attempted 3936/8908 = 44%, 738 KB/s], Decompressed: 3809[K
+Downloaded: 3973 file(s) [attempted 3973/8908 = 44%, 85 KB/s], Decompressed: 3876[K
+Downloaded: 4016 file(s) [attempted 4016/8908 = 45%, 41 KB/s], Decompressed: 3876[K
+Downloaded: 4052 file(s) [attempted 4052/8908 = 45%, 454 KB/s], Decompressed: 3951[K
+Downloaded: 4088 file(s) [attempted 4088/8908 = 45%, 74 KB/s], Decompressed: 4026[K
+Downloaded: 4132 file(s) [attempted 4132/8908 = 46%, 349 KB/s], Decompressed: 4026[K
+Downloaded: 4165 file(s) [attempted 4165/8908 = 46%, 458 KB/s], Decompressed: 4088[K
+Downloaded: 4213 file(s) [attempted 4213/8908 = 47%, 186 KB/s], Decompressed: 4088[K
+Downloaded: 4247 file(s) [attempted 4247/8908 = 47%, 32 KB/s], Decompressed: 4153[K
+Downloaded: 4283 file(s) [attempted 4283/8908 = 48%, 98 KB/s], Decompressed: 4153[K
+Downloaded: 4319 file(s) [attempted 4319/8908 = 48%, 236 KB/s], Decompressed: 4153[K
+Downloaded: 4358 file(s) [attempted 4358/8908 = 48%, 233 KB/s], Decompressed: 4230[K
+Downloaded: 4396 file(s) [attempted 4396/8908 = 49%, 642 KB/s], Decompressed: 4230[K
+Downloaded: 4430 file(s) [attempted 4430/8908 = 49%, 501 KB/s], Decompressed: 4324[K
+Downloaded: 4471 file(s) [attempted 4471/8908 = 50%, 321 KB/s], Decompressed: 4399[K
+Downloaded: 4510 file(s) [attempted 4510/8908 = 50%, 285 KB/s], Decompressed: 4399[K
+Downloaded: 4543 file(s) [attempted 4543/8908 = 50%, 158 KB/s], Decompressed: 4471[K
+Downloaded: 4582 file(s) [attempted 4582/8908 = 51%, 167 KB/s], Decompressed: 4471[K
+Downloaded: 4620 file(s) [attempted 4620/8908 = 51%, 188 KB/s], Decompressed: 4543[K
+Downloaded: 4661 file(s) [attempted 4661/8908 = 52%, 254 KB/s], Decompressed: 4543[K
+Downloaded: 4700 file(s) [attempted 4700/8908 = 52%, 166 KB/s], Decompressed: 4608[K
+Downloaded: 4738 file(s) [attempted 4738/8908 = 53%, 208 KB/s], Decompressed: 4608[K
+Downloaded: 4777 file(s) [attempted 4777/8908 = 53%, 61 KB/s], Decompressed: 4676[K
+Downloaded: 4815 file(s) [attempted 4815/8908 = 54%, 210 KB/s], Decompressed: 4676[K
+Downloaded: 4849 file(s) [attempted 4849/8908 = 54%, 20 KB/s], Decompressed: 4750[K
+Downloaded: 4890 file(s) [attempted 4890/8908 = 54%, 46 KB/s], Decompressed: 4750[K
+Downloaded: 4921 file(s) [attempted 4921/8908 = 55%, 197 KB/s], Decompressed: 4828[K
+Downloaded: 4962 file(s) [attempted 4962/8908 = 55%, 145 KB/s], Decompressed: 4828[K
+Downloaded: 5008 file(s) [attempted 5008/8908 = 56%, 25 KB/s], Decompressed: 4905[K
+Downloaded: 5044 file(s) [attempted 5044/8908 = 56%, 556 KB/s], Decompressed: 4905[K
+Downloaded: 5083 file(s) [attempted 5083/8908 = 57%, 533 KB/s], Decompressed: 4974[K
+Downloaded: 5124 file(s) [attempted 5124/8908 = 57%, 106 KB/s], Decompressed: 5047[K
+Downloaded: 5160 file(s) [attempted 5160/8908 = 57%, 84 KB/s], Decompressed: 5047[K
+Downloaded: 5198 file(s) [attempted 5198/8908 = 58%, 79 KB/s], Decompressed: 5121[K
+Downloaded: 5239 file(s) [attempted 5239/8908 = 58%, 656 KB/s], Decompressed: 5121[K
+Downloaded: 5266 file(s) [attempted 5266/8908 = 59%, 27 KB/s], Decompressed: 5194[K
+Downloaded: 5304 file(s) [attempted 5304/8908 = 59%, 100 KB/s], Decompressed: 5259[K
+Downloaded: 5343 file(s) [attempted 5343/8908 = 59%, 415 KB/s], Decompressed: 5259[K
+Downloaded: 5381 file(s) [attempted 5381/8908 = 60%, 166 KB/s], Decompressed: 5304[K
+Downloaded: 5420 file(s) [attempted 5420/8908 = 60%, 584 KB/s], Decompressed: 5304[K
+Downloaded: 5458 file(s) [attempted 5458/8908 = 61%, 436 KB/s], Decompressed: 5357[K
+Downloaded: 5497 file(s) [attempted 5497/8908 = 61%, 847 KB/s], Decompressed: 5425[K
+Downloaded: 5536 file(s) [attempted 5536/8908 = 62%, 534 KB/s], Decompressed: 5425[K
+Downloaded: 5574 file(s) [attempted 5574/8908 = 62%, 372 KB/s], Decompressed: 5490[K
+Downloaded: 5615 file(s) [attempted 5615/8908 = 63%, 147 KB/s], Decompressed: 5552[K
+Downloaded: 5661 file(s) [attempted 5661/8908 = 63%, 270 KB/s], Decompressed: 5552[K
+Downloaded: 5697 file(s) [attempted 5697/8908 = 63%, 682 KB/s], Decompressed: 5615[K
+Downloaded: 5745 file(s) [attempted 5745/8908 = 64%, 229 KB/s], Decompressed: 5615[K
+Downloaded: 5779 file(s) [attempted 5779/8908 = 64%, 380 KB/s], Decompressed: 5692[K
+Downloaded: 5822 file(s) [attempted 5822/8908 = 65%, 123 KB/s], Decompressed: 5692[K
+Downloaded: 5865 file(s) [attempted 5865/8908 = 65%, 888 KB/s], Decompressed: 5769[K
+Downloaded: 5904 file(s) [attempted 5904/8908 = 66%, 93 KB/s], Decompressed: 5769[K
+Downloaded: 5938 file(s) [attempted 5938/8908 = 66%, 162 KB/s], Decompressed: 5841[K
+Downloaded: 5976 file(s) [attempted 5976/8908 = 67%, 1099 KB/s], Decompressed: 5841[K
+Downloaded: 6020 file(s) [attempted 6020/8908 = 67%, 83 KB/s], Decompressed: 5921[K
+Downloaded: 6061 file(s) [attempted 6061/8908 = 68%, 94 KB/s], Decompressed: 5921[K
+Downloaded: 6099 file(s) [attempted 6099/8908 = 68%, 462 KB/s], Decompressed: 6003[K
+Downloaded: 6135 file(s) [attempted 6135/8908 = 68%, 27 KB/s], Decompressed: 6003[K
+Downloaded: 6174 file(s) [attempted 6174/8908 = 69%, 115 KB/s], Decompressed: 6089[K
+Downloaded: 6219 file(s) [attempted 6219/8908 = 69%, 444 KB/s], Decompressed: 6089[K
+Downloaded: 6246 file(s) [attempted 6246/8908 = 70%, 103 KB/s], Decompressed: 6167[K
+Downloaded: 6292 file(s) [attempted 6292/8908 = 70%, 230 KB/s], Decompressed: 6167[K
+Downloaded: 6337 file(s) [attempted 6337/8908 = 71%, 985 KB/s], Decompressed: 6241[K
+Downloaded: 6374 file(s) [attempted 6374/8908 = 71%, 305 KB/s], Decompressed: 6306[K
+Downloaded: 6407 file(s) [attempted 6407/8908 = 71%, 265 KB/s], Decompressed: 6306[K
+Downloaded: 6455 file(s) [attempted 6455/8908 = 72%, 345 KB/s], Decompressed: 6374[K
+Downloaded: 6494 file(s) [attempted 6494/8908 = 72%, 71 KB/s], Decompressed: 6374[K
+Downloaded: 6537 file(s) [attempted 6537/8908 = 73%, 17806 KB/s], Decompressed: 6453[K
+Downloaded: 6573 file(s) [attempted 6573/8908 = 73%, 142 KB/s], Decompressed: 6453[K
+Downloaded: 6612 file(s) [attempted 6612/8908 = 74%, 184 KB/s], Decompressed: 6525[K
+Downloaded: 6648 file(s) [attempted 6648/8908 = 74%, 911 KB/s], Decompressed: 6525[K
+Downloaded: 6684 file(s) [attempted 6684/8908 = 75%, 136 KB/s], Decompressed: 6525[K
+Downloaded: 6722 file(s) [attempted 6722/8908 = 75%, 1335 KB/s], Decompressed: 6595[K
+Downloaded: 6759 file(s) [attempted 6759/8908 = 75%, 1224 KB/s], Decompressed: 6595[K
+Downloaded: 6797 file(s) [attempted 6797/8908 = 76%, 32 KB/s], Decompressed: 6701[K
+Downloaded: 6838 file(s) [attempted 6838/8908 = 76%, 737 KB/s], Decompressed: 6701[K
+Downloaded: 6872 file(s) [attempted 6872/8908 = 77%, 182 KB/s], Decompressed: 6793[K
+Downloaded: 6915 file(s) [attempted 6915/8908 = 77%, 212 KB/s], Decompressed: 6793[K
+Downloaded: 6956 file(s) [attempted 6956/8908 = 78%, 202 KB/s], Decompressed: 6872[K
+Downloaded: 7000 file(s) [attempted 7000/8908 = 78%, 437 KB/s], Decompressed: 6872[K
+Downloaded: 7038 file(s) [attempted 7038/8908 = 79%, 800 KB/s], Decompressed: 6947[K
+Downloaded: 7079 file(s) [attempted 7079/8908 = 79%, 105 KB/s], Decompressed: 6947[K
+Downloaded: 7113 file(s) [attempted 7113/8908 = 79%, 232 KB/s], Decompressed: 7021[K
+Downloaded: 7151 file(s) [attempted 7151/8908 = 80%, 325 KB/s], Decompressed: 7021[K
+Downloaded: 7192 file(s) [attempted 7192/8908 = 80%, 135 KB/s], Decompressed: 7103[K
+Downloaded: 7238 file(s) [attempted 7238/8908 = 81%, 351 KB/s], Decompressed: 7103[K
+Downloaded: 7272 file(s) [attempted 7272/8908 = 81%, 132 KB/s], Decompressed: 7176[K
+Downloaded: 7320 file(s) [attempted 7320/8908 = 82%, 134 KB/s], Decompressed: 7176[K
+Downloaded: 7354 file(s) [attempted 7354/8908 = 82%, 59 KB/s], Decompressed: 7255[K
+Downloaded: 7395 file(s) [attempted 7395/8908 = 83%, 335 KB/s], Decompressed: 7322[K
+Downloaded: 7436 file(s) [attempted 7436/8908 = 83%, 174 KB/s], Decompressed: 7322[K
+Downloaded: 7474 file(s) [attempted 7474/8908 = 83%, 37 KB/s], Decompressed: 7392[K
+Downloaded: 7513 file(s) [attempted 7513/8908 = 84%, 344 KB/s], Decompressed: 7392[K
+Downloaded: 7558 file(s) [attempted 7558/8908 = 84%, 42 KB/s], Decompressed: 7457[K
+Downloaded: 7599 file(s) [attempted 7599/8908 = 85%, 230 KB/s], Decompressed: 7457[K
+Downloaded: 7648 file(s) [attempted 7648/8908 = 85%, 62 KB/s], Decompressed: 7527[K
+Downloaded: 7684 file(s) [attempted 7684/8908 = 86%, 105 KB/s], Decompressed: 7527[K
+Downloaded: 7720 file(s) [attempted 7720/8908 = 86%, 143 KB/s], Decompressed: 7604[K
+Downloaded: 7754 file(s) [attempted 7754/8908 = 87%, 225 KB/s], Decompressed: 7686[K
+Downloaded: 7792 file(s) [attempted 7792/8908 = 87%, 404 KB/s], Decompressed: 7686[K
+Downloaded: 7828 file(s) [attempted 7828/8908 = 87%, 495 KB/s], Decompressed: 7753[K
+Downloaded: 7869 file(s) [attempted 7869/8908 = 88%, 67 KB/s], Decompressed: 7753[K
+Downloaded: 7910 file(s) [attempted 7910/8908 = 88%, 1335 KB/s], Decompressed: 7816[K
+Downloaded: 7949 file(s) [attempted 7949/8908 = 89%, 150 KB/s], Decompressed: 7816[K
+Downloaded: 7992 file(s) [attempted 7992/8908 = 89%, 148 KB/s], Decompressed: 7891[K
+Downloaded: 8026 file(s) [attempted 8026/8908 = 90%, 45 KB/s], Decompressed: 7891[K
+Downloaded: 8064 file(s) [attempted 8064/8908 = 90%, 252 KB/s], Decompressed: 7963[K
+Downloaded: 8107 file(s) [attempted 8107/8908 = 91%, 77 KB/s], Decompressed: 7963[K
+Downloaded: 8141 file(s) [attempted 8141/8908 = 91%, 60 KB/s], Decompressed: 8047[K
+Downloaded: 8182 file(s) [attempted 8182/8908 = 91%, 52 KB/s], Decompressed: 8047[K
+Downloaded: 8225 file(s) [attempted 8225/8908 = 92%, 121 KB/s], Decompressed: 8129[K
+Downloaded: 8262 file(s) [attempted 8262/8908 = 92%, 406 KB/s], Decompressed: 8129[K
+Downloaded: 8295 file(s) [attempted 8295/8908 = 93%, 55 KB/s], Decompressed: 8200[K
+Downloaded: 8336 file(s) [attempted 8336/8908 = 93%, 340 KB/s], Decompressed: 8276[K
+Downloaded: 8372 file(s) [attempted 8372/8908 = 93%, 800 KB/s], Decompressed: 8276[K
+Downloaded: 8416 file(s) [attempted 8416/8908 = 94%, 6187 KB/s], Decompressed: 8334[K
+Downloaded: 8435 file(s) [attempted 8435/8908 = 94%, 287 KB/s], Decompressed: 8334[K
+Downloaded: 8483 file(s) [attempted 8483/8908 = 95%, 2053 KB/s], Decompressed: 8409[K
+Downloaded: 8524 file(s) [attempted 8524/8908 = 95%, 46 KB/s], Decompressed: 8409[K
+Downloaded: 8565 file(s) [attempted 8565/8908 = 96%, 143 KB/s], Decompressed: 8476[K
+Downloaded: 8599 file(s) [attempted 8599/8908 = 96%, 117 KB/s], Decompressed: 8476[K
+Downloaded: 8640 file(s) [attempted 8640/8908 = 96%, 89 KB/s], Decompressed: 8536[K
+Downloaded: 8681 file(s) [attempted 8681/8908 = 97%, 214 KB/s], Decompressed: 8608[K
+Downloaded: 8710 file(s) [attempted 8710/8908 = 97%, 42 KB/s], Decompressed: 8608[K
+Downloaded: 8750 file(s) [attempted 8750/8908 = 98%, 556 KB/s], Decompressed: 8676[K
+Downloaded: 8791 file(s) [attempted 8791/8908 = 98%, 899 KB/s], Decompressed: 8676[K
+Downloaded: 8823 file(s) [attempted 8823/8908 = 99%, 1462 KB/s], Decompressed: 8676[K
+Downloaded: 8864 file(s) [attempted 8864/8908 = 99%, 38 KB/s], Decompressed: 8750[K
+Downloaded: 8897 file(s) [attempted 8897/8908 = 99%, 231 KB/s], Decompressed: 8750[K
+Downloaded: 8905 file(s) [attempted 8905/8908 = 99%, 478 KB/s], Decompressed: 8844[K
+Downloaded: 8907 file(s) [attempted 8907/8908 = 99%, 52 KB/s], Decompressed: 8905[K
+Downloaded: 8908 file(s) [attempted 8908/8908 = 100%, 52 KB/s], Decompressed: 8905[K
+Decompressed 8908 file(s)
+Already decompressed 8908 file(s)
+baseline 1.15
+L1 Sample00 True 71.5
+L1 Sample01 True 4.57
+L1 Sample02 True 2.35
+L1 Sample03 True 2.59
+L1 SampleLin00 True 1.89
+L1 SampleLin01 True 2.34
+L1 SampleLin02 True 1.84
+L1 SampleLin03 True 1.19
+L2 Neg00Column rejected
+L2 Neg00Linear rejected
+L2 Neg01Column rejected
+L2 Neg01Linear rejected
+L2 Neg02Column rejected
+L2 Neg02Linear rejected
+baseline 0.79
+L3 mono_decide_kernel 10 True 0.83 False
+L3 mono_decide_kernel 100 True 0.95 False
+L3 mono_decide_kernel 300 True 1.18 False
+L3 mono_decide_kernel 1000 False 2.33 False
+L3 decide_kernel 10 True 0.84 False
+L3 decide_kernel 100 True 1.12 False
+L3 decide_kernel 300 True 1.64 False
+L3 decide_kernel 1000 True 4.09 False
+L3 decide_kernel 3000 True 14.31 False
+L3 decide_kernel 10000 True 90.72 False
+L3 decide_kernel 30000 True 699.52 False
+L3 decide_kernel 100000 False 901.83 True
+L3 decide 10 True 10.18 False
+L3 decide 100 True 1.66 False
+L3 decide 300 True 1.89 False
+L3 decide 1000 True 4.75 False
+L3 decide 3000 True 16.37 False
+L3 decide 10000 True 94.67 False
+L3 decide 30000 True 731.08 False
+L3 decide 100000 False 905.65 True
+L3 norm_num 10 False 14.28 False
+L3 ring 10 True 1.91 False
+L3 ring 100 True 3.96 False
+L3 ring 300 True 458.83 False
+L3 ring 1000 False 900.06 True
+{
+ "agreement": {
+  "ms_per_row_max": {
+   "core": 1.6815,
+   "sc_js": 19.7913,
+   "sc_py": 7.6109
+  },
+  "ms_per_row_mean": {
+   "core": 0.1221,
+   "sc_js": 0.4029,
+   "sc_py": 0.1335
+  },
+  "n_corpora": 23,
+  "n_disagreements": 0,
+  "n_witnesses": 12187,
+  "note": "sc_js time is subprocess wall time divided by batch size, so it includes node start-up.",
+  "plain": {
+   "core": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   },
+   "sc_js": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   },
+   "sc_py": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   }
+  },
+  "table_mode": {
+   "table_core": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   },
+   "table_sc_py": {
+    "CRASH": 0,
+    "FAIL": 0,
+    "MALFORMED": 0,
+    "PASS": 12187
+   }
+  },
+  "disagreements": []
+ },
+ "controls": {
+  "N3_accept_all_dummy_ok": 267,
+  "N3_harness_flags_dummies": true,
+  "N3_reject_all_dummy_ok": 2653,
+  "by_kind": {
+   "M1_coef_flip": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M2_coef_drop": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M3_coef_extra": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M4_prime_change": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M5_lam_flip": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M6_lam_drop": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M7_target_swap": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "M8_row_alter": {
+    "core_ok": 91,
+    "expected": "reject",
+    "n": 91,
+    "sc_js_na": 0,
+    "sc_js_ok": 91,
+    "sc_py_ok": 91
+   },
+   "N1_row_shuffle": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 0,
+    "sc_js_ok": 267,
+    "sc_py_ok": 267
+   },
+   "N2_lam_permute": {
+    "core_ok": 159,
+    "expected": "reject",
+    "n": 159,
+    "sc_js_na": 0,
+    "sc_js_ok": 159,
+    "sc_py_ok": 159
+   },
+   "X0_exhibit_ctrl_true_table": {
+    "core_ok": 267,
+    "expected": "pass",
+    "n": 267,
+    "sc_js_na": 267,
+    "sc_js_ok": 0,
+    "sc_py_ok": 267
+   },
+   "X1_exhibit_class_wrong_table": {
+    "core_ok": 267,
+    "expected": "reject",
+    "n": 267,
+    "sc_js_na": 267,
+    "sc_js_ok": 0,
+    "sc_py_ok": 267
+   }
+  },
+  "failures": [],
+  "n_cases": 2920,
+  "per_corpus_sample": 12,
+  "seed": 20261002
+ },
+ "edge_cases": 14,
+ "replay_sunrise_digits": [
+  111,
+  110,
+  109
+ ]
+}

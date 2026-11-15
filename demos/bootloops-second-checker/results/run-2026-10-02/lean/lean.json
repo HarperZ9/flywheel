@@ -1,0 +1,863 @@
+{
+ "seed": 20261002,
+ "L1": [
+  {
+   "module": "Sample00",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 109.11,
+   "cumulative_ms": {
+    "type checking": 5710.0,
+    "tactic execution": 280.0,
+    "elaboration": 13900.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 41.52,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "column/decide +kernel"
+  },
+  {
+   "module": "Sample01",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 181.74,
+   "cumulative_ms": {
+    "type checking": 873000.0,
+    "tactic execution": 1240.0,
+    "elaboration": 25900.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 45.52,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "column/decide +kernel"
+  },
+  {
+   "module": "Sample02",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 18.96,
+   "cumulative_ms": {
+    "type checking": 815.0,
+    "tactic execution": 95.9,
+    "elaboration": 2710.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 36.87,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "column/decide +kernel"
+  },
+  {
+   "module": "Sample03",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 11.25,
+   "cumulative_ms": {
+    "type checking": 206.0,
+    "tactic execution": 38.9,
+    "elaboration": 652.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 35.79,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "column/decide +kernel"
+  },
+  {
+   "module": "Sample04",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.14,
+   "cumulative_ms": {
+    "type checking": 90.9,
+    "tactic execution": 21.2,
+    "elaboration": 274.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 84.05,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "column/decide +kernel"
+  },
+  {
+   "module": "Sample05",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 15.93,
+   "cumulative_ms": {
+    "type checking": 383.0,
+    "tactic execution": 54.4,
+    "elaboration": 976.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 35.77,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "column/decide +kernel"
+  },
+  {
+   "module": "Sample06",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 12.76,
+   "cumulative_ms": {
+    "type checking": 544.0,
+    "tactic execution": 51.0,
+    "elaboration": 1250.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 35.39,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "column/decide +kernel"
+  },
+  {
+   "module": "Sample07",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 9.63,
+   "cumulative_ms": {
+    "type checking": 61.4,
+    "tactic execution": 13.8,
+    "elaboration": 190.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 34.71,
+   "leanchecker_tail": "",
+   "n_rows": 4,
+   "form": "column/decide +kernel"
+  },
+  {
+   "module": "SampleLin00",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.15,
+   "cumulative_ms": {
+    "type checking": 143.0,
+    "tactic execution": 2420.0,
+    "elaboration": 992.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 34.89,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "linear/ring_nf+reduce_mod_char"
+  },
+  {
+   "module": "SampleLin01",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 11.8,
+   "cumulative_ms": {
+    "type checking": 224.0,
+    "tactic execution": 2080.0,
+    "elaboration": 1370.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 34.61,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "linear/ring_nf+reduce_mod_char"
+  },
+  {
+   "module": "SampleLin02",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.59,
+   "cumulative_ms": {
+    "type checking": 207.0,
+    "tactic execution": 2310.0,
+    "elaboration": 1110.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 34.81,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "linear/ring_nf+reduce_mod_char"
+  },
+  {
+   "module": "SampleLin03",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.24,
+   "cumulative_ms": {
+    "type checking": 189.0,
+    "tactic execution": 2029.9999999999998,
+    "elaboration": 970.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 35.34,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "linear/ring_nf+reduce_mod_char"
+  },
+  {
+   "module": "SampleLin04",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.89,
+   "cumulative_ms": {
+    "type checking": 250.0,
+    "tactic execution": 2510.0,
+    "elaboration": 1220.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 34.78,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "linear/ring_nf+reduce_mod_char"
+  },
+  {
+   "module": "SampleLin05",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.76,
+   "cumulative_ms": {
+    "type checking": 195.0,
+    "tactic execution": 2260.0,
+    "elaboration": 1250.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 32.86,
+   "leanchecker_tail": "",
+   "n_rows": 6,
+   "form": "linear/ring_nf+reduce_mod_char"
+  },
+  {
+   "module": "SampleLin06",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.18,
+   "cumulative_ms": {
+    "type checking": 74.1,
+    "tactic execution": 1010.0,
+    "elaboration": 913.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 34.32,
+   "leanchecker_tail": "",
+   "n_rows": 2,
+   "form": "linear/ring_nf+reduce_mod_char"
+  }
+ ],
+ "L2": [
+  {
+   "module": "Neg00Column",
+   "ok": false,
+   "rc": 1,
+   "timeout": false,
+   "wall_s": 8.77,
+   "cumulative_ms": {
+    "type checking": 31.8,
+    "tactic execution": 4.86,
+    "elaboration": 40.8
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext",
+    "sorryAx"
+   ],
+   "axioms_ok": false,
+   "errors": [
+    "<repo>\\lean\\ReceiptLean\\Gen\\Neg00Column.lean:14:10: error: Tactic `decide` proved that the proposition"
+   ],
+   "uses_forbidden": false,
+   "form": "column",
+   "expected": "fail"
+  },
+  {
+   "module": "Neg00Linear",
+   "ok": false,
+   "rc": 1,
+   "timeout": false,
+   "wall_s": 9.45,
+   "cumulative_ms": {
+    "type checking": 15.8,
+    "tactic execution": 477.0,
+    "elaboration": 674.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext",
+    "sorryAx"
+   ],
+   "axioms_ok": false,
+   "errors": [
+    "<repo>\\lean\\ReceiptLean\\Gen\\Neg00Linear.lean:14:39: error: unsolved goals"
+   ],
+   "uses_forbidden": false,
+   "form": "linear",
+   "expected": "fail"
+  },
+  {
+   "module": "Neg01Column",
+   "ok": false,
+   "rc": 1,
+   "timeout": false,
+   "wall_s": 9.02,
+   "cumulative_ms": {
+    "type checking": 3.58,
+    "tactic execution": 1.09,
+    "elaboration": 14.1
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext",
+    "sorryAx"
+   ],
+   "axioms_ok": false,
+   "errors": [
+    "<repo>\\lean\\ReceiptLean\\Gen\\Neg01Column.lean:14:10: error: Tactic `decide` proved that the proposition"
+   ],
+   "uses_forbidden": false,
+   "form": "column",
+   "expected": "fail"
+  },
+  {
+   "module": "Neg01Linear",
+   "ok": false,
+   "rc": 1,
+   "timeout": false,
+   "wall_s": 9.58,
+   "cumulative_ms": {
+    "type checking": 9.31,
+    "tactic execution": 433.0,
+    "elaboration": 600.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext",
+    "sorryAx"
+   ],
+   "axioms_ok": false,
+   "errors": [
+    "<repo>\\lean\\ReceiptLean\\Gen\\Neg01Linear.lean:14:25: error: unsolved goals"
+   ],
+   "uses_forbidden": false,
+   "form": "linear",
+   "expected": "fail"
+  },
+  {
+   "module": "Neg02Column",
+   "ok": false,
+   "rc": 1,
+   "timeout": false,
+   "wall_s": 8.84,
+   "cumulative_ms": {
+    "type checking": 13.3,
+    "tactic execution": 3.53,
+    "elaboration": 50.2
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext",
+    "sorryAx"
+   ],
+   "axioms_ok": false,
+   "errors": [
+    "<repo>\\lean\\ReceiptLean\\Gen\\Neg02Column.lean:23:10: error: Tactic `decide` proved that the proposition"
+   ],
+   "uses_forbidden": false,
+   "form": "column",
+   "expected": "fail"
+  },
+  {
+   "module": "Neg02Linear",
+   "ok": false,
+   "rc": 1,
+   "timeout": false,
+   "wall_s": 9.54,
+   "cumulative_ms": {
+    "type checking": 30.7,
+    "tactic execution": 529.0,
+    "elaboration": 770.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext",
+    "sorryAx"
+   ],
+   "axioms_ok": false,
+   "errors": [
+    "<repo>\\lean\\ReceiptLean\\Gen\\Neg02Linear.lean:14:53: error: unsolved goals"
+   ],
+   "uses_forbidden": false,
+   "form": "linear",
+   "expected": "fail"
+  }
+ ],
+ "L3": [],
+ "sample": [
+  {
+   "corpus": "fixture_testcore_bl-receipt",
+   "witness": "w_bl-receipt_2147483647_201.json",
+   "terms": 8,
+   "lam_nnz": 3,
+   "linear_form": true
+  },
+  {
+   "corpus": "fixture_testcore_bl-receipt",
+   "witness": "w_bl-receipt_2147483647_203.json",
+   "terms": 2,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483629_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483629_682.json",
+   "terms": 12,
+   "lam_nnz": 2,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483629_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483629_367.json",
+   "terms": 42,
+   "lam_nnz": 6,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483629_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483629_432.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483629_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483629_976.json",
+   "terms": 5985,
+   "lam_nnz": 493,
+   "linear_form": false
+  },
+  {
+   "corpus": "int-l_2147483629_sc-synth",
+   "witness": "w_sc-synth_2147483629_335.json",
+   "terms": 12,
+   "lam_nnz": 2,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483629_sc-synth",
+   "witness": "w_sc-synth_2147483629_117.json",
+   "terms": 74,
+   "lam_nnz": 8,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483647_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483647_884.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483647_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483647_602.json",
+   "terms": 12,
+   "lam_nnz": 2,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483647_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483647_268.json",
+   "terms": 6136,
+   "lam_nnz": 505,
+   "linear_form": false
+  },
+  {
+   "corpus": "int-l_2147483647_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483647_186.json",
+   "terms": 5876,
+   "lam_nnz": 483,
+   "linear_form": false
+  },
+  {
+   "corpus": "int-l_2147483647_sc-synth",
+   "witness": "w_sc-synth_2147483647_563.json",
+   "terms": 27,
+   "lam_nnz": 3,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-l_2147483647_sc-synth",
+   "witness": "w_sc-synth_2147483647_806.json",
+   "terms": 18,
+   "lam_nnz": 3,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483629_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483629_42.json",
+   "terms": 34,
+   "lam_nnz": 5,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483629_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483629_220.json",
+   "terms": 18,
+   "lam_nnz": 3,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483629_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483629_103.json",
+   "terms": 32,
+   "lam_nnz": 4,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483629_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483629_74.json",
+   "terms": 1186,
+   "lam_nnz": 111,
+   "linear_form": false
+  },
+  {
+   "corpus": "int-m_2147483629_sc-synth",
+   "witness": "w_sc-synth_2147483629_305.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483629_sc-synth",
+   "witness": "w_sc-synth_2147483629_92.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483647_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483647_194.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483647_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483647_23.json",
+   "terms": 75,
+   "lam_nnz": 10,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483647_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483647_272.json",
+   "terms": 48,
+   "lam_nnz": 6,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483647_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483647_336.json",
+   "terms": 141,
+   "lam_nnz": 13,
+   "linear_form": false
+  },
+  {
+   "corpus": "int-m_2147483647_sc-synth",
+   "witness": "w_sc-synth_2147483647_136.json",
+   "terms": 12,
+   "lam_nnz": 2,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-m_2147483647_sc-synth",
+   "witness": "w_sc-synth_2147483647_334.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-msq_2147483629_bl-receipt",
+   "witness": "w_bl-receipt_2147483629_52.json",
+   "terms": 27,
+   "lam_nnz": 4,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-msq_2147483629_bl-receipt",
+   "witness": "w_bl-receipt_2147483629_150.json",
+   "terms": 12,
+   "lam_nnz": 2,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-msq_2147483647_bl-receipt",
+   "witness": "w_bl-receipt_2147483647_105.json",
+   "terms": 27,
+   "lam_nnz": 4,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-msq_2147483647_bl-receipt",
+   "witness": "w_bl-receipt_2147483647_197.json",
+   "terms": 12,
+   "lam_nnz": 2,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483629_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483629_46.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483629_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483629_15.json",
+   "terms": 43,
+   "lam_nnz": 7,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483629_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483629_6.json",
+   "terms": 256,
+   "lam_nnz": 29,
+   "linear_form": false
+  },
+  {
+   "corpus": "int-s_2147483629_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483629_16.json",
+   "terms": 11,
+   "lam_nnz": 2,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483629_sc-synth",
+   "witness": "w_sc-synth_2147483629_28.json",
+   "terms": 76,
+   "lam_nnz": 9,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483629_sc-synth",
+   "witness": "w_sc-synth_2147483629_12.json",
+   "terms": 99,
+   "lam_nnz": 11,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483647_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483647_49.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483647_bl-winnow-native",
+   "witness": "w_bl-winnow-native_2147483647_11.json",
+   "terms": 23,
+   "lam_nnz": 4,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483647_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483647_6.json",
+   "terms": 256,
+   "lam_nnz": 29,
+   "linear_form": false
+  },
+  {
+   "corpus": "int-s_2147483647_bl-winnow-retrofit",
+   "witness": "w_bl-winnow-retrofit_2147483647_17.json",
+   "terms": 350,
+   "lam_nnz": 39,
+   "linear_form": false
+  },
+  {
+   "corpus": "int-s_2147483647_sc-synth",
+   "witness": "w_sc-synth_2147483647_44.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-s_2147483647_sc-synth",
+   "witness": "w_sc-synth_2147483647_35.json",
+   "terms": 77,
+   "lam_nnz": 6,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-ssq_2147483629_bl-receipt",
+   "witness": "w_bl-receipt_2147483629_33.json",
+   "terms": 11,
+   "lam_nnz": 2,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-ssq_2147483629_bl-receipt",
+   "witness": "w_bl-receipt_2147483629_23.json",
+   "terms": 4,
+   "lam_nnz": 1,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-ssq_2147483647_bl-receipt",
+   "witness": "w_bl-receipt_2147483647_8.json",
+   "terms": 27,
+   "lam_nnz": 4,
+   "linear_form": true
+  },
+  {
+   "corpus": "int-ssq_2147483647_bl-receipt",
+   "witness": "w_bl-receipt_2147483647_27.json",
+   "terms": 25,
+   "lam_nnz": 4,
+   "linear_form": true
+  }
+ ],
+ "baseline_import_only": {
+  "module": "Baseline",
+  "ok": true,
+  "rc": 0,
+  "timeout": false,
+  "wall_s": 9.13,
+  "cumulative_ms": {
+   "elaboration": 0.0842
+  },
+  "axioms": [],
+  "axioms_ok": true,
+  "errors": [],
+  "uses_forbidden": false,
+  "leanchecker_rc": 0,
+  "leanchecker_s": 35.5,
+  "leanchecker_tail": ""
+ }
+}

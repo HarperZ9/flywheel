@@ -39,6 +39,10 @@ ALLOWED = (
     "docs/art/receipts.json",
     # the same record in each package imported from its own repository
     "packages/*/docs/art/receipts.json",
+    # the same record in each demo imported from its own repository
+    "demos/*/docs/art/receipts.json",
+    # describes the receipt fields of the engine version the demo pins (1.0.0)
+    "demos/flywheel-receipt-demo/FLYWHEEL-TOOLS-EXPLAINED.md",
     "docs/features/pysyft-result-receipt.md",   # wire-format reference for v1 receipts
     "harness/ollama-manifest-digest-provenance-v1.json",   # self-hashed v1 record, beside v2
     "packaging/bundled-lanes/relay.json",   # v1 descriptor, hash-pinned in bundled_lane_expectations

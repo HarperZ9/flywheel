@@ -1,0 +1,193 @@
+{
+  "schema": "crewai.kickoff-for-each-replay-audit-public/v1",
+  "audit_id": "crewai-kickoff-for-each-replay-b3aaaab-20260725",
+  "generated_at": "2026-07-25T23:02:40Z",
+  "publication_state": "public_safe_evidence_export",
+  "question": "Does synchronous non-streaming kickoff_for_each at the pinned CrewAI commit leave the most recent crew run available to Crew.replay?",
+  "source": {
+    "repository": "https://github.com/crewAIInc/crewAI.git",
+    "commit": "b3aaaab023a53a08db4d36c9430b3463f1efcc7d",
+    "tree": "3777debd4a80bf476e82fff454023fd178e7d315",
+    "version": "1.15.6",
+    "origin_main_observed_at_clone": "b3aaaab023a53a08db4d36c9430b3463f1efcc7d"
+  },
+  "environment": {
+    "os": "Windows",
+    "python": "3.12.10",
+    "uv": "0.11.25",
+    "pytest": "9.0.3",
+    "crewai": "1.15.6",
+    "crewai_tools": "1.15.6",
+    "crewai_tools_involved": false
+  },
+  "contract": {
+    "statement": "Only the latest kickoff is replayable; after kickoff_for_each, replay must use the most recent crew run.",
+    "refs": [
+      "docs/edge/en/learn/replay-tasks-from-latest-crew-kickoff.mdx#L10-L14",
+      "docs/v1.15.6/en/learn/replay-tasks-from-latest-crew-kickoff.mdx#L10-L14"
+    ],
+    "pinned_blob_digest": "sha256:5cc02ff62d16dfc79bbcbe0b37497f76a665c507cb548ccc96eb8049c2ededa0"
+  },
+  "pass_predicate": [
+    {
+      "id": "P1",
+      "statement": "Ordinary kickoff persists one task output and replays it."
+    },
+    {
+      "id": "P2",
+      "statement": "The two-input batch returns two outputs."
+    },
+    {
+      "id": "P3",
+      "statement": "Post-batch storage contains exactly the latest run."
+    },
+    {
+      "id": "P4",
+      "statement": "Replay executes using latest inputs and persists a truthy replay marker."
+    },
+    {
+      "id": "P5",
+      "statement": "The exercised path makes no model or remote-service call."
+    }
+  ],
+  "methodology": {
+    "test_ref": "test_kickoff_for_each_replay.py",
+    "test_digest": "sha256:9e0aa13b3aabda3363fbc58f17626674ea558420612e656b56ad8ebd14b89240",
+    "model_boundary_replaced": "Task.execute_sync",
+    "real_paths": [
+      "Crew construction and copying",
+      "input interpolation",
+      "SQLite latest-run persistence",
+      "stored-input recovery",
+      "Crew.replay",
+      "replay execution-log update"
+    ],
+    "network_control": {
+      "repository_guard_active": true,
+      "allowed_host_patterns": [
+        "127\\.0\\.0\\.1\\Z",
+        "::1\\Z"
+      ],
+      "claim_scope": "Exercised pytest paths only; no packet-capture or whole-host claim."
+    },
+    "red_provenance": {
+      "strength": "recorded_execution_chronology",
+      "cryptographic_source_state_attestation": false,
+      "note": "The RED/control logs precede the production mutation but do not embed an adjacent source digest or status. The original failing assertion remains unchanged after later test strengthening."
+    }
+  },
+  "root_cause": {
+    "state": "verified_by_source_and_runtime",
+    "statement": "Every copied kickoff resets the shared latest-output store before writing. The final copy leaves the newest valid records, and the parent method's extra post-loop reset deletes them."
+  },
+  "results": {
+    "unmodified": {
+      "verification_verdict": "DRIFT",
+      "regression": {
+        "exit_code": 1,
+        "passed": 0,
+        "failed": 1,
+        "observed": "stored output count 0; expected 1",
+        "ref": "logs/red-regression-python312.log",
+        "digest": "sha256:e142525b91c2e868c5a0806f17817905599ddecae3900461b2dfdd24b140412f"
+      },
+      "control": {
+        "exit_code": 0,
+        "passed": 1,
+        "failed": 0,
+        "ref": "logs/control-python312.log",
+        "digest": "sha256:c88f2eae8ce066c2010abd25a6f74b24587f200376163ed3fd236223a6b494e8"
+      },
+      "combined": {
+        "exit_code": 1,
+        "passed": 1,
+        "failed": 1,
+        "ref": "logs/unmodified-combined-python312.log",
+        "digest": "sha256:0030c03eadce5f6fe31c493500243fb8e09d1c08b7bbb5d232082315e507b715"
+      }
+    },
+    "candidate": {
+      "verification_verdict": "MATCH",
+      "change": "Remove the terminal self._task_output_handler.reset() from synchronous Crew.kickoff_for_each.",
+      "patch_ref": "candidate.patch",
+      "patch_digest": "sha256:755a6ae5d186c83b8d448e8089fdc0121e7610467282a446b4c458cc29fd0f5f",
+      "diff": "one production deletion plus one new 99-line, two-test regression file",
+      "regression": {
+        "exit_code": 0,
+        "passed": 1,
+        "failed": 0,
+        "ref": "logs/green-regression-python312.log",
+        "digest": "sha256:c46df37876617699fe3b83334293db898abb472358b7eeb92d0edd31c6ddd0e5"
+      },
+      "combined": {
+        "exit_code": 0,
+        "passed": 2,
+        "failed": 0,
+        "ref": "logs/green-combined-python312.log",
+        "digest": "sha256:ff080643ea77cb6109685457d76783b5bf75d7da2dafa9c269662fe1c82d537b"
+      },
+      "existing_kickoff_for_each": {
+        "exit_code": 0,
+        "passed": 8,
+        "failed": 0,
+        "deselected": 124,
+        "ref": "logs/existing-kickoff-for-each-python312.log",
+        "digest": "sha256:633c31b7dff1550bfac0c2db0deabadc9a15f977d5a5e0750c6db9a17b47deba"
+      },
+      "existing_replay": {
+        "exit_code": 0,
+        "passed": 9,
+        "failed": 0,
+        "deselected": 123,
+        "ref": "logs/existing-replay-python312.log",
+        "digest": "sha256:1d94a3f74535b1520b623d63a2ae384ddf4fb706603a21275cca1209277b0277"
+      },
+      "static_verification": {
+        "exit_code": 0,
+        "verdict": "MATCH",
+        "ref": "logs/static-verification-python312.log",
+        "digest": "sha256:cd303e7cd845296cb0961a5e23b7c4667c72b446928550c0e9273b0c7b28163b"
+      },
+      "local_commit_created_at_capture": false,
+      "upstream_issue_created_at_capture": false,
+      "upstream_pull_request_created_at_capture": false,
+      "upstream_push_at_capture": false
+    }
+  },
+  "conclusion": {
+    "implementation_conformance": "DRIFT",
+    "candidate_local_validation": "MATCH",
+    "maintainer_report_warranted": true,
+    "duplicate_search_required_before_filing": true
+  },
+  "limitations": [
+    "Runtime scope is synchronous non-streaming kickoff_for_each.",
+    "Async and streaming paths were not runtime-audited.",
+    "The complete repository suite was not run.",
+    "Empty-list persistence semantics need maintainer judgment.",
+    "The diagnostic reads private storage state in addition to exercising public replay.",
+    "No upstream duplicate search was performed."
+  ],
+  "bundle_materials": [
+    {
+      "ref": "README.md",
+      "digest": "sha256:6626ed41dddd633c37dc71780e90a137fda06f9c2cf21c22e24506d58312b321"
+    },
+    {
+      "ref": "AUDIT.md",
+      "digest": "sha256:a832faaa3667fe59984e7d79ae2f9be8e6083c802a421ac010037d2dfbd3dfb5"
+    },
+    {
+      "ref": "LICENSE",
+      "digest": "sha256:055737f87fb6677a730ddd5ac82f7a7ee89bc3e838269ba7237cbaf125471f57"
+    },
+    {
+      "ref": "candidate.patch",
+      "digest": "sha256:755a6ae5d186c83b8d448e8089fdc0121e7610467282a446b4c458cc29fd0f5f"
+    },
+    {
+      "ref": "test_kickoff_for_each_replay.py",
+      "digest": "sha256:9e0aa13b3aabda3363fbc58f17626674ea558420612e656b56ad8ebd14b89240"
+    }
+  ]
+}

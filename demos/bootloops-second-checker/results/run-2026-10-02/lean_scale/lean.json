@@ -1,0 +1,573 @@
+{
+ "seed": 20261002,
+ "L1": [],
+ "L2": [],
+ "L3": [
+  {
+   "module": "Scale_mono_decide_kernel_10",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 9.24,
+   "cumulative_ms": {
+    "type checking": 5.06,
+    "tactic execution": 0.703,
+    "elaboration": 29.7
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 38.99,
+   "leanchecker_tail": "",
+   "tactic": "mono_decide_kernel",
+   "terms": 10,
+   "lam_nnz": 1,
+   "n_cols": 10
+  },
+  {
+   "module": "Scale_mono_decide_kernel_100",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 9.67,
+   "cumulative_ms": {
+    "type checking": 27.8,
+    "tactic execution": 1.43,
+    "elaboration": 130.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 72.68,
+   "leanchecker_tail": "",
+   "tactic": "mono_decide_kernel",
+   "terms": 100,
+   "lam_nnz": 10,
+   "n_cols": 20
+  },
+  {
+   "module": "Scale_mono_decide_kernel_300",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 13.13,
+   "cumulative_ms": {
+    "type checking": 104.0,
+    "tactic execution": 12.3,
+    "elaboration": 489.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 47.48,
+   "leanchecker_tail": "",
+   "tactic": "mono_decide_kernel",
+   "terms": 300,
+   "lam_nnz": 30,
+   "n_cols": 58
+  },
+  {
+   "module": "Scale_mono_decide_kernel_1000",
+   "ok": false,
+   "rc": 1,
+   "timeout": false,
+   "wall_s": 13.21,
+   "cumulative_ms": {
+    "type checking": 70.5,
+    "tactic execution": 0.709,
+    "elaboration": 1130.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext",
+    "sorryAx"
+   ],
+   "axioms_ok": false,
+   "errors": [
+    "<repo>\\lean\\ReceiptLean\\Gen\\Scale_mono_decide_kernel_1000.lean:213:2: error: failed to synthesize"
+   ],
+   "uses_forbidden": false,
+   "tactic": "mono_decide_kernel",
+   "terms": 1000,
+   "lam_nnz": 100,
+   "n_cols": 199
+  },
+  {
+   "module": "Scale_decide_kernel_10",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 9.05,
+   "cumulative_ms": {
+    "type checking": 20.3,
+    "tactic execution": 4.74,
+    "elaboration": 60.8
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 38.06,
+   "leanchecker_tail": "",
+   "tactic": "decide_kernel",
+   "terms": 10,
+   "lam_nnz": 1,
+   "n_cols": 10
+  },
+  {
+   "module": "Scale_decide_kernel_100",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 9.91,
+   "cumulative_ms": {
+    "type checking": 63.2,
+    "tactic execution": 8.64,
+    "elaboration": 222.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 37.87,
+   "leanchecker_tail": "",
+   "tactic": "decide_kernel",
+   "terms": 100,
+   "lam_nnz": 10,
+   "n_cols": 20
+  },
+  {
+   "module": "Scale_decide_kernel_300",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.93,
+   "cumulative_ms": {
+    "type checking": 205.0,
+    "tactic execution": 24.9,
+    "elaboration": 649.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 37.05,
+   "leanchecker_tail": "",
+   "tactic": "decide_kernel",
+   "terms": 300,
+   "lam_nnz": 30,
+   "n_cols": 58
+  },
+  {
+   "module": "Scale_decide_kernel_1000",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 17.52,
+   "cumulative_ms": {
+    "type checking": 786.0,
+    "tactic execution": 88.6,
+    "elaboration": 2410.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 37.36,
+   "leanchecker_tail": "",
+   "tactic": "decide_kernel",
+   "terms": 1000,
+   "lam_nnz": 100,
+   "n_cols": 199
+  },
+  {
+   "module": "Scale_decide_kernel_3000",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 48.34,
+   "cumulative_ms": {
+    "type checking": 4520.0,
+    "tactic execution": 266.0,
+    "elaboration": 9820.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 41.3,
+   "leanchecker_tail": "",
+   "tactic": "decide_kernel",
+   "terms": 3000,
+   "lam_nnz": 300,
+   "n_cols": 595
+  },
+  {
+   "module": "Scale_decide_kernel_10000",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 304.93,
+   "cumulative_ms": {
+    "type checking": 47200.0,
+    "tactic execution": 905.0,
+    "elaboration": 67400.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 130.06,
+   "leanchecker_tail": "",
+   "tactic": "decide_kernel",
+   "terms": 10000,
+   "lam_nnz": 1000,
+   "n_cols": 1988
+  },
+  {
+   "module": "Scale_decide_kernel_30000",
+   "ok": false,
+   "rc": null,
+   "timeout": true,
+   "wall_s": 900.06,
+   "cumulative_ms": {},
+   "axioms": [],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "tactic": "decide_kernel",
+   "terms": 30000,
+   "lam_nnz": 3000,
+   "n_cols": 5951
+  },
+  {
+   "module": "Scale_decide_10",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 19.69,
+   "cumulative_ms": {
+    "type checking": 12.6,
+    "tactic execution": 22.5,
+    "elaboration": 60.8
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 43.58,
+   "leanchecker_tail": "",
+   "tactic": "decide",
+   "terms": 10,
+   "lam_nnz": 1,
+   "n_cols": 10
+  },
+  {
+   "module": "Scale_decide_100",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 13.33,
+   "cumulative_ms": {
+    "type checking": 51.4,
+    "tactic execution": 61.2,
+    "elaboration": 223.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 41.52,
+   "leanchecker_tail": "",
+   "tactic": "decide",
+   "terms": 100,
+   "lam_nnz": 10,
+   "n_cols": 20
+  },
+  {
+   "module": "Scale_decide_300",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 14.54,
+   "cumulative_ms": {
+    "type checking": 166.0,
+    "tactic execution": 181.0,
+    "elaboration": 715.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 42.07,
+   "leanchecker_tail": "",
+   "tactic": "decide",
+   "terms": 300,
+   "lam_nnz": 30,
+   "n_cols": 58
+  },
+  {
+   "module": "Scale_decide_1000",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 21.72,
+   "cumulative_ms": {
+    "type checking": 747.0,
+    "tactic execution": 640.0,
+    "elaboration": 2760.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 41.92,
+   "leanchecker_tail": "",
+   "tactic": "decide",
+   "terms": 1000,
+   "lam_nnz": 100,
+   "n_cols": 199
+  },
+  {
+   "module": "Scale_decide_3000",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 55.39,
+   "cumulative_ms": {
+    "type checking": 5490.0,
+    "tactic execution": 1950.0,
+    "elaboration": 11800.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 46.13,
+   "leanchecker_tail": "",
+   "tactic": "decide",
+   "terms": 3000,
+   "lam_nnz": 300,
+   "n_cols": 595
+  },
+  {
+   "module": "Scale_decide_10000",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 295.93,
+   "cumulative_ms": {
+    "type checking": 54500.0,
+    "tactic execution": 6470.0,
+    "elaboration": 77300.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 75.35,
+   "leanchecker_tail": "",
+   "tactic": "decide",
+   "terms": 10000,
+   "lam_nnz": 1000,
+   "n_cols": 1988
+  },
+  {
+   "module": "Scale_decide_30000",
+   "ok": false,
+   "rc": null,
+   "timeout": true,
+   "wall_s": 900.06,
+   "cumulative_ms": {},
+   "axioms": [],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "tactic": "decide",
+   "terms": 30000,
+   "lam_nnz": 3000,
+   "n_cols": 5951
+  },
+  {
+   "module": "Scale_norm_num_10",
+   "ok": false,
+   "rc": 1,
+   "timeout": false,
+   "wall_s": 25.85,
+   "cumulative_ms": {
+    "type checking": 15.2,
+    "tactic execution": 724.0,
+    "elaboration": 200.0
+   },
+   "axioms": [
+    "Quot.sound",
+    "propext",
+    "sorryAx"
+   ],
+   "axioms_ok": false,
+   "errors": [
+    "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:14:7: error: unsolved goals",
+    "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:17:7: error: unsolved goals",
+    "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:20:7: error: unsolved goals",
+    "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:23:7: error: unsolved goals",
+    "<repo>\\lean\\ReceiptLean\\Gen\\Scale_norm_num_10.lean:26:7: error: unsolved goals"
+   ],
+   "uses_forbidden": false,
+   "tactic": "norm_num",
+   "terms": 10,
+   "lam_nnz": 1,
+   "n_cols": 10
+  },
+  {
+   "module": "Scale_ring_10",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 10.95,
+   "cumulative_ms": {
+    "type checking": 46.5,
+    "tactic execution": 657.0,
+    "elaboration": 1050.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 46.49,
+   "leanchecker_tail": "",
+   "tactic": "ring",
+   "terms": 10,
+   "lam_nnz": 1,
+   "n_cols": 10
+  },
+  {
+   "module": "Scale_ring_100",
+   "ok": true,
+   "rc": 0,
+   "timeout": false,
+   "wall_s": 15.22,
+   "cumulative_ms": {
+    "type checking": 135.0,
+    "tactic execution": 1110.0,
+    "elaboration": 2400.0
+   },
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "leanchecker_rc": 0,
+   "leanchecker_s": 37.06,
+   "leanchecker_tail": "",
+   "tactic": "ring",
+   "terms": 100,
+   "lam_nnz": 10,
+   "n_cols": 20
+  },
+  {
+   "module": "Scale_ring_300",
+   "ok": false,
+   "rc": null,
+   "timeout": true,
+   "wall_s": 900.05,
+   "cumulative_ms": {},
+   "axioms": [],
+   "axioms_ok": true,
+   "errors": [],
+   "uses_forbidden": false,
+   "tactic": "ring",
+   "terms": 300,
+   "lam_nnz": 30,
+   "n_cols": 58
+  }
+ ],
+ "sample": [],
+ "baseline_import_only": {
+  "module": "Baseline",
+  "ok": true,
+  "rc": 0,
+  "timeout": false,
+  "wall_s": 9.13,
+  "cumulative_ms": {
+   "elaboration": 0.1
+  },
+  "axioms": [],
+  "axioms_ok": true,
+  "errors": [],
+  "uses_forbidden": false,
+  "leanchecker_rc": 0,
+  "leanchecker_s": 37.14,
+  "leanchecker_tail": ""
+ }
+}

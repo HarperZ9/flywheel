@@ -1,0 +1,108 @@
+{
+  "dangling_parents": 0,
+  "entries": 12,
+  "forum_version": "1.13.0",
+  "ledger": [
+    {
+      "actor": "auditor",
+      "causal_parent": null,
+      "entry_hash": "99d0726f7731574d988e2cbbcde2193860b4ab37a0172c0998ea1b6495320900",
+      "kind": "audit_request",
+      "payload_hash": "edf7267aca6f54c7fd36b93515e1de366e23b76436f9714e49b66667e3333890",
+      "seq": 0
+    },
+    {
+      "actor": "github-evidence",
+      "causal_parent": 0,
+      "entry_hash": "4c2a6c16fa44aa996a85cfd4caae87d2757e6f4950c5f3c6053245ab109050f4",
+      "kind": "source_snapshot",
+      "payload_hash": "809dcffeca65a6794bbbb84692947a85b03800a586bbada91c20a53322bf91e1",
+      "seq": 1
+    },
+    {
+      "actor": "offline-analyzer",
+      "causal_parent": 1,
+      "entry_hash": "dfc0e2b8637c39b05dc09eeab064664619af1c5b073fe462f0ab85b9b9a72635",
+      "kind": "measurement",
+      "payload_hash": "300d8c4ef98b6ce9c13cf0f48f6b55083bce2592ffe0efe400c5a2126ab8383e",
+      "seq": 2
+    },
+    {
+      "actor": "github-evidence",
+      "causal_parent": 2,
+      "entry_hash": "49ad5fa3810044d9ac8422e90552a6135b2a4b77e29826e4c9f6d18d14b0a6d6",
+      "kind": "representative_run",
+      "payload_hash": "30c047dd9491d9344e4842684ed1a21ce561b2c9570b3490db1b9b687e079e33",
+      "seq": 3
+    },
+    {
+      "actor": "auditor",
+      "causal_parent": 3,
+      "entry_hash": "ff5134b3a510f4f532e6061c1d84dd0e74eae6fcdcaf7e62be684504d7d30958",
+      "kind": "hypothesis",
+      "payload_hash": "2963cd54cec4d9e8523ff7dd71df814a412b93f53943d1552655b19c5af77abb",
+      "seq": 4
+    },
+    {
+      "actor": "github-evidence",
+      "causal_parent": 0,
+      "entry_hash": "40adad2a6c2b631e61c69ff3718c252b178364de5e4d90d92a09b331a15f7e2e",
+      "kind": "source_snapshot",
+      "payload_hash": "b2662dd4265b4950614da4858c3020e5fc82ec13bc10aa221d899a3e31e3ed03",
+      "seq": 5
+    },
+    {
+      "actor": "offline-analyzer",
+      "causal_parent": 5,
+      "entry_hash": "14e0b6ccb5358bd36450d45b7db636a5273d7898b5ff594d974348e20483ec10",
+      "kind": "measurement",
+      "payload_hash": "64b28e76bd9f9d211020b586149251bed82b2010ab6ad4d6e5efef7787efe618",
+      "seq": 6
+    },
+    {
+      "actor": "github-evidence",
+      "causal_parent": 6,
+      "entry_hash": "6cd39fb3134c6cb6080ea7c08f46adee8d4bea2ce5458f940e3f595a9e98130e",
+      "kind": "representative_run",
+      "payload_hash": "ec7d56b39a8144a555698b121fb58f1d88ef6bd03b3eeaba0dc96ce41b2fdff2",
+      "seq": 7
+    },
+    {
+      "actor": "auditor",
+      "causal_parent": 7,
+      "entry_hash": "ac9efb280f1204e348471e57122e6b42e25dd896394047d5d48e346613d5e5f5",
+      "kind": "hypothesis",
+      "payload_hash": "c440697b8ee384da2395db1a35b5f913c3c6a97ea79d1bda27e1ea3d7f98a973",
+      "seq": 8
+    },
+    {
+      "actor": "auditor",
+      "causal_parent": 0,
+      "entry_hash": "28d3d8c4b536daf4a2f27d9622750f819d38329a1b90adf796729a3f5976cf87",
+      "kind": "limitations",
+      "payload_hash": "f63d15e1fbd2fecb44a51eda06474337c3f8097ec2994af66c74b404c6168fd0",
+      "seq": 9
+    },
+    {
+      "actor": "auditor",
+      "causal_parent": 9,
+      "entry_hash": "4e20e4360b7e7d44613be0b42b98d51a9d7f447a8a518e2b66fe19456f48b4b9",
+      "kind": "evidence_synthesis",
+      "payload_hash": "34059cabe0aecc3cbf63887de874155f54c8d444f01b3b62bc18df9929d38423",
+      "seq": 10
+    },
+    {
+      "actor": "auditor",
+      "causal_parent": 10,
+      "entry_hash": "5e9b3eb9276d80cce1fe943dcf827f2aa7c23afe7ad6c4a5678c8639d97e07fe",
+      "kind": "conclusion",
+      "payload_hash": "4c6f8d1a6ce84b27f77647b728be93a9b258cb3093228381bfbea56f8bc7d195",
+      "seq": 11
+    }
+  ],
+  "merkle_root": "fb317553850755f029505402a44fbe1019fc803f174f11367498183bb4f13642",
+  "payloads_complete": true,
+  "schema": "vllm-ci-forum-ledger-record/1",
+  "verified_deep": true,
+  "verified_deep_after_restart": true
+}

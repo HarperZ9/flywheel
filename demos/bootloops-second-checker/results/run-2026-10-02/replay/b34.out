@@ -1,0 +1,23 @@
+series jets: 0.07 s wall (measured), dps=60 (+15 guard)
+[cert] certified series-truncation tail: |dB_j|/|B_j| <= 5.89e-94 < 1e-68 -- BOUND, not estimate (N = 175, escalations = 0, fail-closed at cap 8)
+
+positive controls (independent closed forms, recomputed now):
+  B0: series vs closed form -> 75 digits (floor: working precision)
+  B1: series vs closed form -> 74 digits (floor: working precision)
+  B2: series vs closed form -> 75 digits (floor: working precision)
+
+held-out gate (AMFlow protocol literals, comparison ONLY):
+  B1: 75 digits vs 518-digit stored literal [cap = min(dps, 518) = 60]
+  B2: 75 digits vs 517-digit stored literal [cap = min(dps, 517) = 60]
+  B3: 76 digits vs 518-digit stored literal [cap = min(dps, 518) = 60]
+  B4: 75 digits vs 517-digit stored literal [cap = min(dps, 517) = 60]
+[gate] held-out table PASS: all >= min(dps, digits) - 8; a 1e-30 mutation of any GATE literal exits nonzero (mutation rc-gate)
+
+B3 = 21.2571759787571730846572060138585517472736535222722687188484
+B4 = -45.8313970491493720651890600365049717149093980284912060289716
+
+[gate] crank D/D+40 (dps 60 -> 100): min agreement over B0..B4 = 75 digits (raising bar 56) PASS
+
+real	0m0.315s
+user	0m0.000s
+sys	0m0.015s
