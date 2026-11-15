@@ -1,0 +1,51 @@
+import json
+
+from gather import __version__
+from gather.cli import main
+
+
+def test_status_json_is_action_envelope(capsys):
+    assert main(["status", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["schema"] == "project-telos.flagship-action/v1"
+    assert payload["tool"] == "gather"
+    assert payload["status"] == "MATCH"
+    assert "gather.run" in payload["native"]["mcp_tools"]
+    contracts = payload["native"]["telos_contracts"]
+    assert contracts["host_surfaces"] == ["CLI JSON", "MCP stdio", "plugins", "IDEs", "TUIs", "apps"]
+    assert "project-telos.context-envelope/v1" in contracts["schemas"]
+    assert "creative" in contracts["workflow_domains"]
+    assert "scientific" in contracts["workflow_domains"]
+    assert "raw private payloads" in contracts["privacy_boundary"]
+    assert payload["next_actions"][0]["tool"] == "index"
+
+
+def test_doctor_human_prints_verdict_and_next_action(capsys):
+    assert main(["doctor"]) == 0
+    out = capsys.readouterr().out
+    assert out.startswith("status=MATCH tool=gather command=doctor")
+    assert "next: crucible assess" in out
+
+
+def test_demo_json_names_docs_command(capsys):
+    assert main(["demo", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["native"]["command"] == "gather docs <path> --json"
+
+
+def test_status_advertises_pilot_command_and_tool(capsys):
+    assert main(["status", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert "pilot" in payload["native"]["commands"]
+    assert "gather.pilot" in payload["native"]["mcp_tools"]
+    assert payload["native"]["current_status"].startswith(__version__)
+
+
+
+def test_status_advertises_readable_context_tool(capsys):
+    assert main(["status", "--json"]) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert "corpus context" in payload["native"]["commands"]
+    assert "gather.context" in payload["native"]["mcp_tools"]
+    assert "readable context selection" in payload["native"]["current_status"]
+

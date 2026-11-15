@@ -1,0 +1,339 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/HarperZ9/gather/main/docs/art/hero-dark.svg">
+  <img src="https://raw.githubusercontent.com/HarperZ9/gather/main/docs/art/hero-light.svg" alt="gather: Research intake for web pages, papers, scanned PDFs, audio and video. Five bundles of lines, solid, dashed, dotted, wavy and stepped, sweep in from the right and pass through a ring into one bright core. One line stops at the ring with a short cross mark." width="100%">
+</picture>
+
+# gather
+
+Collect research material from web pages, papers, APIs, PDFs, scans, audio and video into a local corpus where every item records how it arrived.
+
+Gather is for researchers, journalists and developers who feed sources to a person or a model and need to show later where each passage came from. It pulls from static and JavaScript-rendered pages, arXiv and scholarly indexes, RSS feeds, authenticated JSON APIs, YouTube and Reddit, local documents, PDFs, scanned images and audio. Each item carries its source, the method that fetched it and a SHA-256 of the exact source text. A stored corpus can be re-hashed at any time, and a sealed digest shows whether any receipt changed. The core uses only the Python standard library and runs on your machine. The same engine works from the command line, an MCP server and Python.
+
+## Install and first run
+
+Python 3.11 or newer. Version 2.6.0 is on PyPI as `gather-engine`.
+
+```bash
+pip install gather-engine
+gather --version                      # gather 2.6.0
+```
+
+Extract a saved page into hashed blocks, each tied to its place in the page:
+
+```text
+$ gather extract article.html
+{
+  "blocks": [
+    {"path": "html[1]/body[1]/h1[1]", "sha256": "a32866a97b9e...", "tag": "h1"},
+    {"path": "html[1]/body[1]/p[1]",  "sha256": "d7ed5c394466...", "tag": "p"}
+  ],
+  "content_sha256": "d4dcc2b58b0a...",
+  "markdown_sha256": "4dbe5c1ca751...",
+  "method": "html-extract"
+}
+```
+
+Store a folder of notes by content hash, then check the corpus later. A clean corpus exits 0; a changed or missing body exits non-zero.
+
+```text
+$ gather docs ./notes --store ./corpus
+digest seal: e12180b20fe3... | verified: True
+stored to ./corpus: 1 added, 0 deduped
+$ gather corpus verify ./corpus
+verified 1 item(s): {'MATCH': 1}
+```
+
+`gather web <url>`, `gather arxiv <query>` and `gather pdf <file>` take the same `--store DIR`, and `gather crawl <url>` prints a hash-chained crawl ledger. `gather caps` lists which optional backends your install has.
+
+## How it compares
+
+Firecrawl, Crawl4AI and Jina Reader turn web pages into Markdown for language models, and Docling and Unstructured parse documents. Firecrawl is also a hosted service. Gather covers a wider spread of source types with less depth on each, and its focus is the record it keeps:
+
+- Every item names the method that produced it, so a fetched quote, a rendered page, OCR text and a model summary stay distinct.
+- Extracted field values must appear on the page that was fetched, matched on word boundaries, or the source is dropped before storage.
+- `gather corpus verify` and `gather ledger verify` recompute hashes and filter counts from files on disk, with no network.
+- The core has no third-party dependencies; lxml and Playwright are opt-in extras.
+
+## Limits
+
+- PDF, OCR and audio call external tools (`pdftotext`, `tesseract`, `whisper`) that you install yourself. PDF text comes from `pdftotext`, without the layout analysis Docling performs.
+- The default `web` adapter does not run JavaScript. The `browser` adapter does, and its host guard covers only the first navigation, so keep it away from untrusted URLs where internal services are reachable.
+- A receipt shows which bytes were fetched and that they have not changed since. It does not show that the source is true or complete.
+- `gather report` cites from a model on your own machine. On Gather's own test questions, citation precision stayed below 0.80 for both local models measured; see [USAGE.md](https://github.com/HarperZ9/gather/blob/main/USAGE.md).
+- No published benchmark compares Gather's extraction quality or speed with the tools named above.
+
+## Permissions and the MCP server
+
+`gather status --json` and `gather doctor --json` inspect the installed surface, and `gather mcp` exposes status, documentation, source, context, run and pilot operations to an MCP host. A run or pilot that would start a command, reach the network or send a credential needs a grant you set at launch (`--allow-exec`, `--allow-network`, `--auth-env NAME@HOST`); without it the call returns `GRANT_REQUIRED`. File sources and every MCP path argument refuse Windows network and device paths (`\host\share`, `\?\`, `CON`) with `NON_LOCAL_PATH`, so a tool call cannot make the machine sign in to someone else's share. External tools start from an absolute path in a private empty folder. [USAGE.md](https://github.com/HarperZ9/gather/blob/main/USAGE.md) has the details.
+
+## How a pilot run works
+
+`gather pilot` takes a closed list of sources and produces something a third
+party can check without trusting the run that made it.
+
+<p align="center"><img src="https://raw.githubusercontent.com/HarperZ9/gather/main/docs/art/pilot-pipeline.svg" alt="Eight stages from a validated manifest to a network-free re-check: manifest, capture, extract, ground, store, receipt, report, re-check. A source whose extracted values are not found on the fetched page is dropped before anything is stored. The re-check reports match, corrupt or missing." width="100%"></p>
+
+The edge worth reading twice is the one that leaves the pipeline. Every value
+the extractor proposes has to be found on the page that was actually fetched,
+matched on word boundaries so `100` does not match inside `1000`. A source that
+fails that check is recorded as an error and nothing from it is stored, so a
+fabricated field cannot reach the corpus by being plausible.
+
+## Features
+
+- **Extract any page to LLM-ready Markdown.** `gather extract` turns a URL or local HTML file into structured Markdown plus a per-block record binding every block to its source node path and content hash. `gather markdown` prints the Markdown alone.
+- **Crawl whole sites.** A concurrent, resumable crawler with robots.txt, sitemap discovery, URL dedup, and per-host throttling. `gather crawl <url> --depth 2 --max-pages 50` emits an append-only, hash-chained ledger of the crawl as JSON.
+- **Track elements across redesigns.** Fingerprint a scraped element once, then relocate it in any later version of the page and get a typed MATCH, RELOCATED, DRIFT, or GONE verdict (`gather.track`, Python API).
+- **Structured extraction with a hallucination check.** `gather.schema_extract` binds schema fields to source nodes, and `verify_record` rejects any LLM-proposed field value not grounded in the fetched content.
+- **Streaming extraction.** `gather.stream` parses an HTML stream chunk by chunk and emits partial-update commits as blocks complete, each folded into a hash chain, so a streamed extraction is replayable.
+- **Hard-source adapters behind one shape.** Video with captions and comments (`yt-dlp` first, with the official YouTube Data API as a fallback when you supply your own key; each item records which path served it and how fast), Reddit through its official Data API with your own app credentials, static web, RSS/Atom feeds, local docs, arXiv, PDFs (`pdftotext`), authenticated JSON APIs (token from env, never logged), JS-rendered pages (headless Chromium), scanned images (`tesseract`), and audio (`whisper`). Each external tool is optional and only needed for its own adapter.
+- **Cited reports, checked in code.** `gather report` asks a model on your own machine to answer from fixed excerpts with exact quotes, then checks every quote against the excerpt it cites and marks any it cannot verify. An answer that cites an excerpt without quoting it is sent back for a rewrite, up to twice.
+- **Filter ledgers.** `--scope TERMS --ledger DIR` writes one row per dropped item with its reason code, plus the input, so `gather ledger verify` can recompute every count.
+- **A video as one checkable bundle, with frames.** `gather video-bundle <url> --out DIR` saves the metadata and chapters, the caption track and transcripts, the comment tree, a balanced comment synthesis, and contact sheets of 24 to 96 frames across the whole video with the time printed on each. The frames come from the site's preview storyboard, so no video file is downloaded; they are small (320 by 180 pixels at best on YouTube) and the bundle records their real size. `--fast` reads captions and frames while the comments are still being read and keeps requests 1 second apart: a 234-second video that took 162 seconds with 3-second sleeps took 37 seconds. Frame sheets need the optional `frames` extra (Pillow). See [USAGE.md](https://github.com/HarperZ9/gather/blob/main/USAGE.md).
+- **Channel and playlist intake.** `gather channel <url> --store DIR` lists a channel's videos, shorts, and streams tabs (or one playlist) and gathers every entry with bounded concurrency, resumable from a per-pass ledger. Metadata and comments run as one pass and captions as another (`--no-captions`, `--captions-only`), with polite pacing, bounded backoff on HTTP 429 and session rate limits, a stop at the first bot check (never retried or answered), one caption track per video, and a run summary that counts every outcome by reason.
+- **Scholarly-graph federation.** `gather scholar` queries OpenAlex, Semantic Scholar, and Crossref in one call, dedupes results by normalized DOI (never a fuzzy title match), and can capture citation edges as first-class records with `--edges`.
+- **A durable local corpus.** Any fetch command takes `--store DIR`: bodies are content-addressed and deduped by hash, new writes preserve exact UTF-8 source bytes, and `gather corpus list|verify|digest|runs|search|stats|prune|availability|context` inspects, re-checks, and queries what you stored.
+- **Readable context selection.** `gather corpus context DIR` shows bounded, re-hashed source/comment excerpts with row refs and missing/corrupt/unsafe/oversized-body reasons; `--select ROW_REF[:START[:LIMIT]] --expect-digest SHA256` exports a private context payload with a deterministic selection digest, refusing stale digests and selected text over budget. Python callers that already hold a retained corpus root fd/HANDLE can pass a same-process `CorpusRootDescriptor` so Gather does not reopen the root path. On Linux/WSL filesystems where retained directory fds cannot supply stable confined reads, currently including WSL Windows-drive 9p/v9fs mounts, Gather refuses opened corpus, descendant directory, and catalog/body file descriptors before reading corpus metadata or bodies. This is acquisition context, not a truth, claim-support, completeness, caller workspace-parent, or secret-free verdict.
+- **Multi-source runs.** `gather run config.json` orchestrates many sources, a scope filter, and optional synthesis into one recorded session kept in the corpus history.
+- **Accountable pilot evidence engine.** `gather pilot run|refresh|verify|bundle` drives a closed manifest through a source-isolated capture into a content-addressed corpus, writes a redacted report and a hash-chained receipt, monitors sources for change (NEW/CHANGED/UNCHANGED with archived history), and packages deterministic shared or full bundles any third party re-verifies offline. See [docs/PILOT.md](https://github.com/HarperZ9/gather/blob/main/docs/PILOT.md).
+- **Three surfaces, one engine.** The full CLI, an MCP stdio server (`gather mcp`, tools `gather.status`, `gather.doctor`, `gather.docs`, `gather.arxiv`, `gather.federation`, `gather.run`, `gather.context`, `gather.pilot`), and a plain Python API.
+- **Zero-dependency core, opt-in speed.** The core is pure standard library. `gather-engine[fast]` adds lxml parsing (roughly 2x on large documents in our own informal timing, unpublished), `[browser]` adds Playwright JS rendering. `gather caps` reports what your install can actually do; a missing capability is reported as such, never faked.
+
+## See it work, step by step
+
+The [animated explainer](https://harperz9.github.io/repo-explainers/gather.html)
+walks through a local page extracted into hashed blocks, the grounding check on three proposed records, storage by content hash, corpus verify on corrupt and missing bodies, a scoped run with its digest, and the demo's tampered receipt. Every value on it is output from this repository. Its
+source is [docs/explainer/index.html](https://github.com/HarperZ9/gather/blob/main/docs/explainer/index.html).
+
+## Watch
+
+[![Claiming got cheap. Checking did not.: a narrated film, 2 min 57 s](https://harperz9.github.io/media/explainers/checking-cost/poster.jpg)](https://harperz9.github.io/explainers.html#checking-cost-h)
+
+**[Claiming got cheap. Checking did not.](https://harperz9.github.io/explainers.html#checking-cost-h)** (2 min 57 s, narrated, captioned). Gather keeps a receipt for every source it pulls, so checking a citation stays cheap. The film page carries the transcript, the sources and recall questions.
+
+## Walkthrough
+
+Install it, run it once, then use the main feature. Each command below is real, and so is its output.
+
+1. **Install.** Install from a checkout to run the demo. Python 3.11 or newer; none of this needs the network.
+
+   ```text
+   $ git clone https://github.com/HarperZ9/gather && cd gather
+   $ pip install -e .
+   ```
+
+2. **First run: the demo.** The demo builds a sealed digest of three receipts, then tampers with one and shows the digest no longer verifies.
+
+   ```text
+   $ python examples/demo.py
+   witnessed digest: 3 receipts, seal 7da7dc456b11..., verified True
+
+   after tampering one receipt, digest verifies: False  <- caught
+   ```
+
+3. **Extract a page.** Pull a saved page into structured blocks, each with its source position.
+
+   ```text
+   $ gather extract article.html
+   {
+     "blocks": [
+       {"path": "html[1]/body[1]/h1[1]", "sha256": "a32866a97b9e...", "tag": "h1"},
+       {"path": "html[1]/body[1]/p[1]",  "sha256": "d7ed5c394466...", "tag": "p"},
+       {"path": "html[1]/body[1]/p[2]",  "sha256": "aff2e9aa518d...", "tag": "p"}
+     ],
+     "content_sha256": "d4dcc2b58b0a...",
+     "markdown_sha256": "4dbe5c1ca751...",
+     "method": "html-extract"
+   }
+   ```
+
+4. **Store your notes and re-check them.** Store a folder by content hash, then verify the corpus later. A clean corpus exits 0.
+
+   ```text
+   $ gather docs ./notes --store ./corpus
+   $ gather corpus verify ./corpus
+   ```
+
+## More commands
+
+Extract a page to Markdown with a per-block receipt:
+
+```bash
+gather extract https://example.com/article
+```
+
+```json
+{
+  "blocks": [
+    {"path": "html[1]/body[1]/h1[1]", "sha256": "7e8cd2056da7...", "tag": "h1"},
+    {"path": "html[1]/body[1]/p[1]",  "sha256": "64ec88ca00b2...", "tag": "p"}
+  ],
+  "content_sha256": "ef4430f5f70f...",
+  "markdown_sha256": "752cce8836dd...",
+  "method": "html-extract",
+  "url": "https://example.com/article"
+}
+```
+
+Then try the rest of the surface:
+
+```bash
+gather caps                                    # what this install can do (fast / browser)
+gather crawl https://example.com --depth 2     # a hash-chained crawl ledger as JSON
+gather arxiv "aperiodic monotile" --store ./corpus
+gather scholar "10.1234/monotile" --edges --json
+gather docs ./research-notes --scope "rubik,group theory"
+gather corpus verify ./corpus                  # re-hash every stored body; non-zero exit on corruption
+```
+
+Turn a folder of posts saved by the CMMNS browser extension into tables, offline and by fixed rules:
+
+```bash
+gather saves ./saves --out ./saves-tables      # items, entities and media as CSV and JSON Lines
+gather saves --probe ./clip.mp4                # container, size, duration and audio fields of one file
+```
+
+The same folder gives byte-identical tables on every run. The language column is a rule and the entities are regular expressions; [USAGE.md](https://github.com/HarperZ9/gather/blob/main/USAGE.md#saved-posts-as-tables) lists the columns and the limits.
+
+Take any local file apart into a tree of its parts, then rebuild it byte for byte:
+
+```bash
+gather decompose ./clip.wav --out ./clip-tree     # tree.json, parts/, and measurement tables
+gather rebuild ./clip-tree --out ./clip-again.wav # same SHA-256, every node checked
+```
+
+ZIP, PNG, WAV, JSON, text and CMMNS saves get structural handlers; every other file is kept as one byte range and still rebuilds exactly. PCM WAV files also get loudness (BS.1770), tempo, key, spectrum and decay estimates. [USAGE.md](https://github.com/HarperZ9/gather/blob/main/USAGE.md#take-a-file-apart-and-put-it-back) lists the record, the handlers and the limits.
+
+Offline demo, no install of extra tools, nothing downloaded:
+
+```bash
+python examples/demo.py        # one video parsed, scoped, digested, then a tampered receipt caught
+python examples/pipeline.py    # the whole pipeline: run -> store -> verify -> recall, offline
+python examples/context_selection.py  # inspect verified excerpts and build a private context payload
+```
+
+`demo.py` prints each item with its hash and `verify=True`, then flips one receipt and shows the digest verification fail. The hash prefixes vary; the verify results are pinned by the test suite. For a browser-viewable version of the same proof, open [examples/gather-demo.html](https://github.com/HarperZ9/gather/blob/main/examples/gather-demo.html).
+
+## Worked example: a mixed-source corpus
+
+Gather from three different source types into one corpus, then re-check it:
+
+```bash
+gather web  "https://example.com/article" --store ./corpus
+gather arxiv "2301.12345" --store ./corpus
+gather docs ./notes --scope "monotile,tiling" --store ./corpus
+gather corpus list ./corpus                 # every item with source, method, and hash
+gather corpus search ./corpus --terms tiling --method http-get --json
+gather corpus verify ./corpus               # MATCH per body, non-zero exit if anything is corrupt
+gather corpus availability ./corpus         # per-record availability with typed outcomes
+gather corpus context ./corpus --json       # bounded readable excerpts + row refs
+```
+
+Every item carries its source, ref, method, timestamp, and a sha256 of the exact source text. New corpus rows also carry a versioned storage witness for the object bytes written by Gather. `verify` re-checks the body against the source receipt and, when present, that storage witness; `search` filters by scope terms, source, kind, or method. `context` reads and re-hashes bounded inspected or selected bodies through a confined corpus-layout reader, returns bounded excerpts by default, and exports selected ranges only when the caller supplies the current corpus digest.
+
+Readable context verifies the exact source text first. For display and range selection, CRLF or CR line endings are then normalized to LF. `START` and `LIMIT` are Python string character offsets over that readable view. `sha256`, `verified_sha256`, and `source_sha256` bind the exact source text. `view_sha256` binds the full LF-normalized readable view, and `view_codec` names that transformation. The selected slice, range, source refs, source/view hashes, storage status, and omissions are bound into `selection_digest`.
+
+For rows written before exact UTF-8 storage witnesses existed, Gather attempts a bounded legacy reconstruction: exact UTF-8 bytes or the inverse of the old Windows text writer's LF-to-CRLF expansion. That can reconstruct the source text for an existing receipt, but it does not prove historical raw object-byte integrity. A storage witness makes witness stripping or codec changes detectable only to consumers that pin or independently verify the prior corpus digest with `--expect-digest` / `expected_corpus_digest`; recomputing a digest after local catalog mutation is an explicit acceptance of the current catalog state.
+
+The context reader pins the opened corpus root for catalog and body reads, but it does not prove a caller-resolved workspace parent relationship. If a host derives `DIR` from an approved workspace plus a relative path, that host must bind the workspace-to-corpus resolution before calling Gather.
+
+## Source federation, offline
+
+Plan a fleet of sources before probing any of them:
+
+```bash
+gather federation validate registry.json --json   # check rows against a closed contract
+gather federation plan registry.json --json       # one deterministic capture plan per source
+gather federation policy policy.json --json       # audit retry/backoff rules as typed verdicts
+gather federation entity entities.json --json     # audit entity-resolution matches
+```
+
+All four run offline; no probe fires. A registry row is a catalog fact and is never reported as coverage, availability, or content.
+
+## Optional capability backends
+
+<p align="center"><img src="https://raw.githubusercontent.com/HarperZ9/gather/main/docs/art/capability-backends.svg" alt="A card of the three capabilities gather can be asked for. fetch is always served by the stdlib. fast-parse falls back to the stdlib parser, which returns the same answer more slowly. js-render is refused with a reason when no backend is installed, and is marked because it is the one where a plausible fake exists." width="100%"></p>
+
+```bash
+pip install 'gather-engine[fast]'      # lxml, faster parsing on large docs (informal ~2x, unpublished)
+pip install 'gather-engine[browser]'   # Playwright JS render (then: playwright install chromium)
+```
+
+The core never grows a hard dependency. Install a backend and it registers; skip it and the stdlib path or an explicit UNVERIFIABLE result stands in.
+
+## Python API
+
+```python
+from gather.web import WebSource
+from gather.digest import digest, verify_digest
+
+items = WebSource().fetch("https://example.com/article")
+d = digest(items)          # a sealed digest over every item's receipt
+assert verify_digest(d)    # re-derive the seal; False if anything was altered
+```
+
+The same seams the CLI uses are importable: `gather.extract`, `gather.crawl`, `gather.track`, `gather.schema_extract`, `gather.stream`, `gather.search`, `gather.store`, `gather.run`, `gather.context`, and the source adapters. `gather.context.CorpusRootDescriptor` is a Python-only same-process handoff for hosts that already retained and identity-bound a corpus root descriptor; CLI and MCP continue to accept corpus directory strings. Linux/WSL mounts that cannot preserve retained directory authority for confined child opens are rejected fail-closed on each opened corpus, descendant directory, or catalog/body file descriptor rather than read by pathname fallback. [ARCHITECTURE.md](https://github.com/HarperZ9/gather/blob/main/ARCHITECTURE.md) maps the modules and seams.
+
+## Security notes
+
+The `web` adapter reads static HTML and does not run JavaScript; a client-rendered page yields its shell, and the method says so. The `browser` adapter runs a real headless browser and is the most exposed edge: its host guard covers only the first navigation, so do not point it at untrusted URLs where internal services are reachable. The threat model is in [ARCHITECTURE.md](https://github.com/HarperZ9/gather/blob/main/ARCHITECTURE.md). Credentials enter only through `gather.credentials`, read from the environment by name, never logged, never written into a receipt or URL.
+
+## Documentation
+
+- [docs/INTRODUCTION.md](https://github.com/HarperZ9/gather/blob/main/docs/INTRODUCTION.md): what gather is, core concepts, and a first-ten-minutes walkthrough.
+- [USAGE.md](https://github.com/HarperZ9/gather/blob/main/USAGE.md): the full command reference, command by command.
+- [ARCHITECTURE.md](https://github.com/HarperZ9/gather/blob/main/ARCHITECTURE.md): the design map, seams, and threat model.
+- [docs/WEB-ENGINE-UPLIFT.md](https://github.com/HarperZ9/gather/blob/main/docs/WEB-ENGINE-UPLIFT.md): the web-data engine roadmap and benchmarks.
+- [docs/ENTERPRISE-READINESS.md](https://github.com/HarperZ9/gather/blob/main/docs/ENTERPRISE-READINESS.md): context envelopes, action receipts, and host-neutral operation for unattended agents.
+- [docs/PILOT.md](https://github.com/HarperZ9/gather/blob/main/docs/PILOT.md): the accountable pilot evidence engine, its manifest boundary, and the private/shared evidence split.
+- [CHANGELOG.md](https://github.com/HarperZ9/gather/blob/main/CHANGELOG.md): version history. Current release: 2.6.0.
+
+Peer projects: [crucible](https://github.com/HarperZ9/crucible) (judgment), [index](https://github.com/HarperZ9/index) (code maps), [forum](https://github.com/HarperZ9/forum) (orchestration), [telos](https://github.com/HarperZ9/telos) (the engine).
+
+## Why it matters
+
+Research breaks when sources become a blur. One rule sits underneath all of it: every item records how it was obtained. A quote fetched over HTTP, a page rendered in a browser, text recognized from a scan, and a statement synthesized from fragments are all valid items, but they are not equally direct, and the `method` field plus the digest seal keep that difference on the record and re-checkable. If that discipline matters to your workflow, gather was built for it; if you just need the intake, it never gets in your way.
+
+## What this believes
+
+This tool is one tool in a family that holds a single belief steady across
+every surface: knowledge open to anyone who can attain the means; acceptance
+decided by external checks, never reputation; every result re-runnable;
+honest nulls first-class; ownership earned by comprehension; learning woven
+into the work. The full text lives in [CREDO.md](https://github.com/HarperZ9/gather/blob/main/CREDO.md).
+The long form of this belief: [The Unbundling](https://github.com/HarperZ9/flywheel/blob/main/docs/essays/2026-07-13-the-unbundling.md).
+
+## License
+
+Gather's code is licensed under the [GNU Affero General Public License, version 3 only](https://github.com/HarperZ9/gather/blob/main/LICENSE) (AGPL-3.0-only).
+Anyone may use, study, change and share it. If you distribute a changed copy, or run one as a service people use over a network, you must offer its source under the same licence.
+
+Releases up to 2.3.0 were published under FSL-1.1-MIT. Those releases keep their terms, and each converts to MIT two years after its release. [NOTICE](https://github.com/HarperZ9/gather/blob/main/NOTICE) records this and the one vendored file.
+
+## Work with it
+
+Bring papers, transcripts, local docs, or awkward public materials that need provenance before synthesis; source-adapter testing and research-lab feedback are the most useful pressure right now. To develop against a checkout:
+
+```bash
+python -m pip install -e ".[dev]"
+python -m pytest        # about 1,300 tests
+python -m ruff check src tests examples
+python -m mypy
+```
+
+Keep the README, package metadata, and examples aligned with current behavior before opening a PR.
+
+---
+
+Built by **[Zain Dana Harper](https://harperz9.github.io)** in Seattle: evidence-first tools that leave a re-checkable artifact behind. The full workbench is at [Project Telos](https://harperz9.github.io).
+
+## Local client packages
+
+The optional client bundle adds a bounded read-only MCP profile with an explicit
+workspace selected at launch. See [client package setup](https://github.com/HarperZ9/gather/blob/main/client-plugin/README.md).
+Network retrieval is disabled until an exact origin is granted at launch.
+Allowed GET requests return source text and byte-hash receipts; redirects,
+ambient proxies, credentials and process execution remain disabled.
+Windows x64 MCPB and ZIP bundles include their runtime; source plugins require
+Python 3.11+. The full CLI/MCP retains advanced operations. Client-specific
+installation and marketplace acceptance require separate verification.
