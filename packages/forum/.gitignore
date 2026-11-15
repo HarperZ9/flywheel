@@ -1,0 +1,53 @@
+# --- Secrets / env (never commit) ---
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# --- Operator local overrides ---
+CLAUDE.local.md
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# --- Node (if any tooling lands later) ---
+node_modules/
+
+# --- Forum runtime artifacts ---
+*.ledger.jsonl
+ledger-store/
+forum-ledger/
+logs/
+*.log
+
+# --- OS / editor ---
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# SDD scratch
+.superpowers/
+
+# internal design + SDD process artifacts (local only)
+docs/superpowers/
+.superpowers/
+.warden-safe-cache/
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

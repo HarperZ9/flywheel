@@ -377,6 +377,10 @@ jobs:
             smoke: |
               /tmp/vc/bin/index --version
               /tmp/vc/bin/index --help > /dev/null
+          - package: forum
+            smoke: |
+              /tmp/vc/bin/forum --version
+              /tmp/vc/bin/forum --help > /dev/null
     defaults:
       run:
         shell: bash
@@ -610,3 +614,46 @@ jobs:
         run: emet selftest
       - name: conformance against the installed console script (expect 48 of 48)
         run: python conformance/run.py "$(python -c 'import shutil; print(shutil.which("emet"))')"
+
+  # forum's own CI, step for step: Linux and Windows on Python 3.11 to 3.13,
+  # each with lint, the type check, the suite under its coverage floor and the
+  # demo. The client-package test ran in forum's release workflow on a tag; it
+  # runs here on every change.
+  forum:
+    name: forum (${{ matrix.os }}, python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/forum
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install from packages/forum
+        run: |
+          python -m pip install --upgrade pip pytest-timeout
+          python -m pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check src tests
+      - name: Type check
+        run: mypy src/forum
+      - name: The package's own tests, under its coverage floor
+        run: python -m pytest -q --cov=forum --cov-report=term-missing --cov-fail-under=85
+      - name: The demo
+        run: python examples/demo.py
+      - name: The client-package test from its release workflow
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: python scripts/test_client_plugin.py
+      - name: Art receipt digests
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: python scripts/check_art_receipts.py

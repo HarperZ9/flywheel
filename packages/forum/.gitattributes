@@ -1,0 +1,16 @@
+# The art under docs/art/ is generated. render_repo_art.py writes LF on every
+# platform, so pin the checkout to LF as well and each file's byte count and
+# SHA-256 stay the same whoever cloned the repository.
+docs/art/*.svg text eol=lf
+docs/art/*.json text eol=lf
+
+# Reviewed standalone skill assets are byte-pinned release material. Preserve
+# their checksums across Git, installed packages, and the downloadable archive.
+src/forum/skills/forum-route-preflight/** -text
+
+# Vendored helpers are hash-pinned (VENDORED.sha256); keep their bytes exactly as copied.
+**/_vendor/safe_spawn.py -text
+
+# Digest manifests (*.sha256) are read by sha256sum -c. A CRLF checkout puts a
+# carriage return on every path, so the check fails on files nobody edited.
+*.sha256 -text

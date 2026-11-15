@@ -1,0 +1,660 @@
+# Changelog
+
+## 1.17.0, 2026-10-03
+
+### Added
+
+- Opt-in decision routing: `forum route --router decision` and
+  `forum.decision_routing.DecisionRouter` score every lane, report lane
+  probabilities, and abstain when no lane matches or the top probability is under
+  `--threshold`. On a 74-request held-out set it raised top-1 accuracy from 0.46
+  to 0.58 and decided 81% of requests where the lexical router decided 1 of 74.
+  Its 19% abstain rate misses the pre-stated 15% bar. Details in
+  `docs/DECISION-ROUTING.md`.
+- `clarify` replaces `humanize`: `forum clarify`, `POST /clarify`, MCP
+  `forum.prose.clarify`, module `forum.clarify` with `clarify_text`, schema
+  `forum.prose-clarification/v1`. The MCP tool keeps the read-only, idempotent,
+  closed-world annotations.
+- Articulate handoff. When the `articulate` package (PyPI `articulate-writing`)
+  imports, or its `articulate` command resolves through the spawn helper, Forum's
+  fixed rules propose the rewrite, Articulate's deterministic fix runs on it, and
+  Articulate's meaning guard checks it against the original and issues its editor
+  receipt. The result says `"engine": "articulate"`; without Articulate it says
+  `"engine": "forum-builtin"`. Neither path calls a model or the network.
+  `--engine`, the HTTP/MCP `engine` field and `FORUM_CLARIFY_ENGINE` choose the
+  engine; `FORUM_ARTICULATE_CLI` may name the command's full path.
+
+### Deprecated
+
+- `forum humanize`, `POST /humanize`, MCP `forum.prose.humanize` and
+  `forum.humanize.humanize_text` are aliases of clarify for one release. They return
+  the same result with the old schema id `forum.prose-humanization/v1` and a
+  `deprecation` notice. Removal is due in the release after the one that ships
+  clarify.
+
+## 1.16.0 (2026-09-30)
+
+- Add Windows x64 MCPB and ZIP packages with a bundled runtime, scoped skills and qualified local stdio workflows.
+- Require clean exact-tag source, versions ending in .0, payload hashes and matching same-release artifacts; refuse changed release reruns.
+- Restrict the default client surface to six preflight tools with no executor, disk ledger, submit or gate grants.
+
+## 1.15.1 (2026-09-27)
+
+Security release. The working-folder guard in 1.15.0 compared PATH entries by name
+and handed each kept entry to the child as written, so three routes could still
+start a program planted in the folder forum runs in. The vendored `safe_spawn`
+helper moves to 1.0.1, which closes them, and forum's own guard module is removed
+in favor of the helper's. The helper's rules differ from the removed module's in a
+few layouts, so some PATH entries resolve differently; "Upgrading from 1.15.0" lists
+each one. See the advisory for affected versions.
+
+### Security
+
+- Working-folder aliases are caught by file identity. A PATH entry that names the
+  working folder through an alias the name check missed now leaves. On Windows this
+  covers the `\\?\` long-path prefix and the `\\localhost\C$` admin share; on Linux
+  it covers a bind mount. The guard resolves each entry and compares it to the
+  working folder by device and file index, not by spelling alone, and on a
+  filesystem that reports no file index it treats any folder on that device as the
+  working folder, so it fails closed.
+- A repointed PATH link no longer changes what starts. The helper hands the child,
+  and starts, each kept entry as its real folder. A junction or symlink on PATH that
+  points outside the working folder when the guard checks it, then is repointed into
+  the folder before the child starts, can no longer start a planted program, in
+  forum's own lookup or in a child's bare-name lookup.
+- Quoted PATH entries are read as cmd.exe reads them. Windows PATH is split on `;`
+  outside double quotes and every quote is dropped, so an entry such as
+  `"<folder>"\bin` or `<parent>\"<folder>"`, which a child's cmd.exe reads as
+  `<folder>\bin` or as the folder itself, is recognized and dropped instead of being
+  handed to the child intact. An entry whose real folder name holds the PATH
+  separator leaves, because programs disagree on it.
+- A filesystem root or a folder that holds the home folder now narrows to that folder
+  itself rather than standing the guard down, so a service in `/` or a terminal in
+  `~` keeps the tools installed below it while the folder's own entry drops.
+- The exemption changes shape. 1.15.0 exempted every entry inside the Python
+  environment forum runs from (`sys.prefix` and `sys.exec_prefix`) and had no
+  exemption for the Windows folders. 1.15.1 exempts the exact folder of the running
+  interpreter and, on Windows, the exact Windows, System32 and SysWOW64 folders; a
+  folder below them gets the normal rule. The Windows-folder exemption is new in
+  1.15.1, and a working folder that is one of these folders guards nothing, because
+  forum already runs code from there.
+- `SubprocessExecutor` calls the helper directly. The `forum.spawn_guard` module is
+  removed: its drive-relative refusal and working-folder filtering now live in the
+  helper, which carries a stronger, tested version of the same rules under one pinned
+  hash.
+
+### Upgrading from 1.15.0
+
+- No configuration change is needed when the folders that hold your tools lie
+  outside the folder forum runs in: a command that resolved there before still
+  resolves. The layouts below resolve differently.
+- An environment whose tool folders sit apart from its interpreter's folder and
+  inside the working folder loses those folders. A conda env created in the project
+  keeps its root, where `python.exe` lives, but its `Scripts` and `Library\bin`
+  drop, so a tool installed there is no longer found; the `Scripts` folder of an
+  embedded Python in the project drops the same way. Give such a tool's full path in
+  the command (`--cmd`, a tier flag or `--runtime-config`). A standard venv is
+  unaffected, because its `Scripts` or `bin` folder is the interpreter's own.
+- When forum runs in a filesystem root or in a folder that holds the home folder,
+  1.15.0 stood its guard down and kept every entry. 1.15.1 drops an entry equal to
+  that folder itself and keeps the entries below it.
+- When forum runs in the Windows, System32 or SysWOW64 folder, 1.15.0 dropped every
+  entry below it, such as PowerShell and Wbem, and could hand the child an empty
+  PATH. 1.15.1 does not guard such a folder, so those tools are found. A caller in
+  the interpreter's own folder keeps its tools under both versions.
+- On a filesystem that reports no file index, every PATH entry on the working
+  folder's device drops, tools on the same share included. A full path in the
+  command still reaches them.
+- An entry whose real folder name holds the PATH separator (`;` on Windows) drops.
+- On Linux and other POSIX systems, when the guard drops every entry, the child now
+  gets `/bin:/usr/bin`, where 1.15.0 handed it an empty PATH.
+- The child's PATH now lists each kept entry as its resolved real folder, so a
+  child that read a symlinked PATH entry by its link name now sees the target. Point
+  any such expectation at the real folder.
+- The `forum.spawn_guard` module (`guarded_environ`, `check_command_name`) is
+  removed. Code that imported it should call `forum._vendor.safe_spawn.resolve` and
+  `child_env`, which now guard the working folder themselves.
+
+## 1.15.0 (2026-09-27)
+
+Security release. Fixes gate pre-approval, approvals that carried across runs
+or covered content the person never saw, model-held gate approval, executor
+inheritance of the working folder and the full environment, an unauthenticated
+daemon with no cross-origin defense, and a false "no shell-injection surface"
+claim. See the advisory for affected versions (1.14.0 and earlier).
+
+### Security
+
+- Gate integrity. A gate decision (approve, edit, reject) counts only when it is
+  chained to the `gate_pending` it resolves and was written after it, so a
+  decision recorded before a gate opens can no longer let a gated wave run
+  unpaused. A fresh run is keyed to its own plan entry instead of the first plan
+  in the ledger, and a resume continues the run of the same plan (see Gate
+  binding), so one approval no longer opens the same wave of every later run in
+  the same ledger. The CLI, HTTP and MCP decision paths refuse a decision for a
+  gate that was never raised with `NOT_FOUND` (HTTP 404, CLI exit 1) and write
+  nothing.
+- Gate binding. A resume continues the latest run of the same plan, found by a
+  digest of every task, instead of the latest plan in the ledger: approving one
+  run no longer opens another run's gate, an approved run still resumes after a
+  later run starts, and a resume with a different or rewritten plan (instruction,
+  agent or done criteria) raises a gate of its own. Each `gate_pending` records
+  the wave's instructions and a `wave_digest`, and `forum gate list`, `GET
+  /gates` and the MCP `gate_list` show the instructions, so the person sees what
+  they approve. An edit may rewrite only tasks of the gated wave; one naming
+  another wave's task is refused (`INVALID_ARGUMENT`, HTTP 400, CLI exit 2) and
+  writes nothing. A run paused under 1.14.0 still resumes: its gates bind by task
+  ids, the only content those entries recorded.
+- Gate decision standing. A decision made with a verified token outranks every
+  decision a caller only asserted (a CLI user, an MCP client, an HTTP call with
+  auth off), so a later asserted approval or edit cannot reverse a person's
+  authenticated rejection or edit. Within one standing the latest decision still
+  wins, so a person can change their mind.
+- Gate approval authority. `forum mcp` lists `gate_approve`, `gate_edit` and
+  `gate_reject` only with the new `--allow-gate-decisions` launch grant; without
+  it a call, including the `forum.gate.*` aliases, returns `GRANT_REQUIRED`. A
+  connected model cannot approve its own human-in-the-loop gate by default. The
+  grant is off for a Python embedder too: `McpSurface(orch)` lists no decision
+  tools unless built with `allow_gate_decisions=True`. A refused decision
+  (`NOT_FOUND`, `INVALID_ARGUMENT`) returns the closed error shape
+  `{"code", "retryable", "setup", "detail"}` in `structuredContent`.
+  Decisions record how the approver was established: the authenticated identity
+  over HTTP with a token, `asserted` otherwise.
+- Executor isolation. `SubprocessExecutor` starts every child through a vendored
+  `safe_spawn` helper: the executable resolves to an absolute path (a bare name is
+  looked up on `PATH` only, and the working folder is never searched by name; the
+  next item covers `PATH` entries that point into it), the child runs in a new
+  private empty folder, its environment is an allowlist rather than the whole
+  environment, a `.cmd` or `.bat` target refuses cmd.exe metacharacters in the
+  instruction, and a Python target gets `-P`. A known agent CLI gets the
+  isolation profile proven for it (claude and codex, each checked against a
+  recorded CLI version); an unproven profile is refused unless
+  `FORUM_ALLOW_EXEC_CLI` names it. `FORUM_CHILD_ENV` adds named variables to the
+  allowlist; both apply to `--cmd`, the tier flags and a `--runtime-config`
+  command alike. The route-preflight helper runs `python -P -m forum` so a planted
+  `forum.py` cannot shadow the package.
+- Working folder kept out of command lookup. A `PATH` entry that resolves inside
+  the folder forum runs in (written directly, through a junction or symlink, or
+  added by npm as `node_modules/.bin`) is skipped for the lookup and removed from
+  the child's `PATH`, and a drive-relative name such as `C:claude` is refused
+  with `BAD_PATH`. The Python environment forum runs from stays on `PATH`, and
+  the guard stands down when the working folder is a filesystem root or holds the
+  home folder.
+- Agent CLIs read the task on stdin. claude and codex receive the task on stdin
+  (codex with `-`) instead of as the last argument, so npm's `.cmd` shims run
+  tasks that carry upstream results or done criteria rather than refusing them,
+  and the task text no longer shows in a process listing. `--cmd "codex exec"`
+  passes `exec` once. Other commands keep the instruction as their last argument.
+- Network timeouts. `ApiExecutor` and `ChatExecutor` cap each request (default
+  120 s), so a stalled provider no longer hangs a task.
+- Daemon hardening. `forum serve` requires a bearer token by default (printed at
+  startup; `--no-auth` turns it off and is refused on a non-loopback host), and
+  the daemon rejects a foreign `Origin` with 403 and a non-JSON POST with 415 on
+  every path except `/health`. An `Origin` counts only when it is the daemon's own
+  (a loopback host and the daemon's port), so a page another local program serves
+  is refused. An open daemon also refuses a non-loopback `Host` (compared without
+  case); a daemon that requires a token serves any host name, so clients can
+  reach one bound to the network by the machine's name.
+- `SECURITY.md` no longer claims a flat "no shell-injection surface"; it states
+  the argv-list start and the explicit cmd.exe metacharacter refusal for batch
+  targets, and documents the new daemon and gate defenses.
+
+### Packaging and hygiene
+
+- `release.yml` grants nothing at the top level, runs least-privilege jobs, uses
+  `skip-existing` on the PyPI upload, and adds a GitHub Release job that attaches
+  the wheel, sdist and `SHA256SUMS.txt` and verifies them. The build runs the test
+  suite before it builds, requires the installed `forum --version` and package
+  metadata to equal the tag, and the release stops unless PyPI serves exactly the
+  files and SHA-256 digests in `SHA256SUMS.txt`. CI runs on `ubuntu-latest` and
+  `windows-latest` for Python 3.11 to 3.13.
+- The shipped roster and `flagship.py` no longer carry the private-line route
+  probe or its codename keywords; `forum doctor` runs real roster and ledger
+  checks instead of hardcoded MATCH placeholders and the private-line route probe.
+- README shows the current version, an FSL-1.1-MIT badge, the flight-recorder
+  commands (`import-trace`, `grade`, `export-gradable`, `mine`), a stable credo
+  link, and no operator-surface or local-path copy. A version-sites drift test
+  fails when any version site disagrees.
+
+### Upgrading from 1.14
+
+- Daemon clients send the token. `forum serve` prints a token to stderr at
+  startup, and every request except `GET /health` needs
+  `Authorization: Bearer <token>`, or the daemon answers 401. `forum serve
+  --no-auth` keeps the open daemon, on a loopback address only.
+- Commands get a short environment. A command child no longer inherits your
+  environment: it sees the platform base (`PATH`, the home and temp folders and
+  similar) plus the variables `FORUM_CHILD_ENV` names. Provider keys are left
+  out, so `claude -p` with API-key sign-in needs
+  `FORUM_CHILD_ENV=ANTHROPIC_API_KEY`, and a command that reads `OLLAMA_HOST`
+  or `HTTPS_PROXY` needs those names too.
+- Relative paths stop resolving. Each command runs in a new private empty
+  folder, so a relative argument such as `--cmd "python adapter.py"` finds
+  nothing there, and a relative executable such as `./model` is refused with
+  `BAD_PATH`. Give full paths.
+- Batch targets refuse multi-line tasks. On Windows a `.cmd` or `.bat` command
+  other than claude and codex still takes the task as its last argument, and it
+  refuses a task holding a line break or a cmd.exe metacharacter with
+  `UNSAFE_ARGUMENT`. A task that builds on upstream results or carries done
+  criteria always holds a line break. Point `--cmd` at the program the shim
+  wraps, or at a Python adapter. claude and codex read the task on stdin and are
+  not affected.
+- The daemon checks `Origin` and `Host`. Every daemon refuses an `Origin` other
+  than its own (a loopback host on the daemon's port), so a page served from
+  another origin, another local port included, gets 403. A daemon started with
+  `--no-auth` also refuses a `Host` that is not a loopback name, so a reverse
+  proxy in front of one must forward `Host: 127.0.0.1` or `localhost`. A daemon
+  that requires the token accepts any host name.
+- MCP gate decisions need the grant. `forum mcp` lists `gate_approve`,
+  `gate_edit` and `gate_reject` only when started with `--allow-gate-decisions`,
+  and a Python embedder gets them only from
+  `McpSurface(orch, allow_gate_decisions=True)`. A host that decides gates over
+  MCP adds the grant to its launch; otherwise a person decides with
+  `forum gate approve|edit|reject` or over HTTP with the token.
+- A library caller that resumes a gated run passes the same plan it started; a
+  changed plan starts a new run with its own gates.
+- A program inside the folder forum runs in, found before through a `PATH`
+  entry that points there (a project's `node_modules/.bin`, for example), needs
+  a full path in `--cmd` or the runtime config. forum's own Python environment
+  stays on `PATH`.
+- gemini and opencode need a launch grant. Their isolation profiles are not
+  proven, so set `FORUM_ALLOW_EXEC_CLI=gemini` (or `opencode`) to run them.
+
+### Presentation parity
+
+- README now exposes the current source version and the commands for status,
+  doctor, HTTP, and MCP surfaces without claiming an external effect from a run
+  result.
+
+## 1.14.0 (2026-09-10)
+
+- Codex route-preflight skill distribution: adds the independently reviewed
+  `forum-route-preflight` four-file skill under `forum/skills/` with a SHA-256
+  manifest and wheel verification for future engine releases. The standalone
+  skill release is separate: tag `forum-route-preflight-v0.1.0`, attach
+  `forum-route-preflight-skill-20260907-final.zip`, and mark it `--latest=false`,
+  without bumping `forum-engine`, pushing a `v*` tag, or publishing to PyPI.
+  The helper previews route/context/runtime/prose contracts before spending
+  model calls, stays advisory only, never submits work, and is bounded to the
+  `forum-engine==1.14.0` CLI/API shape after revalidation for another Forum
+  version. Failed subprocess receipts keep only exit code, byte counts, and
+  SHA-256 diagnostic digests; successful JSON is scrubbed for exact
+  helper-supplied task text, runtime/path/model/API-key inputs, and current
+  supplied API-key values, not for transformed or unknown secrets.
+- OpenTelemetry metrics that emit. `forum.metrics` is a stdlib-only `MetricsRegistry`
+  that records the one STABLE semconv HTTP server instrument,
+  `http.server.request.duration` (a cumulative explicit-bucket histogram, unit `s`, the
+  semconv-recommended bucket boundaries). It reuses the tracing increment's discipline:
+  the clock is injected for determinism, and a fixed cumulative start instant is captured
+  once at construction. Bucketing is upper-inclusive (`bisect_left`, the Prometheus `le`
+  convention). There is deliberately no separate request counter: a histogram data point
+  already carries its own `count`, so the per-attribute request count is read from the
+  histogram, which avoids double-instrumenting the same population. `forum.otlp_metrics`
+  is the network edge adapter: `otlp_metrics_payload` renders the OTLP/HTTP JSON a
+  collector's `/v1/metrics` receiver accepts (the encodings that differ from proto3 JSON
+  handled correctly: `count` and `bucketCounts` as strings, `sum`/`min`/`max`/`explicitBounds`
+  as numbers, `aggregationTemporality` the bare integer 2, and a Histogram with no
+  `isMonotonic`), and `OtlpHttpMetricExporter` POSTs it best-effort. The HTTP surface
+  records one point per request with the low-cardinality attribute set
+  (`http.request.method`, `http.response.status_code`, `http.route`); an unknown path
+  carries no route so a 404 flood collapses to one cell, and the variable-seq paths are
+  templated (`/ledger/{seq}`). Tracing and metering compose independently and a request is
+  measured exactly once; with both off, dispatch is byte-for-byte the pre-observability
+  path. Turn it on by passing a `metrics` registry to `HttpSurface`, or point `forum serve`
+  at a collector via `OTEL_EXPORTER_OTLP_ENDPOINT` (`meter_from_env`); `forum serve` runs
+  under a shutdown guard that reaches `Daemon.stop()` on SIGINT/SIGTERM (or cancellation),
+  which flushes the histogram once. Evidence: `examples/run_metrics.py` writes the exact payload to
+  `benchmarks/otlp_metrics_sample.json`, and a test POSTs it over a real socket to a stdlib
+  `/v1/metrics` endpoint. Honest nulls: no separate counter (by design), no periodic
+  exporting reader (shutdown flush only in v1, so a hard kill loses the final snapshot),
+  no delta temporality, no exemplars, and the Development-status semconv metrics
+  (active_requests, request/response body size) are not shipped.
+- OpenTelemetry tracing that emits. `forum.tracing` is a stdlib-only tracer:
+  spans with W3C `traceparent` propagation (`parse_traceparent` / `format_traceparent`),
+  injectable clock and id source so every id and timestamp is reproducible in a test,
+  and pluggable exporters (`NullSpanExporter` by default, `InMemorySpanExporter` for
+  inspection). `forum.otlp` is the network edge adapter: it renders spans as OTLP/HTTP
+  JSON a stock OpenTelemetry Collector's `/v1/traces` receiver accepts unchanged, with
+  the two encodings that differ from proto3 JSON handled correctly (trace/span ids as
+  hex, not base64; `*UnixNano` int64 as strings). The HTTP surface emits one SERVER span
+  per request: it continues an inbound trace when a `traceparent` header is present, names
+  the span by a low-cardinality route (`/ledger/{seq}`, not `/ledger/42`), records
+  `http.request.method` / `url.path` / `http.response.status_code`, and marks the span
+  ERROR only on 5xx. Turn it on by passing a `tracer` to `Daemon` or `HttpSurface`; with
+  none configured the surface takes the untraced fast path, unchanged. `forum serve` turns
+  emission on with no code change when `OTEL_EXPORTER_OTLP_ENDPOINT` names a collector
+  (`OTEL_SERVICE_NAME` optional), via `tracer_from_env`. Export is best-effort: a collector
+  outage is swallowed so telemetry never breaks the request it measures. Evidence:
+  `examples/run_tracing.py` writes the exact OTLP payload to
+  `benchmarks/otlp_trace_sample.json`, and a test POSTs it over a real socket to a stdlib
+  HTTP endpoint and validates what the receiver got. Metrics and logs signals, and
+  orchestrator-internal spans below the request boundary, are a later increment.
+- Bearer-JWT authentication and role-based authorization for the HTTP surface,
+  with a tamper-evident audit. `forum.auth` verifies HS256 tokens with the stdlib
+  `hmac` (constant-time signature check, `exp`/`nbf` against an injectable clock,
+  `alg` confusion and the `none`-alg trick rejected), maps a token's roles to
+  scopes through a fail-closed `RolePolicy`, and gates each endpoint by a required
+  scope (unknown paths fail closed). Turn it on by passing a `verifier` to `Daemon`
+  or `HttpSurface`; with none configured the surface stays open and unchanged.
+  Every AUTHENTICATED decision is witnessed in the ledger (`authz_grant` on a
+  mutating verb, `authz_deny` on a refusal), so the access-control trail is
+  tamper-evident on the same Merkle chain as the runs it guards; unauthenticated
+  401s are not written, so a tokenless flood cannot grow the audit log. Asymmetric
+  verification (RS256 / JWKS) stays an edge adapter: implement the `TokenVerifier`
+  protocol and pass it in. `issue_hs256` mints tokens for callers and tests.
+- Durable scale-out ledger storage: adds `SqliteStorage`, a stdlib-only (`sqlite3`)
+  `Storage` backend that keeps the ledger on disk instead of resident in memory. Where
+  `InMemoryStorage` and `FileStorage` both hold the whole ledger and every payload in
+  RAM (`FileStorage` reads it all in on construction), `SqliteStorage` serves
+  `head`/`get`/`count`/`get_payload` as indexed point reads that never materialize the
+  full log, so resident memory stays flat as the ledger grows into the millions of
+  entries; only `all()` (used by verify/checkpoint/replay/query) streams the full set.
+  WAL mode is on, so many readers and one writer can share the file, the substrate a
+  stateless multi-worker deployment builds on. The Merkle chain and every receipt verify
+  byte-for-byte against the other backends, and durability is tunable (`fsync_each`)
+  exactly as for `FileStorage`. Ledger subcommands and the daemon select it by path
+  convention: a `.db` ledger path is SQLite, any other path is a `FileStorage`
+  directory, with no new flags. Evidence: the `forum.storage-scaling-benchmark/v1`
+  receipt (`python -m forum.bench_storage`) reports append throughput, verify latency,
+  and resident memory for all three backends at scale, showing the RAM ceiling removed.
+- Concurrent multi-writer ledger append: `Ledger.append` retries on a `SeqCollision`
+  raised by storage, so several worker processes appending to one `SqliteStorage`
+  (WAL mode, with `busy_timeout` set) cannot corrupt the seq/prev chain. The loser of
+  a seq race re-reads the advanced head and retries; `put_payload` is content-keyed so
+  the retry is a no-op. Single-process backends never collide, so their behavior is
+  unchanged and append stays await-free. This is the concurrency substrate stateless
+  multi-worker serving builds on. Proven by a test where six concurrent writers on one
+  shared database land every append as a dense, `verify(deep=True)`-clean chain with
+  nothing lost.
+- Deep verify benchmark: adds `forum bench-deep-verify`, a zero-dependency benchmark
+  for ledger integrity scaling. It times chain-only `verify()`, payload-only
+  `verify_payloads()`, and full `verify(deep=True)` across entry counts, payload body
+  sizes, storage modes, fsync behavior, redaction ratios, warmups, and repeats, with a
+  `forum.deep-verify-benchmark/v1` JSON receipt for public comparison.
+
+## 1.13.0 (2026-07-07): campaign orchestration, approval gates, and operator surfaces
+
+A run is no longer the largest unit Forum can witness. This release adds campaign orchestration above the run, puts a human approval gate (with a durable deadline) inside the run, and gives the operator live surfaces to watch and steer both: run rooms, runtime inspection, context preflight, and context capsules, all read from the same witnessed ledger.
+
+- Campaign orchestration: a native campaign layer above single runs. A campaign is declared as a typed model, ingested project status flows through an ingest seam into a status reduction with an honesty gate, a best-effort dispatch loop advances it, and operator surfaces plus a `forum campaign` CLI expose it. A flagship dogfood example exercises the whole path end to end.
+- Human-in-the-loop approval gates: `GatePolicy(gated_waves, question)` pauses dispatch at a gated wave with a witnessed `gate_pending`, halts on rejection with a `gate_stopped`, and resumes the gated wave through the normal resume path on approval or edit. Gates are exposed over the `forum gate list/approve/edit/reject` CLI, HTTP `GET /gates` and `/gate/*`, MCP `gate_list`/`gate_approve`/`gate_edit`/`gate_reject`, and `submit_plan`; pending gates surface in the run room and next actions. The highest-seq decision across kinds wins in `gate_resolution`.
+- Durable gate deadlines: a human-in-the-loop approval gate can now carry an optional deadline. `GatePolicy(gated_waves, question, deadline_seconds=..., on_expiry=...)` records an absolute `deadline` and the auto-decision (`on_expiry`, `approve` or `reject`, default `reject`) on the witnessed `gate_pending`. On a resume that re-reaches the boundary after the deadline has lapsed with no operator decision, dispatch appends a witnessed `gate_expired` entry (hash-chained to the `gate_pending`) that resolves the gate to `on_expiry`, then proceeds accordingly (approve runs the wave, reject stops it with a `gate_stopped`). Expiry is evaluated only on resume, never by a background timer, so nothing runs behind the operator between resumes; a real operator decision always wins over expiry (highest witnessed seq). The gate `deadline` and `on_expiry` are surfaced by `forum gate list` (text and `--json`), HTTP `GET /gates`, and MCP `gate_list`. See `docs/GATE-DEADLINES.md`.
+- Domain lanes: adds a second closed lane vocabulary to `forum.lanes`, orthogonal to the verb axis. A route may now carry `(lane, domain)` where `domain` names one of ten domain lanes (`frontier-foundry`, `research-foundry`, `model-foundry`, `scientific-runtime`, `formal-proof`, `bio-evidence`, `robotics-control`, `visual-truth`, `learning-forge`, `source-federation`). Domain lanes grant no scopes, so a valid domain cannot launder a scope claim; an unknown domain is refused with the typed reason `unknown_domain` and witnessed as a `lane_rejection` entry, the same closed-set pattern as the verb axis, with negative fixtures that must reject.
+- Routing receipts as supervision data: `lane_route` and `lane_rejection` entries now carry the same typed fields (task, both lane axes, scopes, router confidence when present, and on rejection the reason code with excess and granted scopes), so accepted and rejected routes read back from the ledger as labeled routing examples.
+- Vocabulary-gap receipts: adds `forum.lane_gaps`. When routing escalates repeatedly with no decided lane, `derive_vocabulary_gap` (a pure function over witnessed route outcomes) produces a typed receipt `{domain_signal, consecutive_escalations, confidence_ceiling, first_seq, last_seq}` from the trailing escalation run, and `witness_vocabulary_gap` lands it in the ledger as a `vocabulary_gap` entry chained to the last escalation. Below the threshold (default 3) nothing fires, held by a negative fixture, and no lane is ever created automatically; the receipt is a signal for the operator.
+- Context Capsules: adds deterministic `forum.context-capsule/v1` briefs built from the witnessed ledger, with CLI `forum ledger capsule`, CLI submit `--use-capsule-context`, HTTP `GET /capsule`, and MCP `forum.ledger.capsule`.
+- Run rooms: exposes run room snapshots with operator briefs and next actions, so a live or finished run reads back as one operator view (what ran, what is pending, what to do next) over CLI, HTTP `/room`, and MCP `forum.run.room`.
+- Runtime inspection and context preflight: adds `forum.runtime.inspect` and `forum.context.preflight` surfaces (CLI, HTTP `/runtime` and `/context/preflight`, MCP), so the operator can inspect the configured runtime and check context fit before submitting.
+- Tiered executor runtime: adds runtime config for tiered executors, tiered chat endpoint flags, and an exposed route runtime policy, so cheap-first escalation is configured declaratively instead of wired by hand.
+- Route frames: derives human route frames from the request, witnesses them, and exposes them; the frame selects the delivery profile (route-framed delivery, with receipts) and guides synthesis prompts, with synthesis result inputs counted against the budget.
+- Communication contracts: adds `forum.prose.contract` deterministic prose contracts alongside humanization.
+- Submit wave checkpoints: exposes per-wave checkpoints on submit, so long runs have witnessed savepoints at every wave boundary.
+- Task done criteria: a task can declare explicit done criteria that are checked and witnessed with its result.
+- Expert Delivery Profiles: adds deterministic profile checks for `operator`, `engineer`, `researcher`, and `executive` prose, with `delivery_profile_check` ledger entries, summary/bench metrics, receipt fields, and CLI/HTTP/MCP profile selection for `humanize` and `submit`.
+- Context pressure: adds `ContextBudget`, deterministic approximate-token accounting, witnessed `context_budget` entries, summary/bench metrics, and CLI/HTTP/MCP budget fields for request context, per-task context, and upstream data injection.
+- Proof lanes: adds `forum.lanes`, a closed vocabulary of five proof lanes (observe, execute, validate, synthesize, verify), each with a declared authority and an explicit scope grant. `witness_route` refuses a route that names a lane outside the vocabulary or claims a scope its lane does not grant (over-routing), with a typed reason (`LaneViolation`), and witnesses the rejection as a first-class `lane_rejection` ledger entry, never a silent drop; a well-formed route passes unchanged and is witnessed as `lane_route`. The gate keys off vocabulary membership and scope set arithmetic, not any string the route's author supplies, and negative tests cover both rejection paths.
+- Routing: a set of internal flagship-integration requests now route to `project-telos` without classifier escalation. (The internal project codenames those requests named were removed from the shipped package and this note in 1.15.0.)
+- Routing: broad Project Telos operator requests now use a decisive-hit floor so `project-telos` can win when it has enough raw keyword evidence, while secondary lanes such as `render-pipeline`, `deep-research`, and `function-routing` stay visible instead of forcing escalation.
+- Submit receipts: HTTP `/submit`, MCP `submit` / `forum.submit`, and `forum submit --json` now return a `project-telos.action-receipt/v1` packet with ledger join fields, payload hashes, model identity, checkpoint, budget state, and a verification verdict.
+- CLI compatibility: `forum submit --cmd` now parses commands with Windows-safe rules on Windows, preserving absolute paths for IDE, CLI, and MCP host launches.
+- CLI compatibility: `python -m forum` now dispatches the normal Forum CLI, so source checkouts,
+  MCP hosts, IDE harnesses, and automation runners can use the same command surface as the
+  installed `forum` script.
+
+- Enterprise readiness: adds `docs/ENTERPRISE-READINESS.md` for context envelopes, action receipts, readability gates, and host-neutral operation.
+- Operator surface: the status payload now advertises shared Project Telos CLI/MCP/plugin/IDE/TUI/app contracts for enterprise, research, creative, scientific, and education workflows.
+
+- Routing depth: adds `function-routing` and `prose-humanization` lanes plus `forum humanize` / `forum.prose.humanize` for clearer operator-facing model and agent prose without adding facts.
+- Model-foundry routing: adds a `model-foundry` lane so bounded self-improving daemon, large-context brain, eval-gated promotion, and receipt-chained workflow requests route without ambiguous escalation.
+Presentation and operator-surface housekeeping for Project Telos parity.
+
+- README: adds the shared current-status block and consistent five-flagship navigation.
+- Status payload: exposes current operator commands, MCP tool names, and the 1.12/28-lane Project Telos roster summary under `native`.
+- Default roster: records the current 28-lane roster with the `project-telos` lane for flagship integration and operator-spine work and the `model-foundry` lane for daemon/model workflow.
+- MCP tools: records native availability for `forum.status`, `forum.doctor`, `forum.route`, `forum.prose.humanize`, and `forum.ledger.summary` in the Project Telos catalog.
+- CI repair: aligns the default-roster test and public docs with the current 28-lane manifest.
+- Visual identity refresh: the README leads with the spectrum banner and a feature-first header, the repo banner uses the Project Telos flagship card, and the flagship hero artwork is refreshed.
+- Docs overhaul: adds `docs/INTRODUCTION.md`, rewrites the README body feature-first with a current introduction, evolves the delivery contract to the new visual identity, adds `docs/GATE-DEADLINES.md` and `docs/ENTERPRISE-READINESS.md`, adds a live PyPI downloads badge, and aligns the flagship cross-repo navigation.
+
+Pure standard library core. 533 tests collected, including gated real-model tests.
+
+## 1.12.0: per-task context, fresh context routed to each agent
+
+A run already plans on context from a brain (the ContextProvider seam, v1.1). This release routes that seam down to every task, so each agent in a parallel or looped plan gets up-to-date context tailored to its own work, not one snapshot taken once before planning. This is the Forum-native half of context management: Forum pulls the context fresh, caps it, and witnesses it; the brain (a peer like the index flagship) supplies it; Forum never generates it.
+
+- **Per-task context**: with a `ContextProvider`, the dispatcher pulls `context(task.instruction)` for each task before it runs, caps it (like upstream data), injects it into the task's prompt, witnesses it as a `context` entry, and chains the task to it, so the record shows exactly what context shaped each task. The default `NullContextProvider` returns nothing, so this is a no-op until a brain is plugged in, and Forum stands alone.
+- The peer-composition holds: Forum times, routes, and witnesses (its lane); the brain assesses and supplies (its lane); the injected context is verified (witnessed) and fresh (pulled per task), neither tool clever about timing.
+
+Pure standard library; the context comes from a brain behind the seam, capped and witnessed. 249 tests, plus 2 gated real-model tests. Run in `examples/run_task_context.py`.
+
+## 1.11.0: the delivery ladder, verified tightening
+
+Model output tends to be word-dense, and the reader wants the shortest path to the answer. This release measures that and, when asked, tightens it without dropping any request term, on the same verified ladder Forum uses for intent and routing.
+
+- **Delivery floor**: `forum.delivery.assess(text)` measures concision deterministically (word and sentence counts, mean sentence length, filler ratio) and flags an answer that reads as dense or padded. After synthesis Forum witnesses a `delivery_check`, always, zero-dependency. It is a floor on concision, not a judgment of cohesion, which is the reviser's rung.
+- **Verified tightening**: opt in with `Orchestrator(reviser=...)` (or `build_orchestrator(reviser=...)`). When the floor flags a verbose answer, Forum pulls a tighter version from the `Reviser` seam (a peer flagship, a model) and accepts it only if it is strictly shorter AND still covers the request's terms (`forum.intent.coverage`). That guard is lexical, not semantic: an accepted revision drops no request term, but coverage cannot see content outside the request, so it is a floor on dropped terms, not a proof of preserved meaning. A revision that fails either check, or a reviser that crashes, is recorded and discarded; the original stands. The default `NullReviser` keeps Forum standing alone.
+- The summary and `forum bench` report delivery checks (and flags) and revisions (and how many were accepted).
+
+Pure standard library core; the reviser is a model behind the seam, its output verified deterministically. 244 tests, plus 2 gated real-model tests. Run in `examples/run_delivery.py`.
+
+## 1.10.0: efficiency, bounded prompts and a weighed record
+
+Efficiency is a verifiable quality, because waste is measurable. Forum is already cheap-first (route before a model, judge only when flagged, resume reuses work, budgets cap runs, the content store dedups identical bodies). This release closes the one waste path the engine introduced and makes efficiency visible.
+
+- **Bounded upstream injection**: a data edge no longer injects an unbounded upstream output into the downstream prompt. Each injected upstream is capped (`dispatch_plan(max_upstream_chars=...)` or `augment_with_upstream(max_chars=...)`, default 8192) with a witnessed truncation marker; the full output stays in the upstream's result entry, so the record loses nothing. For an upstream over the cap the prompt shrinks (the record never does); under the cap nothing changes. This bounds the growth that otherwise compounds down a deep plan.
+- **A weighed record**: `summarize` reports `payload_bytes`, the byte weight of the witnessed payloads (an efficiency signal comparable across runs, not a token count). `forum bench` shows whether a change made a run leaner, and the CLI summary now surfaces checkpoints, resumes, and payload weight.
+
+Pure standard library, deterministic, no model in the loop. 230 tests, plus 2 gated real-model tests. Run in `examples/run_efficiency.py`.
+
+## 1.9.0: phased checkpoints and resumable runs
+
+A long run that crashes, hits a budget, or is stopped should not start over. Because every step is already witnessed durably, the ledger is the resume state: a resumed run reads it, reuses what succeeded, and finishes the rest. No model call is spent twice, and no bookkeeping is needed beyond the record that already exists.
+
+- **Resume**: `dispatch_plan(plan, ledger, executor, resume=True)` (and `Orchestrator.submit_plan(plan, resume=True)`) reuses every task that already has a witnessed successful result and re-runs only the missing or failed ones. A `resume` entry records which tasks were reused. Resume reuses the verified record; it never regenerates it with a model.
+- **Phased checkpoints**: `checkpoint_each_wave=True` witnesses a `checkpoint` entry (the Merkle root so far) and syncs the ledger after each wave, a re-checkable savepoint and the durability point for batched storage (v1.8).
+- The summary and `forum bench` report checkpoints and resumes.
+
+Pure standard library, deterministic. 223 tests, plus 2 gated real-model tests. Run in `examples/run_resume.py`.
+
+## 1.8.0: opt-in batched fsync
+
+The durable ledger fsyncs every append, the strongest guarantee and the right default. For a high-throughput run where that per-append fsync is the bottleneck, this release adds an opt-in way to batch it, with the tradeoff stated plainly.
+
+- **`FileStorage(dir, fsync_each=False)`**: appends are written and flushed to the OS (so they survive a process crash) but not fsynced per call, for throughput. Call `ledger.sync()` to fsync the logs at a point of your choosing (a phase boundary, the run's end). The default stays `fsync_each=True`: every append fsynced before it returns.
+- **`Ledger.sync()` / `Storage.sync()`**: a new seam to force buffered writes down. A no-op for in-memory storage and for the default fsync-each mode; the durability control for batched mode. `build_orchestrator(..., fsync_each=False)` opts a daemon in.
+- Honest tradeoff: a crash before `sync()` can lose the un-fsynced tail. The log stays append-only and the torn-trailing-line tolerance still applies, so what survives still verifies and replays exactly.
+
+Pure standard library. 218 tests, plus 2 gated real-model tests. Run in `examples/run_batched_fsync.py`.
+
+## 1.7.0: the verification seam
+
+Forum already plans on context from an external brain (the ContextProvider seam, v1.1). This release adds its peer on the other end of the run: a seam for an external verifier to check the answer Forum produced, witnessed like everything else.
+
+- **VerifierProvider**: a one-method seam (`verify(request, answer) -> Verification | None`). A peer flagship (the index brain), a proof-checker, or a test runner can implement it; Forum witnesses the verdict as a `verification` entry chained to the answer. The verdict carries `ok` (True verified, False refuted, None could-not-decide), a `detail`, and the verifier's `source`. The default `NullVerifier` abstains, so Forum stands alone, zero-dependency.
+- **Witnessed, not blocking**: a refuted answer is recorded for the operator to see; what to do about it is policy, consistent with the rest of the engine. The summary and `forum bench` report verifications and refutations.
+- This completes the provider pair: context flows in before the run, verification comes back after it, both witnessed, both clean seams to peer flagships that Forum never imports.
+
+Pure standard library. 212 tests, plus 2 gated real-model tests. Run in `examples/run_verification.py`.
+
+## 1.6.0: the DAG flows data (typed edges)
+
+A plan is a DAG, but until now a dependency only meant "runs after." A downstream task could not see what it was building on. This release makes the edges carry data and gives them a type, so the plan expresses not just order but what flows.
+
+- **Typed edges**: a dependency is a `data` edge by default (the downstream task receives the upstream's witnessed output) or an `order` edge (run-after, no data flow), declared as `{"id": "T1", "type": "order"}` in a plan or `Task(..., order_deps=frozenset({"T1"}))` in code. Both kinds constrain scheduling; only data edges carry output.
+- **Witnessed data flow**: when a task runs, its data-upstream outputs are fed into its instruction, and the task entry records `data_from` (which upstreams it consumed). The plan entry records every edge with its type, so the typed DAG is in the record. The witnessed instruction stays the original; the injected prompt is reconstructable from the original plus the referenced upstream results. Escalation retries get the same upstream context, so a stronger model is not handicapped.
+- API-compatible, with a deliberate behavior change: old plans and plain-string `depends_on` still construct, and because a plain id is a data edge, existing multi-task plans now feed upstream output into downstream instructions instead of dropping it. The witnessed instruction stays the original; only the executor sees the augmented prompt.
+
+Pure standard library, deterministic. 205 tests, plus 2 gated real-model tests. Run in `examples/run_data_flow.py`.
+
+## 1.5.0: the intent-judge, a grounded rung above the floor
+
+v1.4 added a deterministic lexical floor that flags when a run's answer drifts from the request. A lexical signal has a known blind spot: a correct but paraphrased answer reuses few of the request's words and flags anyway. This release adds the rung that resolves those cases, on the same cheap-first ladder Forum already uses for routing and escalation.
+
+- **Witnessed model intent-judge**: opt in with `Orchestrator(intent_judge=IntentJudge())` or `forum submit --judge-intent`. When, and only when, the lexical floor flags a run, a model reads the request and the answer, is told which request terms the floor found missing, and judges whether the answer truly drifted or merely paraphrased. The verdict (ok, score, reason) is witnessed as an `intent_judgment` entry chained to the flag it resolves, so it is auditable, not trusted. It runs through the run's executor and counts against the RunBudget, skipped once the budget is spent.
+- **Cheap-first**: the free deterministic floor runs every time; the model judge fires only on a flag, so the common covered case spends nothing. A flagged-but-paraphrased answer is cleared (ok true); a genuinely off-target answer is judged off-target (ok false). The judge is one model's opinion, witnessed with its reasoning, not a confirmation.
+- **In the summary and A/B**: `forum ledger summary` and `forum bench` now report judgments and confirmed drift, so you can measure real drift (the judge's verdict), not just lexical flags.
+
+Pure standard library core; the judge is a model call behind the one executor seam. 195 tests, plus 2 gated real-model tests. Run in `examples/run_intent_judge.py`.
+
+## 1.4.0: did the run answer the question?
+
+Forum validates each task against its own instruction, but a run can pass every task and still drift from the original request. This release witnesses that gap. After a run synthesizes its answer, Forum records how much of the request the answer actually reflects, a reproducible signal you can read, compare, and act on.
+
+- **Witnessed intent check**: a completed `submit()` appends an `intent_check` entry, chained to the answer, with a deterministic coverage score (the fraction of the request's content words the answer carries), the terms it missed, and whether that falls below a configurable threshold (`Orchestrator(intent_threshold=...)`). It is a lexical floor, not a semantic verdict: low coverage flags a run for a closer look, it does not block the run or declare the answer wrong. A grounded model intent-judge is the next rung above this floor.
+- **In the summary and A/B**: `forum ledger summary` and `forum bench` now report intent checks and how many were flagged, so a prompt or model change that makes runs drift more or less is measured from the record, not guessed at.
+
+Pure standard library, deterministic and reproducible. 186 tests, plus 2 gated real-model tests. Intent run in `examples/run_intent.py`.
+
+## 1.3.0: reading the record
+
+A witnessed run is only worth as much as what you can learn from it. This release turns the raw ledger into something you can read at a glance and compare across runs, while trusting nothing but the record itself. It is what lets the project measure its own improvement instead of asserting it.
+
+- **Run summary**: `forum.report.summarize(ledger)` aggregates a witnessed run into counts (requests, plans, tasks, task results and failures, verdict pass and fail, escalations, budget stops, contexts, answers), model calls per model, the Merkle checkpoint, and the verify result. It reads only what was witnessed, so the summary is exactly as trustworthy as the ledger beneath it. On the CLI: `forum ledger summary [--json]`.
+- **Ledger A/B**: `forum.report.compare(a, b)` reports the delta between two summaries, and `forum bench A B [--json]` compares two ledgers side by side. This is how you prove a change actually helped: fewer model calls, fewer failures, fewer escalations, read from the record rather than claimed.
+
+170 tests, plus 2 gated real-model tests. Summary and A/B run in `examples/run_summary.py`.
+
+## 1.2.0: witnessed model-tier escalation
+
+Research-informed (arXiv 2026-06): FairTutor's selective escalation cut cost 71.6% at near-premium quality; "Forced Deferral" showed confidence-based cascades are adversarially gameable; "Reliability without Validity" showed single LLM judges are biased. So Forum escalates on a verifiable, witnessed signal, not opaque model confidence.
+
+- **Model identity in the ledger**: every result records the `model` that produced it (the executor's `model_id`, else its type), so a run is reproducible and silent model or provider drift becomes visible.
+- **Witnessed tier-escalation**: give the Orchestrator an ordered ladder of stronger executors (`escalation_executors=[...]`). When a task's witnessed verdict fails, Forum retries it up the ladder, witnessing a `tier_escalation` entry plus a fresh result and verdict, and uses the first passing result. Bounded by the same RunBudget. The trigger is the auditable verdict, not model confidence.
+
+160 tests, plus 2 gated real-model tests. Escalation run in `examples/run_escalation.py`.
+
+## 1.1.0: the witnessed run contract
+
+Research-informed (the agent-loops, second-brain, and model-testing videos): bound the run, and route on organized context.
+
+- **ContextProvider seam**: `submit()` pulls organized context from a `ContextProvider` (the clean seam to a "brain" like the index flagship) before planning, feeds it into the plan, and witnesses the exact context that shaped it (`request -> context -> plan`). The default `NullContextProvider` keeps Forum standing alone, zero-dependency.
+- **RunBudget**: `submit(request, budget=RunBudget(max_model_calls=..., max_seconds=...))` bounds a run. When the budget is spent the run stops gracefully, witnesses a `budget` entry, and stays fully verifiable. On the CLI: `forum submit ... --max-model-calls N --max-seconds S`.
+- Pure standard library, witnessed by design. Remaining research-derived ideas (witnessed model-tier escalation, typed DAG edges, run summaries, drift checks) are on the roadmap.
+
+156 tests, plus 2 gated real-model tests. Contract run in `examples/run_contract.py`.
+
+## 1.0.0: the engine is complete
+
+Forum is a complete, accountable orchestration engine: durable, verifiable, daemonized, installable, and documented.
+
+- The full stack is here and tested: the witnessed causal ledger (verify, deep-verify, replay, causal chains, Merkle checkpoints), durable file-backed storage, deterministic routing with a model-backed classifier on escalation, the DAG planner and bounded-concurrency dispatcher, the control loop (coordinate, validate, synthesize), model-agnostic executors (any command, any OpenAI-compatible endpoint including local servers that need no account, and the Anthropic API), an HTTP daemon and an MCP surface over one long-lived ledger, and a `forum` CLI.
+- A built-in roster of 24 plain capability lanes ships in the box.
+- Quality gates in CI: ruff, mypy, and coverage. 144 tests, plus 2 gated real-model tests.
+- Docs: README, ARCHITECTURE, RUNNING, SECURITY, RELEASING.
+
+Pure standard library, zero third-party runtime dependencies. Fair-source.
+
+## 0.10.0: harden and prove
+
+The accountability gets sharper and the routing ladder is complete.
+
+- **Witnessing-hardening**: each `verdict` now causal-parents the specific `result` entry it judged, so `causal_chain(verdict)` reconstructs the full path (request to plan to task to result to verdict). Control roles get role-specific ids (`control:coordinator` and so on) instead of a shared sentinel. `ApiExecutor` reports an unexpected response shape clearly. Empty-plan submit is covered.
+- **The routing ladder is wired**: `Orchestrator.assign` does Tier-0 lexical routing and escalates to the Tier-2 Classifier when keywords cannot decide, witnessing the route and any classification. `submit_one` runs a single task end to end through that ladder.
+- **Real-model proof**: a gated integration test (`tests/test_real_model.py`, skipped unless `FORUM_RUN_REAL=1` and `ANTHROPIC_API_KEY` are set) runs a full `submit` and `submit_one` against a live model and asserts the ledger stays deep-verifiable. See `RUNNING.md`.
+
+143 tests, plus 2 gated real-model tests skipped by default.
+
+## 0.9.0: a command line
+
+Forum is something you run now, not just import.
+
+- **`forum` CLI**: a console entry point. `forum route "..."` (no model needed), `forum submit "..." --api|--cmd` (witnessed), `forum serve` (HTTP daemon), `forum mcp` (MCP stdio server), and `forum ledger verify | show | replay <seq> | get <seq>` to inspect the record.
+- Executor selection by flag: `--api` (Anthropic API, reads `ANTHROPIC_API_KEY`) or `--cmd "<model cli>"` (any command, run once per task). Routing and the ledger commands need no model.
+- Pure stdlib `argparse`; no new dependencies.
+
+135 tests.
+
+## 0.8.0: the MCP surface
+
+The lone optional edge: Forum speaks MCP now.
+
+- **MCP surface**: an MCP (JSON-RPC 2.0 over stdio) server, `forum.mcp_surface`, exposing `submit`, `route`, `plan`, `status`, `verify`, and `ledger_get` as tools. Serve it with `python -m forum.mcp_surface`.
+- It is a thin adapter over the HTTP surface: each tool maps to an HTTP method and path and is served by the same `HttpSurface`, so the MCP and HTTP surfaces cannot drift. A tool-layer failure reports via `isError`; a protocol error uses a JSON-RPC error code.
+- The `handle()` and `process_line()` seams are sockets-free and unit-tested directly; `serve_stdio()` wires real streams.
+
+121 tests. MCP run in `examples/run_mcp.py`.
+
+## 0.7.0: the daemon (HTTP)
+
+Forum runs as an always-on service now.
+
+- **HTTP daemon**: a stdlib-asyncio HTTP/1.1 server (no web framework), `forum.daemon.Daemon`, serving `GET /health`, `GET /status`, `GET /verify`, `GET /checkpoint`, `GET /ledger/{seq}`, `GET /replay/{seq}`, `POST /route`, `POST /plan`, and `POST /submit`. One daemon owns one long-lived, durable (`FileStorage`) ledger, so every request witnesses into the same verifiable record.
+- **HttpSurface**: the request-to-Orchestrator mapping is a sockets-free coroutine, so every endpoint and error path is unit-tested directly.
+- **Lifecycle**: start, stop, graceful drain, ephemeral-port binding; `build_orchestrator(dir)` wires the durable ledger and the default roster. `/submit` and `/plan` need a model executor and return a clear 502 under the default EchoExecutor.
+- A new `Ledger.get(seq)` accessor backs the ledger endpoint.
+
+100 tests. Daemon run in `examples/run_daemon.py`.
+
+## 0.6.0: a roster in the box
+
+A fresh install has a real roster now, not just an example in the demo.
+
+- **Default roster**: 24 domain-neutral capability lanes (engineering, graphics, support, research) shipped as `manifests/default-roster.toml` inside the package, loaded with `roster.load_default()`. Plain capability names, no personas.
+- Every lane is keyword-routable: a request built from a lane's keywords routes to that lane, verified across all 24.
+- The manifest ships as package data, so `load_default()` works from a source checkout and from an installed wheel.
+
+76 tests.
+
+## 0.5.0: a durable ledger
+
+The ledger can outlive the process now.
+
+- **FileStorage**: a durable, file-backed implementation of the `Storage` protocol, two append-only JSONL logs (entries and content-addressed payloads) in a directory. A fresh `FileStorage` over the same directory recovers the exact ledger after a restart, with `verify`, `replay`, `causal_chain`, and the Merkle `checkpoint` all intact.
+- **Crash-tolerant, tamper-honest**: a single torn trailing line (an append a crash cut short) is dropped on load; interior corruption raises a typed `StorageCorruption`; a tampered (reordered) file still loads so `verify()` can report it false. Every append is flushed and fsynced before it is mirrored to memory.
+- Still pure standard library, still zero runtime dependencies. The core stays storage-agnostic: `FileStorage` is an edge adapter behind the existing protocol.
+
+70 tests. Durable run in `examples/run_durable.py`.
+
+## 0.4.0: the control loop
+
+Forum plans a plain request on its own now.
+
+- **Coordinator**: turns a plain request into a validated task plan, using a model.
+- **Classifier**: picks an agent for a task when keyword routing cannot decide.
+- **Validator**: judges a result against its instruction. A task that fails is witnessed as not ok, not blessed by the judge.
+- **Synthesizer**: combines the results into one answer.
+- **`Orchestrator.submit(request)`**: runs the whole loop, request to answer, every step witnessed and deep-verifiable.
+- **`ask_json`**: a small helper that parses structured output from a model reply, tolerant of prose wrapping, with brace-safe prompt building.
+
+59 tests. Full loop in `examples/run_request.py`.
+
+## 0.3.0: real executors
+
+Forum does real work now, not just toy plans.
+
+- **SubprocessExecutor**: runs an external command per task via `asyncio.create_subprocess_exec` (no shell, so no injection surface). Point it at any CLI, including a model CLI such as `["claude", "-p"]`.
+- **ApiExecutor**: drives a model via the Anthropic Messages API over stdlib `urllib`, with the blocking call kept off the event loop and an injectable opener for tests.
+- **Failure policy**: a task whose executor raises is witnessed as `ok=False` and the rest of the wave still runs. The ledger stays deep-verifiable.
+
+46 tests. Real run in `examples/run_real.py`.
+
+## 0.2.0: the runtime
+
+The engine runs. A plan now executes end to end, with every step witnessed.
+
+- **Executor**: an `Executor` protocol and a deterministic `EchoExecutor` stand-in, the single async seam where a real model-driven executor will drop in.
+- **Actor and Supervisor**: a minimal async mailbox actor (observable let-it-crash) and a restart supervisor.
+- **Dispatcher**: `dispatch_plan` schedules a plan into waves and runs each task through the executor, bounded by a semaphore under `asyncio.TaskGroup`, appending plan, task, and result entries to the ledger with causal links. Independent tasks run concurrently and the run stays deep-verifiable.
+- **Orchestrator**: ties routing, planning, and witnessed dispatch into `submit_plan`.
+
+39 tests. End-to-end run in `examples/run.py`.
+
+## 0.1.0: core foundation
+
+The accountable core, pure standard library, zero runtime dependencies.
+
+- **Ledger**: append-only hash chain with a content-addressed payload store:
+  `verify()` (chain integrity), `verify(deep=True)` (re-checks payload bodies,
+  tolerates redacted/hash-only), `replay()`, `query()`, `causal_chain()`, and a
+  domain-separated Merkle `checkpoint()` that resists the CVE-2012-2459 odd-node
+  second-preimage collision. Fail-fast on out-of-range lookups; cycle-guarded
+  causal walks.
+- **Routing**: deterministic, specificity-aware `LexicalRouter` (Tier-0): decides a
+  lane or escalates with a confidence score; total-ordered, roster-order-independent.
+- **Roster**: validated TOML capability-manifest loader (rejects non-list keywords,
+  unknown tiers, missing fields).
+- **Plan**: DAG scheduler into ordered parallel waves; cycle and unknown-dependency
+  detection.
+- **Policy**: category scope gate and parallel-wave capping.
+
+29 tests. Runnable tour in `examples/demo.py`.

@@ -124,6 +124,11 @@ ALLOWED = (
     "packages/index/scripts/check_native_client.py",
     "packages/crucible/scripts/build_client_package.py",
     "packages/crucible/scripts/check_native_client.py",
+    # forum 1.17.0 writes the field in two records of its released format: the
+    # native-client check record, and the route-preflight skill's output (that
+    # skill's files are byte-pinned release material in forum's .gitattributes)
+    "packages/forum/scripts/check_native_forum.py",
+    "packages/forum/src/forum/skills/forum-route-preflight/scripts/forum_route_preflight.py",
     # emet's Flywheel reporter reads evaluation artifacts under either name, and its
     # changelog, its guide and its test say so
     "packages/emet/CHANGELOG.md",
