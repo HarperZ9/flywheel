@@ -1,0 +1,5 @@
+# The README drawings are compared against freshly rendered bytes and hashed
+# into the art receipt, so a checkout that rewrote their line endings would
+# fail the gate and change the recorded digest.
+docs/art/*.svg text eol=lf
+docs/art/*.art.json text eol=lf

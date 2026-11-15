@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+
+jobs:
+  test:
+    name: tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - run: python -m pip install --upgrade pip pytest
+      - run: python -m pip install -e .
+      - run: python -m pytest -q
+
+  # The README drawings are rendered from docs/art/chorus.art.json, so they rot
+  # like any other derived file: a threshold moves, nobody re-renders, and the
+  # picture describes something that stopped being true. This re-renders every
+  # drawing, compares the result against what is committed, and checks that each
+  # one fits the columns it is drawn in. Whether a drawing is TRUE of the code is
+  # a separate question, answered by tests/test_repo_art.py in the test job.
+  repo-art:
+    name: repo art
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python tools/check_repo_art.py
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py

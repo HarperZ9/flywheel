@@ -1,0 +1,16 @@
+[
+  {"kind": "comment", "id": "c01", "ref": "review-vid", "text": "The battery life on this phone is incredible, easily lasts me two full days", "meta": {"like_count": 340}},
+  {"kind": "comment", "id": "c02", "ref": "review-vid", "text": "battery life is amazing, best i have ever had on any phone honestly", "meta": {"like_count": 210}},
+  {"kind": "comment", "id": "c03", "ref": "review-vid", "text": "the battery is terrible, drains so fast, worst battery i have owned", "meta": {"like_count": 290}},
+  {"kind": "comment", "id": "c04", "ref": "review-vid", "text": "awful battery life, dead by lunch, hugely disappointing for the price", "meta": {"like_count": 260}},
+  {"kind": "comment", "id": "c05", "ref": "review-vid", "text": "battery drains overnight, really bad, i regret buying it", "meta": {"like_count": 150}},
+
+  {"kind": "comment", "id": "c06", "ref": "review-vid", "text": "the display screen is gorgeous, beautiful colors and so bright", "meta": {"like_count": 300}},
+  {"kind": "comment", "id": "c07", "ref": "review-vid", "text": "stunning display, the screen is the best part, colors pop beautifully", "meta": {"like_count": 240}},
+  {"kind": "comment", "id": "c08", "ref": "review-vid", "text": "screen display quality is excellent, love how bright and sharp it looks", "meta": {"like_count": 190}},
+  {"kind": "comment", "id": "c09", "ref": "review-vid", "text": "the screen and display are wonderful, gorgeous and vivid every time", "meta": {"like_count": 170}},
+
+  {"kind": "comment", "id": "c10", "ref": "review-vid", "text": "the camera photos are okay i guess, nothing special about the camera", "meta": {"like_count": 60}},
+  {"kind": "comment", "id": "c11", "ref": "review-vid", "text": "camera is decent, average photos, the camera does its job fine", "meta": {"like_count": 40}},
+  {"kind": "comment", "id": "c12", "ref": "review-vid", "text": "camera photos are fine, pretty average camera overall nothing to note", "meta": {"like_count": 30}}
+]
