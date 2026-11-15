@@ -24,7 +24,8 @@ import pytest
 # Not in the release gate: that gate runs against the built wheel with the source tree's
 # `harness/` moved away, and this file reads the source.
 ROOT = Path(__file__).resolve().parents[1]
-OPENS = {"urlopen", "build_opener", "create_connection", "HTTPConnection", "HTTPSConnection"}
+OPENS = {"urlopen", "build_opener", "create_connection", "HTTPConnection", "HTTPSConnection",
+         "open_request"}                # http_no_redirect, and endpoints_http.send under that name
 
 ACCOUNT = "gateway route, recorded through gateway_account (a started entry, then an end entry)"
 TRACE = "gateway route, recorded in the agent run's own trace (a started record, then a closing one)"

@@ -94,8 +94,8 @@ def prompt_hash(text: str) -> str:
 def _send(req, timeout):
     """Open a provider request. No redirect is followed, so the key reaches only the
     configured host, and in a gateway process it leaves only inside an account."""
-    from .endpoints_http import send
-    return send(req, timeout)
+    from .endpoints_http import send as open_request
+    return open_request(req, timeout)
 
 
 def _ambient_credential(name: str) -> str:
