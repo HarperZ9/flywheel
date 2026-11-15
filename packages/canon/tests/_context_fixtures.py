@@ -10,6 +10,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import random
 import secrets
 import sqlite3
@@ -61,9 +62,38 @@ def short_canary() -> str:
     return "cnry" + secrets.token_hex(10)
 
 
-def long_canary(min_chars: int = 10 * 1024) -> str:
-    """Random text over 10 KiB, with letters whose NFC and NFD forms differ."""
-    rng = random.Random(secrets.randbits(64))
+SEED_ENV = "CANON_CANARY_SEED"
+_canary = {"base": secrets.randbits(64), "calls": 0}
+
+
+def start_canary_run() -> int:
+    """Pick the seed for one test's long canaries: the value of
+    CANON_CANARY_SEED when it is set, a fresh random one otherwise. conftest
+    calls this before each test and prints the seed when the test fails, so a
+    failure names its input and can be replayed."""
+    given = os.environ.get(SEED_ENV, "").strip()
+    _canary["base"] = int(given) if given else secrets.randbits(64)
+    _canary["calls"] = 0
+    return _canary["base"]
+
+
+def canary_seed() -> tuple[int, int]:
+    """The seed in use and how many long canaries it has made so far."""
+    return _canary["base"], _canary["calls"]
+
+
+def long_canary(min_chars: int = 10 * 1024, *, seed: int | None = None) -> str:
+    """Random text over 10 KiB, with letters whose NFC and NFD forms differ.
+
+    The text comes from the test's seed and the number of the call within the
+    test. `seed=n` gives the text the first call makes under seed n, so a seed
+    printed by a failing test can be pinned as a permanent case."""
+    if seed is None:
+        base, call = _canary["base"], _canary["calls"]
+        _canary["calls"] += 1
+    else:
+        base, call = seed, 0
+    rng = random.Random(f"{base}:{call}")
     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 " + _ACCENTED
     text = "".join(rng.choice(alphabet) for _ in range(min_chars + 64))
     return unicodedata.normalize("NFC", text)
