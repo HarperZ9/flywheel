@@ -76,3 +76,33 @@ class LedgeredProposer:
             "model_ref": out.model_ref,        # provider provenance, not a secret
             "seed": out.seed, "response_sha": resp_sha})
         return out
+
+
+def recorded(endpoint: str, request: bytes, send):
+    """Run `send`, one model request made of the bytes `request`, as a ledger call when
+    this process is a gateway; anywhere else just run it. Returns what `send` returns.
+
+    For a model request that is not made through a proposer or a backend (the optional
+    judge model of the pre-action monitor, for one). The entries carry the endpoint
+    name, the hash of the request bytes and the hash of the reply bytes."""
+    import hashlib
+
+    from . import gateway_reach
+    from .gateway_account import Call, contacting
+    if not gateway_reach.enforced() or contacting() is not None:
+        return send()
+    base = {"endpoint": endpoint, "prompt_sha": hashlib.sha256(request).hexdigest()[:16]}
+    if gateway_reach.route():
+        base["route"] = gateway_reach.route()
+    call = Call(gateway_reach.ledger(), base)
+    try:
+        out = call.reach(send)
+    except Exception as exc:
+        if call.state == "contacted":
+            call.end(FAILED, "upstream_error", {"reason": "upstream_error",
+                                                "error": type(exc).__name__})
+        raise
+    sha = hashlib.sha256(out if isinstance(out, bytes) else str(out).encode("utf-8",
+                         "replace")).hexdigest()[:16]
+    call.end("endpoint_call", sha, {"response_sha": sha})
+    return out

@@ -263,3 +263,17 @@ def test_control_outside_a_gateway_process_a_backend_call_is_sent(stubbed):
     out = backend.chat([{"role": "user", "content": "hi"}], system="", max_tokens=8,
                        temperature=0, seed=0)
     assert out["text"] and len(upstream.requests) == 1 and entries(home) == []
+
+
+def test_the_optional_judge_model_is_recorded_when_a_gateway_runs_it(stubbed):
+    """The pre-action monitor's judge is a model call too. In a gateway process (a workflow
+    run, for one) it leaves inside a ledger call; anywhere else it is sent as it is."""
+    upstream, home, _tmp = stubbed
+    from harness.preaction.judge import HttpJudge, JudgeConfig
+    judge = HttpJudge(JudgeConfig(endpoint=f"{upstream.url}/v1", model="stub-model"))
+    assert judge._post(b'{"model": "stub-model", "messages": []}')
+    end, = paired(upstream, home)
+    assert end.kind == "endpoint_call" and end.meta["endpoint"] == "preaction-judge"
+    _release()
+    assert judge._post(b'{"model": "stub-model", "messages": []}')
+    assert len(upstream.requests) == 2 and len(entries(home)) == 2     # sent, not recorded

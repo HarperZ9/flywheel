@@ -218,6 +218,21 @@ class World:
         return [entry for segment in self._ledger_module.check(self.home)
                 for entry in segment["rows"]]
 
+    def trace_starts(self) -> int:
+        """The started `model_inference` records in the private traces of this home's agent
+        runs: what a gateway agent run writes before each provider request."""
+        from harness.gateway_agent_trace import AgentTrace
+        state, count = self.home / "state", 0
+        for folder in (state / "gateway-agent-traces").glob("v1/owners/*/op_*"):
+            try:
+                rows = AgentTrace(state, OWNER, JOURNEY, folder.name).read()
+            except Exception:    # noqa: BLE001 - a trace still being written is read next time
+                continue
+            count += sum(1 for row in rows if row["kind"] == "ledger"
+                         and row["payload"]["kind"] == "model_inference"
+                         and row["payload"]["meta"].get("phase") == "started")
+        return count
+
     def granted(self, action: str, operation: dict) -> "bytes | None":
         """The final body for a route behind the grant flow, or None when the flow refused."""
         from harness.journey_store import JourneyStore, MutationCommand
@@ -249,7 +264,7 @@ class World:
         """Send one request; return what it caused. `settle(world)` waits for work the
         route started and answered before (a swarm, an operation)."""
         seen = (len(self.provider.requests), len(self.local.requests), len(self.entries()),
-                len(self.refused), len(self.trap.outside))
+                len(self.refused), len(self.trap.outside), self.trace_starts())
         status, answer = self.request(method, path, body)
         if settle is not None:
             settle(self, answer)
@@ -263,7 +278,8 @@ class World:
                 "started": [e.content for e in added if e.kind == "endpoint_call_started"],
                 "ended": [e.meta.get("call") for e in added
                           if e.kind in ("endpoint_call", "endpoint_call_failed")],
-                "refused": self.refused[seen[3]:], "outside": self.trap.outside[seen[4]:]}
+                "refused": self.refused[seen[3]:], "outside": self.trap.outside[seen[4]:],
+                "trace_started": self.trace_starts() - seen[5]}
 
 
 def faults(result: dict) -> list:

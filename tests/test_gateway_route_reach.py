@@ -53,83 +53,12 @@ from harness.route_inventory import gateway_routes
 from tests import gateway_route_sweep_support as sweep
 
 from tests.gateway_route_inventory import (INVENTORY, LANE, LOCAL, META, MODEL, NONE,  # noqa: E402
-                                           OUTSIDE, TRACE)
+                                           OUTSIDE, TRACE, bodies, sink)
 
 # The sweep sends about 220 requests in the module fixture, a minute or more in all, and a
 # few routes take ten seconds each (a loop audit, a feed read). The suite's 60 s limit is
 # per test and the fixture runs inside the first one.
 pytestmark = pytest.mark.timeout(900)
-MESSAGE = [{"role": "user", "content": "Say hi."}]
-TASKS = [{"task_id": "t1", "prompt": "say hi", "gate_cmd": "python -c pass"}]
-
-
-def _sealed(world, answer):
-    """Wait for a v1 swarm to seal: its worker processes have ended."""
-    swarm = (answer or {}).get("swarm_id")
-    deadline = time.monotonic() + 120
-    while swarm and time.monotonic() < deadline:
-        status, body = world.request("GET", f"/api/subagents/swarm?id={swarm}")
-        if status != 200 or body.get("status") == "sealed":
-            return
-        time.sleep(0.2)
-
-
-def bodies(world) -> dict:
-    """(method, path) -> (path to send, body, settle) for the routes with a body of their own.
-
-    A body made by `world.granted` goes through the per-operation grant flow over HTTP
-    (prepare, approve once) just before it is sent."""
-    from harness.workflows import WORKFLOWS
-    first = sorted(WORKFLOWS)[0]
-    plain = {
-        "/api/eval/run": {"endpoint": "ollama", "model": "stub-model", "n": 1},
-        "/api/audit/run": {"work_receipt": {"x": 1}, "artifact": "done", "endpoint": "ollama",
-                           "model": "stub-model"},
-        "/v1/messages": {"model": "claude-sonnet-5", "max_tokens": 64, "messages": MESSAGE},
-        "/v1/responses": {"model": "gpt-5.3-codex", "input": "Say hi."},
-        "/v1/messages/count_tokens": {"model": "claude-sonnet-5", "messages": MESSAGE},
-    }
-    behind = {
-        "/v1/chat/completions": ("chat.complete", {
-            "model": "ollama:stub-model", "messages": MESSAGE, "stream": False}),
-        "/api/route": ("route.send", {"prompt": "Say hi.", "endpoint": "ollama",
-                                      "model": "stub-model"}),
-        "/v1/embeddings": ("embeddings.create", {
-            "input": "hi", "model": "openai:text-embedding-3-small"}),
-        "/api/workflow": ("workflow.run", {"workflow": first, "goal": "say hi",
-                                           "endpoint": "ollama", "allow_write": False,
-                                           "allow_exec": False}),
-        "/api/bench/run": ("bench.run", {"tasks": TASKS, "endpoints": ["openai"],
-                                         "timeout_s": 20}),
-        "/api/capability": ("capability.probe", {"endpoint": "ollama:stub-model"}),
-        "/api/companion": ("companion.ask", {"prompt": "Say hi."}),
-        "/api/forge": ("forge.create", {"goal": "add two numbers"}),
-        "/api/invent": ("invent.round", {"k": 1}),
-        "/api/lean": ("lean.check", {"code": "theorem t : True := trivial"}),
-        "/api/store/entity": ("store.put", {"kind": "note", "data": {"text": "hi"}}),
-        "/api/import": ("import.config", {"root": str(world.root)}),
-        "/api/suite": ("suite.audit", {"path": str(world.root)}),
-    }
-    out = {("POST", path): (path, body, None) for path, body in plain.items()}
-    for path, (action, operation) in behind.items():    # granted when sent: bound to the head
-        out[("POST", path)] = (path, lambda a=action, o=operation: world.granted(a, o), None)
-    out[("GET", "/api/models")] = ("/api/models?endpoint=openai", None, None)
-    out[("POST", "/api/subagents/")] = ("/api/subagents/spawn", {
-        "goal": "say hi", "endpoint": "openai-compatible", "model": "stub-model",
-        "children": [{"role": "explore"}], "max_steps": 1, "timeout_s": 60}, _sealed)
-    return out
-
-
-def sink(world) -> dict:
-    """One broad body for every other POST: the fields most handlers read."""
-    return {"prompt": "Say hi.", "goal": "say hi", "endpoint": "ollama", "model": "stub-model",
-            "text": "hi", "input": "hi", "messages": MESSAGE, "query": "hi", "q": "hi",
-            "task": "hi", "question": "hi", "claim": "hi", "topic": "hi", "code": "x = 1",
-            "name": "sweep-probe", "id": "sweep-probe", "root": str(world.root),
-            "path": str(world.root), "n": 1, "k": 1, "max_tokens": 16, "max_steps": 1,
-            "tasks": TASKS, "endpoints": ["openai"], "workflow": "sweep-probe"}
-
-
 def run_sweep(world) -> list:
     special, broad, results = bodies(world), sink(world), []
     for route in gateway_routes():
@@ -215,11 +144,20 @@ def test_every_model_route_reached_the_provider_and_recorded_each_call(swept):
             assert len(row["started"]) == len(row["provider_model"]) == len(row["ended"]), row
 
 
+def test_an_agent_run_writes_a_started_record_to_its_trace_for_each_request(swept):
+    """/api/agent over HTTP, through the grant flow. Its model request is not in the gateway
+    ledger: the run's own private trace holds a started record for it."""
+    _world, results = swept
+    row, = [r for r in results if r["route"] == "/api/agent" and r["method"] == "POST"]
+    assert row["own_body"] and len(row["provider_model"]) >= 1, row
+    assert row["started"] == [] and row["trace_started"] >= len(row["provider_model"]), row
+
+
 def test_a_route_that_runs_no_model_at_a_provider_sends_it_no_model_request(swept):
     _world, results = swept
     for row in results:
         kind = INVENTORY[row["route"]][0]
-        if kind in (NONE, LOCAL, LANE, OUTSIDE, META, TRACE):
+        if kind in (NONE, LOCAL, LANE, OUTSIDE, META) or (kind == TRACE and not row["own_body"]):
             assert row["provider_model"] == [], (row["method"], row["path"], kind)
         if kind in (NONE, LANE, OUTSIDE):
             assert row["provider_other"] == [], (row["method"], row["path"], kind)

@@ -16,7 +16,10 @@ ids of the calls it was last charged for with what each was charged, written
 in the same file write as the totals:
 
   seen(row, call)    the tokens `call` was charged, or None
-  note(row, call, n) record it (the newest KEPT calls of the key)
+  note(row, call, n) record it. The row keeps the newest calls only: KEPT of
+                     them, or twice the key's in-flight limit when that is
+                     more. A gateway that is killed leaves at most the
+                     in-flight limit of charged calls without an end entry.
 
 `Keys.debit` skips a call it has seen. The record is short on purpose, so it
 is not the only memory: a gateway that finds an unsettled call at its start
@@ -30,7 +33,7 @@ process that can rewrite the key list can also rewrite this record.
 from __future__ import annotations
 
 FIELD = "charged_calls"
-KEPT = 256                              # per key; far above any in-flight limit
+KEPT = 32                               # per key; eight times the default in-flight limit
 
 
 def seen(row: dict, call: str) -> "int | None":
@@ -45,8 +48,10 @@ def seen(row: dict, call: str) -> "int | None":
 
 def note(row: dict, call: str, spent: int) -> None:
     if call:
+        limit = row.get("in_flight")
+        kept = max(KEPT, 2 * limit if type(limit) is int else 0)
         row[FIELD] = ([pair for pair in (row.get(FIELD) or []) if isinstance(pair, list)]
-                      + [[call, int(spent)]])[-KEPT:]
+                      + [[call, int(spent)]])[-kept:]
 
 
 def before(home, open_calls: dict) -> dict:
