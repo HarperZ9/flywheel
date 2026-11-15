@@ -482,6 +482,9 @@ def main(argv=None):
     if list(argv[:1]) in (["--version"], ["-V"]):
         print(f"articulate {_pkgver()}")
         return 0
+    if list(argv[:1]) == ["code"]:  # static checks on code changes; a separate package
+        from .code.cli import main as code_main
+        return code_main(list(argv[1:]))
     ap = argparse.ArgumentParser(prog="articulate",
                                  description="Finds writing patterns and shows where they are.")
     ap.add_argument("-V", "--version", action="version", version=f"articulate {_pkgver()}")
@@ -551,6 +554,7 @@ def main(argv=None):
                     help="with --reverify, exit 1 if any receipt drifts")
     pa.add_argument("--json", action="store_true")
     sub.add_parser("modes", help="list available writing modes")
+    sub.add_parser("code", help="static checks on code changes (articulate code test-diff -h)")
     from . import cli_campaign, cli_corpus, cli_desk, cli_dialogue, cli_house, cli_negation, cli_process
     from . import cli_devices
     cli_campaign.register(sub)

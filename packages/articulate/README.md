@@ -40,6 +40,7 @@ Articulate finds writing patterns and shows where they are. Use it to improve wr
 - **A voice from intent.** `articulate voice intend` takes a goal, an audience and a stance and writes a spec with a plan. `articulate voice check draft.md --intent spec.json` scores the draft against it and names, by line, the template shapes a line-by-line check misses: one-line paragraphs, anaphora runs, closing maxims, "It is not X. It is Y." See [a voice built from intent](docs/voice-intent.md).
 - **Series review.** `articulate corpus` reads several documents together and reports repeated title formulas, shared paragraph scaffolds and even rhythm, with locations.
 - **Dialogue.** `articulate dialogue` checks game and stage scripts and builds character voice sheets.
+- **Test diffs.** `articulate code test-diff BASE HEAD` reads a change's Python tests before and after and lists each check that was deleted, skipped or weakened, and each new check that cannot fail. It runs no test, and it reports without gating. See [test diffs](docs/code-test-diff.md).
 
 ## Use it from anywhere
 

@@ -6,6 +6,21 @@ own `RULESET_SEMVER`, which a receipt records so a replay knows which rules ran.
 
 ## Unreleased
 
+### Added
+
+- `articulate code test-diff BASE [HEAD]` reads a change's Python test files
+  before and after, without running them, and reports where the tests now check
+  less: a check deleted or replaced by a weaker form, a new skip or xfail, a
+  widened tolerance or expected exception, a deleted test, a test renamed so it
+  no longer collects, and a new check that cannot fail (`assert True`, a value
+  compared with itself, a mock-only check). `--before OLD.py --after NEW.py`
+  compares one file with no repository. A finding the change explains is shown
+  as `declared` or `advisory` and is not counted. The command is report-only:
+  it exits 0 whatever it finds and 2 on a usage or git error, and `--json`
+  carries `status` for a caller that wants a gate. Python only; test files in
+  other languages are listed as unverifiable. The work was written on the
+  articulate branch `claude/code-test-diff-analyzer` and had not been merged.
+
 ### Fixed
 
 - `articulate audit --reverify --gate` exits 1 when a receipt's source file is
