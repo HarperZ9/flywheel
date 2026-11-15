@@ -163,6 +163,7 @@ Tools under `packages/`
 - Their tests run in `.github/workflows/packages.yml` when a change touches `packages/`. The daily seal-watch check runs from `.github/workflows/seal-watch.yml`.
 - `chorus` (distribution `chorus-discourse` 0.3.2) now also lives under `packages/chorus` and installs with `python -m pip install ./packages/chorus`. PyPI releases still publish from `HarperZ9/chorus`, which stays open.
 - `learn` (npm `@harperz9/learn` 2.3.0) now also lives under `packages/learn`. npm releases still publish from `HarperZ9/learn`, which stays open.
+- `plexus` (distribution `plexus-mesh` 0.4.0) now also lives under `packages/plexus`. PyPI releases still publish from `HarperZ9/plexus`, which stays open.
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
 
 Evidence demos under `demos/`
