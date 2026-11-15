@@ -148,3 +148,14 @@ def test_decision_command_uses_operator_public_policy_not_row_metadata(tmp_path,
     }
     assert "source-controlled-public-id" not in rendered
     assert "https://example.test/source-controlled" not in rendered
+
+
+def test_version_flag_prints_the_package_version(capsys):
+    import pytest
+
+    import chorus
+
+    with pytest.raises(SystemExit) as stop:
+        main(["--version"])
+    assert stop.value.code == 0
+    assert capsys.readouterr().out.strip() == f"chorus {chorus.__version__}"

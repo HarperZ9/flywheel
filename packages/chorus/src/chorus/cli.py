@@ -171,6 +171,13 @@ def _cmd_daemon(args) -> int:
         return 0
 
 
+def _version() -> str:
+    # Read at call time, so the flag reports the package that is running.
+    from chorus import __version__
+
+    return __version__
+
+
 def main(argv: list[str] | None = None) -> int:
     # Emit UTF-8 regardless of the console/redirect codepage: a digest of real comments carries
     # emoji and non-Latin text, which would crash a cp1252 stdout on Windows. Guarded because a
@@ -178,6 +185,7 @@ def main(argv: list[str] | None = None) -> int:
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(prog="chorus")
+    parser.add_argument("--version", action="version", version=f"chorus {_version()}")
     sub = parser.add_subparsers(dest="command", required=True)
     run = sub.add_parser("run", help="synthesize a discourse digest from a corpus")
     run.add_argument("path", help="a JSON file of gather-style rows, or a gather corpus directory")

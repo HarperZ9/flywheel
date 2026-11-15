@@ -5,6 +5,7 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+- `chorus --version` and `relay --version` print the package version and exit 0 (`packages/chorus`, `packages/relay`). Both commands had no version flag and answered with a usage error and exit 2.
 - `packages/mneme` now holds Mneme `main` at `160df160` (schema 6): audit rows name a random alias, `forget` removes the export files Mneme wrote and overwrites the files it deletes, and `mneme forget-subject` erases one user's records with a receipt that `mneme verify-erasure` checks. The version stays 0.7.0. Use one Mneme version per database file: an older Mneme that reopens a schema 6 store writes rows with its older guarantees.
 - `scripts/check_data_location_copy.py` gains proof pointers: a sentence can pass by naming the tests that hold the tool to it and the limit a reader needs, and the check fails when a named test is gone. Three Mneme sentences moved from the allow-list to proof pointers, and one new changelog sentence joined them.
 
