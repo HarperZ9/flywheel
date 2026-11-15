@@ -164,3 +164,32 @@ jobs:
         run: ${{ matrix.verifier }}
       - name: Every file matches the sealed manifest
         run: sha256sum --strict -c --quiet ${{ matrix.manifest }}
+
+  vllm-ci-forum-receipt-tests:
+    # The receipt's own unit tests, as its README runs them. They need Forum at
+    # the commit the receipt was built with. The sealed requirements.txt names
+    # that commit as `forum @ git+...`, and current pip refuses the line because
+    # the distribution at that commit is named forum-engine, so this job
+    # installs the same commit by URL. The sealed file is not changed.
+    name: vllm-ci-forum-receipt (tests)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+        working-directory: demos/vllm-ci-forum-receipt
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: The pinned commit in requirements.txt is the one installed
+        run: grep -q "HarperZ9/forum.git@542dda464174802aa3dc0d99e686f3edc88017cf" requirements.txt
+      - name: Install Forum at the pinned commit
+        run: python -m pip install "git+https://github.com/HarperZ9/forum.git@542dda464174802aa3dc0d99e686f3edc88017cf"
+      - name: The receipt's unit tests
+        run: python -m unittest discover -s tests -v
+      - name: The Forum ledger verifies
+        run: python -m forum ledger verify --ledger forum-ledger
