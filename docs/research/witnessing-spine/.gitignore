@@ -1,0 +1,16 @@
+# Mandated baseline (global engineering standard)
+.env
+.env.*
+# ...but the committed template must survive the .env.* rule above
+!.env.example
+node_modules/
+dist/
+CLAUDE.local.md
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local
+
+# Python build artifacts
+__pycache__/
+*.py[cod]

@@ -1,0 +1,87 @@
+{
+  "header": {
+    "name": "witnessing-spine",
+    "role": "five steelmans, sealed and checkable",
+    "tagline": "Five claims argued at their strongest, then tested to destruction.",
+    "words": ["match", "drift", "unverifiable", "witnessed", "seal"]
+  },
+  "flows": [
+    {
+      "file": "seal-lane.svg",
+      "kicker": "seven files, one verdict",
+      "title": "How a stranger checks this corpus without trusting its author",
+      "footnote": "The order of the two failures is the point. A proven drift is reported ahead of a missing file, so deleting a document cannot turn a caught tamper into a shrug about missing evidence.",
+      "alt": "Eight stages of checking the seal on this corpus: clone, manifest, parse, digest, compare, collect, rank, and exit. You clone the corpus together with the script that checks it, so the check needs nothing that is not already in front of you. The manifest holds nine lines, two of them comments and seven of them digests, one per document. The parser skips blanks and comments and splits each remaining line on a two space separator; a line missing that separator, or carrying a digest that is not sixty-four characters long, is counted as unverifiable rather than passing. Every listed file is streamed through SHA-256 in sixty-four kilobyte blocks. The recorded digest is compared against the one just derived. Mismatches are collected apart from files that could not be read at all. A proven drift is ranked ahead of a missing file, so deleting a document cannot downgrade a tamper. The script prints one word and one line of detail, and exits zero, one or two. Three outcomes: match, drift, and unverifiable.",
+      "stages": [
+        {"title": "Clone", "note": "The corpus, and the script that checks it."},
+        {"title": "Manifest", "note": "Nine lines: two comments, seven digests."},
+        {"title": "Parse", "note": "Comments skipped, then a two space split."},
+        {"title": "Digest", "note": "Each file streamed through SHA-256."},
+        {"title": "Compare", "note": "The recorded digest against the derived one."},
+        {"title": "Collect", "note": "Mismatches counted apart from missing files."},
+        {"title": "Rank", "note": "A proven drift outranks a missing file."},
+        {"title": "Exit", "note": "Zero, one or two, and one line of detail."}
+      ],
+      "returns": [
+        {"from": 2, "to": 0, "label": "A MALFORMED LINE IS NOT A PASS"},
+        {"from": 6, "to": 4, "label": "DELETING A FILE CANNOT HIDE A TAMPER"}
+      ],
+      "outcomes": [
+        {"label": "MATCH", "note": "seven files re-derive, byte for byte", "tone": "verified"},
+        {"label": "DRIFT", "note": "a recorded digest does not re-derive", "tone": "drift"},
+        {"label": "UNVERIFIABLE", "note": "the manifest or a listed file is gone", "tone": "none"}
+      ]
+    },
+    {
+      "file": "steelman-lane.svg",
+      "kicker": "one claim, argued and then broken",
+      "title": "How an industry claim becomes a verdict with a named gap",
+      "footnote": "A steelman that only looks for weakness is a straw man wearing better clothes. Each run builds the strongest honest case for the claim first, and the verdict is whatever survives that construction.",
+      "alt": "Eight stages of one adversarial steelman: claim, agents, sources, retrieval, maturity, excluded, verdict, and gap. Each run begins by building the strongest honest version of an industry claim rather than the weakest. Four parallel web-grounded searches run against it, roughly two hundred tool calls apiece. Between sixty and eighty-five sources survive deduplication in a given run. Every citation is checked against a primary or reputable record before it is used. The method names eight maturity labels, from peer-reviewed through preprint, standard, gov, primary-legal, incident, gray-lit, and data, and all five runs carry them inline. Anything that could not be confirmed is marked unverified in place and excluded from load-bearing use, which is why several named figures appear in the runs only as things that were dropped. The verdict is stated as partial or false as stated, with the reason attached. What remains is the gap: the named distance between an artifact that looks verified and the property it was taken to warrant. Three outcomes: partial, false as stated, and an open bid.",
+      "stages": [
+        {"title": "Claim", "note": "The strongest honest version, built first."},
+        {"title": "Agents", "note": "Four parallel searches against that case."},
+        {"title": "Sources", "note": "Sixty to eighty-five per run, deduplicated."},
+        {"title": "Retrieval", "note": "Each citation checked against a record."},
+        {"title": "Maturity", "note": "Eight labels, peer-reviewed down to data."},
+        {"title": "Excluded", "note": "What did not confirm is marked and dropped."},
+        {"title": "Verdict", "note": "Partial, or false as stated, with a reason."},
+        {"title": "Gap", "note": "The distance between artifact and property."}
+      ],
+      "returns": [
+        {"from": 2, "to": 0, "label": "THE CASE IS BUILT BEFORE IT IS TESTED"},
+        {"from": 6, "to": 4, "label": "AN UNVERIFIED SOURCE CARRIES NO WEIGHT"}
+      ],
+      "outcomes": [
+        {"label": "PARTIAL", "note": "one claim held, then failed at proof", "tone": "verified"},
+        {"label": "FALSE AS STATED", "note": "four claims broke against the record", "tone": "drift"},
+        {"label": "AN OPEN BID", "note": "the convergence is not yet a proof", "tone": "none"}
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "corpus-table.svg",
+      "kicker": "what the corpus settles",
+      "title": "Five sectors, one synthesis, and what each of them leaves open",
+      "source": "README.md and SYNTHESIS-the-witnessing-spine.md",
+      "heads": ["what it holds", "what it settles", "where the weight comes from"],
+      "fields": [
+        {"key": "Run 001, AI provenance", "value": "partial", "note": "Documentation and signing were argued at their strongest, then failed at the point where a claim has to be verified rather than shown."},
+        {"key": "Run 002, COBOL", "value": "false as stated", "note": "A translated program is not a proven equivalent one. Coverage has to be accounted for, path by path, before a bank can rely on it."},
+        {"key": "Run 003, quant ML", "value": "false as stated", "note": "A backtest is not realized alpha. Trials have to be counted, costs charged, and regimes named before a curve means anything at all."},
+        {"key": "Run 004, DeFi", "value": "false as stated", "note": "Verifying a contract is not economic safety. The peer-reviewed censorship anchor is forty-six percent, and weaker figures stay apart."},
+        {"key": "Run 005, enterprise", "value": "false as stated", "note": "A certificate attests to a scope on a date. Assurance is a claim about the system now, and the two were never the same object."},
+        {"key": "the synthesis", "value": "an abductive bid", "tone": "drift", "note": "The strongest claim, that four altitudes share one gap rather than four similar ones, is labeled a bid and not a deductive identity."},
+        {"key": "the ring", "value": "005 returns to 001", "note": "The last sector's supply chain finding is the first sector's provenance finding, so the corpus closes on itself rather than ending."},
+        {"key": "sources", "value": "about 330 checked", "note": "Each one retrieval checked against a primary or reputable record, and each one carrying a maturity label of its own."},
+        {"key": "maturity labels", "value": "eight of them", "note": "Peer-reviewed, preprint, standard, gov, primary-legal, incident, gray-lit, and data. All five runs carry them inline; the synthesis cites the runs."},
+        {"key": "what did not confirm", "value": "marked and dropped", "note": "An unverified figure is named in place and excluded from load-bearing use, so a reader can see what was left out and why."},
+        {"key": "corrections", "value": "logged in place", "note": "A misattributed quote was downgraded to a paraphrase, and a claimed certification failure was reframed as a scope divergence."},
+        {"key": "the seal", "value": "seven digests", "note": "One SHA-256 line per document. The script beside them re-derives every digest offline and prints a single word."}
+      ],
+      "alt": "Twelve rows covering what this corpus holds and what each part settles. Run 001 on AI provenance lands at partial: documentation and signing were argued at their strongest, then failed where the claim had to be verified rather than shown. Run 002 on COBOL modernization, Run 003 on quantitative machine learning, Run 004 on DeFi, and Run 005 on enterprise attestation all land at false as stated, each for a different reason: translation is not proven equivalence, a backtest is not realized alpha, verifying a contract is not economic safety, and a certificate attesting to a scope on a date is not assurance about the system now. The accented row is the synthesis: its strongest claim, that the four altitudes share one gap rather than four similar ones, is labeled an abductive bid and not a deductive identity. The ring closes the corpus, because the supply chain finding in the last sector is the provenance finding in the first. About three hundred and thirty sources were retrieval checked, and eight maturity labels run from peer-reviewed down to data, carried inline by all five runs. Anything that did not confirm is marked in place and dropped from load-bearing use, and several corrections are logged where they happened. The seal is seven SHA-256 lines, one per document, re-derivable offline by the script that ships beside them.",
+      "footnote": "Four of the five verdicts are negative, and they stay that way. A claim that broke against the record is more useful published than quietly softened, and the one partial verdict is not rounded up to make the set look tidier than it is."
+    }
+  ]
+}
