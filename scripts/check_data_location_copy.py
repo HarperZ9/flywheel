@@ -14,10 +14,14 @@ across a line break is found. A broader rule (`unqualified_local`) catches
 any "stays on / never leaves / nothing leaves your machine" wording and
 passes it only when a sentence naming the model or hosted provider sits within
 QUALIFIER_WINDOW lines, or when the sentence itself is about a local model.
-Two escapes exist for every rule:
+Three escapes exist for every rule:
 
   * a sentence listed in ALLOWED for one file, each with its reason. These are
     local-model pages, where the statement is true because nothing is sent;
+  * a sentence listed in PROVEN for one file, with the tests that hold the tool
+    to it and the limit a reader needs. The check fails when a named test file
+    or test function is gone. It does not run the tests: the package's own job
+    in `.github/workflows/packages.yml` does;
   * a line starting `Correction, <YYYY-MM-DD>:` within ten lines after the
     phrase, whose paragraph names the provider, so a shipped release note
     keeps its text and carries the fix.
@@ -65,13 +69,6 @@ CORRECTION = re.compile(r"^\s*(?:[*_>]+\s*)?Correction, \d{4}-\d{2}-\d{2}:")
 CORRECTION_WINDOW = 10
 _LOCAL = ("the local model runs on the owner's machine and sends nothing, so the "
           "sentence is true there")
-# The three Mneme entries stay until the tool meets each sentence in full. What each
-# sentence requires, what the code does today and the gap are recorded in
-# MNEME-CLAIMS.md in the maintainer's 2026-11-15 repoint notes; the work is a build
-# task in Mneme, and the sentences are not to be trimmed to fit the code.
-_MNEME = ("Mneme's own pages, imported as written from its repository: the store is "
-          "a SQLite file and Mneme needs no network; its README lists what forget cannot "
-          "reach, and its changelog corrects the 0.4 label in the next paragraph")
 # Open claim gap GAP-ARTICULATE-VOICE-1 (recorded 2026-11-15). This entry excuses one
 # sentence that the tool does not meet yet; it is not a statement that the sentence is
 # true. What the tool says about it today: packages/articulate/docs/series-and-voice.md,
@@ -89,13 +86,6 @@ ALLOWED = {
     ("packages/articulate/README.md",
      "A voice profile holds aggregate statistics and stays on your computer until "
      "`articulate voice delete --all`."): _ARTICULATE,
-    ("packages/mneme/README.md", "The store stays on your machine."): _MNEME,
-    ("packages/mneme/CHANGELOG.md",
-     "`forget` becomes a true forget, the MCP forget tool takes two steps, replay "
-     "snapshots move to a per-user state directory, and schema 5 blinds the update "
-     "and supersede history in the audit log."): _MNEME,
-    ("packages/mneme/CHANGELOG.md",
-     "`forget` (GDPR erasure) still removes; `supersede` (a fact changed) keeps."): _MNEME,
     ("site/index.html", "Your prompts and your code never leave your disk."): _LOCAL,
     ("project-docs/releases/14B/shipped-page/README.md",
      "Your prompts and your code never leave your disk."): _LOCAL,
@@ -103,6 +93,54 @@ ALLOWED = {
      "Your prompts and your code never leave your disk."): _LOCAL,
     ("project-docs/releases/14B/WALKTHROUGH.md",
      "Your prompts and your code never leave your machine."): _LOCAL,
+}
+
+
+@dataclass(frozen=True)
+class Proof:
+    tests: tuple[str, ...]
+    limit: str
+
+
+_T = "packages/mneme/tests/test_claim_"
+_FORGET = Proof(
+    (_T + "forget_forensic.py::test_after_forget_no_file_mneme_created_holds_the_marker",
+     _T + "forget_forensic.py::test_control_a_row_delete_without_scrub_is_caught",
+     _T + "forget_forensic.py::test_control_an_export_left_on_disk_is_caught",
+     _T + "tombstone.py::test_the_audit_trail_proves_the_forget_and_holds_no_content",
+     _T + "overwrite.py::test_the_rollback_journal_of_an_erase_is_overwritten_before_it_goes"),
+    "Covers every file Mneme wrote, from schema 6. A write-ahead log is truncated without "
+    "an overwrite, old blocks on a solid-state drive can survive, audit rows from before "
+    "schema 6 are reported as residue, and copies Mneme did not write (backups, text "
+    "already sent to a model provider) are named in the receipt and not reached")
+# Mneme sentences its code is now held to by its own tests (mneme PR 42, schema 6).
+PROVEN = {
+    ("packages/mneme/README.md", "The store stays on your machine."): Proof(
+        (_T + "egress.py::test_every_public_library_method_runs_with_the_network_denied",
+         _T + "egress.py::test_every_cli_command_runs_with_the_network_denied",
+         _T + "egress.py::test_every_mcp_tool_runs_with_the_network_denied",
+         _T + "egress.py::test_the_default_extractor_and_embedder_are_local"),
+        "The tests deny sockets, name lookups, HTTP requests and started processes at "
+        "Python's audit hook. A store the owner puts on a network share is not detected, "
+        "and what an MCP client reads goes to that client's provider, as the next README "
+        "sentence says"),
+    ("packages/mneme/CHANGELOG.md",
+     "`forget` becomes a true forget, the MCP forget tool takes two steps, replay "
+     "snapshots move to a per-user state directory, and schema 5 blinds the update "
+     "and supersede history in the audit log."): _FORGET,
+    ("packages/mneme/CHANGELOG.md",
+     "These changes close the gaps between what `forget` does and what a careful reader "
+     "takes \"a true forget\" to mean."): _FORGET,
+    ("packages/mneme/CHANGELOG.md",
+     "`forget` (GDPR erasure) still removes; `supersede` (a fact changed) keeps."): Proof(
+        (_T + "subject_erasure.py::test_forget_subject_removes_every_record_of_that_user_and_no_other",
+         _T + "subject_erasure.py::test_the_receipt_verifies_and_an_edited_receipt_does_not",
+         _T + "subject_erasure.py::test_the_audit_log_proves_the_subject_erasure_and_cannot_drop_it"),
+        "The tests cover erasing one user's records with a receipt that verifies. The "
+        "`forget` of that old release did less, as the correction under the sentence says. "
+        "A controller's duties (grounds, notifying recipients, copies outside the store) "
+        "are outside any tool, and Mneme's README says it does not make its operator "
+        "compliant"),
 }
 
 
@@ -185,7 +223,7 @@ def violations_in(text: str, name: str) -> list[Violation]:
     for rule, pattern in PHRASES:
         for match in pattern.finditer(flat):
             sentence = _sentence(flat, match.start(), match.end())
-            if (name, sentence) in ALLOWED:
+            if (name, sentence) in ALLOWED or (name, sentence) in PROVEN:
                 continue
             end_line = lines[match.end() - 1]
             if (_corrected(raw_lines, end_line)
@@ -197,6 +235,7 @@ def violations_in(text: str, name: str) -> list[Violation]:
         sentence = _sentence(flat, match.start(), match.end())
         line = lines[match.start()]
         if ((line, sentence) in strict or (name, sentence) in ALLOWED
+                or (name, sentence) in PROVEN
                 or _qualified(raw_lines, line, sentence)
                 or _corrected(raw_lines, lines[match.end() - 1])
                 or _inside_correction(raw_lines, line)):
@@ -214,8 +253,24 @@ def surfaces(root: Path) -> list[Path]:
     return [seen[key] for key in sorted(seen)]
 
 
-def scan(root: Path = ROOT) -> list[Violation]:
+def missing_proofs(root: Path = ROOT) -> list[Violation]:
+    """A PROVEN sentence whose page is here needs every test it names to exist."""
     found = []
+    for (path, sentence), proof in PROVEN.items():
+        if not (root / path).is_file():
+            continue
+        for test_id in proof.tests:
+            file, _, name = test_id.partition("::")
+            target = root / file
+            source = target.read_text(encoding="utf-8") if target.is_file() else ""
+            if not name or not re.search(rf"(?m)^def {re.escape(name)}\(", source):
+                found.append(Violation(path, 0, "proof_missing",
+                                       f"{sentence} names {test_id}, which is not there"))
+    return found
+
+
+def scan(root: Path = ROOT) -> list[Violation]:
+    found = missing_proofs(root)
     for path in surfaces(root):
         text = path.read_text(encoding="utf-8", errors="replace")
         found.extend(violations_in(text, path.relative_to(root).as_posix()))
@@ -230,8 +285,8 @@ def main(argv=None) -> int:
     for violation in found:
         print(violation.render())
     if found:
-        print(f"{len(found)} data-location overclaim(s). Name where content goes, "
-              "or add a dated Correction line after a shipped sentence.")
+        print(f"{len(found)} data-location finding(s). Name where content goes, add a "
+              "dated Correction line after a shipped sentence, or restore a named test.")
         return 1
     print(f"data-location copy check: clean ({len(surfaces(args.root))} surfaces)")
     return 0
