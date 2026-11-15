@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/HarperZ9/coherence-membrane/schemas/observation.schema.json",
+  "title": "Observation",
+  "description": "The read-gate's externalized, witnessed artifact: a value an organ produced, stamped with provenance. Wire-compatible across implementations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["organ", "subject", "summary", "status", "provenance", "data"],
+  "properties": {
+    "organ": { "type": "string", "minLength": 1 },
+    "subject": { "type": "string" },
+    "summary": { "type": "string" },
+    "status": {
+      "description": "Advisory status only -- no authority-shaped value exists.",
+      "enum": ["pass", "warn", "block", "needs-human", "unverified"]
+    },
+    "provenance": { "$ref": "#/$defs/provenance" },
+    "data": {
+      "description": "Structured, re-derivable measurements (digests, dimensions, hashes, ...).",
+      "type": "object"
+    }
+  },
+  "$defs": {
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "digest", "timestamp", "confidence"],
+      "properties": {
+        "source": { "type": "string" },
+        "digest": {
+          "description": "Full-width SHA-256 of the witnessed bytes -- the re-derivable trust anchor.",
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "timestamp": { "type": "string" },
+        "confidence": { "type": "string" },
+        "command": { "type": ["string", "null"] }
+      }
+    }
+  }
+}
