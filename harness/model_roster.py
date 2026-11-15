@@ -110,7 +110,8 @@ def _fetch_ids(base_url: str, key: str, timeout: float) -> list[str]:
     req = urllib.request.Request(base_url.rstrip("/") + "/models")
     if key:
         req.add_header("Authorization", f"Bearer {key}")
-    with urllib.request.urlopen(req, timeout=timeout) as r:
+    from .http_no_redirect import open_request      # the key reaches only this host
+    with open_request(req, timeout) as r:
         body = json.loads(r.read().decode("utf-8", "replace"))
     ids: list[str] = []
     for row in (body.get("data") or []) if isinstance(body, dict) else []:

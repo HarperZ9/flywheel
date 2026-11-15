@@ -91,6 +91,31 @@ def prompt_hash(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
+class _NoRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None                     # the 3xx comes back as the answer
+
+
+def _send(req, timeout):
+    """Open a provider request. No redirect is followed, so the key reaches only the
+    configured host, and in a gateway process it leaves only inside an account.
+
+    This module also ships in the source-tool plugin, whose reviewed closure holds
+    neither the gateway's modules nor harness.http_no_redirect, so the opener is
+    its own and the gateway's rule is looked up: where harness.gateway_reach does
+    not exist the process is not a gateway. A test that replaced
+    `urllib.request.urlopen` still gets its replacement."""
+    try:
+        from .gateway_reach import check
+    except ImportError:
+        check = None
+    if check is not None:
+        check(str(getattr(req, "full_url", "")).split("?", 1)[0] or "a provider")
+    if getattr(urllib.request.urlopen, "__module__", "") != "urllib.request":
+        return urllib.request.urlopen(req, timeout=timeout)
+    return urllib.request.build_opener(_NoRedirect).open(req, timeout=timeout)
+
+
 def _ambient_credential(name: str) -> str:
     try:
         from .keychain import resolve_credential
@@ -164,7 +189,7 @@ class EnterpriseProposer:
         req = urllib.request.Request(
             f"{self.base_url}/chat/completions", data=body, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=300) as r:
+            with _send(req, 300) as r:
                 obj = json.loads(r.read())
         except urllib.error.HTTPError as e:
             _raise_provider_fault(self.model_ref.split(":", 1)[0] or "openai", e, dialect="openai")
@@ -212,7 +237,7 @@ class AnthropicProposer:
             headers={"Content-Type": "application/json", "x-api-key": key,
                      "anthropic-version": self.version})
         try:
-            with urllib.request.urlopen(req, timeout=300) as r:
+            with _send(req, 300) as r:
                 obj = json.loads(r.read())
         except urllib.error.HTTPError as e:
             _raise_provider_fault("anthropic", e, dialect="anthropic")

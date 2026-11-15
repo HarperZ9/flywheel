@@ -214,13 +214,13 @@
         },
         {
           "key": "source lines",
-          "value": "28,603 lines",
+          "value": "28,615 lines",
           "note": "Counted across those modules. No runtime dependencies: the record, codecs, context capture/query, continuity CLI and gates are standard library only."
         },
         {
           "key": "python tests",
-          "value": "1876 cases",
-          "note": "pytest over 110 files: 1296 test functions plus their parametrized cases, covering records, backends, MCP, context, continuity export and every number here."
+          "value": "1901 cases",
+          "note": "pytest over 110 files: 1300 test functions plus their parametrized cases, covering records, backends, MCP, context, continuity export and every number here."
         },
         {
           "key": "surfaces not rendered",

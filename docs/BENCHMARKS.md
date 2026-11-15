@@ -207,27 +207,37 @@ reason written down, in harness/parity_coverage.py.
 
 ## Gateway overhead
 
-What the gateway adds to one model call on `/v1/messages` and `/v1/responses`:
-a median of 3.5 to 4.7 ms with the gateway token and 4.8 to 5.4 ms with a
-virtual key, to the end of the reply. Measured 2026-11-14 on one machine, with
-one client and a loopback stub in place of the provider. Provider network time
-is not in these figures. Record: `docs/benchmarks/gateway-overhead.json`.
+What a caller waits for the gateway on one model call to `/v1/messages` and
+`/v1/responses`: a median of 5.8 to 7.2 ms with the gateway token and 8.2 to
+9.5 ms with a virtual key, to the end of the reply. Each call commits two
+ledger entries to the disk and waits for both: the started entry before the
+request leaves, and the end entry before the reply is sent. Both are in every
+figure. The two commits are 3.3 to 3.6 ms of each figure on the measured disk,
+and the gateway's own work is 2.4 to 6.2 ms. Measured 2026-11-15 on one
+machine, with one client and a loopback stub in place of the provider. Provider
+network time is not in these figures. Record:
+`docs/benchmarks/gateway-overhead.json`.
 
-| interface | upstream format | caller | mode | to first byte, median | to end, median | to end, p95 | to end, max |
-| :-- | :-- | :-- | :-- | --: | --: | --: | --: |
-| `/v1/messages` | OpenAI-compatible chat | gateway token | plain | 4.70 | 4.67 | 22.7 | 28.5 |
-| `/v1/messages` | OpenAI-compatible chat | gateway token | stream | 1.08 | 3.83 | 22.2 | 22.8 |
-| `/v1/messages` | Anthropic Messages | gateway token | plain | 3.57 | 3.53 | 24.8 | 25.5 |
-| `/v1/messages` | Anthropic Messages | gateway token | stream | 0.99 | 3.85 | 5.2 | 24.9 |
-| `/v1/responses` | OpenAI-compatible chat | gateway token | plain | 3.54 | 3.55 | 13.4 | 27.2 |
-| `/v1/responses` | OpenAI-compatible chat | gateway token | stream | 1.22 | 3.95 | 17.0 | 23.4 |
-| `/v1/messages` | OpenAI-compatible chat | virtual key | plain | 4.82 | 4.85 | 28.1 | 28.2 |
-| `/v1/messages` | OpenAI-compatible chat | virtual key | stream | 1.40 | 5.11 | 26.0 | 27.4 |
-| `/v1/responses` | OpenAI-compatible chat | virtual key | plain | 4.81 | 4.82 | 27.5 | 27.6 |
-| `/v1/responses` | OpenAI-compatible chat | virtual key | stream | 1.61 | 5.39 | 25.6 | 27.6 |
+| interface | upstream format | caller | mode | to first byte, median | to end, median | to end, p95 | to end, max | of which the two commits, median |
+| :-- | :-- | :-- | :-- | --: | --: | --: | --: | --: |
+| `/v1/messages` | OpenAI-compatible chat | gateway token | plain | 5.85 | 5.84 | 6.5 | 6.9 | 3.49 |
+| `/v1/messages` | OpenAI-compatible chat | gateway token | stream | 3.47 | 6.91 | 7.9 | 8.1 | 3.59 |
+| `/v1/messages` | Anthropic Messages | gateway token | plain | 5.77 | 5.81 | 6.6 | 7.0 | 3.47 |
+| `/v1/messages` | Anthropic Messages | gateway token | stream | 3.36 | 6.60 | 7.6 | 9.0 | 3.55 |
+| `/v1/responses` | OpenAI-compatible chat | gateway token | plain | 5.83 | 5.81 | 6.6 | 7.5 | 3.28 |
+| `/v1/responses` | OpenAI-compatible chat | gateway token | stream | 3.63 | 7.17 | 8.0 | 8.3 | 3.51 |
+| `/v1/messages` | OpenAI-compatible chat | virtual key | plain | 8.31 | 8.31 | 9.2 | 9.9 | 3.50 |
+| `/v1/messages` | OpenAI-compatible chat | virtual key | stream | 4.18 | 9.28 | 10.3 | 11.7 | 3.42 |
+| `/v1/responses` | OpenAI-compatible chat | virtual key | plain | 8.17 | 8.16 | 8.8 | 9.1 | 3.47 |
+| `/v1/responses` | OpenAI-compatible chat | virtual key | stream | 4.18 | 9.53 | 10.6 | 15.5 | 3.44 |
 
 Every figure is milliseconds over the same request sent straight to the stub.
-For a stream, the first byte is the first text delta a client can read.
+For a stream, the first byte is the first text delta a client can read; it
+comes after the started entry's commit. The commit time is the disk's: a bare
+append and commit on the measured disk, with no gateway code, took a median of
+1.21 ms and 2.17 ms at the 95th percentile over 200 commits. On a slower disk
+the figures grow by twice the difference. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0`
+removes the wait and with it the guarantee that an entry survives a power loss.
 
 ### How it was measured
 
@@ -237,52 +247,53 @@ call opens a new connection, since the gateway closes the connection after a
 stream. The stub holds its first byte for 50 ms, then sends one JSON object or
 20 text events with no pause, and notes how long it held each request. That
 wait is taken out of every sample. The overhead is the median through the
-gateway minus the median to the stub, over 30 warm calls after 3 that are
+gateway minus the median to the stub, over 100 warm calls after 3 that are
 thrown away. The p95 and max columns are the gateway's 95th percentile and
 slowest call, less the stub's median. The client is Python's `http.client` and
 the clock is `time.perf_counter`.
 
 Machine: 13th Gen Intel(R) Core(TM) i7-13700KF, 24 logical CPUs, 31.8 GB RAM,
-Windows 11 (build 10.0.26320), Python 3.12.10.
+Windows 11 (build 10.0.26320), Python 3.12.10. One run, 2026-11-15. Other
+programs were running on the machine during the run, among them a long compute
+job; it was not a quiet machine.
 
 ### The first call
 
 The first call after a gateway starts also loads the modules the gateway
-imports on first use. In a fresh process that call took 65.0 to 69.6 ms more
+imports on first use. In a fresh process that call took 117.4 to 121.2 ms more
 than the stub. It is not in the table.
 
 ### Where the time goes
 
-For a plain `/v1/messages` call with a virtual key (4.77 ms over the stub in
+For a plain `/v1/messages` call with a virtual key (8.29 ms over the stub in
 that run), the median time inside each step of the gateway:
 
-- key lookup: 0.23 ms
-- request body read and JSON parse: 0.01 ms
-- limit and allow-list check: 0.02 ms
-- upstream choice: 0.02 ms
-- reply read into the neutral form: 0.09 ms
-- ledger entry, with the debit inside it: 2.78 ms
-- receipt: 0.03 ms
+- key lookup: 0.37 ms
+- request body read and JSON parse: 0.03 ms
+- limit and allow-list check: 0.23 ms
+- upstream choice: 0.03 ms
+- reply read into the neutral form: 0.13 ms
+- started entry, committed before the request leaves: 1.60 ms
+- end entry, with the debit inside it: 3.48 ms
+- receipt: 0.05 ms
 
-The key debit is 0.95 ms of the ledger entry step: a file lock, a read, a write
-and a rename. The rest of that step is the ledger append, which writes the
-entry to the gateway ledger on disk and waits for the disk to commit it (fsync)
-before the reply is sent. The remaining 1.6 ms is the two HTTP hops: the
-gateway's server accepts the connection, starts a thread and parses the
-request, and the gateway opens its own connection to the upstream. A call with
-the gateway token has no key lookup and no debit.
+The started entry and the end entry are each one append to the gateway ledger
+on disk and one wait for the disk to commit it (fsync). The started entry is
+committed before the request leaves the gateway, so a streamed reply's first
+text waits for one commit and a plain reply waits for both. The key debit is
+1.79 ms of the end entry step: a file lock, a read, a write and a rename. The
+remaining 2.4 ms is the two HTTP hops: the gateway's server accepts the
+connection, starts a thread and parses the request, and the gateway opens its
+own connection to the upstream. A call with the gateway token has no key lookup
+and no debit.
 
-The p95 column is 5.2 to 28.1 ms. The slow calls are the gateway's own
-connection to the upstream. On Windows, Python connects a socket that has a
-timeout without blocking and then waits for it. In a separate check on the
-measured machine that wait came back about 15 ms late in 62 to 85 of 200
-loopback connects, and a blocking connect was never late. The gateway's
-upstream connection carries a timeout. The benchmark client connects blocking,
-so calls sent to the stub alone stay within 0.3 ms of their own median at the
-95th percentile. On GitHub's Windows runners the late connect landed on most
-calls: the timing test measured medians of 11.6 to 23.6 ms there in three runs
-of four on 2026-11-14, against 1.1 to 3.9 ms on its Linux runners. Whether a
-connection to a remote provider is late in the same way was not measured.
+The p95 column is 6.5 to 10.6 ms; the two commits of a call are 3.8 to 4.2 ms
+at their own 95th percentile, so the slow calls are mostly the disk's. Calls
+sent to the stub alone stay within 0.3 ms of their own median at the 95th
+percentile. What would lower the figures without giving up the commit before
+contact: one commit shared by calls that arrive together (the calls here are
+sent one at a time, so it would not show in this table), and a cheaper durable
+write on Windows. Neither is built.
 
 ### The key list warm-up
 
@@ -291,8 +302,8 @@ After a debit the gateway opens the key list once on a thread of its own
 contents change waits about 6 ms, and rewriting the same contents does not show
 the wait, which points at real-time file scanning. Before the warm-up that wait
 fell on the next call's key check. With the warm-up off, the same run measured
-10.79 ms for a plain call and 8.53 ms to the first text of a stream; with it
-on, 4.64 ms and 1.36 ms. A call that starts within a few milliseconds of the
+14.43 ms for a plain call and 10.91 ms to the first text of a stream; with it
+on, 8.22 ms and 3.91 ms. A call that starts within a few milliseconds of the
 previous debit still waits. Every check and every debit reads the file as
 before.
 
@@ -304,7 +315,7 @@ before.
 - Concurrency. This is a single client sending one request at a time. Other gateways publish figures at a request rate, and those are not comparable with these because the conditions differ.
 - Connection reuse. Every call opens a new connection to the gateway.
 - Any hosted provider, and the Gemini upstream format.
-- Other machines and operating systems. One Windows machine was measured.
+- Other machines, disks and operating systems. One Windows machine with one disk was measured, and the two commits per call cost what the disk takes.
 
 Re-run it:
 

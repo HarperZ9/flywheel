@@ -819,9 +819,14 @@ jobs:
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install -e ".[dev]"
+      # pytest-timeout: the repository rule for every job that runs pytest
+      # (tests/test_windows_release_workflow.py). These runs use the package as
+      # their pytest root (-c pyproject.toml), so the repository addopts that
+      # need the plugin do not apply; the install keeps the job working if
+      # that option is ever dropped.
+      - run: pip install -e ".[dev]" pytest-timeout
       - name: The package's own tests
-        run: python -m pytest -q
+        run: python -m pytest -q -c pyproject.toml
 
   articulate-macos-plugin:
     name: articulate (macos, plugin)
@@ -838,9 +843,9 @@ jobs:
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev]" pytest-timeout
       - run: >-
-          python -m pytest -q tests/test_tool_annotations.py
+          python -m pytest -q -c pyproject.toml tests/test_tool_annotations.py
           tests/test_claude_plugin_bundle.py tests/test_claude_plugin_launch.py
           tests/test_local_mcp_plugin_surface.py tests/test_local_tools_stay_local.py
           tests/test_claude_plugin_claims.py tests/test_claude_plugin_scripts.py
@@ -863,15 +868,24 @@ jobs:
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev,mcp,hosted]"
+      - run: pip install -e ".[dev,mcp,hosted]" pytest-timeout
       - run: python -c "import fastmcp; print('fastmcp', fastmcp.__version__)"
-      - run: python -m pytest -q tests/test_tool_annotations.py tests/test_hosted_mcp.py tests/test_house_mcp.py tests/test_local_mcp.py tests/test_mcp_editing.py tests/test_voice_mcp.py
-      - run: python -m pytest -q
+      - run: python -m pytest -q -c pyproject.toml tests/test_tool_annotations.py tests/test_hosted_mcp.py tests/test_house_mcp.py tests/test_local_mcp.py tests/test_mcp_editing.py tests/test_voice_mcp.py
+      - run: python -m pytest -q -c pyproject.toml
 
   # The pre-commit hook from a scratch repository, installed from the package
   # path. The configuration is examples/pre-commit-from-flywheel.yaml with its
-  # address pointed at this checkout, so the subdirectory install is the thing
-  # under test: a clean file commits, a file with a prose em-dash is refused.
+  # REF replaced by the commit under test, so pip takes the package from this
+  # repository's address by commit and subdirectory, as a user's hook does: a
+  # clean file commits, a file with a prose em-dash is refused.
+  #
+  # The install does not read the runner's checkout through git+file. pip
+  # clones with --filter=blob:none, and git answers a blob-less clone of a
+  # depth-1 checkout with fetches that start further fetches without end: the
+  # first three runs of this job stalled there and the third was killed with
+  # exit 143. The same stall on Linux reached 3,229 nested fetches and 12 GB
+  # in under seven minutes. The first commit runs under `timeout`, so an
+  # install that stalls again fails with its log.
   articulate-hook:
     name: articulate (pre-commit hook from the package path)
     runs-on: ubuntu-latest
@@ -885,23 +899,28 @@ jobs:
           python-version: "3.12"
       - run: pip install pre-commit
       - name: The hook passes a clean file and blocks a prose em-dash
+        env:
+          REV: ${{ github.event.pull_request.head.sha || github.sha }}
+          ADDRESS: git+https://github.com/${{ github.repository }}
         run: |
           SRC="$GITHUB_WORKSPACE"
-          REV="$(git -C "$SRC" rev-parse HEAD)"
           SCRATCH="$RUNNER_TEMP/scratch"
           mkdir "$SCRATCH" && cd "$SCRATCH"
           git init -q
           git config user.email ci@example.invalid
           git config user.name CI
-          sed "s#git+https://github.com/HarperZ9/flywheel@REF#git+file://$SRC@$REV#" \
+          sed "s#git+https://github.com/HarperZ9/flywheel@REF#$ADDRESS@$REV#" \
             "$SRC/packages/articulate/examples/pre-commit-from-flywheel.yaml" > .pre-commit-config.yaml
-          grep -q "git+file://$SRC@$REV#subdirectory=packages/articulate" .pre-commit-config.yaml
+          grep -q "$ADDRESS@$REV#subdirectory=packages/articulate" .pre-commit-config.yaml
           pre-commit install
           git add .pre-commit-config.yaml
           git commit -qm "config" --no-verify
           cp "$SRC/packages/articulate/tests/fixtures/action/clean.md" notes.md
           git add notes.md
-          git commit -m "clean file" > clean.log 2>&1 || { cat clean.log; exit 1; }
+          timeout 600 git commit -m "clean file" > clean.log 2>&1 || {
+            code=$?; cat clean.log
+            echo "the first commit, which installs the hook, ended with exit $code"; exit 1
+          }
           cat clean.log
           grep -q "Articulate writing check" clean.log
           grep -q "Passed" clean.log

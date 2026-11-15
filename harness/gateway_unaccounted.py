@@ -162,7 +162,7 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
                       cache_write=reported.get("cache_write", 0))
     counts["output"] = max(counts["output"], reported.get("output", 0))
     try:
-        caller.keys.debit(caller.name, counts, True)
+        caller.keys.debit(caller.name, counts, True, *filter(None, [getattr(turn, "call", "")]))
     except Exception as exc:  # noqa: BLE001 - the entry below says the charge is missing
         _LOG.error("gateway key %s could not be charged for an unfinished stream (%s: %s)",
                    caller.name, type(exc).__name__, exc)

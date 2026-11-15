@@ -280,11 +280,11 @@ def run_private_benchmark(
 
     def propose(endpoint: str, prompt: str, seed: int) -> str:
         for backend in ladder:
-            if backend.name == endpoint:
-                out = backend.chat(
-                    [{"role": "user", "content": prompt}], system="",
-                    max_tokens=2048, temperature=0, seed=seed)
-                return out["text"]
+            if backend.name == endpoint:    # recorded in the gateway ledger when a gateway runs it
+                from .endpoint_registry import BackendProposer, _ledgered
+                prop = _ledgered(BackendProposer(backend, extract=False), None, endpoint)
+                return prop.generate(prompt, seed=seed, temperature=0, max_new_tokens=2048,
+                                     system="").text
         raise ValueError(f"endpoint {endpoint!r} is not on the ladder")
 
     def gate(gate_cmd: str, proposed: str) -> dict:

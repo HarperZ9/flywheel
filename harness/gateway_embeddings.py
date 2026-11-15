@@ -56,7 +56,8 @@ def openai_embeddings(req: dict, *, providers_registry, urllib_module, resolve_c
     if spec.api_key_env and not key:
         return _refused(f"missing credential for '{name}'")
     fwd = dict(req)
-    fwd.pop("adaptive", None)
+    for own in ("adaptive", "data_refs", "credential_refs"):      # the gateway's own fields
+        fwd.pop(own, None)
     if ":" in model:
         fwd["model"] = model.split(":", 1)[1]
     try:
@@ -80,8 +81,9 @@ def openai_embeddings(req: dict, *, providers_registry, urllib_module, resolve_c
         return refusal
 
     def send():
+        from .endpoints_http import send as open_request   # follows no redirect
         try:
-            with urllib_module.request.urlopen(request, timeout=60) as response:
+            with open_request(request, 60) as response:
                 return response.status, response.read() or b"{}"
         except urllib.error.HTTPError as error:
             return error.code, error.read() or b"{}"

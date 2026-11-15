@@ -63,6 +63,9 @@ def execute(spec: dict, *, agent=None) -> int:
 def main(argv: list) -> int:
     if len(argv) != 1:
         return EXIT_BAD_SPEC
+    import os
+    from .gateway_ledger_relay import adopt
+    adopt(os.environ)                   # started by a gateway: record each model call in its ledger
     try:
         spec = json.loads(Path(argv[0]).read_text(encoding="utf-8"))
         validate_spec(spec)

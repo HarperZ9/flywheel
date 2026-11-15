@@ -263,17 +263,18 @@ def test_the_head_deadline_reader_reads_lines_as_the_plain_reader_does():
 
 def test_show_cuts_a_long_field_and_full_prints_it_whole(tmp_path, capsys):
     ledger = gateway_ledger.GatewayLedger(tmp_path)
-    long = "m" * 5000
-    ledger.append("endpoint_call", "sha", {"key": "ci-bot", "model_ref": long,
+    long, call = "m" * 5000, "c" * 24
+    ledger.append("endpoint_call_started", call, {"key": "ci-bot", "call": call})   # an end alone is a fault now
+    ledger.append("endpoint_call", "sha", {"key": "ci-bot", "model_ref": long, "call": call,
                                            "reason": "r" * 81, "response_sha": "a" * 64})
     ledger.close()
-    environ = {"FLYWHEEL_HOME": str(tmp_path)}
-    assert gateway_ledger_cli.main(["show"], environ=environ) == 0
+    environ, show = {"FLYWHEEL_HOME": str(tmp_path)}, ["show", "--kind", "endpoint_call"]
+    assert gateway_ledger_cli.main(show, environ=environ) == 0
     out = capsys.readouterr().out
     assert len(out) < 600 and long not in out
     assert "m" * 80 + "...(+4920 more; --full shows all)" in out
     assert "response_sha=" + "a" * 64 in out                # a hash is printed whole
-    assert gateway_ledger_cli.main(["show", "--full"], environ=environ) == 0
+    assert gateway_ledger_cli.main([*show, "--full"], environ=environ) == 0
     assert long in capsys.readouterr().out
-    assert gateway_ledger_cli.main(["show", "--json"], environ=environ) == 0
+    assert gateway_ledger_cli.main([*show, "--json"], environ=environ) == 0
     assert json.loads(capsys.readouterr().out)["meta"]["model_ref"] == long

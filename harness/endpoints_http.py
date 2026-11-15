@@ -48,7 +48,12 @@ def send(req, timeout):
     urllib would re-send the request headers, the provider key among them, to
     wherever a 301, 302, 303, 307 or 308 points. The redirect is returned as
     an HTTP error instead, so the key reaches only the configured host. A
-    test that replaced `urllib.request.urlopen` still gets its replacement."""
+    test that replaced `urllib.request.urlopen` still gets its replacement.
+
+    In a gateway process the request leaves only inside an account
+    (gateway_reach.check)."""
+    from .gateway_reach import check
+    check(str(getattr(req, "full_url", "")).split("?", 1)[0] or "a provider")
     if urllib.request.urlopen is not _URLOPEN:
         return urllib.request.urlopen(req, timeout=timeout)
     return _OPENER.open(req, timeout=timeout)
@@ -107,6 +112,8 @@ def _k(env_name: str) -> str:
 
 
 def _guard(transport, method, url, headers, body, timeout, name):
+    from .gateway_reach import check
+    check(name)                         # also for an injected transport
     try:
         return transport(method, url, headers, body, timeout)
     except (urllib.error.URLError, OSError, ConnectionError) as e:

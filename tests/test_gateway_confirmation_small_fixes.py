@@ -30,7 +30,7 @@ def _cli(home, *argv) -> int:
 def _filled(home, count: int = 3) -> None:
     ledger = gateway_ledger.GatewayLedger(home)
     for index in range(count):
-        ledger.append("endpoint_call", f"sha{index}", {"key": "owner"})
+        ledger.append("note", f"sha{index}", {"key": "owner"})   # an end with no start is a fault now
     ledger.close()
 
 
@@ -43,7 +43,7 @@ def test_verify_fails_when_the_head_record_is_there_and_its_segment_is_not(tmp_p
     assert "segments were removed" in capsys.readouterr().out
     # A gateway that starts on it records the break, and verify keeps failing.
     again = gateway_ledger.GatewayLedger(tmp_path)
-    again.append("endpoint_call", "later", {"key": "owner"})
+    again.append("note", "later", {"key": "owner"})
     again.close()
     assert "segments were removed" in again.found_broken
     found, = gateway_ledger.check(tmp_path)
@@ -187,16 +187,19 @@ def test_control_a_name_that_only_contains_owner_is_allowed(keyed):
 
 def test_show_escapes_control_characters_an_upstream_put_in_a_record(tmp_path, capsys):
     ledger = gateway_ledger.GatewayLedger(tmp_path)
+    call = "c" * 24                     # a start, then its end: an end alone is a fault now
+    ledger.append("endpoint_call_started", call, {
+        "key": "owner", "interface": "anthropic-messages", "call": call})
     ledger.append("endpoint_call", "sha", {
-        "key": "owner", "interface": "anthropic-messages",
+        "key": "owner", "interface": "anthropic-messages", "call": call,
         "model_ref": "openai:evil\x1b[2J\x07\r\nmodel\u202e", "response_sha": "ab"})
     ledger.close()
-    assert _cli(tmp_path, "show") == 0
+    assert _cli(tmp_path, "show", "--kind", "endpoint_call") == 0
     shown = capsys.readouterr().out
     assert shown.count("\n") == 1, "one entry is one line"
     assert not any(ord(char) < 32 or ord(char) > 126 for char in shown.rstrip("\n"))
     assert "evil\\x1b[2J\\x07\\x0d\\x0amodel\\u202e" in shown
     # Control: --json already escaped them, and still carries the value whole.
-    assert _cli(tmp_path, "show", "--json") == 0
+    assert _cli(tmp_path, "show", "--json", "--kind", "endpoint_call") == 0
     row = json.loads(capsys.readouterr().out)
     assert row["meta"]["model_ref"] == "openai:evil\x1b[2J\x07\r\nmodel\u202e"

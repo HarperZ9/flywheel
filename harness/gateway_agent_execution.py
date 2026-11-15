@@ -9,9 +9,12 @@ from .gateway_agent_trace import AgentTrace, TraceError, TraceLedger, record_fai
 
 def run_private_agent(operation: dict, bindings: dict, repo_root: Path,
                       trace: AgentTrace, source_context, emit, **kwargs) -> dict:
+    from .gateway_reach import traced
     with trace.hold():  # legacy encryption skips a trace while its run writes it
-        return _run_private_agent(operation, bindings, repo_root, trace, source_context,
-                                  emit, **kwargs)
+        # An agent run records each model request in its own trace before it leaves; it is
+        # the one caller of the bound transport that needs no gateway-ledger account.
+        return traced(lambda: _run_private_agent(operation, bindings, repo_root, trace,
+                                                 source_context, emit, **kwargs))
 
 
 def _run_private_agent(operation: dict, bindings: dict, repo_root: Path,

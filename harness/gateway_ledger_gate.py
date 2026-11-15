@@ -79,7 +79,12 @@ def typed_refusal(exc: Exception) -> "tuple[dict, int] | None":
 
 
 def startup(ledger_of, out=print) -> bool:
-    """Open the ledger once at gateway start and say plainly what happened."""
+    """Open the ledger once at gateway start and say plainly what happened.
+
+    From here on the process is a gateway: a model request leaves it only inside
+    an account (gateway_reach)."""
+    from .gateway_reach import enforce
+    enforce(ledger_of)
     ledger = ledger_of()
     if ledger is None:
         out("  LEDGER    UNAVAILABLE: the gateway ledger cannot be opened or written. Model "
