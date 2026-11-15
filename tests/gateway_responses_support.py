@@ -23,8 +23,8 @@ import re
 from pathlib import Path
 
 from tests.gateway_messages_support import (  # noqa: F401  (shared with the tests)
-    TOKEN, Upstream, events, gateway_server, joined, json_answer, kinds, point_at,
-    replayed, stream_answer)
+    TOKEN, Upstream, ended, events, gateway_server, joined, json_answer, kinds, point_at,
+    recorded, replayed, stream_answer)
 from tests.gateway_messages_support import load as upstream_load, raw as upstream_raw  # noqa: F401
 
 ROOT = Path(__file__).parent / "fixtures" / "gateway_responses"

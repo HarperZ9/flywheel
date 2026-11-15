@@ -39,9 +39,9 @@ def _abandon(url: str, path: str, key: str) -> None:
 
 def _settled(ledger, count: int) -> None:
     deadline = time.monotonic() + 10
-    while len(ledger.entries) < count and time.monotonic() < deadline:
+    while len(support.ended(ledger)) < count and time.monotonic() < deadline:
         time.sleep(0.02)
-    assert len(ledger.entries) == count
+    assert len(support.recorded(ledger)) == count
 
 
 def _caller(keys, name: str):
@@ -68,7 +68,7 @@ def test_an_abandoned_stream_is_charged_and_recorded_with_the_amount(
         if any(mark in chunk for mark in marks):
             break
     response.chunks.close()
-    entry, = ledger.entries
+    entry, = support.recorded(ledger)
     assert (entry.kind, entry.meta["reason"]) == ("endpoint_call_failed", "client_disconnected")
     assert entry.meta["key"] == "ci-bot" and entry.meta["estimated"] is True
     totals = keys.row("ci-bot")["totals"]
@@ -87,7 +87,7 @@ def test_a_dropped_connection_is_charged_whichever_way_the_gateway_sees_it(
     url, _upstream, ledger = served([support.stream_answer(stream_bytes("openai", "turn2"))])
     _abandon(url, path, raw)
     _settled(ledger, 1)
-    entry = ledger.entries[0]
+    entry = support.recorded(ledger)[0]
     assert entry.kind in ("endpoint_call", "endpoint_call_failed")
     assert entry.meta["charged_tokens"] > 0
     assert keys.row("ci-bot")["totals"]["tokens"] == entry.meta["charged_tokens"]
@@ -113,7 +113,7 @@ def test_a_cut_anthropic_stream_is_charged_the_input_the_provider_reported(keyed
         [support.stream_answer(support.raw("upstream/anthropic_cut.sse"))], provider="anthropic")
     status, _headers, body = post(url, "/v1/messages", raw, {**MESSAGES, "stream": True})
     assert status == 200 and b"event: error" in body
-    entry, = ledger.entries
+    entry, = support.recorded(ledger)
     assert entry.meta["reason"] == "stream_incomplete" and entry.meta["estimated"] is True
     assert b'"input_tokens":468' in support.raw("upstream/anthropic_cut.sse")
     assert keys.row("ci-bot")["totals"]["input_tokens"] == 468
@@ -128,7 +128,7 @@ def test_the_owner_is_not_charged_for_an_abandoned_stream(monkeypatch):
     response = gateway_messages.handle({**MESSAGES, "stream": True}, {}, ledger)
     next(response.chunks)
     response.chunks.close()
-    entry, = ledger.entries
+    entry, = support.recorded(ledger)
     assert entry.meta["reason"] == "client_disconnected" and entry.meta["key"] == "owner"
     assert "charged_tokens" not in entry.meta
 

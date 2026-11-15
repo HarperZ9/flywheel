@@ -45,6 +45,7 @@ from contextlib import ExitStack
 from pathlib import Path
 
 from . import gateway_ledger_health as _health
+from .gateway_calls import Calls
 from .local_session import Entry, SessionLedger
 
 _LOG = logging.getLogger(__name__)
@@ -195,6 +196,7 @@ class GatewayLedger(SessionLedger):
             header, entries, base, problem = read_segment(paths[-1])
             if problem is None:
                 problem = _against_head(self.home, paths[-1], header, entries)
+        self.calls = Calls(header, entries)     # started and never ended: unsettled now
         if paths and problem is None and len(entries) < ROTATE_AT:
             self.path, self.entries, self._base = paths[-1], entries, base
         else:
@@ -210,6 +212,7 @@ class GatewayLedger(SessionLedger):
         self._head = self._held.enter_context(open(where / HEAD, "r+b" if (
             where / HEAD).exists() else "w+b"))
         self._write_head()
+        self.calls.announce(self)
 
     def _start(self, where: Path, previous, previous_head, problem) -> None:
         number = int(previous[8:14]) + 1 if previous else 1
@@ -218,7 +221,7 @@ class GatewayLedger(SessionLedger):
             "schema": SCHEMA, "segment": number, "previous": previous,
             "previous_head": previous_head, "previous_state": state,
             "reason": problem or ("first segment" if previous is None else "rotation"),
-            "started": int(self.clock())}, sort_keys=True)
+            "started": int(self.clock()), **self.calls.carried()}, sort_keys=True)
         self.path = where / f"segment-{number:06d}.jsonl"
         with open(self.path, "xb") as made:
             made.write(header.encode("utf-8") + b"\n")
@@ -244,6 +247,7 @@ class GatewayLedger(SessionLedger):
                           Entry.compute_hash(seq, kind, content, meta, prev))
             _health.write(self, entry)
             self.entries.append(entry)
+            self.calls.note(entry)
             _health.head(self, entry)
             return entry
 

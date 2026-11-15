@@ -148,35 +148,20 @@ def unified_roster() -> dict:
                     "accept path -- the oracle disposes, the provider proposes"}
 
 
-class LedgeredProposer:
-    """Append tamper-evident endpoint-call commitments to one SessionLedger."""
+def __getattr__(name: str):
+    """`LedgeredProposer` lives in endpoint_ledgered and is loaded on first use."""
+    if name == "LedgeredProposer":
+        from .endpoint_ledgered import LedgeredProposer
+        return LedgeredProposer
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
-    def __init__(self, inner: Proposer, ledger, *, endpoint: str | None = None):
-        self.inner = inner
-        self.ledger = ledger
-        self.model_ref = getattr(inner, "model_ref", endpoint or "endpoint")
-        self.endpoint = endpoint or self.model_ref
 
-    def generate(self, prompt: str, *, seed: int, temperature: float,
-                 max_new_tokens: int, system: str = "") -> ProposerOutput:
-        try:                    # before the provider is contacted: an unhashable prompt is not sent
-            asked = prompt_hash(prompt)
-        except UnicodeError as exc:
-            raise ValueError("the prompt is not valid UTF-8 (a lone surrogate), so the call "
-                             "cannot be recorded; nothing was sent upstream") from exc
-        out = self.inner.generate(prompt, seed=seed, temperature=temperature,
-                                  max_new_tokens=max_new_tokens, system=system)
-        try:
-            resp_sha = prompt_hash(out.text if isinstance(out.text, str) else str(out.text))
-            self.ledger.append("endpoint_call", resp_sha, {
-                "endpoint": self.endpoint,
-                "model_ref": out.model_ref,        # provider provenance, not a secret
-                "seed": out.seed, "prompt_sha": asked, "response_sha": resp_sha})
-        except UnicodeError:    # a reply that cannot be hashed or written still leaves an entry
-            self.ledger.append("endpoint_call_failed", "malformed_reply", {
-                "endpoint": self.endpoint, "prompt_sha": asked, "reason": "malformed_reply"})
-            raise
-        return out
+def _ledgered(prop, ledger, endpoint: str):
+    """`prop` with every call recorded in `ledger` (endpoint_ledgered), or `prop` as it is."""
+    if ledger is None:
+        return prop
+    from .endpoint_ledgered import LedgeredProposer
+    return LedgeredProposer(prop, ledger, endpoint=endpoint)
 
 
 def make_endpoint_proposer(name: str, *, model: str | None = None,
@@ -184,7 +169,7 @@ def make_endpoint_proposer(name: str, *, model: str | None = None,
                            ledger=None) -> Proposer:
     """Build a verified Proposer for any registered endpoint."""
     prop = _build_endpoint_proposer(name, model=model, base_url=base_url, extract=extract)
-    return LedgeredProposer(prop, ledger, endpoint=name) if ledger is not None else prop
+    return _ledgered(prop, ledger, name)
 
 
 def credential_slots_for_endpoint(name: str) -> tuple[str, ...]:
@@ -237,8 +222,7 @@ def make_authorized_endpoint_proposer(
         else:
             raise ProviderPermissionError()
         prop = BackendProposer(backend, extract=extract)
-    return (LedgeredProposer(prop, ledger, endpoint=requested_name)
-            if ledger is not None else prop)
+    return _ledgered(prop, ledger, requested_name)
 
 
 def _cli_model_override(backend, model, *, provider):

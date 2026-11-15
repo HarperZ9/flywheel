@@ -2,17 +2,26 @@
 
   flywheel gateway-ledger verify             check every segment; exit 0 only when all hold
   flywheel gateway-ledger show [--key NAME] [--kind KIND] [--last N] [--json] [--full]
-                                             list entries, oldest first
+                               [--unsettled]  list entries, oldest first
+  flywheel gateway-ledger settle CALL [--input N --output N | --no-charge] [--note TEXT]
+                                             end an unsettled call by hand
 
-The gateway appends one entry per model call to a hash-chained ledger under
-the Flywheel home (`gateway-ledger/`). `verify` recomputes every hash and
-link, checks each segment against the one before it and the last segment
-against the head record, and names what is wrong. `show --key NAME` lists the
-calls of one gateway key; `--key owner` lists calls made with the gateway
-token, which includes entries that name no key. `show` also exits 1 when the
-ledger does not verify, after printing the entries that do.
+The gateway appends two entries per model call to a hash-chained ledger under
+the Flywheel home (`gateway-ledger/`): `endpoint_call_started` before the
+provider is contacted, and the call's end entry after. `verify` recomputes
+every hash and link, checks each segment against the one before it and the
+last segment against the head record, and names what is wrong. It also names
+every unsettled call, a started entry with no end entry, which a gateway
+leaves when it stops between the two; it then exits 3. `show --key NAME`
+lists the calls of one gateway key; `--key owner` lists calls made with the
+gateway token, which includes entries that name no key. `show --unsettled`
+lists the started entries of unsettled calls. `show` also exits 1 when the
+ledger does not verify, after printing the entries that do, and 3 when it
+verifies and holds an unsettled call.
 
-Both commands only read. They can run while the gateway is running.
+`verify` and `show` only read. They can run while the gateway is running.
+`settle` writes one entry, or leaves a request for a running gateway
+(gateway_ledger_settle).
 """
 from __future__ import annotations
 
@@ -73,16 +82,23 @@ def render_verify(found: list) -> tuple:
     return "\n".join(lines), ok
 
 
-def rows(found: list, key=None, kind=None, last=None) -> list:
-    """Entries as dicts with their segment, filtered, oldest first."""
-    out = []
+def rows(found: list, key=None, kind=None, last=None, calls=None, unsettled=False) -> list:
+    """Entries as dicts with their segment, filtered, oldest first.
+
+    `calls` is gateway_ledger_settle.unsettled's result: the started entry of
+    a call with no end entry gets `state`, "unsettled" or "open"."""
+    out, calls = [], calls or {}
     for segment in found:
         for entry in segment["rows"]:
             caller = entry.meta.get("key", OWNER)
-            if (key is None or caller == key) and (kind is None or entry.kind == kind):
+            state = (calls.get(entry.content) or {}).get("state") if (
+                entry.kind == "endpoint_call_started") else None
+            if ((key is None or caller == key) and (kind is None or entry.kind == kind)
+                    and (not unsettled or state == "unsettled")):
                 out.append({"segment": segment["name"], "seq": entry.seq, "kind": entry.kind,
                             "content": entry.content, "meta": entry.meta,
-                            "entry_hash": entry.entry_hash})
+                            "entry_hash": entry.entry_hash,
+                            **({"state": state} if state else {})})
     return out[-last:] if last else out
 
 
@@ -117,6 +133,10 @@ def _line(row: dict, full: bool = False) -> str:
                  "response_sha"):
         if name in meta and not (name == "endpoint" and "model_ref" in meta):
             parts.append(f"{name}={_short(meta[name], full)}")
+    if "call" in meta:
+        parts.append(f"call={_short(meta['call'], full)}")
+    if row.get("state"):
+        parts.append("state=UNSETTLED" if row["state"] == "unsettled" else "state=open")
     return "  ".join(parts)
 
 
@@ -134,7 +154,32 @@ def _parser() -> argparse.ArgumentParser:
     show.add_argument("--json", action="store_true", help="one JSON object per line")
     show.add_argument("--full", action="store_true", help="print every field whole; without "
                       f"it a field longer than {WIDTH} characters is cut and says so")
+    show.add_argument("--unsettled", action="store_true", help="only the started entries of "
+                      "unsettled calls: started, never ended, their gateway gone")
+    settle = verbs.add_parser("settle", help="end an unsettled call by hand")
+    settle.add_argument("call", help="the call id, from `show --unsettled`")
+    settle.add_argument("--input", type=int, default=None, help="input tokens the provider "
+                        "billed for the call, charged to its key")
+    settle.add_argument("--output", type=int, default=None, help="output tokens it billed")
+    settle.add_argument("--no-charge", action="store_true", help="the provider billed nothing")
+    settle.add_argument("--note", default="", help="a line kept in the entry")
     return parser
+
+
+def _settle(args, home) -> int:
+    from harness.gateway_ledger_settle import settle
+    given = (args.input, args.output)
+    counted = given != (None, None)
+    if (args.no_charge and counted) or (counted and None in given) or any(
+            value is not None and value < 0 for value in given):
+        print("give --input N and --output N together (zero or more), or --no-charge",
+              file=sys.stderr)
+        return 2
+    counts = ({"input": 0, "output": 0} if args.no_charge else
+              {"input": args.input, "output": args.output} if counted else None)
+    text, code = settle(home, args.call, counts, _plain(args.note))
+    print(text, file=sys.stdout if code == 0 else sys.stderr)
+    return code
 
 
 def _ignored(home) -> str:
@@ -152,16 +197,23 @@ def main(argv: "list[str] | None" = None, *, environ=None) -> int:
         return 0 if argv else 2
     args = _parser().parse_args(argv)
     home = _home(environ)
+    if args.verb == "settle":
+        return _settle(args, home)
+    from harness.gateway_ledger_settle import report, unsettled
     found = _checked(home)
     text, ok = render_verify(found)
+    calls = unsettled(found, home)
+    stuck = any(row["state"] == "unsettled" for row in calls.values())
     if args.verb == "verify":
-        print(_ignored(home) + text)
-        return 0 if ok else 1
-    for row in rows(found, args.key, args.kind, args.last):
+        print(_ignored(home) + text + ("\n" + report(calls) if calls else ""))
+        return (3 if stuck else 0) if ok else 1
+    for row in rows(found, args.key, args.kind, args.last, calls, args.unsettled):
         print(_json(row) if args.json else _line(row, args.full))
     if not ok:
         print(text, file=sys.stderr)
-    return 0 if ok else 1
+    elif stuck:
+        print(report(calls), file=sys.stderr)
+    return (3 if stuck else 0) if ok else 1
 
 
 if __name__ == "__main__":

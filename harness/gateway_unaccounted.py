@@ -13,7 +13,7 @@ from __future__ import annotations
 import json
 import logging
 
-from .gateway_turn import _APPEND, AccountingFailed, prompt_sha
+from .gateway_turn import _APPEND, AccountingFailed, call_meta, prompt_sha
 
 _LOG = logging.getLogger(__name__)
 
@@ -43,11 +43,13 @@ def unaccounted(ledger, upstream, turn, bill, sha, cause, delivered,
                redacted_text(str(exc)), delivered)
     meta = {"endpoint": upstream.name, "interface": turn.interface,
             "prompt_sha": prompt_sha(turn), "response_sha": sha, "reason": reason,
-            "cause": cause, "delivered": bool(delivered), **bill.meta}
+            "cause": cause, "delivered": bool(delivered), **bill.meta, **call_meta(turn)}
     try:
         with _APPEND:
             ledger.append("endpoint_call_failed", reason, meta)
-    except Exception as again:  # noqa: BLE001 - logged; the client is still told below
+    except Exception as again:  # noqa: BLE001 - kept for the resume; the client is told
+        from .gateway_calls import defer
+        defer(ledger, "endpoint_call_failed", reason, meta)
         _LOG.error("gateway ledger refused the accounting-failure entry as well (%s: %s)",
                    type(again).__name__, redacted_text(str(again)))
     what = ("could not be charged to its gateway key" if cause == "charge_failed"

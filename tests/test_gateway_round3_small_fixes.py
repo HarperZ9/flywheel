@@ -93,9 +93,9 @@ def test_an_unfinished_openai_stream_is_charged_a_quarter_of_the_prompts_charact
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_LINGER, _LINGER_NOW)
             sock.close()                        # the client leaves before the usage chunk
             deadline = time.monotonic() + 8
-            while not ledger.entries and time.monotonic() < deadline:
+            while not support.ended(ledger) and time.monotonic() < deadline:
                 time.sleep(0.02)
-            entry = ledger.entries[0]
+            entry = support.recorded(ledger)[0]
             assert entry.meta["reason"] in ("client_disconnected", "stream_incomplete")
             assert entry.kind == "endpoint_call_failed" and entry.meta["estimated"] is True
             assert entry.meta["charged_tokens"] >= least
