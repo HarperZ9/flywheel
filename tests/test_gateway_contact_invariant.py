@@ -139,13 +139,15 @@ def test_a_fault_before_contact_sends_nothing_and_serves_nothing(
     assert calls(ledger) == []
 
 
-@pytest.mark.parametrize("stream", [False, True])
+# Every step after contact on both deliveries, and the two stream steps on a stream.
+AFTER_CASES = ([(step, stream) for step in AFTER for stream in (False, True)]
+               + [(step, True) for step in STREAM_ONLY])
+
+
 @pytest.mark.parametrize("path", PATHS)
-@pytest.mark.parametrize("step", [*AFTER, *STREAM_ONLY])
+@pytest.mark.parametrize("step,stream", AFTER_CASES)
 def test_a_fault_after_contact_leaves_one_entry_and_a_charge_or_a_stopped_key(
         keyed, served, monkeypatch, path, stream, step):
-    if step in STREAM_ONLY and not stream:
-        pytest.skip("this step exists only on a stream")
     status, body, keys, upstream, ledger = _one_call(
         keyed, served, monkeypatch, path, stream, {**AFTER, **STREAM_ONLY}[step])
     assert len(upstream.requests) == 1
