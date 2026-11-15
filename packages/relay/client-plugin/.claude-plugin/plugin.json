@@ -1,0 +1,71 @@
+{
+  "author": {
+    "name": "Zain Dana Harper"
+  },
+  "description": "Run a local coding agent in a project folder you choose, using a model server on your computer or a hosted model API you configure.",
+  "displayName": "Relay",
+  "documentationUrl": "https://github.com/HarperZ9/relay/blob/main/client-plugin/README.md",
+  "homepage": "https://harperz9.github.io/plugins/relay/support.html",
+  "icon": "./.claude-plugin/icon.png",
+  "keywords": [
+    "coding-agent",
+    "local-models",
+    "ollama",
+    "agentic",
+    "permissions",
+    "verification",
+    "mcp"
+  ],
+  "license": "FSL-1.1-MIT",
+  "name": "relay-local",
+  "privacyPolicyUrl": "https://harperz9.github.io/plugins/relay/privacy.html",
+  "repository": "https://github.com/HarperZ9/relay",
+  "supportUrl": "https://harperz9.github.io/plugins/relay/support.html",
+  "termsOfServiceUrl": "https://harperz9.github.io/plugins/relay/terms.html",
+  "userConfig": {
+    "api_base_url": {
+      "default": "",
+      "description": "Send hosted calls to this URL instead of the provider's own API, for example a model gateway you run.",
+      "title": "OpenAI-compatible gateway URL (optional)",
+      "type": "string"
+    },
+    "api_key": {
+      "default": "",
+      "description": "Key for the hosted provider above. Relay sends it only to that provider's API, or to the gateway URL below when one is set.",
+      "sensitive": true,
+      "title": "Hosted model API key (optional)",
+      "type": "string"
+    },
+    "api_model": {
+      "default": "",
+      "description": "Leave empty for Relay's default model for that provider.",
+      "title": "Hosted model name (optional)",
+      "type": "string"
+    },
+    "api_provider": {
+      "default": "",
+      "description": "Leave empty to use only the model servers on this computer. To let calls that ask for online tiers use one hosted API, enter codex (OpenAI), claude (Anthropic), gemini, deepseek or glm.",
+      "title": "Hosted model provider (optional)",
+      "type": "string"
+    },
+    "exec": {
+      "default": false,
+      "description": "Also enables file changes. Commands can reach paths outside the selected folder with your operating-system permissions.",
+      "title": "Allow command execution",
+      "type": "boolean"
+    },
+    "project_folder": {
+      "description": "The folder Relay works in. Runs and file tools stay inside it.",
+      "required": true,
+      "title": "Project folder",
+      "type": "directory"
+    },
+    "write": {
+      "default": false,
+      "description": "Let approved model runs request file changes inside the selected folder.",
+      "title": "Allow file changes",
+      "type": "boolean"
+    }
+  },
+  "version": "0.7.0"
+}

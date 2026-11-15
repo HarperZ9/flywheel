@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flywheel-relay"
+version = "0.7.0"
+description = "A zero-dependency coding agent for local models (Ollama), subscription CLIs or provider API keys, with ordered failover, a permission-checked tool loop, and a hash-chained run log you can verify offline."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "LicenseRef-FSL-1.1-MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Zain Dana Harper" }]
+keywords = ["coding-agent", "local-llm", "ollama", "llm-router", "failover", "mcp", "offline", "agent"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+relay = "relay.local_agent_cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/relay"
+
+[tool.setuptools.packages.find]
+where = ["src"]

@@ -1,0 +1,198 @@
+{
+  "header": {
+    "name": "relay",
+    "role": "accountable coding agent",
+    "tagline": "Every run leaves a certificate a stranger can check offline.",
+    "words": [
+      "ladder",
+      "ledger",
+      "check",
+      "certify",
+      "refuse"
+    ]
+  },
+  "flows": [
+    {
+      "file": "accountability-lane.svg",
+      "kicker": "one run, handed to a stranger",
+      "title": "How a coding run becomes something you can check without trusting it",
+      "footnote": "Refuted outranks unverifiable, and both outrank allow. A doubt is never a pass.",
+      "alt": "Eight stages of an accountable coding run: goal, context, tool call, anchored edit, ledger, check, bisect, certificate. The goal is pinned as the first row of a hash-chained ledger. Project conventions and a bounded repo map fold into the prompt verbatim. Every tool call is permission-checked before it runs, and an anchored edit that does not match exactly once writes nothing. The acceptance check runs outside anything the model can call. A bisect replays the recorded edits until the check goes red, naming the first breaking edit. The certificate is a few kilobytes and re-derives with no model and no network. Three outcomes: allow, refuted, and unverifiable.",
+      "stages": [
+        {
+          "title": "Goal",
+          "note": "The task, pinned as the first row of the ledger."
+        },
+        {
+          "title": "Context",
+          "note": "Your conventions file and a bounded repo map, verbatim."
+        },
+        {
+          "title": "Tool call",
+          "note": "The model proposes; permission is checked before it runs."
+        },
+        {
+          "title": "Anchored edit",
+          "note": "The target must match once, or nothing is written."
+        },
+        {
+          "title": "Ledger",
+          "note": "Every turn, call, and result appends to a hash chain."
+        },
+        {
+          "title": "Check",
+          "note": "Your acceptance command, outside anything the model can call."
+        },
+        {
+          "title": "Bisect",
+          "note": "Replay the recorded edits until the check goes red."
+        },
+        {
+          "title": "Certificate",
+          "note": "A few kilobytes, re-derived with no model and no network."
+        }
+      ],
+      "returns": [
+        {
+          "from": 6,
+          "to": 5,
+          "label": "THE CHECK RUNS AGAIN ON EACH REPLAYED EDIT"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "ALLOW",
+          "note": "chain intact, receipts re-derive, contract met",
+          "tone": "verified"
+        },
+        {
+          "label": "REFUTED",
+          "note": "a broken chain, or a claim the record denies",
+          "tone": "drift"
+        },
+        {
+          "label": "UNVERIFIABLE",
+          "note": "a clause this verifier cannot re-derive",
+          "tone": "none"
+        }
+      ]
+    },
+    {
+      "file": "endpoint-ladder.svg",
+      "kicker": "one prompt, one ladder",
+      "title": "How a request reaches a model without forging anything to get there",
+      "footnote": "The ladder only moves one way. A missing credential drops a rung, and nothing is forged.",
+      "alt": "Eight stages of the endpoint ladder: prompt, ladder, served local, Ollama, subscription, public API, gateway, cloud. Rungs are tried in order, with free and private tiers first, so metered tokens are spent only when the local ones are unavailable. A subscription rung uses the official command-line tool's own login. A gateway rung uses only its own dedicated key and never replays the provider's official credential to a third-party URL. A rung whose credential is absent is never added to the ladder at all. Three outcomes: answered, ladder exhausted, and nothing to try.",
+      "stages": [
+        {
+          "title": "Prompt",
+          "note": "One request, and no tier named by hand."
+        },
+        {
+          "title": "Ladder",
+          "note": "Rungs in order, free and private ones first."
+        },
+        {
+          "title": "Served local",
+          "note": "A model served on this machine, offline and unmetered."
+        },
+        {
+          "title": "Ollama",
+          "note": "The largest model already pulled here, still local."
+        },
+        {
+          "title": "Subscription",
+          "note": "The official CLI, using the login you already hold."
+        },
+        {
+          "title": "Public API",
+          "note": "A provider key read from your own environment."
+        },
+        {
+          "title": "Gateway",
+          "note": "A base URL you set, with its own dedicated key."
+        },
+        {
+          "title": "Cloud",
+          "note": "An OpenAI-compatible endpoint, the last rung tried."
+        }
+      ],
+      "returns": [],
+      "outcomes": [
+        {
+          "label": "ANSWERED",
+          "note": "the first live rung replied, and stopped there",
+          "tone": "verified"
+        },
+        {
+          "label": "LADDER EXHAUSTED",
+          "note": "every rung present was tried, and none replied",
+          "tone": "drift"
+        },
+        {
+          "label": "NOTHING TO TRY",
+          "note": "no credential present, so no rung was offered",
+          "tone": "none"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "clause-ladder.svg",
+      "kicker": "what travels with the certificate",
+      "title": "Every clause, and whether a stranger can re-derive it",
+      "source": "python verify_cert.py pr.rvc",
+      "heads": [
+        "clause",
+        "offline verdict",
+        "what it re-checks"
+      ],
+      "fields": [
+        {
+          "key": "chain_intact",
+          "value": "before any clause is read",
+          "tone": "verified",
+          "note": "The chain re-derives first, whether or not a contract asked for it. A flipped byte is refuted before the clause list is even loaded."
+        },
+        {
+          "key": "check_not_gamed",
+          "value": "re-derived from the file",
+          "note": "Reads the ledger for an edit to a test file and for a call that neutralises a test inside one."
+        },
+        {
+          "key": "no_claimed_history",
+          "value": "re-derived from the file",
+          "note": "Reads the reasoning for a claim of earlier work, then looks for that work in the ledger."
+        },
+        {
+          "key": "no_edit",
+          "value": "re-derived from the file",
+          "note": "Matches every path a write call touched against the globs the clause carries with it."
+        },
+        {
+          "key": "steps_approved",
+          "value": "re-derived from the file",
+          "note": "Every mutating step wants a matching approval. A run that recorded none reads as unverifiable, not allowed."
+        },
+        {
+          "key": "tests_pass",
+          "value": "in-tree verifier only",
+          "note": "Wants the per-turn receipts. The vendored file says so and stops, rather than reading the summary."
+        },
+        {
+          "key": "reviewability",
+          "value": "in-tree verifier only",
+          "note": "Wants the pass over the diff that scores how much of it a reviewer can hold at once."
+        },
+        {
+          "key": "claim_grounded",
+          "value": "in-tree verifier only",
+          "note": "Wants the syntax-level scan for a reward hack. Unknown here beats a guess that reads like a result."
+        }
+      ],
+      "alt": "The eight clause types a relay acceptance contract may carry, one to a row, with whether the standalone verifier that ships inside every certificate can re-derive each one. chain_intact re-derives before any clause is read, so a flipped byte is refuted whether or not the contract asked. check_not_gamed, no_claimed_history, no_edit and steps_approved re-derive from the file alone: the ledger carries the edits, the reasoning and the approvals they read. tests_pass, reviewability and claim_grounded need the in-tree verifier, because they read per-turn receipts, a diff-level reviewability pass and a syntax-level scan that the vendored file does not carry. Those three report unverifiable rather than assuming they hold.",
+      "footnote": "The vendored verifier is the honest floor, not the whole check. It re-derives five of the eight clauses and names the other three unverifiable, which is a smaller claim than the in-tree run makes and a claim a stranger can check without trusting this repository. The repository's own test holds every row here against CLAUSE_TYPES in relay/contract.py and against what the verifier actually returns, so a clause added to the code and not to the drawing fails rather than ships."
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "relay": {
+      "args": [
+        "-I",
+        "-S",
+        "-B",
+        "${CLAUDE_PLUGIN_ROOT}/server/serve.py",
+        "--write=${user_config.write}",
+        "--exec=${user_config.exec}",
+        "--api-provider=${user_config.api_provider}",
+        "--api-base-url=${user_config.api_base_url}",
+        "--api-model=${user_config.api_model}",
+        "--no-cli-tiers"
+      ],
+      "command": "python3",
+      "env": {
+        "RELAY_API_KEY": "${user_config.api_key}",
+        "RELAY_MCP_ROOT": "${user_config.project_folder}"
+      },
+      "type": "stdio"
+    }
+  }
+}
