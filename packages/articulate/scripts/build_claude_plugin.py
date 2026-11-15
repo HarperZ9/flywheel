@@ -104,17 +104,20 @@ def server_closure(package, files, skip=HOSTED_ONLY):
     """The names of the modules the server can import: every module reachable from
     ENTRY through any import statement, one inside a function included, except
     the modules in skip and whatever only they import."""
-    sources = [f for f in files if f.endswith(".py")]
-    if any("/" in f or "\\" in f for f in sources):
-        raise SystemExit("the closure reads a flat package; teach it subpackages first")
-    known = {f[:-3] for f in sources} - set(skip)
+    sources = [f.replace("\\", "/") for f in files if f.endswith(".py")]
+    # A subpackage (articulate.code) is never carried: the closure reads flat
+    # modules only, so reaching one from ENTRY stops the build instead.
+    subpackages = {f.split("/", 1)[0] for f in sources if "/" in f}
+    known = {f[:-3] for f in sources if "/" not in f} - set(skip)
     seen, todo = set(), [name for name in ENTRY if name in known]
     while todo:
         name = todo.pop()
+        if name in subpackages:
+            raise SystemExit("the closure reads a flat package; teach it subpackages first")
         if name not in seen:
             seen.add(name)
             text = (Path(package) / f"{name}.py").read_text(encoding="utf-8")
-            todo.extend(_imported(text, known) - seen)
+            todo.extend(_imported(text, known | subpackages) - seen)
     return seen
 
 
@@ -131,7 +134,8 @@ def package_files(repo=REPO):
     repo = Path(repo)
     files = list(_tracked(repo, "src/articulate"))
     keep = server_closure(repo / "src/articulate", [f.as_posix() for f in files])
-    return [f for f in files if f.suffix != ".py" or f.stem in keep]
+    return [f for f in files
+            if f.suffix != ".py" or (len(f.parts) == 1 and f.stem in keep)]
 
 
 def managed_entries(repo=REPO):
