@@ -78,13 +78,14 @@ class LedgeredProposer:
         return out
 
 
-def recorded(endpoint: str, request: bytes, send):
+def recorded(endpoint: str, request: bytes, send, failed=None):
     """Run `send`, one model request made of the bytes `request`, as a ledger call when
     this process is a gateway; anywhere else just run it. Returns what `send` returns.
 
     For a model request that is not made through a proposer or a backend (the optional
-    judge model of the pre-action monitor, for one). The entries carry the endpoint
-    name, the hash of the request bytes and the hash of the reply bytes."""
+    judge model of the pre-action monitor, a live-screen frame sent to a vision model).
+    The entries carry the endpoint name, the hash of the request bytes and the hash of
+    the reply. `failed(out)` may name a reason: the end entry is then a failed one."""
     import hashlib
 
     from . import gateway_reach
@@ -102,6 +103,10 @@ def recorded(endpoint: str, request: bytes, send):
             call.end(FAILED, "upstream_error", {"reason": "upstream_error",
                                                 "error": type(exc).__name__})
         raise
+    reason = failed(out) if failed is not None else None
+    if reason:
+        call.end(FAILED, reason, {"reason": reason})
+        return out
     sha = hashlib.sha256(out if isinstance(out, bytes) else str(out).encode("utf-8",
                          "replace")).hexdigest()[:16]
     call.end("endpoint_call", sha, {"response_sha": sha})

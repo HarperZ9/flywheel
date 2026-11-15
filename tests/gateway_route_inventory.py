@@ -51,7 +51,9 @@ SPECIAL = {
     "/api/relay/sessions": (LANE, ""), "/api/relay/start": (LANE, ""),
     "/api/relay/status": (LANE, ""), "/api/feeds": (LANE, ""), "/api/plugins/probe": (LANE, ""),
     "/api/telos/kernel": (LANE, ""), "/api/telos/raster": (LANE, ""), "/api/codex/": (LANE, ""),
-    "/api/live-screen/": (LANE, ""),
+    "/api/live-screen/": (MODEL, "tests/test_gateway_route_accounting.py (a frame delivered to "
+                          "a vision model); the HTTP body needs a live screen session and is "
+                          "not sent here"),
 }
 REST = """
 /.well-known/flywheel.json /api/academy /api/academy/complete /api/agent/run /api/agent/runs

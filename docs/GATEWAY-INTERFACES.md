@@ -904,9 +904,10 @@ Every model call the gateway makes at a roster endpoint is recorded in one
 ledger, on every route: `/v1/messages`, `/v1/responses`,
 `/v1/chat/completions`, `/api/route`, `/v1/embeddings`, `/api/eval/run`,
 `/api/audit/run`, `/api/bench/run`, `/api/capability`, `/api/workflow`,
-`/api/plan/run` and the v1 body of `/api/subagents/spawn`, whose worker
-processes record through the gateway that started them. It is a file under
-the Flywheel home, so it outlives the gateway process.
+`/api/plan/run`, a live-screen frame delivery (`/api/live-screen/deliver`)
+and the v1 body of `/api/subagents/spawn`, whose worker processes record
+through the gateway that started them. It is a file under the Flywheel home,
+so it outlives the gateway process.
 
 The rule sits at the transports, not in a list of routes. In a gateway
 process the code that sends a model request refuses it unless a started entry

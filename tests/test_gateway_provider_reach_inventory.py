@@ -65,8 +65,9 @@ INVENTORY = {
                            "tests/test_gateway_route_accounting.py", True),
     "preaction/judge_typed.py": (ACCOUNT, "the typed mode of that judge",
                                  "tests/test_gateway_route_accounting.py", True),
-    "gateway_agent_transport.py": (TRACE, "/api/agent, both tool protocols",
-                                   "tests/test_gateway_agent_contact_invariant.py", True),
+    "gateway_agent_transport.py": (TRACE, "/api/agent, both tool protocols; a live-screen frame "
+                                   "delivery uses it inside a ledger call",
+                                   "tests/test_gateway_bound_transport_reach.py", True),
     "gateway.py": (LOCAL, "the health probe of, and the proxy to, the model server on this "
                    "machine", "tests/test_gateway_route_reach.py", True),
     "local_agent.py": (LOCAL, "the serve and Ollama backends of the local lane", "", True),
@@ -217,8 +218,8 @@ def test_a_module_that_sends_model_requests_from_the_gateway_is_accounted_or_loc
             assert any(mark in modules[module] for mark in (
                 "gateway_reach", "endpoints_http import send", "from .endpoints_http import")), (
                 f"{module} is marked accounted and does not go through the checked transport")
-        if kind == TRACE:
-            assert gateway and "NoRedirect" in modules[module]
+        if kind == TRACE:           # the rule is checked there too; an agent run passes on its trace
+            assert gateway and "NoRedirect" in modules[module] and "gateway_reach" in modules[module]
 
 
 def test_a_direct_urlopen_is_only_where_no_credential_is_sent():

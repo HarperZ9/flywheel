@@ -71,6 +71,21 @@ def test_a_child_may_write_only_a_start_and_the_end_of_its_own_call(parent, kind
     assert len(ledger.entries) == 1
 
 
+def test_a_child_cannot_write_a_key_or_a_reservation_into_the_ledger(parent):
+    """A started entry that named a virtual key and a reservation would be counted against
+    that key once its call was unsettled. The parent keeps the fields a call made with the
+    gateway token has and drops the rest."""
+    ledger, child, token = parent
+    kind, content, meta = started(A)
+    child.append(kind, content, {**meta, "key": "ci-bot", "key_fp": "f" * 16,
+                                 "reserved": [10 ** 9, 10 ** 9], "charged_tokens": -5,
+                                 "interface": "anthropic-messages"})
+    entry, = ledger.entries
+    assert entry.meta == {**meta, "via": "subagent_worker"}
+    relay.closed(token)                 # the child is gone: the call is unsettled
+    assert gateway_calls.held(ledger, "f" * 16) == (0, 0, 0)
+
+
 def test_a_call_id_is_started_once_and_ended_once(parent):
     ledger, child, _token = parent
     child.append(*started(A))

@@ -8,8 +8,8 @@ Examined here over real sockets. On both paths the body is read whole before
 the grant store is opened, so a late body ends the request with 408 before
 anything is consumed. The test prepares and approves one operation, sends its
 final request with a body that never completes, and then sends the same final
-request whole: it is served, so the grant was still there and no lock was
-left behind. Two routes: /v1/chat/completions (the grant step in `_post`) and
+request whole: it passes the grant step, so the grant was still there and no
+lock was left behind. Two routes: /v1/chat/completions (the grant step in `_post`) and
 /api/agent (`_route_operation`). No provider is called.
 """
 import socket
@@ -78,6 +78,11 @@ def test_a_late_body_leaves_the_grant_unconsumed_and_no_lock(world, path):
         # operation ends before contact. No request leaves without a started trace record.
         assert result["started"] == []
         assert result["trace_started"] >= len(result["provider_model"]), result
-    # And it is consumed now: the same body again is refused, with nothing sent.
+    # And it is used now. The same body again sends nothing: a chat call's grant is consumed
+    # and the request is refused; an agent operation answers its stored result again.
     again = world.exercise("POST", path, body)
-    assert again["status"] in (403, 409) and again["provider_model"] == [], again
+    assert again["provider_model"] == [], again
+    if path == "/v1/chat/completions":
+        assert again["status"] in (403, 409), again
+    else:
+        assert again["status"] == result["status"], (result, again)

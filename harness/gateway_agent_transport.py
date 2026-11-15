@@ -243,6 +243,8 @@ class BoundAgentTransport:
 
     def __call__(self, method, url, headers, body, timeout):
         request = self._request(method, url, headers, body, timeout)
+        from .gateway_reach import check        # in a gateway process: only inside an account,
+        check(self._url)                        # or inside an agent run, which keeps its trace
         remaining = self._stage_timeout(timeout)
         if self._calls >= self._max_calls:
             _fail()

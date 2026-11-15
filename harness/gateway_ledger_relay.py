@@ -23,8 +23,11 @@ left no gateway-ledger entry at all.
 
 A child may append three kinds only: a started entry, and one `endpoint_call`
 or `endpoint_call_failed` for a call that same child started. Anything else
-is refused. When the parent cannot append (no ledger, a full disk) the child
-is told, its call is refused and nothing is sent.
+is refused. Of an entry's meta the parent keeps the fields a call made with
+the gateway token has (FIELDS) and drops the rest, so a child cannot write a
+key's name, a fingerprint or a reservation into the ledger and have it
+counted against that key. When the parent cannot append (no ledger, a full
+disk) the child is told, its call is refused and nothing is sent.
 """
 from __future__ import annotations
 
@@ -41,6 +44,8 @@ _LOG = logging.getLogger(__name__)
 ADDR, TOKEN = "FLYWHEEL_GATEWAY_LEDGER_RELAY", "FLYWHEEL_GATEWAY_LEDGER_RELAY_TOKEN"
 ENDS = ("endpoint_call", "endpoint_call_failed")
 LIMIT = 64 * 1024                       # one entry line
+FIELDS = ("endpoint", "prompt_sha", "call", "route", "model_ref", "seed", "response_sha",
+          "reason", "error")            # what a child's entry may say
 VIA = "subagent_worker"
 _LOCK = threading.Lock()
 _SERVER = None
@@ -69,8 +74,10 @@ def _append(token: str, kind: str, content: str, meta: dict) -> None:
     ledger = gateway_reach.ledger()
     if ledger is None:
         raise RelayRefused("the gateway ledger is unavailable")
+    kept = {name: meta[name] for name in FIELDS
+            if isinstance(meta.get(name), (str, int)) and len(str(meta[name])) <= 400}
     with _APPEND:
-        ledger.append(kind, content, {**meta, "via": VIA})
+        ledger.append(kind, content, {**kept, "via": VIA})
     with _LOCK:
         if kind == _calls.STARTED:
             started.add(call)
