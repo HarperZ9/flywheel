@@ -243,7 +243,7 @@ def record(ledger, upstream: Upstream, turn: Turn, reply: Reply, delivered=False
             "usage_reported": reply.usage_reported, **provider_tools(reply), **bill.meta,
             **call_meta(turn)}
     try:
-        bill.settle()
+        bill.settle(getattr(turn, "call", ""))
     except Exception as exc:  # noqa: BLE001 - whatever stopped the debit, the call is recorded
         raise unaccounted(ledger, upstream, turn, bill, sha, "charge_failed",
                            delivered, exc) from exc

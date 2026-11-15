@@ -196,7 +196,7 @@ class GatewayLedger(SessionLedger):
             header, entries, base, problem = read_segment(paths[-1])
             if problem is None:
                 problem = _against_head(self.home, paths[-1], header, entries)
-        self.calls = Calls(header, entries)     # started and never ended: unsettled now
+        self.calls = Calls.found(header, entries, paths[:-1], read_segment)     # unsettled now
         if paths and problem is None and len(entries) < ROTATE_AT:
             self.path, self.entries, self._base = paths[-1], entries, base
         else:

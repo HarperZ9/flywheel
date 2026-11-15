@@ -6,10 +6,10 @@ Run by tests/test_gateway_route_accounting.py as a child process:
 
 It marks the process as a gateway the way `gateway.main` does, points `ollama`
 at a stub in this process, and calls the route's handler function. The stub
-writes its reply and then ends the process with `os._exit`: no `finally`, no
-`atexit`, no flush. Exit code 86 means it died there. No provider is called.
+receives the request and then ends the process with `os._exit`, before any
+reply: no `finally`, no `atexit`, no flush. Exit code 86 means it died there.
+No provider is called.
 """
-import json
 import os
 import sys
 import threading
@@ -25,15 +25,7 @@ class Stub(BaseHTTPRequestHandler):
 
     def do_POST(self):
         self.rfile.read(int(self.headers.get("Content-Length") or 0))
-        Stub.count += 1
-        body = json.dumps({"model": "stub-model", "choices": [{"message": {
-            "role": "assistant", "content": "ok"}}]}).encode()
-        self.send_response(200)
-        self.send_header("Content-Type", "application/json")
-        self.send_header("Content-Length", str(len(body)))
-        self.end_headers()
-        self.wfile.write(body)
-        self.wfile.flush()
+        Stub.count += 1                 # the request reached the provider; no reply is read
         print("requests", Stub.count, flush=True)
         os._exit(DIED)
 

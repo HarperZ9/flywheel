@@ -32,9 +32,14 @@ import os
 import re
 
 from . import gateway_ledger
-from .gateway_calls import SETTLED, scan
+import threading
+
+from .gateway_call_audit import scan
+from .gateway_calls import CHARGED, SETTLED
 
 _LOG = logging.getLogger(__name__)
+_SETTLING = threading.Lock()            # one settle at a time: a request is applied once
+MOST = 10 ** 12                         # tokens; no call is larger
 _CALL = re.compile(r"[0-9a-f]{24}\Z")
 _KEPT = ("endpoint", "interface", "prompt_sha", "key", "key_fp")
 NOTE_LIMIT = 200
@@ -94,30 +99,70 @@ def _entry(call: str, meta: dict, counts: "dict | None", note: str) -> dict:
     return out
 
 
-def _charge(home, meta: dict, counts: "dict | None") -> str:
-    """Debit the key the call belongs to. Returns what was done, in words."""
-    if not counts or "key_fp" not in meta:
-        return "nothing was charged"
-    from . import gateway_key_gate
+def valid(counts) -> "dict | None":
+    """`counts` as {"input": n, "output": n}, or ValueError. None stays None.
+
+    The request file a running gateway reads is checked as the command line is:
+    whole numbers, zero or more, and no larger than MOST. A negative count
+    would credit the key."""
+    if counts is None:
+        return None
+    if not isinstance(counts, dict) or set(counts) != {"input", "output"}:
+        raise ValueError("counts are {input, output}")
+    for value in counts.values():
+        if type(value) is not int or not 0 <= value <= MOST:
+            raise ValueError(f"a count is a whole number from 0 to {MOST}")
+    return {"input": counts["input"], "output": counts["output"]}
+
+
+def _charge(home, call: str, meta: dict, counts: "dict | None") -> tuple:
+    """Debit the key the call belongs to, once. (what was done in words, tokens the key
+    had already been charged for this call or None)."""
+    from . import gateway_key_charges, gateway_key_gate
+    if "key_fp" not in meta:
+        return "nothing was charged", None
     keys = gateway_key_gate.open_keys(home)
     row = keys.rows().get(meta.get("key"))
     if row is None or row.get("fingerprint") != meta["key_fp"]:
-        return f"key '{meta.get('key')}' no longer exists, so nothing was charged"
-    keys.debit(meta["key"], counts, False)
-    return f"key '{meta['key']}' was charged {sum(counts.values())} tokens"
+        return f"key '{meta.get('key')}' no longer exists, so nothing was charged", None
+    already = gateway_key_charges.seen(row, call)
+    if already is None and CHARGED in meta:
+        already = int(meta[CHARGED])
+    if already is not None:
+        return (f"key '{meta['key']}' had already been charged {already} tokens for this "
+                "call before it was settled, so nothing more was charged"), already
+    if not counts:
+        return "nothing was charged", None
+    keys.debit(meta["key"], counts, False, call)
+    return f"key '{meta['key']}' was charged {sum(counts.values())} tokens", None
 
 
 def apply(ledger, call: str, counts: "dict | None", note: str) -> str:
-    """Append the settled entry for an orphan of this ledger and charge its key."""
+    """Append the settled entry for an orphan of this ledger and charge its key, once.
+
+    One settle at a time for a ledger. The debit carries the call id, so a settle
+    that is repeated after it stopped between the debit and the entry charges
+    nothing more, and a call whose key was charged before its gateway stopped is
+    settled with `already_charged` and no second debit."""
     from .gateway_turn import _APPEND
-    with ledger.calls._lock:
-        meta = ledger.calls.open.get(call) if call in ledger.calls.orphans else None
-    if meta is None:
-        raise ValueError(f"call {call} is not an unsettled call of this ledger")
-    charged = _charge(ledger.home, meta, counts)
-    with _APPEND:
-        ledger.append(SETTLED, call, _entry(call, meta, counts, note))
-    return charged
+    counts = valid(counts)
+    with _SETTLING:
+        with ledger.calls._lock:
+            meta = ledger.calls.open.get(call) if call in ledger.calls.orphans else None
+        if meta is None:
+            raise ValueError(f"call {call} is not an unsettled call of this ledger")
+        said, already = _charge(ledger.home, call, meta, counts)
+        entry = _entry(call, meta, None if already is not None else counts, note)
+        if already is not None:
+            entry["already_charged"] = already
+        try:
+            with _APPEND:
+                ledger.append(SETTLED, call, entry)
+        except Exception:
+            from .gateway_calls import defer
+            defer(ledger, SETTLED, call, entry)     # appended when the ledger resumes
+            raise
+    return said
 
 
 def sweep(ledger) -> None:
@@ -130,10 +175,8 @@ def sweep(ledger) -> None:
     for path in requests:
         try:
             asked = json.loads(path.read_text(encoding="utf-8"))
-            call, counts = str(asked.get("call")), asked.get("counts")
-            if counts is not None:
-                counts = {name: int(counts[name]) for name in ("input", "output")}
-            done = apply(ledger, call, counts, str(asked.get("note") or ""))
+            call = str(asked.get("call"))
+            done = apply(ledger, call, valid(asked.get("counts")), str(asked.get("note") or ""))
             _LOG.warning("gateway ledger: call %s settled by the operator; %s", call, done)
         except Exception as exc:        # noqa: BLE001 - a bad request is dropped and logged
             _LOG.error("gateway ledger: settle request %s was not applied (%s: %s)",
@@ -171,6 +214,8 @@ def settle(home, call: str, counts: "dict | None", note: str = "") -> tuple:
                 "next model call"), 0
     try:
         done = apply(ledger, call, counts or None, note)
+    except ValueError as exc:           # not an orphan of the ledger as it opened, or bad counts
+        return f"call {call} was not settled: {exc}", 1
     finally:
         ledger.close()
     return f"call {call} settled; {done}", 0

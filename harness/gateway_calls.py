@@ -37,13 +37,9 @@ can also be a call that was never sent.
   abandon    names a call of a running gateway unsettled at once, with a
              `calls_unsettled` entry: a call that ended with no end entry and
              none kept for later, or a call a child process left behind.
-  scan       the same reading from the files alone, for the command line.
-  audit      the rules a call record keeps, checked from the entries alone:
-             only an end entry closes a call, and an end with no start, a
-             second end, a repeated start and an end that differs from its
-             start on the route, the request or the caller are findings.
-             `flywheel gateway-ledger verify` and the tests' `recorded` helper
-             both call it, so the tool and the tests cannot disagree.
+
+gateway_call_audit reads the same from the files alone, for the command line,
+and checks the rules a call record keeps.
 """
 from __future__ import annotations
 
@@ -53,8 +49,10 @@ import uuid
 
 _LOG = logging.getLogger(__name__)
 STARTED, SETTLED, MARKER = "endpoint_call_started", "endpoint_call_settled", "calls_unsettled"
+GAP = "ledger_gap"                      # gateway_ledger_health: a resumed ledger's first entry
 NOT_SENT = "not_sent"                   # the end of a call whose start could not be committed
 ENDS = ("endpoint_call", "endpoint_call_failed", SETTLED)   # the kinds that close a call
+NAMED, CHARGED = "unsettled_named", "charged_before"    # kept beside an open call's meta
 SAME = ("endpoint", "interface", "prompt_sha", "key", "key_fp")     # a start and its end agree
 TEXT = ("the gateway ledger could not record the start of this call, so the call was "
         "refused and nothing was sent upstream")
@@ -87,6 +85,18 @@ class Calls:
             self.note(entry)
         self.orphans = set(self.open)   # their gateway process is gone
 
+    @classmethod
+    def found(cls, header, entries, older, read_segment) -> "Calls":
+        """The calls of a ledger at open. When the last segment's header cannot be read (a
+        rotation that stopped after creating the file), the unsettled calls are read from
+        the newest earlier segment that can: they must stay held against their keys."""
+        if header is None:
+            for path in reversed(older):
+                earlier = read_segment(path)
+                if earlier[0] is not None:
+                    return cls(earlier[0], earlier[1])
+        return cls(header, entries)
+
     def note(self, entry) -> None:
         """Take one appended entry into account."""
         with self._lock:
@@ -96,22 +106,43 @@ class Calls:
                 call = entry.meta.get("call")
                 if self.open.pop(call, None) is not None:
                     self.orphans.discard(call)
+            elif entry.kind == MARKER:      # named once; what its key had already paid
+                charged = entry.meta.get("charged")
+                charged = charged if isinstance(charged, dict) else {}
+                for call in entry.meta.get("calls") or []:
+                    if call in self.open:
+                        self.open[call] = {**self.open[call], NAMED: True, **(
+                            {CHARGED: charged[call]} if call in charged else {})}
 
     def carried(self) -> dict:
         """The header field a new segment carries: the calls still open before it."""
-        with self._lock:
+        with self._lock:                # a new segment names its unsettled calls itself
+            self.open = {call: {k: v for k, v in meta.items() if k != NAMED}
+                         for call, meta in self.open.items()}
             return {"open_calls": dict(self.open)} if self.open else {}
 
     def announce(self, ledger) -> None:
-        """At open: one `calls_unsettled` entry that names the orphans found."""
+        """At open: one `calls_unsettled` entry that names the orphans found and not yet
+        named, with what each one's key was already charged for it (gateway_key_charges):
+        a gateway killed after the debit and before the end entry leaves such a call."""
         with self._lock:
-            found = sorted(self.orphans)
+            found = sorted(call for call in self.orphans if not self.open[call].get(NAMED))
+            asked = {call: self.open[call] for call in found}
         if found:
+            charged = {}
+            try:
+                from .gateway_key_charges import before
+                charged = before(ledger.home, asked)
+            except Exception as exc:    # noqa: BLE001 - the key list is unreadable: not known
+                _LOG.error("gateway ledger: what the unsettled calls were already charged "
+                           "could not be read (%s)", type(exc).__name__)
             _LOG.error("GATEWAY LEDGER: %d call(s) were started and have no end entry; the "
                        "gateway that made them stopped first. Their reservations count "
                        "against their keys. Run `flywheel gateway-ledger show --unsettled`.",
                        len(found))
-            ledger.append(MARKER, "found_at_start", {"reason": "found_at_start", "calls": found})
+            ledger.append(MARKER, "found_at_start", {
+                "reason": "found_at_start", "calls": found,
+                **({"charged": charged} if charged else {})})
 
     def orphan(self, call: str) -> None:
         """A call of this process that ended with no end entry and none kept for later."""
@@ -186,77 +217,3 @@ def abandon(ledger, calls, reason: str) -> None:
         except Exception as exc:        # noqa: BLE001 - the ledger is failing; a restart names them
             _LOG.error("gateway ledger could not record the unsettled call(s) (%s)",
                        type(exc).__name__)
-
-
-def audit(rows, carried=None) -> tuple:
-    """(open, findings) for entries in ledger order.
-
-    `rows` yields (kind, content, meta, where). `open` maps the call id of each
-    started entry with no end entry to {"meta", "where"}. A finding is
-    (code, call, where, text); the codes are `malformed_start`,
-    `repeated_start`, `end_without_start`, `second_end` and
-    `end_differs_from_start`."""
-    open_, ended, findings = dict(carried or {}), set(), []
-    for kind, content, meta, where in rows:
-        meta = meta if isinstance(meta, dict) else {}
-        call = meta.get("call")
-        if kind == STARTED:
-            if content != call:
-                findings.append(("malformed_start", str(content), where,
-                                 "a started entry whose content is not its call id"))
-            if content in open_ or content in ended:
-                findings.append(("repeated_start", str(content), where,
-                                 "a second started entry with the call id of an earlier one"))
-            else:
-                open_[content] = {"meta": meta, "where": where}
-        elif kind in ENDS:
-            first = open_.pop(call, None) if isinstance(call, str) else None
-            if first is None:
-                again = isinstance(call, str) and call in ended
-                findings.append(("second_end" if again else "end_without_start", str(call),
-                                 where, f"{kind} for a call that already has an end entry"
-                                 if again else f"{kind} with no started entry before it"))
-                continue
-            ended.add(call)
-            differ = [name for name in SAME if first["meta"].get(name) != meta.get(name)]
-            if differ:
-                findings.append(("end_differs_from_start", call, where,
-                                 f"{kind} whose {', '.join(differ)} differ from its start"))
-    return open_, findings
-
-
-def _walk(found: list) -> tuple:
-    """(open, marked, findings) over `gateway_ledger.check`'s result, every segment in order."""
-    open_, marked, findings = {}, set(), []
-
-    def rows(segment):
-        for entry in segment["rows"]:
-            if entry.kind == MARKER:
-                marked.update(entry.meta.get("calls") or [])
-            yield entry.kind, entry.content, entry.meta, f"{segment['name']}:{entry.seq}"
-    for segment in found:
-        carried = (segment.get("header") or {}).get("open_calls")
-        for call, meta in (carried if isinstance(carried, dict) else {}).items():
-            open_.setdefault(call, {"meta": meta, "where": "(carried):-1"})
-        open_, more = audit(rows(segment), open_)
-        findings.extend(more)
-    return open_, marked, findings
-
-
-def faults(found: list) -> list:
-    """The findings of `audit` over every segment `gateway_ledger.check` returned."""
-    return _walk(found)[2]
-
-
-def scan(found: list, running: bool) -> dict:
-    """{call id: row} for every started entry with no end entry in `gateway_ledger.check`'s
-    result. A row has segment, seq, meta and `state`: "unsettled" when a gateway named the
-    call (at a start, or when it was abandoned) or no gateway is running, else "open" (in
-    flight, or not yet recorded)."""
-    open_, marked, _findings = _walk(found)
-    out = {}
-    for call, row in open_.items():
-        segment, _, seq = row["where"].rpartition(":")
-        out[call] = {"segment": segment, "seq": int(seq), "meta": row["meta"],
-                     "state": "unsettled" if (call in marked or not running) else "open"}
-    return out

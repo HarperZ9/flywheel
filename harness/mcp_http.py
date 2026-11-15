@@ -99,7 +99,8 @@ class HttpTransport:
         req = urllib.request.Request(self.url, data=body, method="POST",
                                      headers=self._request_headers())
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            from .http_no_redirect import open_request  # its headers may hold a credential
+            with open_request(req, self.timeout) as resp:
                 self._absorb(resp.status, resp.headers, resp.read())
         except urllib.error.HTTPError as e:
             # A JSON-RPC error is a valid answer carried on a 4xx. Reading it
