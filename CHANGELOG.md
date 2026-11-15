@@ -172,6 +172,7 @@ Tools under `packages/`
 - `emet` (distribution `emet` 1.3.1) now also lives under `packages/emet`. PyPI releases still publish from `HarperZ9/emet`, which stays open.
 - `forum` (distribution `forum-engine` 1.17.0) now also lives under `packages/forum`. PyPI releases still publish from `HarperZ9/forum`, which stays open.
 - `articulate` (distribution `articulate-writing` 0.19.1) now also lives under `packages/articulate`. Its GitHub Action runs from that folder and takes a new `working-directory` input; `examples/pre-commit-from-flywheel.yaml` is the pre-commit configuration for the new path. The copy carries one fix made after 0.19.1: the receipt audit gate fails when a receipt's source file is missing. PyPI releases still publish from `HarperZ9/articulate`, which stays open.
+- `gather` (distribution `gather-engine` 2.6.0, plus pilot manifest format 2 from gather#71) now also lives under `packages/gather`. PyPI releases still publish from `HarperZ9/gather`, which stays open.
 - `bulletin` (private package, 0.5.0) now also lives under `packages/bulletin`. The deployed board still deploys by hand from `HarperZ9/bulletin`, which stays open; nothing is deployed from here.
 - `accountable-surface` (distribution `accountable-surface` 0.3.1) now also lives under `packages/accountable-surface`. PyPI releases still publish from `HarperZ9/accountable-surface`, which stays open.
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
