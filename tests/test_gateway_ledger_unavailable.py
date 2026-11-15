@@ -114,7 +114,7 @@ def test_control_the_same_gateway_serves_and_records_once_the_ledger_is_free(
     assert post(url, "/v1/messages", raw)[0] == 200 and len(upstream.requests) == 1
     gateway_ledger.close_all()
     found, = gateway_ledger.check(home)
-    assert found["ok"] and [row.kind for row in found["rows"]] == ["endpoint_call"]
+    assert found["ok"] and support.kinds(found["rows"]) == ["endpoint_call"]
     assert keys.row("ci-bot")["totals"]["tokens"] == 460
 
 

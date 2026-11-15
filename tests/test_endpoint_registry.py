@@ -25,6 +25,7 @@ from harness.endpoint_registry import (
 from harness import providers
 from harness.local_session import SessionLedger
 from harness.proposer import ProposerOutput
+from tests.gateway_messages_support import recorded
 
 
 def _cli_on_path(monkeypatch):
@@ -157,10 +158,10 @@ def test_ledgered_proposer_chains_every_call_verifiably():
     p = LedgeredProposer(_StubProposer(), led, endpoint="prov")
     for i in range(3):
         p.generate("secret prompt text", seed=i, temperature=0.0, max_new_tokens=8)
-    assert len(led.entries) == 3
+    assert len(recorded(led)) == 3              # and a started entry before each
     assert led.verify() is True                 # a clean chain re-derives
-    assert all(e.kind == "endpoint_call" for e in led.entries)
-    assert led.entries[0].meta["model_ref"] == "prov:m9"   # provenance chained
+    assert all(e.kind == "endpoint_call" for e in recorded(led))
+    assert recorded(led)[0].meta["model_ref"] == "prov:m9"   # provenance chained
 
 
 def test_ledger_tamper_is_detected():
@@ -168,7 +169,7 @@ def test_ledger_tamper_is_detected():
     p = LedgeredProposer(_StubProposer(), led, endpoint="prov")
     p.generate("x", seed=0, temperature=0.0, max_new_tokens=8)
     p.generate("y", seed=1, temperature=0.0, max_new_tokens=8)
-    led.entries[0].meta["model_ref"] = "attacker:swapped"   # flip a recorded byte
+    recorded(led)[0].meta["model_ref"] = "attacker:swapped"   # flip a recorded byte
     assert led.verify() is False, "a tampered endpoint-call entry passed verify -- broken"
 
 
@@ -186,7 +187,7 @@ def test_make_endpoint_proposer_wraps_when_ledger_given():
     p = make_endpoint_proposer("stub", ledger=led)
     assert isinstance(p, LedgeredProposer)
     p.generate("x", seed=0, temperature=0, max_new_tokens=4)
-    assert len(led.entries) == 1 and led.verify()
+    assert len(recorded(led)) == 1 and led.verify()
     # without a ledger, no wrapping (unchanged surface)
     assert not isinstance(make_endpoint_proposer("stub"), LedgeredProposer)
 

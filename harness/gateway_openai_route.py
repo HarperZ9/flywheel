@@ -3,10 +3,8 @@
 `harness.gateway` keeps the public wrappers, so callers monkeypatch names there."""
 from __future__ import annotations
 
-import json
 import math
 import time
-import urllib.error
 
 
 def _route_block(entry: dict, roster: dict, endpoint: str) -> tuple[dict, int] | None:
@@ -128,43 +126,6 @@ def chat_receipt(prompt, system, max_tokens, temperature, seed, out):
                          "max_new_tokens": max_tokens,
                          "temperature": temperature, "seed": seed},
                         gen, out.model_ref)
-
-
-def openai_embeddings(
-        req: dict, *, providers_registry, urllib_module, resolve_credential):
-    """Route POST /v1/embeddings to an embeddings-capable hosted provider."""
-    model = str(req.get("model", ""))
-    name = model.split(":", 1)[0] or "openai"
-    spec = providers_registry.get(name)
-    if spec is None or getattr(spec, "local", False):
-        return {"error": {"message": f"no hosted embeddings provider '{name}'; "
-                          "name one from GET /api/endpoints",
-                          "type": "invalid_request_error"}}, 400
-    key = resolve_credential(spec.api_key_env or "")
-    if spec.api_key_env and not key:
-        return {"error": {"message": f"missing credential for '{name}'",
-                          "type": "invalid_request_error"}}, 400
-    fwd = dict(req)
-    fwd.pop("adaptive", None)
-    if ":" in model:
-        fwd["model"] = model.split(":", 1)[1]
-    headers = {"Content-Type": "application/json"}
-    if key:
-        headers["Authorization"] = f"Bearer {key}"
-    request = urllib_module.request.Request(
-        spec.base_url.rstrip("/") + "/embeddings",
-        data=json.dumps(fwd).encode(), method="POST", headers=headers)
-    try:
-        with urllib_module.request.urlopen(request, timeout=60) as r:
-            return json.loads(r.read() or b"{}"), r.status
-    except urllib.error.HTTPError as e:
-        try:
-            return json.loads(e.read() or b"{}"), e.code
-        except Exception:
-            return {"error": {"message": f"provider returned {e.code}"}}, e.code
-    except Exception as e:
-        return {"error": {"message": f"embeddings upstream unreachable: "
-                          f"{type(e).__name__}"}}, 502
 
 
 def _finite_temperature(raw):

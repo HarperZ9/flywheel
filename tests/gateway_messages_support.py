@@ -57,8 +57,58 @@ def replayed(monkeypatch, provider: str, *, plain=(), streams=()):
     return made
 
 
+STARTED = "endpoint_call_started"
+ENDS = ("endpoint_call", "endpoint_call_failed")
+SAME = ("endpoint", "interface", "prompt_sha", "key", "key_fp")
+
+
+def _row(entry) -> tuple:
+    """(kind, content, meta) of a ledger entry, or of a row `gateway-ledger show --json` printed."""
+    if isinstance(entry, dict):
+        return entry["kind"], entry["content"], entry["meta"]
+    return entry.kind, entry.content, entry.meta
+
+
+def recorded(ledger) -> list:
+    """The ledger's entries without the started ones, after checking write-ahead order.
+
+    Since 2.0.0's fifth review round a call is in the ledger before it is
+    made. So every `endpoint_call` and `endpoint_call_failed` entry must name,
+    in `call`, a started entry that comes before it and agrees with it on the
+    route, the request hash and the caller, and every started entry must have
+    exactly one such end. A test of an unsettled call (a start with no end)
+    reads `ledger.entries` itself. `ledger` may also be a list of entries or
+    of the rows `flywheel gateway-ledger show --json` prints."""
+    entries = ledger if isinstance(ledger, list) else ledger.entries
+    started, ended_calls = {}, []
+    for entry in entries:
+        kind, content, meta = _row(entry)
+        if kind == STARTED:
+            assert content == meta["call"] and content not in started
+            started[content] = meta
+        elif kind in ENDS:
+            first = started.get(meta.get("call"))
+            assert first is not None, f"{kind} ({content}) has no started entry before it"
+            assert meta["call"] not in ended_calls, (
+                f"call {meta['call']} has more than one end entry")
+            for name in SAME:
+                assert first.get(name) == meta.get(name), (
+                    f"{name} differs between the start and the end of one call")
+            ended_calls.append(meta["call"])
+    assert sorted(ended_calls) == sorted(started), (
+        "a started entry has no end entry in the ledger")
+    return [entry for entry in entries if _row(entry)[0] != STARTED]
+
+
+def ended(ledger) -> list:
+    """The entries that are not started entries, with nothing checked: for a loop that
+    waits while a call is still running. `recorded` is the read that checks."""
+    return [entry for entry in ledger.entries if entry.kind != STARTED]
+
+
 def kinds(ledger) -> list:
-    return [entry.kind for entry in ledger.entries]
+    """The kinds of the entries `recorded` returns: the start of each call is checked there."""
+    return [_row(entry)[0] for entry in recorded(ledger)]
 
 
 class Upstream:
