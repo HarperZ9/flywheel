@@ -140,6 +140,33 @@ jobs:
             test: |
               python -m pytest
               python -m pytest compat/workspace-repo-map/tests -q
+          # crucible's CI ran Linux on Python 3.11 and 3.12, each with every step
+          # below: lint, type check, tests with the coverage floor, the demo, the
+          # version check, the build, and a smoke run of the built wheel.
+          - package: crucible
+            python: "3.11"
+            install: python -m pip install -e ".[dev]"
+            test: |
+              ruff check src tests examples
+              mypy src/crucible
+              pytest -q --cov=crucible --cov-report=term-missing --cov-fail-under=85
+              python examples/demo.py
+              python scripts/check_version_sites.py .
+              python -m build
+              python -m twine check dist/*
+              python scripts/smoke_wheel.py dist/*.whl
+          - package: crucible
+            python: "3.12"
+            install: python -m pip install -e ".[dev]"
+            test: |
+              ruff check src tests examples
+              mypy src/crucible
+              pytest -q --cov=crucible --cov-report=term-missing --cov-fail-under=85
+              python examples/demo.py
+              python scripts/check_version_sites.py .
+              python -m build
+              python -m twine check dist/*
+              python scripts/smoke_wheel.py dist/*.whl
     defaults:
       run:
         shell: bash

@@ -1,0 +1,12 @@
+{
+  "name": "crucible-local",
+  "version": "1.6.0",
+  "description": "Check claims against local evidence files and get a verdict for each claim.",
+  "author": {
+    "name": "Zain Dana Harper"
+  },
+  "license": "FSL-1.1-MIT",
+  "repository": "https://github.com/HarperZ9/crucible",
+  "skills": "./skills/",
+  "mcpServers": "./.codex-mcp.json"
+}

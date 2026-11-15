@@ -122,6 +122,8 @@ ALLOWED = (
     "packages/relay/scripts/check_native_workflow.py",
     "packages/index/scripts/build_client_package.py",
     "packages/index/scripts/check_native_client.py",
+    "packages/crucible/scripts/build_client_package.py",
+    "packages/crucible/scripts/check_native_client.py",
     # canon writes the field in every capsule, receipt and report of its released
     # format: 74 files, each named in _CANON_KEPT above
     *_CANON_KEPT,
