@@ -1,0 +1,82 @@
+name: research-artifacts
+
+# Two sealed research artifacts live under docs/research/ since they moved in
+# from their own repositories. This file runs the checks each one's CI ran
+# there, on Linux and on Windows with the Git for Windows line-ending default,
+# and only when a change touches one of the two folders or this file.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/research/witnessing-spine/**"
+      - "docs/research/faithful-transpile/**"
+      - ".github/workflows/research-artifacts.yml"
+  pull_request:
+    paths:
+      - "docs/research/witnessing-spine/**"
+      - "docs/research/faithful-transpile/**"
+      - ".github/workflows/research-artifacts.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  sealed:
+    name: ${{ matrix.artifact }} (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        artifact: [witnessing-spine, faithful-transpile]
+        include:
+          - artifact: witnessing-spine
+            tests: tests
+            seal: python verify_manifest.py
+          - artifact: faithful-transpile
+            tests: center/tests
+            seal: sha256sum --strict -c --quiet MANIFEST.sha256
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: docs/research/${{ matrix.artifact }}
+    steps:
+      # Windows leg: check out the way a default Git for Windows install does, so a
+      # line-ending rewrite of a sealed file fails here instead of on a reader's machine.
+      - name: Use the Git for Windows line-ending default
+        if: runner.os == 'Windows'
+        working-directory: .
+        run: git config --global core.autocrlf true
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: python -m pip install pytest pytest-timeout
+      - name: The artifact's own tests
+        run: python -m pytest -q ${{ matrix.tests }}
+      - name: Sealed files are checked out byte for byte
+        if: ${{ !cancelled() }}
+        run: |
+          git ls-files -s -- ":(attr:-text)" | while read -r mode sha stage path; do
+            if [ "$(git hash-object --no-filters -- "$path")" != "$sha" ]; then
+              echo "checkout rewrote a sealed file: $path"
+              exit 1
+            fi
+          done
+          echo "every sealed file matches its committed blob"
+      - name: Every sealed file matches the manifest
+        if: ${{ !cancelled() }}
+        run: ${{ matrix.seal }}
+      - name: Art receipt digests
+        if: runner.os == 'Linux'
+        run: python scripts/check_art_receipts.py
