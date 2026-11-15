@@ -5,7 +5,7 @@
 | Version | Fixes |
 |---|---|
 | 2.x | Security fixes and all other fixes, in the next release |
-| 1.9.x | Security fixes only, until SECURITY-WINDOW-END (90 days after the 2.0.0 release) |
+| 1.9.x | Security fixes only, until 2027-02-13 (90 days after the 2.0.0 release) |
 | 1.8.x and older | None. Upgrade to 2.x or to the latest 1.9.x |
 
 `flywheel --version` prints the version you have. `flywheel update` says

@@ -12,7 +12,7 @@ python -m pip install flywheel-verify
 flywheel gate
 ```
 
-[![version: 1.9.0](https://img.shields.io/badge/version-1.9.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
+[![version: 2.0.0](https://img.shields.io/badge/version-2.0.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
 [![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel/blob/main/LICENSE)
 ![python 3.11+](https://img.shields.io/badge/python-3.11%2B-e6e1d6?style=flat-square&labelColor=1a1712)
@@ -115,6 +115,10 @@ of its own and no hosted gateway.
 - Request content goes to the model provider you pick, under its terms. With a
   local model it stays on your machine.
 - The desktop app ships for Windows only.
+- How often `flywheel code` finishes a task, against other coding agents on
+  a public benchmark, has not been measured. The capability matrix under
+  [Benchmarks](#benchmarks) shows which features exist. It does not show
+  task success.
 - In the Windows app's installed-app check, 15 of 17 lanes reach the class
   the check expects for them. index needs Git to reach it, and the pinned
   telos version has not been through that check yet
