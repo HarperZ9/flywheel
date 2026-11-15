@@ -104,6 +104,11 @@ jobs:
             test: |
               python -m pytest -q
               python tools/check_repo_art.py
+          - package: plexus
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest -q
+              python examples/tour.py
     defaults:
       run:
         shell: bash
