@@ -1,0 +1,199 @@
+{
+  "schema": "github-actions-job-snapshot/1",
+  "retrieved_at": "2026-07-21T21:30:59.0014014Z",
+  "endpoint": "https://api.github.com/repos/vllm-project/vllm/actions/runs/29799057515/jobs?per_page=100",
+  "run_id": 29799057515,
+  "total_count": 2,
+  "jobs": [
+    {
+      "id": 88536338551,
+      "run_id": 29799057515,
+      "name": "macos-m1-smoke-test (macos-26)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-07-21T03:38:45Z",
+      "completed_at": "2026-07-21T04:00:54Z",
+      "labels": [
+        "macos-26"
+      ],
+      "html_url": "https://github.com/vllm-project/vllm/actions/runs/29799057515/job/88536338551",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:46Z",
+          "completed_at": "2026-07-21T03:38:48Z"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:48Z",
+          "completed_at": "2026-07-21T03:38:53Z"
+        },
+        {
+          "number": 3,
+          "name": "Run astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:53Z",
+          "completed_at": "2026-07-21T03:38:55Z"
+        },
+        {
+          "number": 4,
+          "name": "Create virtual environment",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:55Z",
+          "completed_at": "2026-07-21T03:38:55Z"
+        },
+        {
+          "number": 5,
+          "name": "Install dependencies and build vLLM",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:55Z",
+          "completed_at": "2026-07-21T03:43:54Z"
+        },
+        {
+          "number": 6,
+          "name": "Verify installation",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:43:54Z",
+          "completed_at": "2026-07-21T03:44:01Z"
+        },
+        {
+          "number": 7,
+          "name": "Smoke test vllm serve",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:44:01Z",
+          "completed_at": "2026-07-21T04:00:49Z"
+        },
+        {
+          "number": 13,
+          "name": "Post Run astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T04:00:49Z",
+          "completed_at": "2026-07-21T04:00:49Z"
+        },
+        {
+          "number": 14,
+          "name": "Post Run actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T04:00:49Z",
+          "completed_at": "2026-07-21T04:00:49Z"
+        },
+        {
+          "number": 15,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T04:00:49Z",
+          "completed_at": "2026-07-21T04:00:50Z"
+        }
+      ]
+    },
+    {
+      "id": 88536338554,
+      "run_id": 29799057515,
+      "name": "macos-m1-smoke-test (macos-15)",
+      "status": "completed",
+      "conclusion": "success",
+      "started_at": "2026-07-21T03:38:42Z",
+      "completed_at": "2026-07-21T04:00:48Z",
+      "labels": [
+        "macos-15"
+      ],
+      "html_url": "https://github.com/vllm-project/vllm/actions/runs/29799057515/job/88536338554",
+      "steps": [
+        {
+          "number": 1,
+          "name": "Set up job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:42Z",
+          "completed_at": "2026-07-21T03:38:44Z"
+        },
+        {
+          "number": 2,
+          "name": "Run actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:44Z",
+          "completed_at": "2026-07-21T03:38:51Z"
+        },
+        {
+          "number": 3,
+          "name": "Run astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:51Z",
+          "completed_at": "2026-07-21T03:38:52Z"
+        },
+        {
+          "number": 4,
+          "name": "Create virtual environment",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:52Z",
+          "completed_at": "2026-07-21T03:38:52Z"
+        },
+        {
+          "number": 5,
+          "name": "Install dependencies and build vLLM",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:38:52Z",
+          "completed_at": "2026-07-21T03:43:49Z"
+        },
+        {
+          "number": 6,
+          "name": "Verify installation",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:43:49Z",
+          "completed_at": "2026-07-21T03:43:56Z"
+        },
+        {
+          "number": 7,
+          "name": "Smoke test vllm serve",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T03:43:56Z",
+          "completed_at": "2026-07-21T04:00:43Z"
+        },
+        {
+          "number": 13,
+          "name": "Post Run astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T04:00:43Z",
+          "completed_at": "2026-07-21T04:00:43Z"
+        },
+        {
+          "number": 14,
+          "name": "Post Run actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T04:00:43Z",
+          "completed_at": "2026-07-21T04:00:44Z"
+        },
+        {
+          "number": 15,
+          "name": "Complete job",
+          "status": "completed",
+          "conclusion": "success",
+          "started_at": "2026-07-21T04:00:44Z",
+          "completed_at": "2026-07-21T04:00:44Z"
+        }
+      ]
+    }
+  ]
+}
