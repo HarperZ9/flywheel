@@ -178,6 +178,8 @@ def run(backend, dialect: str, request: tuple, seed):
     if not text.startswith(seen):       # a native reply's quoted TOOL lines are recorded marked
         from .endpoints_tools_prose import recorded
         seen = recorded(shown)
+    if not text.startswith(seen) and not shown.strip():
+        seen = ""                       # whitespace before a pure tool-call turn is not recorded
     if text != seen and text.startswith(seen):
         yield text[len(seen):]          # native calls, written as the TOOL lines recorded
     if seen != shown and text.startswith(seen):

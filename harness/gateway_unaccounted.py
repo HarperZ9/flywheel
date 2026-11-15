@@ -120,10 +120,11 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
               everything received: text, tool-call arguments and thinking.
 
     An estimate is the larger of the word count and a quarter of the
-    characters, rounded up. An OpenAI-format stream reports usage in its last
-    chunk, so every such stream that stops early is estimated, hosted OpenAI
-    included. The entry is marked `estimated`. A stream the upstream cut
-    before any event is not charged."""
+    characters, rounded up; the input estimate is also at least a quarter of
+    the request's bytes, which counts tool definitions. An OpenAI-format
+    stream reports usage in its last chunk, so every such stream that stops
+    early is estimated, hosted OpenAI included. The entry is marked
+    `estimated`. A stream the upstream cut before any event is not charged."""
     caller = turn.caller
     if caller is None or caller.row is None:
         return {}
@@ -136,8 +137,12 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
     words = token_usage.estimate(sent, received)
     # A word count is near zero for text with no spaces (CJK, base64, minified
     # code), so each side is at least a quarter of its characters, rounded up:
-    # the rule the reservation uses for a request's bytes.
-    counts = {"input": max(words["prompt_words"], -(-len(sent) // 4)),
+    # the rule the reservation uses for a request's bytes. The text form leaves
+    # out tool definitions, images and documents, so the input is also at least
+    # the input this call reserved: a quarter of the whole request's bytes
+    # (gateway_key_policy.admit), still held while the stream is closed.
+    held = getattr(caller, "ticket", None)
+    counts = {"input": max(words["prompt_words"], -(-len(sent) // 4), held[0] if held else 0),
               "output": max(words["completion_words"], -(-len(received) // 4))}
     reported = _reported(assembler)
     if "input" in reported:
