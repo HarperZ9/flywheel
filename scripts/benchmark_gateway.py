@@ -18,6 +18,9 @@ from scripts.benchmark_shared import esc, wrap
 RECORD = Path(__file__).resolve().parent.parent / "docs" / "benchmarks" / "gateway-overhead.json"
 _FORMATS = {"openai": "OpenAI-compatible chat", "anthropic": "Anthropic Messages"}
 _SKIP = ("upstream connect", "whole handler", "key debit")
+_COMMITS = ("Each call commits two ledger entries to the disk and waits for both: the started "
+            "entry before the request leaves, and the end entry before the reply is sent. "
+            "Both are in every figure.")
 
 
 def load_record() -> dict[str, Any]:
@@ -30,8 +33,8 @@ def _span(values: list[float]) -> str:
 
 def _table(cases: list[dict[str, Any]]) -> list[str]:
     out = ["| interface | upstream format | caller | mode | to first byte, median | "
-           "to end, median | to end, p95 | to end, max |",
-           "| :-- | :-- | :-- | :-- | --: | --: | --: | --: |"]
+           "to end, median | to end, p95 | to end, max | of which the two commits, median |",
+           "| :-- | :-- | :-- | :-- | --: | --: | --: | --: | --: |"]
     for row in cases:
         total = row["total"]
         out.append(
@@ -39,7 +42,8 @@ def _table(cases: list[dict[str, Any]]) -> list[str]:
             f"{'virtual key' if row['caller'] == 'key' else 'gateway token'} | "
             f"{'stream' if row['stream'] else 'plain'} | "
             f"{row['first']['overhead_median_ms']:.2f} | {total['overhead_median_ms']:.2f} | "
-            f"{total['overhead_p95_ms']:.1f} | {total['overhead_max_ms']:.1f} |")
+            f"{total['overhead_p95_ms']:.1f} | {total['overhead_max_ms']:.1f} | "
+            f"{row['commits_median_ms']:.2f} |")
     return out
 
 
@@ -54,10 +58,12 @@ def _parts(record: dict[str, Any]) -> list[str]:
                 "median time inside each step of the gateway:"), ""]
     out += [f"- {label}: {ms:.2f} ms" for label, ms in named.items()]
     out += ["", wrap(
-        f"The key debit is {debit:.2f} ms of the ledger entry step: a file lock, a read, a "
-        "write and a rename. The rest of that step is the ledger append, which writes the "
-        "entry to the gateway ledger on disk and waits for the disk to commit it (fsync) "
-        f"before the reply is sent. The remaining {rest:.1f} ms is the two HTTP hops: the "
+        "The started entry and the end entry are each one append to the gateway ledger on "
+        "disk and one wait for the disk to commit it (fsync). The started entry is "
+        "committed before the request leaves the gateway, so a streamed reply's first text "
+        "waits for one commit and a plain reply waits for both. "
+        f"The key debit is {debit:.2f} ms of the end entry step: a file lock, a read, a "
+        f"write and a rename. The remaining {rest:.1f} ms is the two HTTP hops: the "
         "gateway's server accepts the connection, starts a thread and parses the request, "
         "and the gateway opens its own connection to the upstream. A call with the gateway "
         "token has no key lookup and no debit.")]
@@ -85,15 +91,26 @@ def _lead(record: dict[str, Any]) -> list[str]:
     cases = record["cases"]
     owner = [c["total"]["overhead_median_ms"] for c in cases if c["caller"] == "owner"]
     keyed = [c["total"]["overhead_median_ms"] for c in cases if c["caller"] == "key"]
+    commits = [c["commits_median_ms"] for c in cases]
+    own = [c["own_total_median_ms"] for c in cases]
+    disk = record["disk"]
     return ["## Gateway overhead", "", wrap(
-        "What the gateway adds to one model call on `/v1/messages` and `/v1/responses`: a "
-        f"median of {_span(owner)} with the gateway token and {_span(keyed)} with a "
-        f"virtual key, to the end of the reply. Measured {record['date']} on one machine, "
+        "What a caller waits for the gateway on one model call to `/v1/messages` and "
+        f"`/v1/responses`: a median of {_span(owner)} with the gateway token and "
+        f"{_span(keyed)} with a virtual key, to the end of the reply. {_COMMITS} "
+        f"The two commits are {_span(commits)} of each figure on the measured disk, and the "
+        f"gateway's own work is {_span(own)}. Measured {record['date']} on one machine, "
         "with one client and a loopback stub in place of the provider. Provider network "
         "time is not in these figures. Record: `docs/benchmarks/gateway-overhead.json`."),
         "", *_table(cases), "", wrap(
         "Every figure is milliseconds over the same request sent straight to the stub. For "
-        "a stream, the first byte is the first text delta a client can read."), ""]
+        "a stream, the first byte is the first text delta a client can read; it comes after "
+        "the started entry's commit. The commit time is the disk's: a bare append and "
+        f"commit on the measured disk, with no gateway code, took a median of "
+        f"{disk['median_ms']:.2f} ms and {disk['p95_ms']:.2f} ms at the 95th percentile "
+        f"over {disk['commits']} commits. On a slower disk the figures grow by twice the "
+        "difference. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` removes the wait and with it the "
+        "guarantee that an entry survives a power loss."), ""]
 
 
 def _method(record: dict[str, Any]) -> list[str]:
@@ -123,18 +140,15 @@ def _tail(record: dict[str, Any]) -> list[str]:
     cases = record["cases"]
     tail = [c["total"]["overhead_p95_ms"] for c in cases]
     alone = max(c["total"]["stub_p95_over_its_median_ms"] for c in cases)
+    commits = [c["commits_p95_ms"] for c in cases]
     return [wrap(
-        f"The p95 column is {_span(tail)}. The slow calls are the gateway's own connection "
-        "to the upstream. On Windows, Python connects a socket that has a timeout without "
-        "blocking and then waits for it. In a separate check on the measured machine that "
-        "wait came back about 15 ms late in 62 to 85 of 200 loopback connects, and a "
-        "blocking connect was never late. The gateway's upstream connection carries a "
-        "timeout. The benchmark client connects blocking, so calls sent to the stub alone "
-        f"stay within {alone:.1f} ms of their own median at the 95th percentile. On "
-        "GitHub's Windows runners the late connect landed on most calls: the timing test "
-        "measured medians of 11.6 to 23.6 ms there in three runs of four on 2026-11-14, "
-        "against 1.1 to 3.9 ms on its Linux runners. Whether a connection to a remote "
-        "provider is late in the same way was not measured."), ""]
+        f"The p95 column is {_span(tail)}; the two commits of a call are {_span(commits)} "
+        "at their own 95th percentile, so the slow calls are mostly the disk's. Calls sent "
+        f"to the stub alone stay within {alone:.1f} ms of their own median at the 95th "
+        "percentile. What would lower the figures without giving up the commit before "
+        "contact: one commit shared by calls that arrive together (the calls here are "
+        "sent one at a time, so it would not show in this table), and a cheaper durable "
+        "write on Windows. Neither is built."), ""]
 
 
 _LEFT_OUT = [
@@ -147,7 +161,8 @@ _LEFT_OUT = [
     "these because the conditions differ.",
     "- Connection reuse. Every call opens a new connection to the gateway.",
     "- Any hosted provider, and the Gemini upstream format.",
-    "- Other machines and operating systems. One Windows machine was measured.",
+    "- Other machines, disks and operating systems. One Windows machine with one disk "
+    "was measured, and the two commits per call cost what the disk takes.",
     "", "Re-run it:", "", "```bash", "python scripts/bench_gateway_overhead.py",
     "python scripts/build_benchmark_page.py", "```", ""]
 
@@ -161,7 +176,7 @@ def render_markdown(record: dict[str, Any] | None = None) -> list[str]:
 
 
 _HEAD = ("interface", "upstream format", "caller", "mode", "to first byte, median",
-         "to end, median", "to end, p95", "to end, max")
+         "to end, median", "to end, p95", "to end, max", "of which the two commits, median")
 
 
 def _row_html(row: dict[str, Any]) -> str:
@@ -170,7 +185,8 @@ def _row_html(row: dict[str, Any]) -> str:
              "virtual key" if row["caller"] == "key" else "gateway token",
              "stream" if row["stream"] else "plain",
              f"{row['first']['overhead_median_ms']:.2f}", f"{total['overhead_median_ms']:.2f}",
-             f"{total['overhead_p95_ms']:.1f}", f"{total['overhead_max_ms']:.1f}")
+             f"{total['overhead_p95_ms']:.1f}", f"{total['overhead_max_ms']:.1f}",
+             f"{row['commits_median_ms']:.2f}")
     return "<tr>" + "".join(f"<td>{cell}</td>" for cell in cells) + "</tr>"
 
 
@@ -184,12 +200,15 @@ def section_html(record: dict[str, Any] | None = None) -> str:
     cases = record["cases"]
     owner = [c["total"]["overhead_median_ms"] for c in cases if c["caller"] == "owner"]
     keyed = [c["total"]["overhead_median_ms"] for c in cases if c["caller"] == "key"]
+    commits = [c["commits_median_ms"] for c in cases]
     left_out = "".join(f"<li>{esc(line[2:])}</li>" for line in _LEFT_OUT if line.startswith("- "))
     return (
         '<section id="gateway"><h2>Gateway overhead</h2>'
-        '<p class="lede">What the gateway adds to one model call on <code>/v1/messages</code> '
+        '<p class="lede">What a caller waits for the gateway on one model call to '
+        "<code>/v1/messages</code> "
         f"and <code>/v1/responses</code>: a median of {_span(owner)} with the gateway token and "
-        f"{_span(keyed)} with a virtual key, to the end of the reply. Measured "
+        f"{_span(keyed)} with a virtual key, to the end of the reply. {esc(_COMMITS)} "
+        f"The two commits are {_span(commits)} of each figure on the measured disk. Measured "
         f"{esc(record['date'])} on one machine, with one client and a loopback stub in place of "
         "the provider. Every figure is milliseconds over the same request sent straight to the "
         "stub. Provider network time is not in these figures.</p>"

@@ -182,12 +182,20 @@ def suspend(caller, reason: str) -> str:
 
     The stop is held in this process and written to the key list. When the
     list cannot be written (the usual reason a charge failed), the stop still
-    holds for the life of this gateway and the failure is logged."""
+    holds for the life of this gateway and the failure is logged.
+
+    The stop is lifted by a clear that comes after it. Which came first is told
+    by the key's count of clears, not by the clock: a clock that was set back
+    used to make an old clear look newer than the stop."""
     if caller.row is None:
         return ""
     now = time.time()
+    try:                                # the count as it is now, not as it was at admission
+        clears = int(caller.keys.row(caller.name).get("clears") or 0)
+    except Exception:                   # noqa: BLE001 - the list cannot be read: the admitted row
+        clears = int(caller.row.get("clears") or 0)
     with _HELD_LOCK:
-        _HELD[caller.fingerprint] = (now, reason)
+        _HELD[caller.fingerprint] = (clears, reason)
     try:
         caller.keys.mark(caller.name, suspended={"reason": reason, "at": int(now)})
     except Exception as exc:  # noqa: BLE001 - the in-process stop stands either way
@@ -197,6 +205,13 @@ def suspend(caller, reason: str) -> str:
             f"`flywheel gateway-key clear {caller.name}`")
 
 
+def clear(keys, name: str) -> None:
+    """`flywheel gateway-key clear NAME`: lift a suspension, both forms. The count of
+    clears goes up by one, which is what lifts a stop held in a running gateway."""
+    keys.mark(name, suspended=None, cleared=time.time(),
+              clears=int(keys.row(name).get("clears") or 0) + 1)
+
+
 def suspended(caller) -> "str | None":
     """Why a key is stopped, or None. `flywheel gateway-key clear` lifts both forms."""
     row = caller.row
@@ -204,7 +219,7 @@ def suspended(caller) -> "str | None":
         return str(row["suspended"].get("reason") or "suspended")
     with _HELD_LOCK:
         held = _HELD.get(caller.fingerprint)
-        if held is not None and (row.get("cleared") or 0) >= held[0]:
+        if held is not None and int(row.get("clears") or 0) > held[0]:
             del _HELD[caller.fingerprint]
             held = None
     return None if held is None else held[1]

@@ -162,9 +162,15 @@ def point_at(monkeypatch, provider: str, url: str) -> None:
 
 @contextmanager
 def gateway_server(monkeypatch, tmp_path, token: str = TOKEN):
-    """A real gateway on a loopback port, with its own empty router ledger."""
+    """A real gateway on a loopback port, with its own empty router ledger.
+
+    The process is marked as a gateway, as `gateway.main` marks it: a model request
+    that leaves outside a ledger account is refused (harness.gateway_reach), so every
+    test that uses this fixture also checks that rule on the route it exercises."""
+    from harness import gateway_reach
     ledger = SessionLedger()
     monkeypatch.setattr(gateway, "_ROUTER_LEDGER", ledger)
+    gateway_reach.enforce(gateway._router_ledger)
 
     class Handler(gateway._Handler):
         pass

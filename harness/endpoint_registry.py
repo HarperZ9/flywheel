@@ -164,7 +164,10 @@ def _ledgered(prop, ledger, endpoint: str):
     cannot build an unrecorded proposer by leaving the argument out. Outside a
     gateway process `prop` is returned as it is."""
     if ledger is None:
-        from .gateway_reach import ledger as gateway_ledger
+        try:                            # absent from the source-tool plugin: not a gateway
+            from .gateway_reach import ledger as gateway_ledger
+        except ImportError:
+            return prop
         ledger = gateway_ledger()
     if ledger is None:
         return prop

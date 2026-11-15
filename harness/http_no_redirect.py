@@ -15,9 +15,6 @@ from __future__ import annotations
 
 import urllib.request
 
-_URLOPEN = urllib.request.urlopen
-
-
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         return None                     # the 3xx comes back as the answer
@@ -28,7 +25,8 @@ _OPENER = urllib.request.build_opener(NoRedirect)
 
 def open_request(req, timeout):
     """Open `req` and follow no redirect. A test that replaced
-    `urllib.request.urlopen` still gets its replacement."""
-    if urllib.request.urlopen is not _URLOPEN:
+    `urllib.request.urlopen` still gets its replacement: a function that is not
+    the standard library's own, whenever this module was first imported."""
+    if getattr(urllib.request.urlopen, "__module__", "") != "urllib.request":
         return urllib.request.urlopen(req, timeout=timeout)
     return _OPENER.open(req, timeout=timeout)
