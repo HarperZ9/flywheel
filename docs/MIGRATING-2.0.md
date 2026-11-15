@@ -574,9 +574,9 @@ A third review, by a reviewer who had written none of the fixes, led to
 these further changes:
 
 - **A ledger that fails after start.** The 503 above also covers a ledger
-  whose writes fail while the gateway runs (a full disk). The one call that
-  meets the failure has already reached the provider; calls after it are
-  refused before the provider. When writes resume the ledger gets a
+  whose writes fail while the gateway runs (a full disk). The calls already
+  in flight when the first write fails have reached the provider; calls that
+  start after it are refused before the provider. When writes resume the ledger gets a
   `ledger_gap` entry, or a new segment that records a break if a line was
   left cut short. What to do: after a 503 with `ledger_unavailable`, free
   space or repair the folder; the gateway resumes without a restart.
@@ -586,15 +586,37 @@ these further changes:
   body over a slow link, raise `FLYWHEEL_GATEWAY_READ_TIMEOUT`.
 - **An unfinished stream is charged at least a quarter of its characters.**
   A prompt with no spaces no longer costs a few tokens when the client
-  leaves early. Nothing to do; a key's totals for such calls are larger.
+  leaves early, and the input is charged at least a quarter of the request's
+  bytes, so tool definitions count. Nothing to do; a key's totals for such
+  calls are larger.
 - **`gateway-ledger show` cuts long fields.** Add `--full` for the whole
   field, or use `--json`. `ledger_gap` is a new entry kind.
 - **Coding session.** A model moves from native function calling to the text
-  protocol only when its host says it cannot take tools, and the session
-  prints and records one notice when it does (ledger kind
-  `native_tools_fallback`). A host that words that error in a way Flywheel
+  protocol only when its host says it cannot take tools. Every session in
+  the same program moves with it, and each prints and records one notice
+  (ledger kind `native_tools_fallback`). A host that words that error in a way Flywheel
   does not recognize now fails the request; set `FLYWHEEL_NATIVE_TOOLS=0`
   for it.
+
+A fourth review led to these:
+
+- **A request with text that is not valid UTF-8 gets 400.** A JSON body
+  whose strings hold a lone surrogate (the escape `\ud800` with no second
+  half) is refused on `/v1/messages`, `/v1/messages/count_tokens` and
+  `/v1/responses`, and `/v1/chat/completions` and `/api/route` fail the call
+  before the provider. What to do: send well-formed text; a client that
+  cuts a string in the middle of an emoji produces this.
+- **A key can be suspended for `accounting_error`.** If a call reached the
+  provider and its accounting then failed for a reason nobody planned for,
+  the ledger has an `endpoint_call_failed` entry with that reason and the
+  key is stopped. What to do: read the entry and the gateway log, then run
+  `flywheel gateway-key clear NAME`.
+- **`gateway-ledger show --json` prints ASCII.** Characters outside
+  printable ASCII are `\uXXXX` escapes. A JSON parser reads the same row; a
+  script that matched raw non-ASCII text in that output needs to parse it.
+- **`ledger_gap` can carry `unconfirmed`.** It lists entries that are in
+  the segment although their append reported a failure, so a reply recorded
+  there was held back.
 
 ### After the security review: smaller changes
 
