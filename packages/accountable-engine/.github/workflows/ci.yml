@@ -1,0 +1,24 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  critic:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Run critic
+        shell: powershell
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\critic.ps1
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py
