@@ -56,8 +56,8 @@ def test_receipt_recomputes_from_the_turn_and_the_reply(monkeypatch):
                           "served_model": "gpt-5.3-codex-spark"}, "openai:gpt-5.3-codex-spark")
     assert answer.body["x_receipt"] == again
     assert answer.headers["x-receipt-id"] == again["receipt_id"]
-    meta = ledger.entries[0].meta
-    assert meta["response_sha"] == prompt_hash(text) == ledger.entries[0].content
+    meta = support.recorded(ledger)[0].meta
+    assert meta["response_sha"] == prompt_hash(text) == support.recorded(ledger)[0].content
     assert meta["prompt_sha"] == prompt_hash("What changed?")
 
 
@@ -140,7 +140,7 @@ def test_anthropic_upstream_gets_the_body_verbatim_with_only_the_model_replaced(
     assert {k: v for k, v in answer.body.items() if k not in added} == upstream
     assert answer.body["x_flywheel"] == {"usage_reported": True}
     assert answer.body["usage"]["cache_read_input_tokens"] == 2051
-    assert ledger.entries[0].meta["model_ref"] == "anthropic:claude-sonnet-5"
+    assert support.recorded(ledger)[0].meta["model_ref"] == "anthropic:claude-sonnet-5"
 
 
 def test_usage_carries_the_cache_counts_under_the_messages_names(monkeypatch):
@@ -156,7 +156,7 @@ def test_no_upstream_counts_means_zero_and_a_flag_never_an_estimate(monkeypatch)
                                      plain=[support.load("upstream/openai_no_usage.json")])
     assert answer.body["usage"]["input_tokens"] == answer.body["usage"]["output_tokens"] == 0
     assert answer.body["x_flywheel"] == {"usage_reported": False}
-    assert _ledger.entries[0].meta["usage_reported"] is False
+    assert support.recorded(_ledger)[0].meta["usage_reported"] is False
 
 
 @pytest.mark.parametrize("request_name, upstream, expected", [
@@ -172,7 +172,7 @@ def test_openai_stream_becomes_messages_events_in_order(monkeypatch, request_nam
     want = support.load(expected)
     want[0][1]["message"].pop("id")
     assert got == want
-    assert receipt["response_hash"] == ledger.entries[0].meta["response_sha"]
+    assert receipt["response_hash"] == support.recorded(ledger)[0].meta["response_sha"]
     assert backend.stream_transport.requests[0]["body"]["stream"] is True
     assert support.kinds(ledger) == ["endpoint_call"]
 
@@ -201,7 +201,7 @@ def test_anthropic_stream_is_forwarded_event_for_event(monkeypatch):
     last = support.events(out[len(head):])
     assert [name for name, _ in last] == ["message_stop"]
     assert last[0][1]["x_receipt"]["model_ref"] == "anthropic:claude-sonnet-5"
-    assert ledger.entries[0].meta["response_sha"] == last[0][1]["x_receipt"]["response_hash"]
+    assert support.recorded(ledger)[0].meta["response_sha"] == last[0][1]["x_receipt"]["response_hash"]
 
 
 def test_count_tokens_is_forwarded_to_an_anthropic_upstream(monkeypatch):

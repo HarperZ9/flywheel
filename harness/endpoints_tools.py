@@ -101,6 +101,7 @@ class Toolbox:
     turn: "tuple | None" = None            # (record, calls) of the last native reply (native_turn)
     unfaithful: bool = False               # that record did not read back as its calls
     notices: list = field(default_factory=list)   # fallback notices not yet shown
+    told: set = field(default_factory=set)        # (base URL, model) this session was told moved
     lock: threading.Lock = field(default_factory=threading.Lock, repr=False)
 
     def remember(self, reply: Reply) -> None:
@@ -132,10 +133,15 @@ def offered(backend) -> "tuple[Toolbox, list] | None":
     box = _ACTIVE.get()
     if box is None or box.mode == "off" or getattr(backend, "tools", None):
         return None
-    if (backend.base_url, backend.model) in _NO_NATIVE:
-        return None
     host = urllib.parse.urlsplit(backend.base_url).hostname or ""
     if box.mode != "on" and host not in FIRST_PARTY:
+        return None
+    moved = (backend.base_url, backend.model)
+    if moved in _NO_NATIVE:             # by this session or another one in the process:
+        if moved not in box.told:       # this session says so once, before the reply is used
+            from .endpoints_tools_fallback import moved_notice
+            box.told.add(moved)
+            box.notices.append(moved_notice(backend))
         return None
     specs = box.specs()
     return (box, specs) if specs else None
@@ -148,7 +154,9 @@ def refused(backend, status: int, obj, payload: dict) -> bool:
     (endpoints_tools_fallback); any other 400 is the caller's error to raise.
     The model is remembered, so the caller rebuilds the request and it goes
     out in the text protocol, now and for the rest of the process, and the
-    session shows and records one notice.
+    session shows and records one notice. Every other session in the process
+    moves with it; each shows and records its own notice at its next request
+    for that model (`offered`).
     """
     box = _ACTIVE.get()
     if box is None or status not in (400, 404, 422) or "tools" not in payload:
@@ -159,6 +167,7 @@ def refused(backend, status: int, obj, payload: dict) -> bool:
     if not unsupported(obj):
         return False
     _NO_NATIVE.add((backend.base_url, backend.model))
+    box.told.add((backend.base_url, backend.model))
     box.notices.append(notice(backend, status))
     _LOG.warning("%s (%s) refused tool schemas with status %s: %s; using the text "
                  "protocol for this model", backend.name, backend.model, status,
@@ -261,6 +270,13 @@ def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool,
         prose, marked = inert(prose)
         box.stray = 0 if calls else marked
     text = canonical(prose, calls)
+    try:
+        text.encode("utf-8")            # the session's ledger and receipt hash this text
+    except UnicodeEncodeError as exc:
+        raise MalformedBackendOutput(
+            f"{backend.name} reply holds text that is not valid UTF-8 (a lone surrogate) in "
+            "its prose or in a tool call's arguments; the reply was refused and nothing "
+            "from it ran") from exc
     if native:
         from .native_turn import settle
         text = settle(box, text, calls)

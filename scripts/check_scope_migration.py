@@ -19,6 +19,70 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 NAME = "does_" + "not_prove"   # spelled apart so this file does not match itself
 
+# canon 0.7.0 writes the older field in its released capsule, receipt and report
+# format. Each group below is listed file by file; a new canon file that spells the
+# name fails the check. The tool migrates as one release (SCOPE-MIGRATION.md).
+_CANON_MODULES = (
+    # the modules that build, validate, store or report those records
+    "bootstrap_runtime.py",
+    "bootstrap_runtime_cache.py",
+    "canonmd.py",
+    "capsule_build.py",
+    "capsule_types.py",
+    "capsule_validation.py",
+    "cli_compile.py",
+    "client_capture.py",
+    "client_mcp_store.py",
+    "context_purge_report.py",
+    "context_query.py",
+    "context_store.py",
+    "doctor.py",
+    "import_policy.py",
+    "local_mcp.py",
+    "omission.py",
+    "readiness.py",
+    "rescue.py",
+    "rescue_artifacts.py",
+    "retention_receipts.py",
+    "secret_quarantine.py",
+    "transform.py",
+    "undo_receipts.py",
+    "witness.py",
+    "workspace/brief.py",
+    "workspace/import_write.py",
+)
+_CANON_KEPT = (
+    # the modules above, and the byte-identical copy the client package vendors
+    *(f"packages/canon/src/canon/{m}" for m in _CANON_MODULES),
+    *(f"packages/canon/client-plugin/server/src/canon/{m}" for m in _CANON_MODULES),
+    # tests that assert the field is present in what those modules emit
+    "packages/canon/tests/test_client_capture.py",
+    "packages/canon/tests/test_client_mcp.py",
+    "packages/canon/tests/test_context_purge_closure.py",
+    "packages/canon/tests/test_context_related_events.py",
+    "packages/canon/tests/test_context_store.py",
+    "packages/canon/tests/test_doctor_cli.py",
+    "packages/canon/tests/test_import_policy.py",
+    "packages/canon/tests/test_import_review.py",
+    "packages/canon/tests/test_mcp_check.py",
+    # recorded capsules and witnesses the foundation tests load
+    "packages/canon/tests/fixtures/foundation/bootstrap_witness_pass.json",
+    "packages/canon/tests/fixtures/foundation/capsule_handoff_full.json",
+    "packages/canon/tests/fixtures/foundation/capsule_minimal_needle.json",
+    "packages/canon/tests/fixtures/foundation/omission_budget_noncritical.json",
+    "packages/canon/tests/fixtures/foundation/transform_summary.json",
+    # the client-package build and its checks, which read the field from a built package
+    "packages/canon/scripts/build_client_package.py",
+    "packages/canon/scripts/check_native_client.py",
+    "packages/canon/scripts/check_native_workflow.py",
+    # the format reference and the dated design records that define the field
+    "packages/canon/docs/shared-context.md",
+    "packages/canon/project-docs/C1-DECISIONS.md",
+    "packages/canon/project-docs/CANON-CONTINUITY-CAPSULE-DESIGN.md",
+    "packages/canon/project-docs/MCP-DECISIONS.md",
+    "packages/canon/project-docs/W1-WORKSPACE.md",
+)
+
 ALLOWED = (
     # the shared readers
     "harness/scope.py",
@@ -72,9 +136,8 @@ ALLOWED = (
     "packages/emet/emet/reporters/flywheel.py",
     "packages/emet/test_reporter_flywheel.py",
     # canon writes the field in every capsule, receipt and report of its released
-    # format (74 files: source, the vendored client server, tests, docs); the tool
-    # migrates as one release, so the whole package is listed until then
-    "packages/canon/*",
+    # format: 74 files, each named in _CANON_KEPT above
+    *_CANON_KEPT,
     # and in each research artifact imported from its own repository
     "docs/research/*/docs/art/receipts.json",
     # describes the receipt fields of the engine version the demo pins (1.0.0)

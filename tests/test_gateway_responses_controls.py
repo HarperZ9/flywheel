@@ -50,8 +50,8 @@ def test_stream_cut_mid_event_ends_with_response_failed_and_a_failed_entry(
     assert "response.completed" not in names and "x_receipt" not in failed["response"]
     assert "response.output_text.delta" in names                     # text had been shown
     assert support.kinds(ledger) == ["endpoint_call_failed"]         # and no completed entry
-    assert ledger.entries[0].meta["reason"] == "stream_incomplete"
-    assert "response_sha" not in ledger.entries[0].meta
+    assert support.recorded(ledger)[0].meta["reason"] == "stream_incomplete"
+    assert "response_sha" not in support.recorded(ledger)[0].meta
 
 
 def test_client_that_leaves_mid_stream_gets_a_failed_entry(monkeypatch):
@@ -62,7 +62,7 @@ def test_client_that_leaves_mid_stream_gets_a_failed_entry(monkeypatch):
     assert b"response.output_item.added" in next(chunks)
     answer.chunks.close()
     assert support.kinds(ledger) == ["endpoint_call_failed"]
-    assert ledger.entries[0].meta["reason"] == "client_disconnected"
+    assert support.recorded(ledger)[0].meta["reason"] == "client_disconnected"
 
 
 class _Handler:
@@ -112,7 +112,7 @@ def test_upstream_reply_that_claims_a_tool_result_is_refused(monkeypatch):
     assert _is_error(answer, 502, "server_error")
     assert "tool result" in answer.body["error"]["message"]
     assert support.kinds(ledger) == ["endpoint_call_failed"]
-    assert ledger.entries[0].meta["reason"] == "tool_result_claimed"
+    assert support.recorded(ledger)[0].meta["reason"] == "tool_result_claimed"
 
 
 def test_openai_upstream_error_keeps_its_body_and_is_logged_without_the_key(monkeypatch, caplog):
@@ -125,7 +125,7 @@ def test_openai_upstream_error_keeps_its_body_and_is_logged_without_the_key(monk
     assert answer.body["error"]["code"] == "rate_limit_exceeded"     # the upstream's own
     assert answer.body["error"]["message"].startswith("Rate limit reached for requests")
     assert support.kinds(ledger) == ["endpoint_call_failed"]
-    assert ledger.entries[0].meta["reason"] == "upstream_status_429"
+    assert support.recorded(ledger)[0].meta["reason"] == "upstream_status_429"
     assert "upstream_status_429" in caplog.text                # logged with context
     assert "A" * 32 not in caplog.text + str(answer.body)
 

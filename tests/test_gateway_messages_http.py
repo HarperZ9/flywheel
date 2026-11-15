@@ -133,7 +133,7 @@ def test_anthropic_error_keeps_its_body_status_and_retry_headers(monkeypatch, tm
     assert (status, json.loads(raw)) == (529, sent)
     assert (headers["retry-after"], headers["x-should-retry"]) == ("7", "true")
     assert support.kinds(ledger) == ["endpoint_call_failed"]
-    assert ledger.entries[0].meta["reason"] == "upstream_status_529"
+    assert support.recorded(ledger)[0].meta["reason"] == "upstream_status_529"
 
 
 def test_count_tokens_over_http(monkeypatch, tmp_path):
@@ -151,7 +151,7 @@ def test_count_tokens_over_http(monkeypatch, tmp_path):
     assert len(upstream.requests) == 1 and ledger.entries == []
 
 
-def _chat_and_messages(monkeypatch, record=None):
+def _chat_and_messages(monkeypatch, record=None, read=support.recorded):
     """One text conversation through both interfaces; the two ledger entries."""
     reply = plain_object("openai", "turn2")
     reply["choices"][0]["message"]["content"] = "Nothing else changed.\n"
@@ -173,7 +173,7 @@ def _chat_and_messages(monkeypatch, record=None):
              "messages": [{"role": "user", "content": "What changed?"}]}, {}, ledger, environ={})
         assert code == 200 and answer.status == 200 and len(upstream.requests) == 2
     assert body["choices"][0]["message"]["content"] == answer.body["content"][0]["text"]
-    return ledger.entries
+    return read(ledger)
 
 
 def _equivalent(chat, messages) -> None:
@@ -182,14 +182,18 @@ def _equivalent(chat, messages) -> None:
     assert chat.content == messages.content
     assert messages.meta.get("interface") == "anthropic-messages"
     assert messages.meta.get("key") == "owner" and messages.meta.get("usage_reported") is True
-    assert chat.meta == {key: value for key, value in messages.meta.items()
-                         if key not in ("interface", "key", "usage_reported")}
+    # `call` is the id of each call's own started entry (support.recorded checked the pair).
+    assert chat.meta["call"] != messages.meta["call"]
+    assert {key: value for key, value in chat.meta.items() if key != "call"} == {
+        key: value for key, value in messages.meta.items()
+        if key not in ("interface", "key", "usage_reported", "call")}
 
 
 def test_chat_and_messages_leave_equal_ledger_entries(monkeypatch):
     chat, messages = _chat_and_messages(monkeypatch)
     _equivalent(chat, messages)
-    assert set(chat.meta) == {"endpoint", "model_ref", "seed", "prompt_sha", "response_sha"}
+    assert set(chat.meta) == {"endpoint", "model_ref", "seed", "prompt_sha", "response_sha",
+                              "call"}
     assert chat.meta["model_ref"] == "ollama:stub-model"
 
 
@@ -207,6 +211,7 @@ def test_equivalence_fails_when_one_path_drops_a_meta_key(monkeypatch, lost):
     def record(ledger, upstream, turn, reply):
         whole(Dropping(ledger), upstream, turn, reply)
 
-    chat, messages = _chat_and_messages(monkeypatch, record)
+    # Read without the write-ahead check: it would name the planted fault first.
+    chat, messages = _chat_and_messages(monkeypatch, record, support.ended)
     with pytest.raises(AssertionError):
         _equivalent(chat, messages)

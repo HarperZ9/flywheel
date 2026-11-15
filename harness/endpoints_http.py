@@ -34,7 +34,12 @@ class _NoRedirect(urllib.request.HTTPRedirectHandler):
         return None                     # the 3xx comes back as the answer
 
 
-_OPENER = urllib.request.build_opener(_NoRedirect)
+def _opener():
+    from .endpoints_connect import Handler      # a prompt connect to a loopback upstream
+    return urllib.request.build_opener(_NoRedirect, Handler)
+
+
+_OPENER = _opener()
 
 
 def send(req, timeout):

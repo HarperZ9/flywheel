@@ -24,9 +24,10 @@ knows who is calling:
   - the request line and headers of one request must arrive within one
     timeout (`HeaderDeadline.readline`, on every route);
   - a request body must arrive within BODY_READS timeouts, two minutes by
-    default. On a model interface the answer is 408 (`read_body`); on the
-    other routes, which read their bodies in gateway.py, the connection is
-    closed (`HeaderDeadline.read`);
+    default. The answer is 408 on every route: on a model interface from
+    `read_body`, and on the other routes, which read their bodies in
+    gateway.py and the route modules, from `HeaderDeadline.read`, which
+    raises `BodyTimeout` (answered by `uncaught`);
   - what a refused request still sends is read and discarded for at most two
     seconds (gateway_body_drain, bounded by `HeaderDeadline.read`).
 
@@ -56,6 +57,19 @@ import uuid
 
 _LOG = logging.getLogger(__name__)
 ENV = "FLYWHEEL_GATEWAY_READ_TIMEOUT"
+
+
+class BodyTimeout(BaseException):
+    """A request body that stopped arriving, or was still arriving at its deadline,
+    on a route outside the three model interfaces.
+
+    It is not an `Exception` on purpose. Twenty places read a request body
+    with `handler.rfile.read(n)`, and several wrap the read in `except
+    Exception` and answer their own error: the operation grant step answered
+    500 `STORE_COMMIT_FAILED` for it, others read the late body as an empty
+    one. None of them can catch this, so it reaches the gateway handler, which
+    answers 408 and closes (`uncaught`). Nothing has been sent upstream at
+    that point: every route reads its body first."""
 DEFAULT = 30.0
 BODY_READS = 4                          # a whole body gets this many read timeouts
 _CHUNK = 1 << 20
@@ -117,27 +131,37 @@ class HeaderDeadline:
     def __getattr__(self, name: str):
         return getattr(self._raw, name)
 
-    def _budget(self) -> float:
+    def _budget(self) -> tuple:
+        """(seconds one `read(n)` may take, is the reader the drain)."""
         try:
             own = self._sock.gettimeout() if self._sock is not None else None
         except OSError:
             own = None
-        return own or self._limit * BODY_READS
+        return own or self._limit * BODY_READS, bool(own)
 
     def read(self, size: int = -1) -> bytes:
         if size is None or size < 0:
             return self._raw.read()
-        budget = self._budget()
-        until, parts, got = time.monotonic() + budget, [], 0
+        budget, draining = self._budget()
+        # The drain sets its own two-second timeout on the socket and expects an OSError.
+        # Every other reader is a route reading its request body: `BodyTimeout`.
+        late = TimeoutError if draining else BodyTimeout
+        started, parts, got = time.monotonic(), [], 0
         while got < size:
-            chunk = self._raw.read1(min(size - got, _CHUNK))    # Windows raises TimeoutError
+            try:
+                chunk = self._raw.read1(min(size - got, _CHUNK))
+            except TimeoutError as exc:         # Windows: a read that got nothing in time
+                raise late(f"a request body stopped at {got} of {size} bytes") from exc
             if not chunk:
                 break                           # closed, or a read that timed out with nothing
             parts.append(chunk)
             got += len(chunk)
-            if got < size and time.monotonic() > until:
-                raise TimeoutError(f"a request body was still arriving after {budget} seconds, "
-                                   f"at {got} of {size} bytes")
+            if got < size and time.monotonic() - started > budget:
+                raise late(f"a request body was still arriving after {budget} seconds, "
+                           f"at {got} of {size} bytes")
+        if got < size and late is BodyTimeout and (
+                time.monotonic() - started >= self._limit * 0.9):
+            raise late(f"a request body stopped at {got} of {size} bytes")   # Linux, macOS
         return b"".join(parts)
 
     def readline(self, size: int = -1) -> bytes:
@@ -182,6 +206,27 @@ def read_body(handler, length: int) -> bytes:
     if got < length and time.monotonic() - started >= limit * 0.9:
         raise TimeoutError(f"the request body stopped at {got} of {length} bytes")
     return b"".join(parts)
+
+
+def uncaught(handler, exc: BaseException) -> tuple:
+    """(body, status) for what reached the gateway handler uncaught.
+
+    A late body (`BodyTimeout`) is answered 408 and the connection is closed.
+    Any other `Exception` is the handler's non-echoing 500, as before.
+    Anything else (an interrupt, an exit) is raised again."""
+    if isinstance(exc, BodyTimeout):
+        limit = seconds()
+        _LOG.warning("gateway request on %s closed: its body did not arrive within the read "
+                     "timeout (%s s)", str(getattr(handler, "path", "")).split("?", 1)[0], limit)
+        handler.close_connection = True
+        return {"error": {
+            "message": (f"the request body did not arrive within the gateway's read timeout "
+                        f"of {limit} seconds ({ENV}). Nothing was sent upstream."),
+            "type": "invalid_request_error", "code": "request_timeout"}}, 408
+    if not isinstance(exc, Exception):
+        raise exc
+    return {"error": {"message": f"internal error: {type(exc).__name__}",
+                      "type": "api_error"}}, 500
 
 
 def timed_out(handler, path: str):
