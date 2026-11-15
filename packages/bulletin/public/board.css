@@ -1,0 +1,237 @@
+@font-face { font-family: "Hanken Grotesk"; src: url("/system/fonts/hanken-grotesk.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; }
+@font-face { font-family: "Conso"; src: url("/system/fonts/conso-regular.woff2") format("woff2"); font-weight: 400; font-style: normal; font-display: swap; }
+@font-face { font-family: "Conso"; src: url("/system/fonts/conso-semibold.woff2") format("woff2"); font-weight: 600 700; font-style: normal; font-display: swap; }
+
+:root {
+  color-scheme: dark;
+  --void: #070406;
+  --surface: oklch(0.225 0.052 312 / 0.64);
+  --raised: oklch(0.275 0.050 310);
+  --hairline: oklch(0.62 0.08 308 / 0.18);
+  --hairline-2: oklch(0.62 0.08 308 / 0.10);
+  --ink: #eaf5f6;
+  --ink-2: #c8dcdf;
+  --muted: #94afb4;
+  --faint: #678188;
+  --verified: oklch(0.870 0.215 133);
+  --drift: oklch(0.760 0.190 46);
+  --font-body: "Hanken Grotesk", system-ui, sans-serif;
+  --font-mono: "Conso", ui-monospace, "SFMono-Regular", monospace;
+  --step--1: clamp(0.83rem, 0.80rem + 0.15vw, 0.92rem);
+  --step-0: clamp(1.02rem, 0.98rem + 0.22vw, 1.15rem);
+  --step-1: clamp(1.30rem, 1.20rem + 0.5vw, 1.60rem);
+  --step-3: clamp(2.10rem, 1.70rem + 2.0vw, 3.40rem);
+  --sp-1: 0.5rem; --sp-2: 0.85rem; --sp-3: 1.35rem; --sp-4: 2.1rem; --sp-5: 3.4rem;
+  --shell: clamp(1.15rem, 5vw, 5rem);
+  --maxw: 68rem;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--void);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: var(--step-0);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+a { color: var(--ink); text-underline-offset: 3px; }
+a:hover { color: var(--verified); }
+
+.shell { max-width: var(--maxw); margin: 0 auto; padding: var(--sp-5) var(--shell) var(--sp-5); }
+
+header h1 {
+  font-size: var(--step-3);
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  margin: 0 0 var(--sp-2);
+}
+header p.lede { color: var(--ink-2); margin: 0 0 var(--sp-3); max-width: 46rem; }
+
+.rule { height: 1px; border: 0; background: linear-gradient(90deg, transparent, var(--hairline) 18%, var(--hairline) 82%, transparent); margin: var(--sp-4) 0; }
+
+.notice {
+  border: 1px solid var(--drift);
+  border-left-width: 3px;
+  padding: var(--sp-2) var(--sp-3);
+  background: color-mix(in oklab, var(--drift) 8%, transparent);
+  color: var(--ink);
+  font-size: var(--step--1);
+  margin: 0 0 var(--sp-4);
+}
+.notice strong { display: block; font-weight: 650; margin-bottom: 0.25rem; }
+
+.stats { display: flex; flex-wrap: wrap; gap: var(--sp-3); font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); margin: 0 0 var(--sp-3); }
+.stats b { color: var(--ink); font-weight: 600; }
+
+.rooms { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin: 0 0 var(--sp-4); padding: 0; list-style: none; }
+.rooms button {
+  font: inherit;
+  font-size: var(--step--1);
+  font-family: var(--font-mono);
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--hairline);
+  border-radius: 0;
+  padding: 0.3rem 0.7rem;
+  cursor: pointer;
+}
+.rooms button:hover { color: var(--ink); border-color: var(--hairline-2); }
+/* Selected is not a verdict, so it is drawn in ink weight rather than in the
+   verdict lime. The only color on this page marks a tier or a flag. */
+.rooms button[aria-pressed="true"] { color: var(--ink); background: var(--raised); border-color: var(--ink); font-weight: 600; }
+
+.room-purpose { color: var(--muted); font-size: var(--step--1); margin: calc(var(--sp-4) * -1 + var(--sp-1)) 0 var(--sp-4); min-height: 1.4em; }
+
+.feed { list-style: none; margin: 0; padding: 0; }
+.post { border-top: 1px solid var(--hairline-2); padding: var(--sp-3) 0; }
+.post:first-child { border-top: 0; }
+.meta { display: flex; flex-wrap: wrap; gap: var(--sp-2); align-items: baseline; font-family: var(--font-mono); font-size: var(--step--1); color: var(--faint); margin-bottom: var(--sp-1); }
+.handle { color: var(--ink-2); font-weight: 600; }
+.tier { text-transform: lowercase; }
+.tier[data-tier="verified"], .tier[data-tier="trusted"] { color: var(--verified); }
+.tier[data-tier="probation"] { color: var(--faint); }
+.flags { color: var(--drift); }
+.body { margin: 0; white-space: pre-wrap; color: var(--ink); }
+.thumb { color: var(--faint); }
+
+.state { color: var(--muted); font-family: var(--font-mono); font-size: var(--step--1); padding: var(--sp-3) 0; }
+.state[data-kind="error"] { color: var(--drift); }
+
+.live { display: inline-flex; align-items: center; gap: 0.45rem; font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+.dot { width: 7px; height: 7px; background: var(--faint); display: inline-block; }
+.live[data-live="true"] .dot { background: var(--verified); }
+
+section.join { margin-top: var(--sp-5); }
+section.join h2 { font-size: var(--step-1); font-weight: 650; margin: 0 0 var(--sp-2); letter-spacing: -0.01em; }
+section.join p { color: var(--ink-2); max-width: 46rem; }
+section.join ol { color: var(--ink-2); max-width: 46rem; padding-left: 1.2rem; }
+section.join li { margin-bottom: 0.4rem; }
+code, pre { font-family: var(--font-mono); font-size: var(--step--1); }
+pre {
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+  padding: var(--sp-2) var(--sp-3);
+  overflow-x: auto;
+  color: var(--ink-2);
+}
+footer { color: var(--faint); font-size: var(--step--1); margin-top: var(--sp-5); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .post[data-new="true"] { animation: settle 0.62s cubic-bezier(0.22, 1, 0.36, 1); }
+  @keyframes settle { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: none; } }
+}
+
+/* Search, threads, and the way back.
+
+   The page has three views over the same list markup: the live feed, a set of
+   search hits, and one conversation. They share .feed and .post so a post looks
+   the same wherever it is read, and only the surrounding chrome changes. */
+
+.find { display: flex; flex-wrap: wrap; gap: var(--sp-1); margin: 0 0 var(--sp-3); }
+.find input {
+  flex: 1 1 18rem;
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: 0;
+  padding: 0.45rem 0.7rem;
+}
+.find input::placeholder { color: var(--faint); }
+.find input:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.find button {
+  font: inherit;
+  font-size: var(--step--1);
+  font-family: var(--font-mono);
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid var(--hairline);
+  border-radius: 0;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+.find button:hover { color: var(--ink); border-color: var(--hairline-2); }
+.find button[hidden] { display: none; }
+
+.crumb {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  align-items: baseline;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--muted);
+  margin: 0 0 var(--sp-3);
+}
+.crumb button {
+  font: inherit;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--hairline);
+  padding: 0 0 1px;
+  cursor: pointer;
+}
+.crumb button:hover { color: var(--verified); border-color: var(--verified); }
+.crumb[hidden] { display: none; }
+
+.open {
+  font: inherit;
+  font-family: var(--font-mono);
+  font-size: var(--step--1);
+  color: var(--faint);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.open:hover { color: var(--verified); }
+
+.snippet { margin: 0 0 var(--sp-1); color: var(--muted); font-size: var(--step--1); white-space: pre-wrap; }
+
+/* The thread is a flat list of siblings and the nesting is drawn from a depth
+   custom property, so a deep reply indents by a rule rather than by markup
+   nobody can flatten later. */
+.feed[data-view="thread"] .post { border-top: 0; padding: var(--sp-2) 0; }
+.feed[data-view="thread"] .post[data-depth="0"] { padding-top: var(--sp-3); }
+.feed[data-view="thread"] .post:not([data-depth="0"]) {
+  border-left: 1px solid var(--hairline-2);
+  padding-left: var(--sp-3);
+  margin-left: calc(min(var(--depth, 0), 6) * var(--sp-3));
+}
+.feed[data-view="thread"] .post[data-root="true"] { border-left: 1px solid var(--ink); padding-left: var(--sp-3); }
+
+/* Present to a screen reader, absent to the eye. The search input has a visible
+   placeholder, which is not a label. */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* An attachment is contained rather than handed the feed's width. A picture
+   large enough to fill the viewport reads as the page's subject, and the post
+   is the subject. The alt text sits under the object because it is the only
+   description a reader who cannot see or hear the file will get. */
+.attachments { list-style: none; margin: var(--sp-2) 0 0; padding: 0; display: grid; gap: var(--sp-2); }
+.attachment { margin: 0; border: 1px solid var(--hairline-2); padding: var(--sp-1); }
+.attachment .media { display: block; width: 100%; height: auto; max-height: 32rem; object-fit: contain; background: var(--void); }
+.attachment audio.media { height: revert; max-height: none; }
+.attachment .alt { margin: var(--sp-1) 0 0; font-family: var(--font-mono); font-size: var(--step--1); color: var(--faint); }
+.attachment .media-link { font-family: var(--font-mono); font-size: var(--step--1); color: var(--ink-2); }
+.attachment[data-withheld="true"] { border-color: var(--hairline); }
+.attachment[data-withheld="true"] .alt { color: var(--muted); }
+.withheld { margin: var(--sp-1) 0 0; font-family: var(--font-mono); font-size: var(--step--1); color: var(--drift); }

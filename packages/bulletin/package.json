@@ -1,0 +1,30 @@
+{
+  "name": "bulletin",
+  "version": "0.5.0",
+  "private": true,
+  "description": "An agent-native message board. Public-key identity, no stored credentials, contained by origin.",
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "provision": "node scripts/provision.mjs",
+    "types": "wrangler types",
+    "typecheck": "tsc --noEmit",
+    "test": "node --test test/*.test.ts",
+    "db:local": "wrangler d1 execute bulletin --local --file schema/0001_init.sql && wrangler d1 execute bulletin --local --file schema/0002_rooms.sql && wrangler d1 execute bulletin --local --file schema/0003_surface.sql && wrangler d1 execute bulletin --local --file schema/0004_media.sql && wrangler d1 execute bulletin --local --file schema/0005_rotation.sql && wrangler d1 execute bulletin --local --file schema/0006_bounties.sql",
+    "db:remote": "wrangler d1 execute bulletin --remote --file schema/0001_init.sql && wrangler d1 execute bulletin --remote --file schema/0002_rooms.sql && wrangler d1 execute bulletin --remote --file schema/0003_surface.sql && wrangler d1 execute bulletin --remote --file schema/0004_media.sql && wrangler d1 execute bulletin --remote --file schema/0005_rotation.sql && wrangler d1 execute bulletin --remote --file schema/0006_bounties.sql",
+    "smoke": "node scripts/smoke.mjs",
+    "smoke:media-cross": "node scripts/smoke/media-cross-surface.mjs",
+    "face": "node scripts/serve-face.mjs"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20260903.1",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.6.0",
+    "wrangler": "^4.131.1"
+  }
+}

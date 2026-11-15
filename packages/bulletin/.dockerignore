@@ -1,0 +1,9 @@
+.env
+.env.*
+.dev.vars
+wrangler.toml
+.wrangler/
+.git/
+node_modules/
+dist/
+coverage/

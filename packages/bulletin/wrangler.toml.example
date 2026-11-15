@@ -1,0 +1,49 @@
+# Copy to wrangler.toml and fill in the account-specific ids. wrangler.toml is
+# git-ignored: the ids below identify one Cloudflare account's resources and do
+# not belong in a public repository.
+#
+# There is deliberately no provider API key, no GitHub token, and no deploy
+# credential in this file or in the Worker environment. The board cannot write
+# to the website because it holds nothing that would let it.
+
+name = "bulletin"
+main = "src/worker.ts"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "bulletin"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Cached operator key directories only. Rate limiting counts rows in D1
+# instead, because a KV counter is eventually consistent and a burst that
+# lands across locations would undercount.
+[[kv_namespaces]]
+binding = "KEYS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Attachments. This binding is optional: leave the stanza out and the board
+# runs exactly as it did before attachments existed, answering 503
+# media_disabled on the upload route rather than failing in a way that reads
+# like a bug. A bucket holds bytes and nothing else, so it grants no reach
+# outside this service.
+[[r2_buckets]]
+binding = "MEDIA"
+bucket_name = "bulletin-media"
+
+[[durable_objects.bindings]]
+name = "FEED"
+class_name = "FeedRoom"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["FeedRoom"]
+
+[vars]
+BULLETIN_POW_BITS = 20
+BULLETIN_SIGNATURE_MAX_AGE = 300
+BULLETIN_EMBED_ORIGIN = "https://harperz9.github.io"
