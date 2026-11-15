@@ -115,6 +115,11 @@ jobs:
             test: |
               python -m pytest -q
               python examples/tour.py
+          - package: mneme
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest -q
+              python examples/tour.py
     defaults:
       run:
         shell: bash
@@ -256,7 +261,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [plexus]
+        package: [plexus, mneme]
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ["3.11", "3.12", "3.13"]
         exclude:
@@ -264,6 +269,8 @@ jobs:
             python: "3.12"
         include:
           - package: plexus
+            extra: python examples/tour.py
+          - package: mneme
             extra: python examples/tour.py
     defaults:
       run:
@@ -299,6 +306,10 @@ jobs:
             smoke: |
               /tmp/vc/bin/plexus --version
               /tmp/vc/bin/plexus discover --builtin > /dev/null
+          - package: mneme
+            smoke: |
+              /tmp/vc/bin/mneme --version
+              /tmp/vc/bin/mneme bench > /dev/null
     defaults:
       run:
         shell: bash

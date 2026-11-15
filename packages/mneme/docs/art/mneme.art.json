@@ -1,0 +1,204 @@
+{
+  "header": {
+    "name": "mneme",
+    "role": "agent memory that verifies",
+    "tagline": "Source provenance, reproducible ranking, and drift checks.",
+    "words": [
+      "turn",
+      "atom",
+      "recall",
+      "drift",
+      "receipt"
+    ]
+  },
+  "flows": [
+    {
+      "file": "recall-lane.svg",
+      "kicker": "one question, answered from the record",
+      "title": "How a recall becomes a ranking someone else can re-derive",
+      "footnote": "The ranking is re-derived from the rows, never read back from the receipt.",
+      "alt": "Eight stages of a verifiable recall: turn, atom, scenario, persona, query, score, fuse, receipt. Raw dialogue is stored verbatim as a turn and never summarized away. An atom is one fact bound to the turn it came from, a scenario groups related atoms, and a persona cites its atoms instead of prose. A query records its own scope. Keyword scoring is pure Python BM25 and always available; reciprocal rank fusion folds in a vector channel when an embedder is supplied. The receipt carries the ranked hits, both score channels, the scorer-definition hash, and the fusion rule. Verification re-runs the same scorer over the same rows and compares. Two outcomes: reproduced, and did not reproduce.",
+      "stages": [
+        {
+          "title": "Turn",
+          "note": "Raw dialogue, stored whole and never summarized."
+        },
+        {
+          "title": "Atom",
+          "note": "One fact, bound to the turn it was taken from."
+        },
+        {
+          "title": "Scenario",
+          "note": "Related atoms, grouped into one scene."
+        },
+        {
+          "title": "Persona",
+          "note": "A profile that cites atoms, not prose."
+        },
+        {
+          "title": "Query",
+          "note": "One question, with its scope recorded."
+        },
+        {
+          "title": "Score",
+          "note": "BM25 in pure Python, with no dependency."
+        },
+        {
+          "title": "Fuse",
+          "note": "Rank fusion folds in the vector channel."
+        },
+        {
+          "title": "Receipt",
+          "note": "The hits, both scores, and the fusion rule."
+        }
+      ],
+      "returns": [
+        {
+          "from": 7,
+          "to": 5,
+          "label": "VERIFY RE-RUNS THE SCORER OVER THE SAME ROWS"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "REPRODUCED",
+          "note": "the same rows re-derive the same ranking",
+          "tone": "verified"
+        },
+        {
+          "label": "DID NOT REPRODUCE",
+          "note": "a tampered ranking, or a store that moved",
+          "tone": "drift"
+        }
+      ]
+    },
+    {
+      "file": "drift-lane.svg",
+      "kicker": "one memory, checked against its source",
+      "title": "How a stored fact reports for itself that it has gone stale",
+      "footnote": "A source that is gone is unverifiable, never a vacuous match.",
+      "alt": "Eight stages of a freshness check: memory, own hash, sources, re-hash, snapshot, compare, fold, verdict. The memory row must first reproduce its own content hash, which catches a direct edit of its text, sources, or criterion. Each cited source is then re-hashed from its actual fields rather than trusted from a stored hash, so a direct database edit cannot preserve a stale value and pass. The current bytes are compared against the hash recorded at extraction time. The fold takes any change first, then any absence, and only then a match. Three outcomes: match, drift, and unverifiable.",
+      "stages": [
+        {
+          "title": "Memory",
+          "note": "One fact, and the criterion it was kept under."
+        },
+        {
+          "title": "Own hash",
+          "note": "The row must reproduce its own hash first."
+        },
+        {
+          "title": "Sources",
+          "note": "Every id it cites: a turn, or a memory."
+        },
+        {
+          "title": "Re-hash",
+          "note": "The source's real fields, hashed again now."
+        },
+        {
+          "title": "Snapshot",
+          "note": "The hash taken when the fact was extracted."
+        },
+        {
+          "title": "Compare",
+          "note": "Current bytes against that snapshot."
+        },
+        {
+          "title": "Fold",
+          "note": "Any change first, then any absence."
+        },
+        {
+          "title": "Verdict",
+          "note": "Per memory, and across the whole store."
+        }
+      ],
+      "returns": [
+        {
+          "from": 6,
+          "to": 5,
+          "label": "THE COMPARE REPEATS FOR EVERY SOURCE CITED"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "MATCH",
+          "note": "every source is present and unchanged",
+          "tone": "verified"
+        },
+        {
+          "label": "DRIFT",
+          "note": "a source changed under the memory",
+          "tone": "drift"
+        },
+        {
+          "label": "UNVERIFIABLE",
+          "note": "a source is gone, or none was cited",
+          "tone": "none"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "grounding-verdicts.svg",
+      "kicker": "fail closed, never a vacuous match",
+      "title": "Every verdict a grounding check reaches, and what reaches it",
+      "source": "mneme drift --state memory.db",
+      "heads": [
+        "condition",
+        "verdict",
+        "what it settles"
+      ],
+      "fields": [
+        {
+          "key": "memory_missing",
+          "value": "UNVERIFIABLE",
+          "note": "The id names no row, so there is nothing whose grounding could be re-derived at all."
+        },
+        {
+          "key": "provenance_unreadable",
+          "value": "DRIFT",
+          "note": "The source list or the snapshot map no longer parses. That is a change to the row, not a gap in it."
+        },
+        {
+          "key": "no_sources_cited",
+          "value": "UNVERIFIABLE",
+          "note": "Nothing to check against. The memory may be perfectly good, and it is still not confirmable, so it never reads as a match."
+        },
+        {
+          "key": "memory_row_altered",
+          "value": "DRIFT",
+          "note": "The row no longer reproduces its own address, so its text, sources or criterion were edited in place."
+        },
+        {
+          "key": "source_row_gone",
+          "value": "UNVERIFIABLE",
+          "note": "A cited turn or memory has left the store. The text the memory was drawn from cannot be read."
+        },
+        {
+          "key": "source_bytes_changed",
+          "value": "DRIFT",
+          "tone": "drift",
+          "note": "Re-hashing the source disagrees with the address it carries. A writer going around the store cannot leave a stale hash that reads as a match."
+        },
+        {
+          "key": "snapshot_never_taken",
+          "value": "UNVERIFIABLE",
+          "note": "The source is present and readable, and no extraction hash was kept, so freshness cannot be settled."
+        },
+        {
+          "key": "source_moved_since",
+          "value": "DRIFT",
+          "note": "The source is intact today and hashes differently than it did when the memory was extracted."
+        },
+        {
+          "key": "all_sources_unchanged",
+          "value": "MATCH",
+          "note": "Every cited source is present and re-hashes to exactly what was recorded at extraction."
+        }
+      ],
+      "alt": "Nine conditions a memory's grounding check can land on, one to a row, each with the verdict it produces. Four produce DRIFT: unreadable provenance, a memory row edited in place, a source whose bytes disagree with the address it carries, and a source that hashes differently than it did at extraction. Four produce UNVERIFIABLE: a missing memory, a memory citing no sources at all, a cited source that has left the store, and a source present but never snapshotted. One produces MATCH: all cited sources are present and re-hash to what was recorded. The row for a source whose bytes disagree with the address stored beside it is accented, because that is the one case a check reading only the stored address would call a match.",
+      "footnote": "Every source is re-hashed from its own fields before its stored address is believed, which is what the accented row records. The four unverifiable rows carry the other half: a memory citing no source has nothing that could have moved, and answering match there would make the verdict loudest where it knows least. The repository's own test drives all nine against a real store, so a branch added to drift.py and not to the drawing fails."
+    }
+  ]
+}

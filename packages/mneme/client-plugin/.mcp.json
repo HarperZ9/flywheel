@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "mneme": {
+      "args": [
+        "-I",
+        "-S",
+        "-B",
+        "${CLAUDE_PLUGIN_ROOT}/server/serve.py",
+        "--memory-write=${user_config.memory_write}"
+      ],
+      "command": "python3",
+      "env": {
+        "MNEME_STATE": "${user_config.state_path}"
+      },
+      "type": "stdio"
+    }
+  }
+}

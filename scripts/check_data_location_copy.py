@@ -65,7 +65,21 @@ CORRECTION = re.compile(r"^\s*(?:[*_>]+\s*)?Correction, \d{4}-\d{2}-\d{2}:")
 CORRECTION_WINDOW = 10
 _LOCAL = ("the local model runs on the owner's machine and sends nothing, so the "
           "sentence is true there")
+# The three Mneme entries stay until the tool meets each sentence in full. What each
+# sentence requires, what the code does today and the gap are recorded in
+# MNEME-CLAIMS.md in the maintainer's 2026-11-15 repoint notes; the work is a build
+# task in Mneme, and the sentences are not to be trimmed to fit the code.
+_MNEME = ("Mneme's own pages, imported as written from its repository: the store is "
+          "a SQLite file and Mneme needs no network; its README lists what forget cannot "
+          "reach, and its changelog corrects the 0.4 label in the next paragraph")
 ALLOWED = {
+    ("packages/mneme/README.md", "The store stays on your machine."): _MNEME,
+    ("packages/mneme/CHANGELOG.md",
+     "`forget` becomes a true forget, the MCP forget tool takes two steps, replay "
+     "snapshots move to a per-user state directory, and schema 5 blinds the update "
+     "and supersede history in the audit log."): _MNEME,
+    ("packages/mneme/CHANGELOG.md",
+     "`forget` (GDPR erasure) still removes; `supersede` (a fact changed) keeps."): _MNEME,
     ("site/index.html", "Your prompts and your code never leave your disk."): _LOCAL,
     ("project-docs/releases/14B/shipped-page/README.md",
      "Your prompts and your code never leave your disk."): _LOCAL,

@@ -47,6 +47,12 @@ ALLOWED = (
     "packages/plexus/scripts/build_client_package.py",
     "packages/plexus/scripts/check_native_client.py",
     "packages/plexus/scripts/check_native_workflow.py",
+    "packages/mneme/client-plugin/server/src/mneme/origin.py",
+    "packages/mneme/scripts/build_client_package.py",
+    "packages/mneme/scripts/check_native_client.py",
+    "packages/mneme/scripts/check_native_workflow.py",
+    "packages/mneme/src/mneme/origin.py",
+    "packages/mneme/tests/test_origin_recheck.py",
     # and in each research artifact imported from its own repository
     "docs/research/*/docs/art/receipts.json",
     # describes the receipt fields of the engine version the demo pins (1.0.0)
