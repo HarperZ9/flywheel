@@ -170,6 +170,7 @@ Tools under `packages/`
 - `index` (distribution `index-graph` 2.16.0) now also lives under `packages/index`. PyPI releases still publish from `HarperZ9/index`, which stays open.
 - `crucible` (distribution `crucible-bench` 1.6.0) now also lives under `packages/crucible`. PyPI releases still publish from `HarperZ9/crucible`, which stays open.
 - `emet` (distribution `emet` 1.3.1) now also lives under `packages/emet`. PyPI releases still publish from `HarperZ9/emet`, which stays open.
+- `forum` (distribution `forum-engine` 1.17.0) now also lives under `packages/forum`. PyPI releases still publish from `HarperZ9/forum`, which stays open.
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
 
 Evidence demos under `demos/`
