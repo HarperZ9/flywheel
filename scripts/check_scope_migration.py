@@ -41,6 +41,9 @@ ALLOWED = (
     "packages/*/docs/art/receipts.json",
     # the same record in each demo imported from its own repository
     "demos/*/docs/art/receipts.json",
+    # tools imported into packages/ keep the record vocabulary of their own
+    # releases until each one migrates; the paths below are theirs
+    "packages/learn/scripts/check_client_archive.py",
     # and in each research artifact imported from its own repository
     "docs/research/*/docs/art/receipts.json",
     # describes the receipt fields of the engine version the demo pins (1.0.0)
