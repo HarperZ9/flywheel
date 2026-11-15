@@ -64,7 +64,7 @@ def test_r1_the_refusal_is_a_400_that_names_the_reason_and_sends_nothing(
     assert status == 400
     assert b"UTF-8" in body and b"Nothing was sent upstream" in body
     assert upstream.requests == [] and keys.row("ci-bot")["totals"]["tokens"] == 0
-    assert [e.kind for e in ledger.entries] == []
+    assert [e.kind for e in support.recorded(ledger)] == []
     status, _headers, _body = post(url, path, raw)          # control: the same call, hashable
     assert status == 200 and len(upstream.requests) == 1
     assert support.kinds(ledger) == ["endpoint_call"]
@@ -126,7 +126,7 @@ def test_a_reply_the_gateway_cannot_hash_is_refused_and_recorded(keyed, served):
     url, upstream, ledger = served([(200, "application/json", bad)])
     status, _headers, body = post(url, "/v1/messages", raw)
     assert status == 502 and "UTF-8" in body["error"]["message"]
-    entry, = ledger.entries
+    entry, = support.recorded(ledger)
     assert (entry.kind, entry.meta["reason"]) == ("endpoint_call_failed", "malformed_reply")
     assert len(upstream.requests) == 1
 
@@ -183,7 +183,7 @@ def test_the_chat_route_records_a_reply_it_cannot_hash(monkeypatch):
             {"model": "ollama:stub-model", "messages": [{"role": "user", "content": "Hi."}]},
             "http://127.0.0.1:9")
         assert code == 502 and len(upstream.requests) == 1
-        entry, = ledger.entries
+        entry, = support.recorded(ledger)
         assert (entry.kind, entry.content) == ("endpoint_call_failed", "malformed_reply")
         assert len(entry.meta["prompt_sha"]) == 16
     finally:

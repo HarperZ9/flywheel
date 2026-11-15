@@ -34,7 +34,7 @@ def test_one_call_then_three_debit_the_provider_counts_exactly(keyed, served, pa
     assert (totals["calls"], totals["tokens"]) == (3, 3 * TURN2_TOKENS)
     assert (totals["input_tokens"], totals["output_tokens"]) == (1353, 27)
     assert len(upstream.requests) == 3
-    assert [entry.meta["charged_tokens"] for entry in ledger.entries] == [460, 460, 460]
+    assert [entry.meta["charged_tokens"] for entry in support.recorded(ledger)] == [460, 460, 460]
 
 
 @pytest.mark.parametrize("path", PATHS)
@@ -49,7 +49,7 @@ def test_a_streamed_call_debits_when_the_stream_finishes(keyed, served, path):
     totals = keys.row("ci-bot")["totals"]
     assert (totals["calls"], totals["tokens"], totals["input_tokens"], totals["output_tokens"]) == (
         1, 460, 451, 9)
-    assert ledger.entries[0].meta["key"] == "ci-bot" and len(ledger.entries) == 1
+    assert support.recorded(ledger)[0].meta["key"] == "ci-bot" and len(support.recorded(ledger)) == 1
 
 
 @pytest.mark.parametrize("path", PATHS)
@@ -102,7 +102,7 @@ def test_messages_refuses_the_call_after_the_crossing_before_any_upstream_call(k
                    "zero its counters with `flywheel gateway-key reset ci-bot` or create a key "
                    "with a higher limit. Nothing was sent upstream."}}
     assert support.kinds(ledger) == ["endpoint_call", "endpoint_call_refused"]
-    refused = ledger.entries[1]
+    refused = support.recorded(ledger)[1]
     assert refused.content == "token_limit" and refused.meta == {
         "interface": "anthropic-messages", "key": "ci-bot", "reason": "token_limit",
         "key_fp": keys.row("ci-bot")["fingerprint"]}
@@ -121,7 +121,7 @@ def test_responses_refuses_the_call_after_the_crossing_before_any_upstream_call(
     assert "gateway key 'ci-bot' has reached its token limit (460 of 100 tokens used)" in (
         body["error"]["message"])
     assert support.kinds(ledger) == ["endpoint_call", "endpoint_call_refused"]
-    assert ledger.entries[1].meta["interface"] == "openai-responses"
+    assert support.recorded(ledger)[1].meta["interface"] == "openai-responses"
 
 
 @pytest.mark.parametrize("path", PATHS)
@@ -146,7 +146,7 @@ def test_a_spend_limit_is_enforced_from_the_keys_own_prices(keyed, served, path,
     assert gateway_keys.spend(keys.row("ci-bot")) == 0.000992
     said = second[2]["error"]["message"]
     assert "gateway key 'ci-bot' has reached its spend limit ($0.000992 of $0.000900 spent)" in said
-    assert ledger.entries[1].meta["reason"] == "spend_limit"
+    assert support.recorded(ledger)[1].meta["reason"] == "spend_limit"
 
 
 def test_a_key_under_its_limit_keeps_working_and_reset_reopens_one_over_it(keyed, served):
@@ -167,8 +167,8 @@ def test_a_failed_upstream_call_names_the_key_and_is_not_charged(keyed, served):
         [support.json_answer(support.load("upstream/openai_rate_limited.json"), 429)])
     assert post(url, "/v1/messages", raw)[0] == 429
     assert support.kinds(ledger) == ["endpoint_call_failed"]
-    assert ledger.entries[0].meta["key"] == "ci-bot"
-    assert ledger.entries[0].meta["key_fp"] == keys.row("ci-bot")["fingerprint"]
+    assert support.recorded(ledger)[0].meta["key"] == "ci-bot"
+    assert support.recorded(ledger)[0].meta["key_fp"] == keys.row("ci-bot")["fingerprint"]
     assert keys.row("ci-bot")["totals"]["calls"] == 0
 
 

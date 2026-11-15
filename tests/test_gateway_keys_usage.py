@@ -36,7 +36,7 @@ def test_an_unreported_count_is_charged_the_estimate_and_marked(keyed, served, p
         "calls": 1, "tokens": 7, "input_tokens": 2, "output_tokens": 5, "cache_read_tokens": 0,
         "cache_write_tokens": 0, "estimated_calls": 1, "estimated_tokens": 7}
     assert gateway_keys.spend(row) == 0.000007      # the estimate is priced the same way
-    meta = ledger.entries[0].meta
+    meta = support.recorded(ledger)[0].meta
     assert (meta["usage_reported"], meta["estimated"], meta["charged_tokens"]) == (False, True, 7)
 
 
@@ -56,7 +56,7 @@ def test_a_reported_count_is_flagged_true_and_not_marked_estimated(keyed, served
     url, _upstream, ledger = served(turn2(1))
     _status, _headers, body = post(url, path, raw)
     assert body["x_flywheel"]["usage_reported"] is True
-    meta = ledger.entries[0].meta
+    meta = support.recorded(ledger)[0].meta
     assert meta["usage_reported"] is True and "estimated" not in meta
     assert keys.row("ci-bot")["totals"]["estimated_calls"] == 0
 
@@ -70,7 +70,7 @@ def test_messages_sends_zeros_and_responses_sends_null_for_an_unreported_count(s
                                 "cache_read_input_tokens": None}
     assert "usage" in response and response["usage"] is None
     assert message["x_flywheel"] == response["x_flywheel"] == {"usage_reported": False}
-    metas = [entry.meta for entry in ledger.entries]
+    metas = [entry.meta for entry in support.recorded(ledger)]
     assert [meta["usage_reported"] for meta in metas] == [False, False]
     assert all(meta["key"] == "owner" and "estimated" not in meta for meta in metas)
 

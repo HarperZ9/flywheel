@@ -22,6 +22,11 @@ had answered, on every call, for as long as it lasted.
            (`unconfirmed`: a reply recorded there was held back). When the file's
            tail is cut short or differs, the segment is left as it is and a
            new segment records the break, as at a start (gateway_ledger).
+  commits  `ledger.commits` is [count, seconds, seconds for started entries]:
+           how many entries were committed to the disk and how long the
+           operating system took inside `os.fsync`. The overhead gate reads
+           it to tell the gateway's own time from the disk's
+           (tests/test_gateway_overhead_timing.py).
   strays   names the files in the ledger folder that look like segments and
            are not (`segment-backup.jsonl`, `segment-000001 - Copy.jsonl`).
            They are never read as part of the ledger.
@@ -81,7 +86,12 @@ def write(ledger, entry) -> None:
     try:
         _put(ledger._file, line)
         if ledger._sync:
+            began = time.perf_counter()
             os.fsync(ledger._file.fileno())
+            took, spent = time.perf_counter() - began, ledger.__dict__.setdefault(
+                "commits", [0, 0.0, 0.0])
+            spent[0], spent[1] = spent[0] + 1, spent[1] + took
+            spent[2] += took if entry.kind == "endpoint_call_started" else 0.0
     except Exception as exc:            # noqa: BLE001 - whatever stopped the write, calls stop
         _fail(ledger, exc)
         raise
@@ -117,6 +127,9 @@ def usable(ledger):
     """`ledger` when it takes writes, else None. A failed ledger is tried again here."""
     failed = ledger.failed
     if failed is None:
+        if ledger.calls.orphans:        # an operator may have left a request to settle one
+            from .gateway_ledger_settle import sweep
+            sweep(ledger)
         return ledger
     with ledger._lock:
         if ledger.failed is None:
@@ -159,8 +172,9 @@ def resume(ledger) -> None:
     known = {entry.seq: entry for entry in (entries if same else ledger.entries)}
     late = entries[len(held):] if same else []
     seqs = set(failed.get("unconfirmed", ())) | {entry.seq for entry in late}
-    unconfirmed = [{"segment": ledger.path.name, "seq": seq, "kind": known[seq].kind,
-                    "entry_hash": known[seq].entry_hash} for seq in sorted(seqs) if seq in known]
+    shaky = [known[seq] for seq in sorted(seqs) if seq in known]
+    unconfirmed = [{"segment": ledger.path.name, "seq": entry.seq, "kind": entry.kind,
+                    "entry_hash": entry.entry_hash} for entry in shaky]
     try:
         if same:
             ledger.entries = entries    # a line that reached the disk although its write failed
@@ -178,6 +192,7 @@ def resume(ledger) -> None:
             "reason": "append_failed", "error": failed["error"], "since": failed["since"],
             "until": int(ledger.clock()), "appends_refused": failed["refused"],
             **({"unconfirmed": unconfirmed} if unconfirmed else {})})
+        ledger.calls.flush(ledger, shaky)   # the ends of the calls that were in flight
     except BaseException:
         if ledger.path != kept[0]:      # a new segment that could not be started
             try:

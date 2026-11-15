@@ -53,9 +53,9 @@ def _status(sock) -> int:
 
 def _settled(ledger, count: int) -> None:
     deadline = time.monotonic() + 10
-    while len(ledger.entries) < count and time.monotonic() < deadline:
+    while len(support.ended(ledger)) < count and time.monotonic() < deadline:
         time.sleep(0.02)
-    assert len(ledger.entries) == count
+    assert len(support.recorded(ledger)) == count
 
 
 def _caller(keys, name: str):
@@ -107,7 +107,7 @@ def test_a_stream_whose_headers_never_left_is_recorded_and_charged(
     response = handle({**BODIES[path], "stream": True}, {}, ledger,
                       caller=_caller(keys, "ci-bot"))
     gateway_interfaces.send(_Gone(), response)      # the reset is logged, not raised
-    entry, = ledger.entries
+    entry, = support.recorded(ledger)
     _abandoned(entry, keys)
 
 
@@ -129,7 +129,7 @@ def test_control_a_stream_that_is_read_to_its_end_is_recorded_once(keyed, monkey
             pass
     gateway_interfaces.send(Sink(), response)
     assert support.kinds(ledger) == ["endpoint_call"]
-    assert "abandoned" not in ledger.entries[0].meta
+    assert "abandoned" not in support.recorded(ledger)[0].meta
     assert keys.row("ci-bot")["totals"]["tokens"] == TURN2_TOKENS
 
 
@@ -168,7 +168,7 @@ def test_a_client_that_resets_while_the_upstream_is_opening_is_charged(
             sock.close()                        # an abortive close: the peer sees a reset
             _settled(ledger, 1)
             assert len(seen) == 1, "the provider was called once"
-            _abandoned(ledger.entries[0], keys)
+            _abandoned(support.recorded(ledger)[0], keys)
     finally:
         upstream.shutdown()
         upstream.server_close()

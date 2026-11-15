@@ -43,13 +43,13 @@ def test_ledger_entries_tell_two_keys_and_the_owner_apart(keyed, served):
                              ("/v1/messages", support.TOKEN), ("/v1/responses", first)):
         assert post(url, path, credential)[0] == 200
     said = [(entry.meta["interface"], entry.meta["key"], entry.meta.get("key_fp"))
-            for entry in ledger.entries]
+            for entry in support.recorded(ledger)]
     one, two = keys.row("ci-bot")["fingerprint"], keys.row("teammate")["fingerprint"]
     assert one != two
     assert said == [("anthropic-messages", "ci-bot", one), ("openai-responses", "teammate", two),
                     ("anthropic-messages", "owner", None), ("openai-responses", "ci-bot", one)]
-    assert "charged_tokens" not in ledger.entries[2].meta      # the owner has no budget
-    assert all(entry.meta["usage_reported"] is True for entry in ledger.entries)
+    assert "charged_tokens" not in support.recorded(ledger)[2].meta      # the owner has no budget
+    assert all(entry.meta["usage_reported"] is True for entry in support.recorded(ledger))
     assert keys.row("ci-bot")["totals"]["calls"] == 2
     assert keys.row("teammate")["totals"]["calls"] == 1
     assert ledger.verify()
@@ -128,7 +128,7 @@ def test_a_model_off_the_allow_list_is_refused_with_nothing_sent_upstream(
     if path == "/v1/responses":
         assert (body["error"]["code"], body["error"]["param"]) == ("model_not_allowed", "model")
     assert support.kinds(ledger) == ["endpoint_call_refused"]
-    assert ledger.entries[0].meta["reason"] == "model_not_allowed"
+    assert support.recorded(ledger)[0].meta["reason"] == "model_not_allowed"
     allowed = {**BODIES[path], "model": "claude-haiku-4-5"}
     assert post(url, path, raw, allowed)[0] == 200 and len(upstream.requests) == 1
     assert keys.row("ci-bot")["totals"]["calls"] == 1
@@ -157,7 +157,7 @@ def test_with_gateway_authentication_off_a_key_is_still_itself(keyed, monkeypatc
         keys.revoke("ci-bot")
         status, headers, body = post(url, "/v1/messages", raw)
         other, _headers, shaped = post(url, "/v1/responses", raw)
-    assert [entry.meta["key"] for entry in ledger.entries] == ["ci-bot", "owner"]
+    assert [entry.meta["key"] for entry in support.recorded(ledger)] == ["ci-bot", "owner"]
     assert status == 401 and body["type"] == "error" and body["request_id"] == headers["request-id"]
     assert body["error"]["type"] == "authentication_error"
     assert other == 401 and shaped["error"]["code"] == "invalid_api_key"

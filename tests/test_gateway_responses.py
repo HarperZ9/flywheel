@@ -46,7 +46,7 @@ def test_plain_text_is_a_response_object_field_by_field(monkeypatch, provider):
     assert answer.body["id"].startswith("resp_") and answer.body["created_at"] > 0
     assert answer.body["output"][0]["content"][0]["text"] == TEXT
     assert support.kinds(ledger) == ["endpoint_call"]
-    assert ledger.entries[0].meta["interface"] == "openai-responses"
+    assert support.recorded(ledger)[0].meta["interface"] == "openai-responses"
 
 
 def test_receipt_recomputes_from_the_turn_and_the_reply(monkeypatch):
@@ -58,8 +58,8 @@ def test_receipt_recomputes_from_the_turn_and_the_reply(monkeypatch):
                           "served_model": "gpt-5.3-codex-spark"}, "openai:gpt-5.3-codex-spark")
     assert answer.body["x_receipt"] == again
     assert answer.headers["x-receipt-id"] == again["receipt_id"]
-    meta = ledger.entries[0].meta
-    assert meta["response_sha"] == prompt_hash(TEXT) == ledger.entries[0].content
+    meta = support.recorded(ledger)[0].meta
+    assert meta["response_sha"] == prompt_hash(TEXT) == support.recorded(ledger)[0].content
     assert meta["prompt_sha"] == prompt_hash("What changed?")
 
 
@@ -153,7 +153,7 @@ def test_no_upstream_counts_means_null_usage_and_a_flag_never_an_estimate(monkey
         plain=[support.upstream_load("upstream/openai_no_usage.json")])
     assert "usage" in answer.body and answer.body["usage"] is None
     assert answer.body["x_flywheel"] == {"usage_reported": False}
-    assert ledger.entries[0].meta["usage_reported"] is False
+    assert support.recorded(ledger)[0].meta["usage_reported"] is False
 
 
 def test_a_reply_cut_by_the_token_limit_is_incomplete(monkeypatch):
@@ -178,7 +178,7 @@ def test_openai_stream_becomes_responses_events_in_order(monkeypatch, request_na
     assert support.normal(got) == support.load(expected)
     assert [data["sequence_number"] for _name, data in got] == list(range(len(got)))
     assert all(name == data["type"] for name, data in got)
-    assert receipt["response_hash"] == ledger.entries[0].meta["response_sha"]
+    assert receipt["response_hash"] == support.recorded(ledger)[0].meta["response_sha"]
     assert backend.stream_transport.requests[0]["body"]["stream"] is True
     assert support.kinds(ledger) == ["endpoint_call"]
 

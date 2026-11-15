@@ -30,17 +30,27 @@ delivered with no entry and no charge.
       The backstop: a contacted account that reached none of the three ends
       is closed with `lost`.
 
-`unbilled(send)` marks the one contact that is made with no account on
+`unbilled(send, url)` marks the one contact that is made with no account on
 purpose: token counting, which the provider does not bill and the ledger
-does not record (docs/KNOWN-LIMITS-2.0.0.md).
+does not record (docs/KNOWN-LIMITS-2.0.0.md). It refuses any URL that is not
+a token-count URL, so the exception cannot carry another request.
 
 `encodable(value)` and `unencodable(path)` are the intake check: a request
 body with a string that is not valid Unicode (a lone surrogate, sent as the
 JSON escape \\ud800) is answered 400 before a key is admitted.
 
-What this does not do. The entry is written after the provider answers,
-because it holds the hash of the reply. A gateway that stops between the two
-leaves no entry (docs/KNOWN-LIMITS-2.0.0.md).
+Write-ahead. The end entry is written after the provider answers, because it
+holds the hash of the reply. So `reach` first appends `endpoint_call_started`
+(gateway_calls) and commits it to the disk; only then does the request leave.
+A gateway that stops between contact and the end entry leaves the started
+entry, which `flywheel gateway-ledger verify` reports as an unsettled call.
+When the started entry cannot be written the request is refused with 503 and
+nothing is sent.
+
+`Call` is the same accounting without a `Turn`: the chat routes
+(/v1/chat/completions, /api/route) use it through
+`endpoint_ledgered.LedgeredProposer`, so every route that reaches a provider
+records through one object.
 """
 from __future__ import annotations
 
@@ -48,11 +58,12 @@ import contextvars
 import logging
 import uuid
 
-from . import gateway_turn as _turn
+from . import gateway_calls as _calls, gateway_turn as _turn
 
 _LOG = logging.getLogger(__name__)
 _CONTACT = contextvars.ContextVar("flywheel_gateway_contact", default=None)
 UNBILLED = "unbilled"                   # what `contacting()` returns inside `unbilled`
+COUNT_PATH = "/v1/messages/count_tokens"    # the only path `unbilled` will contact
 REASON = "accounting_error"
 TEXT = ("the request holds text that is not valid UTF-8 (a lone surrogate escape such as "
         "\\ud800), so the call cannot be hashed for the gateway ledger. Nothing was sent "
@@ -108,8 +119,18 @@ def readable(backend, reply):
         "the reply was refused")
 
 
-def unbilled(send):
-    """Contact an upstream for a request that is not billed and not recorded."""
+def unbilled(send, url: str):
+    """Contact an upstream for a request that is not billed and not recorded.
+
+    Only token counting is: `url` must end in `/v1/messages/count_tokens`, the
+    Claude API route its documentation calls free to use
+    (https://platform.claude.com/docs/en/build-with-claude/token-counting,
+    "Pricing and rate limits", read 2026-11-14). It creates no message and
+    rejects server tools and the MCP connector. Any other URL is refused here,
+    before `send` is called."""
+    if not str(url).split("?", 1)[0].endswith(COUNT_PATH):
+        raise RuntimeError("only a token-count request may contact an upstream outside an "
+                           "account; nothing was sent")
     token = _CONTACT.set(UNBILLED)
     try:
         return send()
@@ -117,34 +138,80 @@ def unbilled(send):
         _CONTACT.reset(token)
 
 
-class Account:
-    """The accounting of one upstream call. States: open, contacted, closed."""
+class Call:
+    """The accounting of one provider call. States: open, contacted, closed.
 
-    def __init__(self, ledger, upstream, turn):
-        from .gateway_key_gate import OWNER
+    `base` holds the entry fields known before contact (endpoint, interface,
+    prompt_sha, the caller's fields). `reserved` is what a virtual key's call
+    reserved at admission; it goes into the started entry."""
+
+    def __init__(self, ledger, base: dict, reserved=None):
         if ledger is None:
             raise RuntimeError("the gateway ledger is unavailable; nothing was sent upstream")
-        self.ledger, self.upstream, self.turn = ledger, upstream, turn
-        self.caller, self.state = getattr(turn, "caller", None) or OWNER, "open"
-        try:
-            turn.text_form()            # kept on the turn: nothing later flattens it again
-            self.base = {"endpoint": upstream.name, "interface": turn.interface,
-                         "prompt_sha": _turn.prompt_sha(turn), **self.caller.meta}
-            if not encodable(self.base):
-                raise UnicodeError("a ledger field is not valid UTF-8")
-        except UnicodeError as exc:
-            raise _turn.TurnRefused("invalid", TEXT) from exc
+        self.ledger, self.base, self.reserved = ledger, dict(base), reserved
+        self.state, self.call = "open", ""
+
+    def begun(self) -> None:
+        """The started entry is in the ledger. `Account` also names the call on its turn."""
 
     def reach(self, send):
-        """Contact the upstream: call `send` and return what it returns."""
+        """Contact the upstream: call `send` and return what it returns.
+
+        The first contact of a call appends its started entry first. When that
+        fails the call is refused (503) and `send` is not called."""
         if self.state == "closed":
             raise RuntimeError("this call is already recorded; it cannot contact an upstream")
+        if self.state == "open":
+            try:
+                self.call = _calls.begin(self.ledger, self.base, self.reserved)
+            except Exception as exc:    # noqa: BLE001 - no started entry, no contact
+                _LOG.error("gateway call to %s refused: its start could not be recorded "
+                           "(%s)", self.base.get("endpoint"), type(exc).__name__)
+                raise _turn.UpstreamFailed(_calls.TEXT, status=503, reason="ledger_unavailable",
+                                           headers={"retry-after": "5"}) from exc
+            self.base["call"] = self.call
+            self.begun()
         self.state = "contacted"
         token = _CONTACT.set(self)
         try:
             return send()
         finally:
             _CONTACT.reset(token)
+
+    def end(self, kind: str, content: str, meta: dict) -> None:
+        """Append the end entry of a call that was contacted. A refused entry is kept
+        for the ledger's resume (gateway_calls.defer) and the error is raised."""
+        self.state = "closed"
+        meta = {**self.base, **meta}
+        try:
+            with _turn._APPEND:
+                self.ledger.append(kind, content, meta)
+        except Exception:
+            _calls.defer(self.ledger, kind, content, meta)
+            raise
+
+
+class Account(Call):
+    """The accounting of one model-interface turn."""
+
+    def __init__(self, ledger, upstream, turn):
+        from .gateway_key_gate import OWNER
+        if ledger is None:
+            raise RuntimeError("the gateway ledger is unavailable; nothing was sent upstream")
+        self.upstream, self.turn = upstream, turn
+        self.caller = getattr(turn, "caller", None) or OWNER
+        try:
+            turn.text_form()            # kept on the turn: nothing later flattens it again
+            base = {"endpoint": upstream.name, "interface": turn.interface,
+                    "prompt_sha": _turn.prompt_sha(turn), **self.caller.meta}
+            if not encodable(base):
+                raise UnicodeError("a ledger field is not valid UTF-8")
+        except UnicodeError as exc:
+            raise _turn.TurnRefused("invalid", TEXT) from exc
+        super().__init__(ledger, base, getattr(self.caller, "ticket", None))
+
+    def begun(self) -> None:
+        self.turn.call = self.call      # gateway_turn puts it in every end entry
 
     def served(self, reply, delivered: bool = False) -> None:
         """The upstream answered: debit the caller and append `endpoint_call`."""
@@ -194,7 +261,8 @@ class Account:
         try:
             with _turn._APPEND:
                 self.ledger.append("endpoint_call_failed", reason, meta)
-        except Exception as again:      # noqa: BLE001 - logged; the client is still told
+        except Exception as again:      # noqa: BLE001 - kept for the resume; the client is told
+            _calls.defer(self.ledger, "endpoint_call_failed", reason, meta)
             _LOG.error("gateway ledger refused the accounting-failure entry as well (%s: %s)",
                        type(again).__name__, redacted_text(str(again)))
         what = ("the text already sent on this stream was delivered" if delivered

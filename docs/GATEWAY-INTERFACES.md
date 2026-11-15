@@ -165,7 +165,9 @@ the upstream reports them at the end.
 
 ### Ledger and receipt
 
-Every served call appends an `endpoint_call` entry to the gateway ledger with
+Every call appends `endpoint_call_started` to the gateway ledger before the
+provider is contacted ("The gateway ledger" below). A served call then appends
+an `endpoint_call` entry with
 the endpoint, the model reference, the prompt hash, the response hash and
 `"interface": "anthropic-messages"`. The same conversation sent through
 `/v1/chat/completions` leaves an entry with the same hashes. The entry also
@@ -408,7 +410,9 @@ follows. The `openai` SDK yields this event to the caller and does not raise.
 
 ### Ledger and receipt
 
-Every served call appends an `endpoint_call` entry to the gateway ledger with
+Every call appends `endpoint_call_started` to the gateway ledger before the
+provider is contacted ("The gateway ledger" below). A served call then appends
+an `endpoint_call` entry with
 `"interface": "openai-responses"`. The same text conversation sent through
 `/v1/chat/completions` or `/v1/messages` leaves an entry with the same
 hashes. The entry also records `usage_reported` and who made the call
@@ -754,9 +758,8 @@ sending a few bytes. They apply before the gateway knows who is calling:
   timeout. A client that is still sending header lines after that is closed,
   after at most one more read;
 - a request body must arrive within four read timeouts (two minutes by
-  default). On `/v1/messages`, `/v1/messages/count_tokens` and
-  `/v1/responses` the answer is 408; on the other routes the connection is
-  closed;
+  default). The answer is 408 on every route that reads a body, and the
+  connection is then closed. Nothing has been sent upstream at that point;
 - after a refusal that did not read the body (a 401, for one) the gateway
   reads and discards what the client still sends, so that the answer is not
   lost to a connection reset. That read ends after two seconds.
@@ -798,8 +801,17 @@ charge cannot be written, the entry says `"charge_failed": true`.
 
 ### When a call cannot be charged or recorded
 
-The debit and the ledger entry are written after the upstream has answered.
-If either one fails, the call still has a ledger entry and the client is told.
+The debit and the end entry are written after the upstream has answered. If
+either one fails, the call still has a ledger entry and the client is told.
+
+One rule decides what happens to the key: a call that reached the provider is
+accounted when its key was charged and its end entry was written. When either
+step fails, for any reason, the key is suspended. Its next call is refused
+with 403 and reaches no upstream, until an operator clears it. The reason is
+unrecorded spend: a key whose totals or whose ledger miss a call should not
+make the next one before someone has read the ledger. A failure of the
+provider (an error status, a cut stream, a malformed reply) is not such a
+failure and suspends nothing, and the gateway token has no budget to protect.
 
 - A reply that has not been sent yet is held back. The client gets 500 with a
   message that says the call could not be charged or could not be recorded,
@@ -807,10 +819,13 @@ If either one fails, the call still has a ledger entry and the client is told.
   `ledger_failed`, the caller, the response hash and `"delivered": false`.
 - A stream has already sent its text by then. The stream ends with the
   interface's error event in place of its normal last event. The ledger entry
-  has reason `delivered_unrecorded_charge`, `"delivered": true`, `cause`
-  (`charge_failed` or `ledger_failed`) and the `charged_tokens` that were due.
-  The key is suspended: its next call is refused with 403 and reaches no
-  upstream.
+  has reason `delivered_unrecorded_charge`, `"delivered": true` and `cause`
+  (`charge_failed` or `ledger_failed`).
+- When the debit is the step that failed, the entry says `"charged_tokens":
+  0` and gives the amount that was due as `uncharged_tokens`. The same holds
+  for an unfinished stream whose part charge failed
+  (`"charge_failed": true`).
+- A fault nobody planned for is recorded with the reason `accounting_error`.
 - To lift a suspension, read the entry, correct the totals if you want them
   corrected, and run `flywheel gateway-key clear NAME`. `flywheel gateway-key
   list` and `show` print the state `suspended`.
@@ -883,9 +898,24 @@ real system credential store.
 
 ## The gateway ledger
 
-Every model call the gateway routes is recorded in one ledger: `/v1/messages`,
-`/v1/responses` and the `/v1/chat/completions` path write to the same one. It
-is a file under the Flywheel home, so it outlives the gateway process.
+Every provider call the gateway routes is recorded in one ledger:
+`/v1/messages`, `/v1/responses`, `/v1/chat/completions`, `/api/route` and
+`/v1/embeddings` write to the same one. It is a file under the Flywheel home,
+so it outlives the gateway process.
+
+A call is in the ledger before it is made. Each call that will contact a
+provider has two entries:
+
+- `endpoint_call_started`, appended and committed to the disk before the
+  request leaves. Its content is the call id. Its meta has the route
+  (`endpoint`, `interface`), the hash of the request (`prompt_sha`), the
+  caller (`key`, and `key_fp` for a virtual key), `call`, and for a virtual
+  key `reserved`: the input and output tokens the call reserved at admission.
+- the end entry, with the same `call`: `endpoint_call` for a served call, or
+  `endpoint_call_failed` with a `reason`.
+
+If the started entry cannot be written, the call is refused with 503 and
+nothing is sent. A provider request never leaves without its started entry.
 
 ```text
 <Flywheel home>/gateway-ledger/segment-000001.jsonl   a header line, then one entry per line
@@ -907,6 +937,8 @@ flywheel gateway-ledger show --key ci-bot      # the calls of one gateway key
 flywheel gateway-ledger show --key owner       # calls made with the gateway token
 flywheel gateway-ledger show --kind endpoint_call_failed --last 20 --json
 flywheel gateway-ledger show --full            # every field whole
+flywheel gateway-ledger show --unsettled       # calls that started and never ended
+flywheel gateway-ledger settle CALL --input 451 --output 9    # end one by hand
 ```
 
 `verify` recomputes every hash and link, checks each segment's header against
@@ -916,9 +948,39 @@ is that name: served calls, failed calls and refusals. Entries that name no
 key (the chat path) count as the owner's. No key can be named `owner`:
 `flywheel gateway-key create owner` is refused, so that filter lists the
 gateway token's calls only. `show` exits 1 when the ledger does not verify,
-after printing the entries that do. Both commands only read and can run
+after printing the entries that do. `verify` and `show` only read and can run
 while the gateway is running. The ledger has no HTTP route, so a virtual key
 cannot read it.
+
+### Unsettled calls
+
+A started entry with no end entry is an unsettled call. A gateway leaves one
+when it stops between the two: the process was killed, or the machine lost
+power, after the request could have left. The provider may have billed the
+call. Because the started entry is written before contact, an unsettled call
+can also be one that was never sent.
+
+- `verify` names each unsettled call with its key, endpoint and reservation,
+  and exits 3 (1 still means the chain is broken). `show` marks the started
+  entry `state=UNSETTLED` and exits 3 as well; `show --unsettled` lists only
+  those.
+- A gateway that starts and finds such calls appends one `calls_unsettled`
+  entry that names them, and logs it at error level.
+- The reservation of an unsettled call counts against its key: it is added
+  to the key's totals at every admission check, so the key cannot spend it
+  twice. A refusal for that reason says so.
+- `flywheel gateway-ledger settle CALL` ends the call. Read what the provider
+  billed from its usage page and give it as `--input N --output N`, or say
+  `--no-charge`. The ledger gets `endpoint_call_settled` with the call id,
+  `settled_by: operator` and the amount; the key is charged that amount and
+  the reservation is free. With no gateway running the entry is written at
+  once. With one running, only it may append, so the command leaves a request
+  file in the ledger folder and the gateway applies it at its next model
+  call. A call a running gateway is still making is shown as `open`, and
+  `settle` refuses it.
+
+Settling records what you say. Flywheel does not check it against the
+provider.
 
 `verify` fails when the head record is there and no segment file is: the
 segments were removed. A home that has never recorded a call has neither
@@ -947,36 +1009,57 @@ serves that call if the write works. It tries once more when it stops, so a
 gateway that is shut down during the failure still records the gap if the
 disk allows it by then.
 
-Every model interface writes its entry after the provider has answered,
-because the entry holds the hash of the reply. So every call already in
-flight when the first append fails has reached the provider: at most a
-key's in-flight limit for each key, and not bounded for the gateway token.
-A plain reply is then held back and answered 500, and the key is charged.
-A stream's text has already left; it ends with an error event and the key
-is suspended, as for any reply that was delivered and could not be
-recorded. A write that fails for any reason marks the ledger failed.
+A call whose started entry cannot be written is refused with 503 and is
+never sent, so the first call to meet the failure reaches no provider. The
+calls that were already in flight are different: their started entries are
+on disk and their requests have left. That is at most a key's in-flight
+limit for each key, and not bounded for the gateway token. When such a call
+ends, its end entry cannot be written. A plain reply is held back and
+answered 500; a stream's text has already left and it ends with an error
+event. Either way the key is suspended, as for any call that reached the
+provider and was not fully accounted, and the gateway keeps the end entry.
+A write that fails for any reason marks the ledger failed.
 
 When writes work again the gateway reads the segment back. If it verifies
-and begins with the entries the gateway holds, the gateway appends to it,
-and the first new entry is a `ledger_gap` with what failed, when, and how
-many appends were refused; `verify` passes. If the failed write left a line
-cut short, the segment is left as it is and a new segment records the
-break, as after a damaged file: `verify` then reports the break and exits 1.
+and begins with the entries the gateway holds, the gateway appends to it.
+The first new entry is a `ledger_gap` with what failed, when, and how many
+appends were refused. After it come the end entries it kept, each marked
+`late`, so every call that was in flight has its start and its end in the
+ledger; `verify` passes. A started entry whose line reached the disk while
+its commit failed is ended there too, with the reason `not_sent`. If the
+failed write left a line cut short, the segment is left as it is and a new
+segment records the break, as after a damaged file: `verify` then reports
+the break and exits 1. The new segment's header carries the calls that were
+still open (`open_calls`). A gateway that stops while the ledger is still
+failed can write none of this; the calls that were in flight are then
+unsettled calls, and `verify` names them.
+
+A call can have a second end entry marked `late`. That happens when its
+first end entry reached the file and the write still reported a failure,
+so the reply was held back: the `ledger_gap` lists the first under
+`unconfirmed`, and the late entry says what happened. Where both exist, the
+late one holds.
 
 ### When an entry reaches the disk
 
 Each entry is written to the segment and committed to the disk (fsync) before
-the gateway goes on. For a plain reply that is before the reply is sent. For
-a stream it is before the last event (`message_stop`, `response.completed`):
-the text of a stream leaves before its entry exists, because the entry holds
-the hash of the whole reply. A gateway that stops between a provider's reply
-and the append leaves no entry for that call.
+the gateway goes on. The started entry is committed before the request leaves
+the gateway. The end entry of a plain reply is committed before the reply is
+sent. For a stream it is committed before the last event (`message_stop`,
+`response.completed`): the text of a stream leaves before its end entry
+exists, because that entry holds the hash of the whole reply. A gateway that
+stops between a provider's reply and the end entry leaves the started entry:
+an unsettled call.
 
-`FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips the fsync. A crash of the gateway
-process then still loses nothing, and a power loss can lose the entries the
-operating system had not yet written. On the measured machine an append took
-a median of 0.02 ms without the fsync and 1.2 ms and 2.9 ms with it on two
-drives (380 appends each, 2026-11-14).
+So a call costs two commits. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips them. A
+crash of the gateway process then still loses nothing, and a power loss can
+lose the entries the operating system had not yet written, started entries
+included. On the measured machine an append took a median of 0.02 ms without
+the fsync and 1.2 ms and 2.9 ms with it on two drives (380 appends each,
+2026-11-14); the two commits of one call together took 2.3 to 3.7 ms there
+(2026-11-15). The time inside the commit is the disk's: on a slow or busy
+disk it is the larger part of what the gateway adds to a call, and the
+ledger counts it (`tests/test_gateway_overhead_timing.py` prints it).
 
 ### Restarts and a broken chain
 
@@ -997,8 +1080,8 @@ cannot be created or written. In each case the gateway logs the cause at
 error level and answers model calls with 503 and `retry-after: 5` before it
 contacts any upstream: `/v1/messages` (plain and streamed),
 `/v1/messages/count_tokens`, `/v1/responses` (plain and streamed),
-`/v1/chat/completions` with a provider endpoint, and `/api/route`. Nothing is
-served without a record, and nothing is billed. The gateway tries the ledger
+`/v1/chat/completions` with a provider endpoint, `/api/route` and
+`/v1/embeddings`. Nothing is served without a record, and nothing is billed. The gateway tries the ledger
 again on every call, so the refusals end when the other process stops or the
 folder becomes writable.
 
@@ -1049,7 +1132,12 @@ waited about 6 ms on the measured machine, and it used to be the next call's
 key check. Every check and every debit still reads the file.
 
 A test holds the figure in CI: `tests/test_gateway_overhead_timing.py` fails
-when the median of five warm calls is 50 ms or more over the stub, for both
-interfaces, streamed and not. Its controls add 200 ms inside the gateway,
-which must fail, and make the stub four times slower, which must change
-nothing.
+when the median of five warm calls spends 25 ms or more of the gateway's own
+time over the stub, for both interfaces, streamed and not. The time the
+operating system spends committing the call's two ledger entries to the disk
+is measured apart and printed, because it is the disk's: one CI runner took
+up to 310 ms for it on a call whose own gateway time was under 3 ms. Its
+controls add 200 ms inside the gateway and 200 ms to the ledger write before
+the commit, which must fail; make a commit take 100 ms, which must be
+reported and not counted; and make the stub four times slower, which must
+change nothing. The test also asserts two commits per call.
