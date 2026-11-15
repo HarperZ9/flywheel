@@ -328,6 +328,7 @@ def _cmd_audit(args):
     recs = list(_load_receipts(args.paths or ["."]))
     by_gate, by_verdict, blocked_rules, reverify = Counter(), Counter(), Counter(), Counter()
     stale = recent = 0
+    missing = []
     for _fp, rec in recs:
         by_gate[rec.get("gate", "?")] += 1
         by_verdict[rec.get("verdict", "?")] += 1
@@ -342,6 +343,7 @@ def _cmd_audit(args):
             src = rec.get("file")
             if not src or not os.path.isfile(src):
                 reverify["source-missing"] += 1
+                missing.append((_fp, src))
                 continue
             try:
                 with open(src, "rb") as fh:
@@ -384,11 +386,24 @@ def _cmd_audit(args):
         if args.reverify:
             print(f"[audit] reverify: {dict(reverify)}")
     # Fail closed on a real integrity failure: the source drifted from its receipt,
-    # changed since screening, or cannot be read. A sub-threshold or stale-ruleset
-    # Unverifiable is informational, never a gate failure.
+    # changed since screening, cannot be read, or is not there. A receipt with no
+    # source was not re-verified, and a gate that found no receipt verified nothing,
+    # so both fail. A sub-threshold or stale-ruleset Unverifiable is informational,
+    # never a gate failure.
     bad = (reverify.get("Drift", 0) + reverify.get("source-changed", 0)
-           + reverify.get("source-unreadable", 0))
-    return 1 if (args.gate and args.reverify and bad) else 0
+           + reverify.get("source-unreadable", 0) + reverify.get("source-missing", 0))
+    if not (args.gate and args.reverify):
+        return 0
+    for fp, src in missing:
+        named = f"source {src!r} is not a file under {os.getcwd()}" if src else "names no source"
+        print(f"[audit] {fp}: {named}. Run the audit from the folder the receipt's "
+              f"path is relative to, restore the source, or remove the receipt.",
+              file=sys.stderr)
+    if not recs:
+        print(f"[audit] no receipt found under {', '.join(args.paths or ['.'])}: "
+              f"the gate re-verified nothing.", file=sys.stderr)
+        return 1
+    return 1 if bad else 0
 
 
 def _cmd_score(args):

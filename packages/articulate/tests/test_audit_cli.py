@@ -4,8 +4,9 @@ The envelope records who screened a text and when, as issuance provenance that
 never enters the verified core. The audit CLI queries committed receipts locally:
 recorded verdicts, blocked rules, stale-ruleset and recent counts, and (with
 --reverify) whether each receipt still holds against its source, failing the gate
-only on a real integrity break (drift, a source that changed since screening, or
-an unreadable source), never on an honest sub-threshold abstention.
+only on a real integrity break (drift, a source that changed since screening, an
+unreadable source, a source that is not there, or no receipt at all), never on an
+honest sub-threshold abstention.
 """
 import json
 import os
@@ -122,12 +123,55 @@ def test_reverify_source_changed_fails_the_gate(work, capsys):
     assert out["reverify"].get("source-changed") == 1 and rc == 1
 
 
-def test_reverify_source_missing_is_informational(work, capsys):
+def test_reverify_source_missing_fails_the_gate(work, capsys):
+    # Until 0.19.1 this passed the gate: with every source gone the audit
+    # re-verified nothing and still exited 0.
     src = _commit(work, "a.json", "a.md", TEXT)
     os.remove(src)
     rc = cli_main(["audit", work, "--reverify", "--gate", "--json"])
+    captured = capsys.readouterr()
+    out = json.loads(captured.out)
+    assert out["reverify"] == {"source-missing": 1} and rc == 1
+    assert "a.json" in captured.err and "a.md" in captured.err   # names receipt and source
+
+
+def test_reverify_one_missing_source_among_matches_fails_the_gate(work, capsys):
+    _commit(work, "a.json", "a.md", TEXT)
+    gone = _commit(work, "b.json", "b.md", LONG_CLEAN)
+    os.remove(gone)
+    rc = cli_main(["audit", work, "--reverify", "--gate", "--json"])
     out = json.loads(capsys.readouterr().out)
-    assert out["reverify"].get("source-missing") == 1 and rc == 0   # missing is not drift
+    assert out["reverify"] == {"Match": 1, "source-missing": 1} and rc == 1
+
+
+def test_reverify_receipt_naming_no_source_fails_the_gate(work, capsys):
+    _commit(work, "a.json", "a.md", TEXT)
+    p = os.path.join(work, "a.json")
+    with open(p, encoding="utf-8") as fh:
+        rec = json.load(fh)
+    rec.pop("file", None)
+    with open(p, "w", encoding="utf-8") as fh:
+        json.dump(rec, fh)
+    rc = cli_main(["audit", work, "--reverify", "--gate", "--json"])
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["reverify"] == {"source-missing": 1} and rc == 1
+    assert "names no source" in captured.err
+
+
+def test_reverify_gate_with_no_receipts_fails(work, capsys):
+    # A gate pointed at a folder with no receipt in it re-verified nothing.
+    rc = cli_main(["audit", work, "--reverify", "--gate", "--json"])
+    captured = capsys.readouterr()
+    assert json.loads(captured.out)["receipts"] == 0 and rc == 1
+    assert "re-verified nothing" in captured.err
+
+
+def test_reverify_missing_source_without_the_gate_only_reports(work, capsys):
+    src = _commit(work, "a.json", "a.md", TEXT)
+    os.remove(src)
+    rc = cli_main(["audit", work, "--reverify", "--json"])
+    out = json.loads(capsys.readouterr().out)
+    assert out["reverify"] == {"source-missing": 1} and rc == 0
 
 
 def test_reverify_subthreshold_does_not_fail_the_gate(work, capsys):

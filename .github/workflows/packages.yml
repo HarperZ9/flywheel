@@ -794,7 +794,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
+        # Pinned as in articulate's own workflow: ubuntu-latest moved to 26.04,
+        # where setup-python has no 3.9 build; 24.04 carries the whole matrix.
+        os: [ubuntu-24.04]
         python: ["3.9", "3.10", "3.11", "3.12"]
         include:
           - os: windows-latest
@@ -935,6 +937,23 @@ jobs:
           python -m articulate.cli audit tests/fixtures/action/receipts --reverify > audit-clean.log 2>&1
           cat audit-clean.log
           grep -q "'Match': 1" audit-clean.log
+      # The receipt names its source relative to packages/articulate. Read from
+      # the repository root the source is not found; until the gate was fixed
+      # this run re-verified nothing and passed.
+      - name: The same receipt read from the repository root fails, source missing
+        id: missing
+        continue-on-error: true
+        uses: ./packages/articulate
+        with:
+          files: packages/articulate/tests/fixtures/action/*.md
+          audit-path: packages/articulate/tests/fixtures/action/receipts
+          upload-sarif: "false"
+      - name: The missing-source run failed, for that reason
+        run: |
+          test "${{ steps.missing.outcome }}" = failure
+          python -m articulate.cli audit packages/articulate/tests/fixtures/action/receipts --reverify --gate > audit-missing.log 2>&1 && exit 1
+          cat audit-missing.log
+          grep -q "'source-missing': 1" audit-missing.log
       - name: Change the file after its receipt
         run: printf '\nA line added after the receipt.\n' >> packages/articulate/tests/fixtures/action/clean.md
       - name: A drifted receipt fails

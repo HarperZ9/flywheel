@@ -134,7 +134,7 @@ ALLOWED = (
     "packages/bulletin/scripts/smoke.mjs",
     "packages/bulletin/src/reports.ts",
     "packages/bulletin/test/reports.test.ts",
-    # articulate 0.18.0 reads version 1 receipts, which name a finding's scope
+    # articulate 0.19.1 reads version 1 receipts, which name a finding's scope
     # with the older field (scope.py LEGACY_KEY, in the package and in the
     # plugin's vendored copy); its changelog, a ruleset baseline, a recorded
     # receipt set and a test carry the name for that reason

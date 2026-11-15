@@ -6,6 +6,15 @@ own `RULESET_SEMVER`, which a receipt records so a replay knows which rules ran.
 
 ## Unreleased
 
+### Fixed
+
+- `articulate audit --reverify --gate` exits 1 when a receipt's source file is
+  missing or the receipt names none, and when no receipt was found. Before, a
+  missing source was counted and the gate passed, so an audit run from the wrong
+  folder re-verified nothing and exited 0; the GitHub Action's `audit-path` step
+  passed that way from a repository root. The failure names each receipt and the
+  path it looked for. Without `--gate` the audit reports as before.
+
 ## 0.19.1
 
 Structure rules for a model's replies. A reply passed `check` with a texture

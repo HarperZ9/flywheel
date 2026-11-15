@@ -94,8 +94,10 @@ articulate audit [PATH ...] [--days N] [--reverify] [--gate] [--json]
 - `--reverify`: replay each receipt against its source file, and report `Match`,
   `Drift`, `source-changed`, `source-missing`, or `source-unreadable`.
 - `--gate`: with `--reverify`, exit 1 when any source drifted, changed since it
-  was screened, or failed to read. A sub-threshold or stale-ruleset
-  `Unverifiable` is reported and leaves the gate passing.
+  was screened, failed to read, or is missing, and when no receipt was found at
+  all. A receipt records its source as a path relative to the folder it was
+  written from, so run the audit from that folder. A sub-threshold or
+  stale-ruleset `Unverifiable` is reported and leaves the gate passing.
 - `--json`: the summary as JSON.
 
 ## config
@@ -436,5 +438,6 @@ file cannot be read or a device name is unknown. See [devices](devices.md).
 
 - `check --gate`: 1 if any file is blocked or unscreenable, else 0.
 - `verify`: 0 Match, 1 Drift, 2 Unverifiable.
-- `audit --reverify --gate`: 1 on a real integrity break, else 0.
+- `audit --reverify --gate`: 1 on a real integrity break, a missing source or no
+  receipt found, else 0.
 - `articulate.bench`: the number of misclassified files, so 0 is a perfect run.

@@ -17,7 +17,7 @@ inputs:
     required: false
     default: "3.12"
   audit-path:
-    description: "Directory of committed receipts to re-verify; fails the build on any drift."
+    description: "Directory of committed receipts to re-verify; fails the build on any drift, on a receipt whose source is missing, and when the directory holds no receipt."
     required: false
     default: ""
   gate:

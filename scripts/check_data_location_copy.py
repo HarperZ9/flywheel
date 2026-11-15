@@ -72,11 +72,19 @@ _LOCAL = ("the local model runs on the owner's machine and sends nothing, so the
 _MNEME = ("Mneme's own pages, imported as written from its repository: the store is "
           "a SQLite file and Mneme needs no network; its README lists what forget cannot "
           "reach, and its changelog corrects the 0.4 label in the next paragraph")
-_ARTICULATE = ("Articulate's README, imported as written. The profile file stays in the local "
-               "voice store, but `voice apply` puts the profile's aggregate sentences into the "
-               "host conversation (voice_apply.py says so). The sentence stays until the tool "
-               "meets it or says so beside it: the gap is recorded in the 2026-11-15 claim-gap "
-               "list for a build task")
+# Open claim gap GAP-ARTICULATE-VOICE-1 (recorded 2026-11-15). This entry excuses one
+# sentence that the tool does not meet yet; it is not a statement that the sentence is
+# true. What the tool says about it today: packages/articulate/docs/series-and-voice.md,
+# "What leaves your computer", and the module docstring of
+# packages/articulate/src/articulate/voice_apply.py. Remove the entry when the consent
+# step named below ships.
+_ARTICULATE = ("OPEN GAP GAP-ARTICULATE-VOICE-1. Articulate's README, imported as written. The "
+               "profile file and the samples stay in the local voice store. `voice apply` "
+               "(MCP `voice_apply_plan`) hands the host conversation every stored field of the "
+               "profile as sentences, including up to 20 of the author's recurring words, and "
+               "`voice compare` returns the author's measured ranges; a hosted model receives "
+               "both. Build task: a consent step, off by default, that states what is sent "
+               "before any profile-derived text enters a host conversation")
 ALLOWED = {
     ("packages/articulate/README.md",
      "A voice profile holds aggregate statistics and stays on your computer until "
