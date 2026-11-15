@@ -1,0 +1,20 @@
+[project]
+name = "verifiers-component-forge"
+description = "Write and repair verifiers components (parsers, rubrics, multi-turn referees) against normative behavioral contracts; scoring executes the emitted module through the real installed verifiers in an isolated child process and compares terminal state against reference-derived frozen expectations. No judge model, no network."
+tags = ["eval", "train", "code", "verifiers", "terminal-state", "structured-output"]
+version = "0.0.1"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "verifiers>=0.3.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = ["verifiers_component_forge/**", "pyproject.toml"]
+
+[tool.verifiers.eval]
+num_examples = 5
+rollouts_per_example = 3
