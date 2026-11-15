@@ -178,7 +178,9 @@ jobs:
         working-directory: packages/terminal-state-fixtures/environments/mlflow_terminal_state
         run: python -m pytest tests/ -q
       - name: Test the METR terminal-state TaskFamily
-        run: uv run --project environments/metr_terminal_state_runs python -m pytest environments/metr_terminal_state_runs/tests -q --task-standard-task-family-name metr_terminal_state_runs --task-standard-task-name run_000
+        # uv builds its own environment from the project's lock, with no
+        # pytest-timeout in it, so the repository's addopts are cleared here.
+        run: uv run --project environments/metr_terminal_state_runs python -m pytest -o addopts= environments/metr_terminal_state_runs/tests -q --task-standard-task-family-name metr_terminal_state_runs --task-standard-task-name run_000
       - name: The card and the artwork still match the code
         run: |
           python tools/check_repo_facts.py
