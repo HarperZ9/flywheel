@@ -80,8 +80,9 @@ def openai_embeddings(req: dict, *, providers_registry, urllib_module, resolve_c
         return refusal
 
     def send():
+        from .endpoints_http import send as open_request   # follows no redirect
         try:
-            with urllib_module.request.urlopen(request, timeout=60) as response:
+            with open_request(request, 60) as response:
                 return response.status, response.read() or b"{}"
         except urllib.error.HTTPError as error:
             return error.code, error.read() or b"{}"

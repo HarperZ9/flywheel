@@ -91,6 +91,13 @@ def prompt_hash(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()[:16]
 
 
+def _send(req, timeout):
+    """Open a provider request. No redirect is followed, so the key reaches only the
+    configured host, and in a gateway process it leaves only inside an account."""
+    from .endpoints_http import send
+    return send(req, timeout)
+
+
 def _ambient_credential(name: str) -> str:
     try:
         from .keychain import resolve_credential
@@ -164,7 +171,7 @@ class EnterpriseProposer:
         req = urllib.request.Request(
             f"{self.base_url}/chat/completions", data=body, headers=headers)
         try:
-            with urllib.request.urlopen(req, timeout=300) as r:
+            with _send(req, 300) as r:
                 obj = json.loads(r.read())
         except urllib.error.HTTPError as e:
             _raise_provider_fault(self.model_ref.split(":", 1)[0] or "openai", e, dialect="openai")
@@ -212,7 +219,7 @@ class AnthropicProposer:
             headers={"Content-Type": "application/json", "x-api-key": key,
                      "anthropic-version": self.version})
         try:
-            with urllib.request.urlopen(req, timeout=300) as r:
+            with _send(req, 300) as r:
                 obj = json.loads(r.read())
         except urllib.error.HTTPError as e:
             _raise_provider_fault("anthropic", e, dialect="anthropic")

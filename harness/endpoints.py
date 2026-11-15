@@ -258,6 +258,8 @@ class CliBackend:
             "{output}": output_path,
         }
         cmd = [replacements.get(a, a) for a in self.argv]
+        from .gateway_reach import check
+        check(self.name)                # in a gateway process: only inside an account
         try:
             if self.runner is not None:
                 rc, out, err = self.runner(cmd)

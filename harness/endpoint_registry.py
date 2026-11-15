@@ -157,7 +157,15 @@ def __getattr__(name: str):
 
 
 def _ledgered(prop, ledger, endpoint: str):
-    """`prop` with every call recorded in `ledger` (endpoint_ledgered), or `prop` as it is."""
+    """`prop` with every call recorded in `ledger` (endpoint_ledgered).
+
+    With no ledger given: in a gateway process the gateway's own ledger is used
+    (gateway_reach.ledger; LedgerUnavailable when it cannot be opened), so a route
+    cannot build an unrecorded proposer by leaving the argument out. Outside a
+    gateway process `prop` is returned as it is."""
+    if ledger is None:
+        from .gateway_reach import ledger as gateway_ledger
+        ledger = gateway_ledger()
     if ledger is None:
         return prop
     from .endpoint_ledgered import LedgeredProposer

@@ -52,7 +52,11 @@ class LedgeredProposer:
         except UnicodeError as exc:
             raise ValueError("the prompt is not valid UTF-8 (a lone surrogate), so the call "
                              "cannot be recorded; nothing was sent upstream") from exc
-        call = Call(self.ledger, {"endpoint": self.endpoint, "prompt_sha": asked})
+        from .gateway_reach import route
+        base = {"endpoint": self.endpoint, "prompt_sha": asked}
+        if route():                     # the gateway route this call is made for
+            base["route"] = route()
+        call = Call(self.ledger, base)
         try:
             out = call.reach(lambda: self.inner.generate(
                 prompt, seed=seed, temperature=temperature, max_new_tokens=max_new_tokens,

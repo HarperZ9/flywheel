@@ -781,7 +781,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
     def _authorized(self) -> bool:
         """Refuse before dispatch; public auth-off compatibility stays available,
         while private custody always requires a configured bearer token."""
-        path = self.path.split("?", 1)[0]; from harness.gateway_key_gate import admits
+        path = self.path.split("?", 1)[0]; from harness.gateway_key_gate import admits; from harness.gateway_reach import at; at(path)  # the route a ledger entry names
         if is_signed(path) or admits(self, path): return True  # signed capture channel (trace_routes verifies before any body is read), or a live virtual key on a model interface path
         private = is_private(path)
         if not self.auth_token and not private: return True
