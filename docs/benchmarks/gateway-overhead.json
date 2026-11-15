@@ -14,13 +14,14 @@
     "warm_calls": 100,
     "warmup_calls": 3,
     "client": "http.client, one request at a time, a fresh connection per call",
-    "clock": "time.perf_counter"
+    "clock": "time.perf_counter",
+    "conditions": "Other programs were running on the machine during the run, among them a long compute job; it was not a quiet machine."
   },
   "disk": {
     "commits": 200,
     "median_ms": 1.21,
-    "p95_ms": 2.18,
-    "max_ms": 3.28,
+    "p95_ms": 2.17,
+    "max_ms": 4.15,
     "what": "append 300 bytes to a file, then os.fsync; no gateway code"
   },
   "cases": [
@@ -33,24 +34,24 @@
       "commits_per_call": [
         2
       ],
-      "commits_median_ms": 3.41,
-      "commits_p95_ms": 3.85,
-      "own_total_median_ms": 2.51,
+      "commits_median_ms": 3.49,
+      "commits_p95_ms": 3.8,
+      "own_total_median_ms": 2.52,
       "first": {
-        "stub_median_ms": 1.21,
-        "stub_p95_over_its_median_ms": 0.22,
-        "gateway_median_ms": 6.94,
-        "overhead_median_ms": 5.74,
-        "overhead_p95_ms": 6.53,
-        "overhead_max_ms": 6.79
+        "stub_median_ms": 1.25,
+        "stub_p95_over_its_median_ms": 0.19,
+        "gateway_median_ms": 7.1,
+        "overhead_median_ms": 5.85,
+        "overhead_p95_ms": 6.52,
+        "overhead_max_ms": 6.8
       },
       "total": {
-        "stub_median_ms": 1.34,
-        "stub_p95_over_its_median_ms": 0.24,
-        "gateway_median_ms": 7.04,
-        "overhead_median_ms": 5.7,
-        "overhead_p95_ms": 6.56,
-        "overhead_max_ms": 6.72
+        "stub_median_ms": 1.36,
+        "stub_p95_over_its_median_ms": 0.2,
+        "gateway_median_ms": 7.2,
+        "overhead_median_ms": 5.84,
+        "overhead_p95_ms": 6.55,
+        "overhead_max_ms": 6.88
       }
     },
     {
@@ -62,256 +63,256 @@
       "commits_per_call": [
         2
       ],
-      "commits_median_ms": 3.41,
-      "commits_p95_ms": 3.78,
-      "own_total_median_ms": 3.51,
+      "commits_median_ms": 3.59,
+      "commits_p95_ms": 4.25,
+      "own_total_median_ms": 3.47,
       "first": {
-        "stub_median_ms": 1.31,
-        "stub_p95_over_its_median_ms": 0.15,
+        "stub_median_ms": 1.3,
+        "stub_p95_over_its_median_ms": 0.17,
         "gateway_median_ms": 4.77,
-        "overhead_median_ms": 3.46,
-        "overhead_p95_ms": 4.55,
-        "overhead_max_ms": 4.81
+        "overhead_median_ms": 3.47,
+        "overhead_p95_ms": 4.47,
+        "overhead_max_ms": 5.59
       },
       "total": {
-        "stub_median_ms": 2.06,
-        "stub_p95_over_its_median_ms": 0.25,
-        "gateway_median_ms": 8.91,
-        "overhead_median_ms": 6.84,
-        "overhead_p95_ms": 7.57,
-        "overhead_max_ms": 7.94
+        "stub_median_ms": 1.95,
+        "stub_p95_over_its_median_ms": 0.17,
+        "gateway_median_ms": 8.86,
+        "overhead_median_ms": 6.91,
+        "overhead_p95_ms": 7.87,
+        "overhead_max_ms": 8.14
       }
     },
     {
       "interface": "/v1/messages",
       "upstream": "anthropic",
       "caller": "owner",
+      "stream": false,
+      "calls": 100,
+      "commits_per_call": [
+        2
+      ],
+      "commits_median_ms": 3.47,
+      "commits_p95_ms": 3.84,
+      "own_total_median_ms": 2.43,
+      "first": {
+        "stub_median_ms": 1.24,
+        "stub_p95_over_its_median_ms": 0.19,
+        "gateway_median_ms": 7.02,
+        "overhead_median_ms": 5.77,
+        "overhead_p95_ms": 6.62,
+        "overhead_max_ms": 6.96
+      },
+      "total": {
+        "stub_median_ms": 1.36,
+        "stub_p95_over_its_median_ms": 0.21,
+        "gateway_median_ms": 7.17,
+        "overhead_median_ms": 5.81,
+        "overhead_p95_ms": 6.63,
+        "overhead_max_ms": 6.95
+      }
+    },
+    {
+      "interface": "/v1/messages",
+      "upstream": "anthropic",
+      "caller": "owner",
+      "stream": true,
+      "calls": 100,
+      "commits_per_call": [
+        2
+      ],
+      "commits_median_ms": 3.55,
+      "commits_p95_ms": 4.09,
+      "own_total_median_ms": 3.22,
+      "first": {
+        "stub_median_ms": 1.34,
+        "stub_p95_over_its_median_ms": 0.16,
+        "gateway_median_ms": 4.7,
+        "overhead_median_ms": 3.36,
+        "overhead_p95_ms": 4.17,
+        "overhead_max_ms": 4.86
+      },
+      "total": {
+        "stub_median_ms": 2.01,
+        "stub_p95_over_its_median_ms": 0.22,
+        "gateway_median_ms": 8.61,
+        "overhead_median_ms": 6.6,
+        "overhead_p95_ms": 7.56,
+        "overhead_max_ms": 9.0
+      }
+    },
+    {
+      "interface": "/v1/responses",
+      "upstream": "openai",
+      "caller": "owner",
+      "stream": false,
+      "calls": 100,
+      "commits_per_call": [
+        2
+      ],
+      "commits_median_ms": 3.28,
+      "commits_p95_ms": 3.85,
+      "own_total_median_ms": 2.48,
+      "first": {
+        "stub_median_ms": 1.24,
+        "stub_p95_over_its_median_ms": 0.2,
+        "gateway_median_ms": 7.07,
+        "overhead_median_ms": 5.83,
+        "overhead_p95_ms": 6.49,
+        "overhead_max_ms": 7.58
+      },
+      "total": {
+        "stub_median_ms": 1.37,
+        "stub_p95_over_its_median_ms": 0.24,
+        "gateway_median_ms": 7.18,
+        "overhead_median_ms": 5.81,
+        "overhead_p95_ms": 6.58,
+        "overhead_max_ms": 7.54
+      }
+    },
+    {
+      "interface": "/v1/responses",
+      "upstream": "openai",
+      "caller": "owner",
+      "stream": true,
+      "calls": 100,
+      "commits_per_call": [
+        2
+      ],
+      "commits_median_ms": 3.51,
+      "commits_p95_ms": 3.98,
+      "own_total_median_ms": 3.71,
+      "first": {
+        "stub_median_ms": 1.33,
+        "stub_p95_over_its_median_ms": 0.09,
+        "gateway_median_ms": 4.95,
+        "overhead_median_ms": 3.63,
+        "overhead_p95_ms": 4.51,
+        "overhead_max_ms": 5.37
+      },
+      "total": {
+        "stub_median_ms": 1.97,
+        "stub_p95_over_its_median_ms": 0.25,
+        "gateway_median_ms": 9.14,
+        "overhead_median_ms": 7.17,
+        "overhead_p95_ms": 7.96,
+        "overhead_max_ms": 8.31
+      }
+    },
+    {
+      "interface": "/v1/messages",
+      "upstream": "openai",
+      "caller": "key",
       "stream": false,
       "calls": 100,
       "commits_per_call": [
         2
       ],
       "commits_median_ms": 3.5,
-      "commits_p95_ms": 3.86,
-      "own_total_median_ms": 2.49,
+      "commits_p95_ms": 3.94,
+      "own_total_median_ms": 4.88,
       "first": {
-        "stub_median_ms": 1.29,
-        "stub_p95_over_its_median_ms": 0.21,
-        "gateway_median_ms": 7.14,
-        "overhead_median_ms": 5.84,
-        "overhead_p95_ms": 6.69,
-        "overhead_max_ms": 7.23
+        "stub_median_ms": 1.21,
+        "stub_p95_over_its_median_ms": 0.24,
+        "gateway_median_ms": 9.52,
+        "overhead_median_ms": 8.31,
+        "overhead_p95_ms": 9.17,
+        "overhead_max_ms": 9.94
       },
       "total": {
-        "stub_median_ms": 1.42,
+        "stub_median_ms": 1.33,
         "stub_p95_over_its_median_ms": 0.27,
-        "gateway_median_ms": 7.33,
-        "overhead_median_ms": 5.91,
-        "overhead_p95_ms": 6.74,
-        "overhead_max_ms": 7.18
+        "gateway_median_ms": 9.64,
+        "overhead_median_ms": 8.31,
+        "overhead_p95_ms": 9.25,
+        "overhead_max_ms": 9.93
       }
     },
     {
       "interface": "/v1/messages",
-      "upstream": "anthropic",
-      "caller": "owner",
+      "upstream": "openai",
+      "caller": "key",
       "stream": true,
       "calls": 100,
       "commits_per_call": [
         2
       ],
-      "commits_median_ms": 3.45,
-      "commits_p95_ms": 3.83,
-      "own_total_median_ms": 3.34,
+      "commits_median_ms": 3.42,
+      "commits_p95_ms": 3.96,
+      "own_total_median_ms": 5.97,
       "first": {
-        "stub_median_ms": 1.33,
-        "stub_p95_over_its_median_ms": 0.19,
-        "gateway_median_ms": 5.0,
-        "overhead_median_ms": 3.66,
-        "overhead_p95_ms": 4.49,
-        "overhead_max_ms": 4.77
+        "stub_median_ms": 1.27,
+        "stub_p95_over_its_median_ms": 0.15,
+        "gateway_median_ms": 5.45,
+        "overhead_median_ms": 4.18,
+        "overhead_p95_ms": 5.2,
+        "overhead_max_ms": 6.92
       },
       "total": {
-        "stub_median_ms": 2.12,
-        "stub_p95_over_its_median_ms": 0.27,
-        "gateway_median_ms": 8.78,
-        "overhead_median_ms": 6.66,
-        "overhead_p95_ms": 7.42,
-        "overhead_max_ms": 7.8
+        "stub_median_ms": 1.94,
+        "stub_p95_over_its_median_ms": 0.33,
+        "gateway_median_ms": 11.23,
+        "overhead_median_ms": 9.28,
+        "overhead_p95_ms": 10.32,
+        "overhead_max_ms": 11.7
       }
     },
     {
       "interface": "/v1/responses",
       "upstream": "openai",
-      "caller": "owner",
+      "caller": "key",
       "stream": false,
       "calls": 100,
       "commits_per_call": [
         2
       ],
-      "commits_median_ms": 3.19,
-      "commits_p95_ms": 3.78,
-      "own_total_median_ms": 2.62,
+      "commits_median_ms": 3.47,
+      "commits_p95_ms": 3.83,
+      "own_total_median_ms": 4.74,
       "first": {
         "stub_median_ms": 1.24,
-        "stub_p95_over_its_median_ms": 0.22,
-        "gateway_median_ms": 7.07,
-        "overhead_median_ms": 5.83,
-        "overhead_p95_ms": 6.56,
-        "overhead_max_ms": 6.8
+        "stub_p95_over_its_median_ms": 0.24,
+        "gateway_median_ms": 9.41,
+        "overhead_median_ms": 8.17,
+        "overhead_p95_ms": 8.8,
+        "overhead_max_ms": 9.12
       },
       "total": {
         "stub_median_ms": 1.38,
-        "stub_p95_over_its_median_ms": 0.26,
-        "gateway_median_ms": 7.24,
-        "overhead_median_ms": 5.85,
-        "overhead_p95_ms": 6.65,
-        "overhead_max_ms": 6.86
+        "stub_p95_over_its_median_ms": 0.27,
+        "gateway_median_ms": 9.54,
+        "overhead_median_ms": 8.16,
+        "overhead_p95_ms": 8.76,
+        "overhead_max_ms": 9.07
       }
     },
     {
       "interface": "/v1/responses",
       "upstream": "openai",
-      "caller": "owner",
+      "caller": "key",
       "stream": true,
       "calls": 100,
       "commits_per_call": [
         2
       ],
-      "commits_median_ms": 3.39,
-      "commits_p95_ms": 3.81,
-      "own_total_median_ms": 3.89,
-      "first": {
-        "stub_median_ms": 1.42,
-        "stub_p95_over_its_median_ms": 0.19,
-        "gateway_median_ms": 5.15,
-        "overhead_median_ms": 3.73,
-        "overhead_p95_ms": 4.68,
-        "overhead_max_ms": 5.29
-      },
-      "total": {
-        "stub_median_ms": 2.22,
-        "stub_p95_over_its_median_ms": 0.23,
-        "gateway_median_ms": 9.31,
-        "overhead_median_ms": 7.09,
-        "overhead_p95_ms": 8.07,
-        "overhead_max_ms": 8.76
-      }
-    },
-    {
-      "interface": "/v1/messages",
-      "upstream": "openai",
-      "caller": "key",
-      "stream": false,
-      "calls": 100,
-      "commits_per_call": [
-        2
-      ],
-      "commits_median_ms": 3.4,
+      "commits_median_ms": 3.44,
       "commits_p95_ms": 3.87,
-      "own_total_median_ms": 5.23,
+      "own_total_median_ms": 6.17,
       "first": {
-        "stub_median_ms": 1.44,
-        "stub_p95_over_its_median_ms": 0.26,
-        "gateway_median_ms": 9.98,
-        "overhead_median_ms": 8.54,
-        "overhead_p95_ms": 9.43,
-        "overhead_max_ms": 12.13
+        "stub_median_ms": 1.31,
+        "stub_p95_over_its_median_ms": 0.17,
+        "gateway_median_ms": 5.48,
+        "overhead_median_ms": 4.18,
+        "overhead_p95_ms": 5.27,
+        "overhead_max_ms": 5.47
       },
       "total": {
-        "stub_median_ms": 1.64,
-        "stub_p95_over_its_median_ms": 0.33,
-        "gateway_median_ms": 10.12,
-        "overhead_median_ms": 8.48,
-        "overhead_p95_ms": 9.38,
-        "overhead_max_ms": 12.48
-      }
-    },
-    {
-      "interface": "/v1/messages",
-      "upstream": "openai",
-      "caller": "key",
-      "stream": true,
-      "calls": 100,
-      "commits_per_call": [
-        2
-      ],
-      "commits_median_ms": 3.21,
-      "commits_p95_ms": 3.9,
-      "own_total_median_ms": 6.8,
-      "first": {
-        "stub_median_ms": 1.42,
-        "stub_p95_over_its_median_ms": 0.19,
-        "gateway_median_ms": 5.55,
-        "overhead_median_ms": 4.13,
-        "overhead_p95_ms": 5.17,
-        "overhead_max_ms": 12.7
-      },
-      "total": {
-        "stub_median_ms": 2.26,
-        "stub_p95_over_its_median_ms": 0.33,
-        "gateway_median_ms": 12.26,
-        "overhead_median_ms": 10.0,
-        "overhead_p95_ms": 11.1,
-        "overhead_max_ms": 18.13
-      }
-    },
-    {
-      "interface": "/v1/responses",
-      "upstream": "openai",
-      "caller": "key",
-      "stream": false,
-      "calls": 100,
-      "commits_per_call": [
-        2
-      ],
-      "commits_median_ms": 3.43,
-      "commits_p95_ms": 3.81,
-      "own_total_median_ms": 5.22,
-      "first": {
-        "stub_median_ms": 1.4,
-        "stub_p95_over_its_median_ms": 0.25,
-        "gateway_median_ms": 9.86,
-        "overhead_median_ms": 8.46,
-        "overhead_p95_ms": 9.55,
-        "overhead_max_ms": 11.89
-      },
-      "total": {
-        "stub_median_ms": 1.57,
-        "stub_p95_over_its_median_ms": 0.32,
-        "gateway_median_ms": 10.03,
-        "overhead_median_ms": 8.47,
-        "overhead_p95_ms": 9.51,
-        "overhead_max_ms": 12.19
-      }
-    },
-    {
-      "interface": "/v1/responses",
-      "upstream": "openai",
-      "caller": "key",
-      "stream": true,
-      "calls": 100,
-      "commits_per_call": [
-        2
-      ],
-      "commits_median_ms": 3.37,
-      "commits_p95_ms": 3.93,
-      "own_total_median_ms": 7.16,
-      "first": {
-        "stub_median_ms": 1.39,
-        "stub_p95_over_its_median_ms": 0.23,
-        "gateway_median_ms": 6.04,
-        "overhead_median_ms": 4.64,
-        "overhead_p95_ms": 5.69,
-        "overhead_max_ms": 6.87
-      },
-      "total": {
-        "stub_median_ms": 2.21,
-        "stub_p95_over_its_median_ms": 0.41,
-        "gateway_median_ms": 12.62,
-        "overhead_median_ms": 10.42,
-        "overhead_p95_ms": 11.56,
-        "overhead_max_ms": 12.59
+        "stub_median_ms": 2.04,
+        "stub_p95_over_its_median_ms": 0.31,
+        "gateway_median_ms": 11.57,
+        "overhead_median_ms": 9.53,
+        "overhead_p95_ms": 10.55,
+        "overhead_max_ms": 15.48
       }
     }
   ],
@@ -319,22 +320,22 @@
     {
       "interface": "/v1/messages",
       "stream": false,
-      "first_call_overhead_ms": 119.31
+      "first_call_overhead_ms": 118.48
     },
     {
       "interface": "/v1/messages",
       "stream": true,
-      "first_call_overhead_ms": 120.98
+      "first_call_overhead_ms": 121.23
     },
     {
       "interface": "/v1/responses",
       "stream": false,
-      "first_call_overhead_ms": 123.12
+      "first_call_overhead_ms": 117.37
     },
     {
       "interface": "/v1/responses",
       "stream": true,
-      "first_call_overhead_ms": 121.63
+      "first_call_overhead_ms": 119.01
     }
   ],
   "breakdown": [
@@ -343,19 +344,19 @@
       "stream": false,
       "caller": "key",
       "calls": 100,
-      "overhead_total_median_ms": 8.43,
+      "overhead_total_median_ms": 8.29,
       "parts_median_ms": {
-        "key lookup": 0.35,
+        "key lookup": 0.37,
         "request body read and JSON parse": 0.03,
-        "limit and allow-list check": 0.25,
+        "limit and allow-list check": 0.23,
         "upstream choice": 0.03,
-        "upstream connect, send and wait, plain (includes the stub delay)": 54.19,
-        "reply read into the neutral form": 0.14,
-        "started entry, committed before the request leaves": 2.01,
-        "key debit": 1.9,
-        "end entry, with the debit inside it": 3.49,
+        "upstream connect, send and wait, plain (includes the stub delay)": 53.66,
+        "reply read into the neutral form": 0.13,
+        "started entry, committed before the request leaves": 1.6,
+        "key debit": 1.79,
+        "end entry, with the debit inside it": 3.48,
         "receipt": 0.05,
-        "whole handler, from the body read to the last byte written": 58.74
+        "whole handler, from the body read to the last byte written": 58.61
       }
     },
     {
@@ -363,19 +364,19 @@
       "stream": true,
       "caller": "key",
       "calls": 100,
-      "overhead_total_median_ms": 9.66,
+      "overhead_total_median_ms": 9.42,
       "parts_median_ms": {
         "key lookup": 0.37,
         "request body read and JSON parse": 0.03,
-        "limit and allow-list check": 0.24,
+        "limit and allow-list check": 0.23,
         "upstream choice": 0.03,
-        "upstream connect, send and wait, stream (includes the stub delay)": 53.88,
+        "upstream connect, send and wait, stream (includes the stub delay)": 53.56,
         "reply read into the neutral form": 0.13,
-        "started entry, committed before the request leaves": 1.66,
-        "key debit": 1.86,
-        "end entry, with the debit inside it": 3.42,
+        "started entry, committed before the request leaves": 1.6,
+        "key debit": 1.73,
+        "end entry, with the debit inside it": 3.48,
         "receipt": 0.05,
-        "whole handler, from the body read to the last byte written": 60.62
+        "whole handler, from the body read to the last byte written": 60.36
       }
     }
   ],
@@ -383,26 +384,26 @@
     {
       "warm_up": false,
       "stream": false,
-      "first_ms": 14.93,
-      "total_ms": 14.95
+      "first_ms": 14.45,
+      "total_ms": 14.43
     },
     {
       "warm_up": false,
       "stream": true,
-      "first_ms": 11.67,
-      "total_ms": 16.68
+      "first_ms": 10.91,
+      "total_ms": 15.75
     },
     {
       "warm_up": true,
       "stream": false,
-      "first_ms": 8.48,
-      "total_ms": 8.52
+      "first_ms": 8.25,
+      "total_ms": 8.22
     },
     {
       "warm_up": true,
       "stream": true,
-      "first_ms": 4.15,
-      "total_ms": 9.83
+      "first_ms": 3.91,
+      "total_ms": 9.39
     }
   ]
 }

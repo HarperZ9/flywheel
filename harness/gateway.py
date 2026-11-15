@@ -1416,7 +1416,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
                 authorize_gateway_operation, gateway_error_response)
             try:
                 authorized = authorize_gateway_operation(
-                    action, self.rfile.read(length), owner_ref=self.owner_ref or (self.auth_token and _auth_owner(self.headers, self.command, self.auth_token, self.flywheel_home, allowed_hosts=self.allowed_hosts)[0]) or None,  # a granted route outside private custody has its owner too
+                    action, self.rfile.read(length), owner_ref=self.owner_ref or (self.auth_token and _auth_owner(self.headers, "POST", self.auth_token, self.flywheel_home, allowed_hosts=self.allowed_hosts)[0]) or None,  # a granted route outside private custody has its owner too
                     state_root=self.flywheel_home / "state", clock=self.clock)
                 from harness.bulletin_access import authorized_bulletin_access_denial as _bad
                 if (denied := _bad(authorized)) is not None: self._gateway_guarded = True; return self._json(denied, 403)

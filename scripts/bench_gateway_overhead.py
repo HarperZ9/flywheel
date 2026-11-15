@@ -225,6 +225,8 @@ def main(argv: "list | None" = None) -> int:
     ap.add_argument("--calls", type=int, default=30, help="warm calls per case (default 30)")
     ap.add_argument("--warmup", type=int, default=3, help="calls thrown away first")
     ap.add_argument("--out", default=str(RECORD), help="where the JSON record goes")
+    ap.add_argument("--conditions", default="", help="what else the machine was doing, for "
+                    "the record")
     ap.add_argument("--cold", metavar="PATH", help=argparse.SUPPRESS)
     ap.add_argument("--stream", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--plain", action="store_true", help=argparse.SUPPRESS)
@@ -237,7 +239,8 @@ def main(argv: "list | None" = None) -> int:
               "method": {"stub_delay_ms": _ms(STUB_DELAY), "stream_text_events": bench.DELTAS,
                          "warm_calls": args.calls, "warmup_calls": args.warmup,
                          "client": "http.client, one request at a time, a fresh connection "
-                                   "per call", "clock": "time.perf_counter"},
+                                   "per call", "clock": "time.perf_counter",
+                         "conditions": args.conditions},
               "disk": disk(), "cases": run_cases(args.calls, args.warmup),
               "first_call": run_cold(),
               "breakdown": [breakdown("/v1/messages", stream, args.calls)

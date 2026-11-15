@@ -272,6 +272,7 @@ class World:
         provider = self.provider.requests[seen[0]:]
         added = self.entries()[seen[2]:]
         return {"method": method, "path": path, "status": status,
+                "answer": json.dumps(answer, default=str)[:300],
                 "provider_model": [row for row in provider if _is_model(row)],
                 "provider_other": [row for row in provider if not _is_model(row)],
                 "local": self.local.requests[seen[1]:],

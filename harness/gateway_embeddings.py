@@ -56,8 +56,8 @@ def openai_embeddings(req: dict, *, providers_registry, urllib_module, resolve_c
     if spec.api_key_env and not key:
         return _refused(f"missing credential for '{name}'")
     fwd = dict(req)
-    for name in ("adaptive", "data_refs", "credential_refs"):     # the gateway's own fields
-        fwd.pop(name, None)
+    for own in ("adaptive", "data_refs", "credential_refs"):      # the gateway's own fields
+        fwd.pop(own, None)
     if ":" in model:
         fwd["model"] = model.split(":", 1)[1]
     try:

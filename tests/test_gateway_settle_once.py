@@ -265,3 +265,18 @@ def test_a_second_start_does_not_name_the_same_unsettled_call_again(keyed):
     for _ in range(3):
         gateway_ledger.GatewayLedger(home).close()
     assert kinds(home).count("calls_unsettled") == 1
+
+
+def test_a_debit_that_names_a_call_is_made_once(keyed):
+    """The rule under every case above, alone: the key list charges a call id once."""
+    _home, keys = keyed
+    call = "c" * 24
+    for _ in range(3):
+        keys.debit("ci-bot", ONE, False, call)
+    totals = keys.row("ci-bot")["totals"]
+    assert (totals["tokens"], totals["calls"]) == (460, 1)
+    assert gateway_key_charges.seen(keys.row("ci-bot"), call) == 460
+    keys.debit("ci-bot", ONE, False, "d" * 24)      # another call is charged
+    keys.debit("ci-bot", ONE, False)                # a debit that names no call always is
+    keys.debit("ci-bot", ONE, False)
+    assert tokens(keys) == 4 * 460

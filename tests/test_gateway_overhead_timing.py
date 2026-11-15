@@ -38,10 +38,11 @@ Where the budgets come from.
   Windows 11 machine, 1.4 to 3.5 ms on a Linux CI runner and 2.2 to 7.3 ms on
   a Windows CI runner (CI run 43683218626).
   TOTAL: see TOTAL_BUDGET below, with the measurement it was set from. If the
-  total gate fails, read the line it prints: it gives the total, the commits
-  and a bare commit in the same folder, so it says whether the time was the
-  gateway's or the disk's. Do not rerun it and do not raise it without a
-  measured cause.
+  total gate fails, read its message: it gives a bare commit measured in the
+  same folder and says which it was. A slow disk (a bare commit's median of
+  10 ms or more) is the runner's: say so and rerun that job once. Otherwise
+  the gateway got slower: do not rerun it, and do not raise the budget
+  without a measured cause.
 
 What the figures leave out: the provider's network time and TLS, the system
 credential store (the key store here is in memory), the first call's module
@@ -70,11 +71,17 @@ from scripts import gateway_bench_rig as bench
 pytestmark = pytest.mark.release_gate
 
 BUDGET_SECONDS = 0.025                  # OWN: the gateway's work, commits taken out
-# TOTAL: what a caller waits, both commits included. PROVISIONAL until the CI
-# measurement of this round is read; see the module docstring.
+# TOTAL: what a caller waits, both commits included. Measured on GitHub's runners on
+# 2026-11-15 by the test below (30 calls per case, four cases per job, 12 jobs,
+# the "GATEWAY TOTAL" lines of the whole-suite logs): medians to the end of the reply
+# 1.5 to 5.1 ms on Linux and 8.1 to 16.6 ms on Windows. On a Windows runner whose disk was busy
+# the 90th percentile reached 105 ms and the slowest call 354 ms, with the median of
+# that case still under 15 ms. 50 ms is three times the slowest median
+# seen. On the reference Windows 11 machine the medians were 5.5 to 9.4 ms.
 TOTAL_BUDGET = 0.050
 TOTAL_CALLS = 30
 WINDOW_SLACK = 0.005                    # the ledger's commit report against the rig's clock
+SLOW_DISK = 0.010                       # a bare commit's median that marks a slow disk
 STUB_DELAY = 0.050
 CALLS, WARMUP = 5, 2
 CASES = [(path, stream, False) for path in bench.PATHS for stream in (False, True)]
@@ -190,7 +197,13 @@ def test_what_a_caller_waits_with_both_commits_is_within_the_total_budget(
               f"(100): {_spread(bare)}", end="")
     assert [count for _first, _total, count in samples["commit"]] == (
         [COMMITS_PER_CALL] * TOTAL_CALLS)
-    assert within_total(samples), shown(samples)
+    slow_disk = statistics.median(bare) >= SLOW_DISK
+    assert within_total(samples), (
+        "what a caller waits is over the total budget. A bare commit in the same folder took "
+        f"a median of {statistics.median(bare) * 1000:.1f} ms: "
+        + ("the disk was slow during this run. Say so and rerun this job once."
+           if slow_disk else "the disk was not slow, so the gateway is. Do not rerun."),
+        shown(samples))
     assert within_budget(samples) and honest_window(samples), shown(samples)
 
 
@@ -203,9 +216,12 @@ def test_the_stub_wait_is_subtracted_not_counted(tmp_path):
         waited = statistics.median(made.stub.waits)
     assert waited >= STUB_DELAY * 4 * 0.9           # the calls really took four times as long
     assert within_budget(long), shown(long)
-    # The stub gained 150 ms. A measurement that counted it would move by that much.
+    # The stub gained 150 ms. A measurement that counted it would move by that much. The
+    # comparison is on the gateway's own time: with the commits in it, five calls on a
+    # Windows runner whose disk took 51 to 329 ms for the two commits of a call moved the
+    # figure by 45 ms with no fault present (CI job 132804066113, 2026-11-15).
     for which in (0, 1):
-        moved = abs(bench.overhead(long, which) - bench.overhead(short, which))
+        moved = abs(bench.overhead(long, which, own=True) - bench.overhead(short, which, own=True))
         assert moved < BUDGET_SECONDS, (shown(short), shown(long))
 
 

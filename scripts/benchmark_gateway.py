@@ -129,7 +129,8 @@ def _method(record: dict[str, Any]) -> list[str]:
         "and slowest call, less the stub's median. The client is Python's `http.client` "
         "and the clock is `time.perf_counter`."), "", wrap(
         f"Machine: {box['cpu']}, {box['logical_cpus']} logical CPUs, {box['ram_gb']} GB "
-        f"RAM, {box['os']}, Python {box['python']}."), "",
+        f"RAM, {box['os']}, Python {box['python']}. One run, {record['date']}."
+        + (f" {method['conditions']}" if method.get("conditions") else "")), "",
         "### The first call", "", wrap(
         "The first call after a gateway starts also loads the modules the gateway imports "
         f"on first use. In a fresh process that call took {_span(cold)} more than the "
