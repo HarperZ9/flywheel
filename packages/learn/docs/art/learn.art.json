@@ -1,0 +1,87 @@
+{
+  "$comment": "Source of truth for the artwork on this repository's front page. Edit a sentence here and re-run tools/render_repo_art.py; tools/check_repo_art.py fails if the committed SVG stops matching.",
+  "header": {
+    "name": "learn",
+    "role": "study loop and credential logistics",
+    "tagline": "A runnable course, and graded work that never leaves your hands.",
+    "words": ["schedule", "practice", "witness", "gate", "resume"]
+  },
+  "flows": [
+    {
+      "file": "study-loop.svg",
+      "kicker": "one session, end to end",
+      "title": "How practice becomes a claim about what you actually know",
+      "alt": "Eight stages of a study session: objectives, due, misconceptions, order, practice, record, mastery gate, receipt. You answer the practice; the tutor holds the question and never supplies the answer. Each attempt is appended to a hash-chained log before any scheduling hint is derived from it, so the hint can never move the line. The mastery gate reads only those recorded attempts and reports ready when every objective has at least three attempts and at least eighty percent accuracy. Three outcomes: ready, not ready with the weak objectives named, and unverified when a receipt carries no chain to recompute.",
+      "footnote": "Practice is not the graded exam. The tutor checks your answers, and never supplies them.",
+      "stages": [
+        {"title": "Objectives", "note": "Your own topics, with prerequisites when you declare them."},
+        {"title": "Due", "note": "Overdue first, against a clock you pass in, never a hidden one."},
+        {"title": "Misconceptions", "note": "Your own wrong attempts, ranked per objective."},
+        {"title": "Order", "note": "Interleaved from a seed, so the same session replays the same way."},
+        {"title": "Practice", "note": "You answer. The tutor holds the question and never the answer."},
+        {"title": "Record", "note": "The attempt is chained first; the scheduling hint is derived after."},
+        {"title": "Mastery gate", "note": "Ready needs three attempts and eighty percent, on every objective."},
+        {"title": "Receipt", "note": "The practice, the verdict, and the line it will not cross."}
+      ],
+      "returns": [
+        {"from": 6, "to": 4, "label": "NOT READY NAMES THE WEAK OBJECTIVES AND ASKS FOR MORE"}
+      ],
+      "outcomes": [
+        {"label": "READY", "note": "every objective, three attempts, 80%", "tone": "verified"},
+        {"label": "NOT READY", "note": "the gate names which objectives are weak", "tone": "drift"},
+        {"label": "UNVERIFIED", "note": "a receipt with no chain never verifies", "tone": "none"}
+      ]
+    },
+    {
+      "file": "run-lane.svg",
+      "kicker": "one course, end to end",
+      "title": "How the logistics get automated without the graded work moving",
+      "alt": "Eight stages of a course run: workflow, gate, actuate, witness, ledger, halt, attest, receipt. Every step is checked against the engine's own list of known step kinds rather than the ones the workflow file declares, so an unknown kind is denied instead of trusted. An allowed step drives the page and is snapped before and after, and the pair is digested into one hash-chained row. A graded step always halts and hands the run back to you, in either submission mode. What you did then goes into the same chain as your own row. Three outcomes: completed, halted waiting on you, and denied.",
+      "footnote": "A resumed run restarts after the step that stopped it. It never answers that step.",
+      "stages": [
+        {"title": "Workflow", "note": "Steps declared in a file, sealed by a hash of the list."},
+        {"title": "Gate", "note": "Checked against the engine's own kinds, not the file's own."},
+        {"title": "Actuate", "note": "An allowed step drives the page, snapped before and after."},
+        {"title": "Witness", "note": "Before, action, and after are digested into one line."},
+        {"title": "Ledger", "note": "Each row hashes the row before it, from a genesis of zeros."},
+        {"title": "Halt", "note": "A graded step stops the run and hands it back to you."},
+        {"title": "Attest", "note": "What you did goes in as your own row, in your own words."},
+        {"title": "Receipt", "note": "Logistics and graded work counted apart, and re-checkable."}
+      ],
+      "returns": [
+        {"from": 6, "to": 4, "label": "YOUR ATTESTATION IS APPENDED AS ITS OWN ROW IN THE CHAIN"}
+      ],
+      "outcomes": [
+        {"label": "COMPLETED", "note": "every declared step ran or was handed back", "tone": "verified"},
+        {"label": "HALTED", "note": "a graded or sensitive step waits for you", "tone": "drift"},
+        {"label": "DENIED", "note": "a step kind the engine does not know", "tone": "none"}
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "reverify-record.svg",
+      "kicker": "what re-verification hands back",
+      "title": "A receipt made to prove itself, field by field",
+      "source": "learn tutor reverify <session>",
+      "alt": "The record learn returns when it re-verifies one of its own receipts, drawn one field to a row, with what comes back in each and how a reader would check it. verdict has three readings and no fourth, and it keys off recomputed evidence rather than the receipt's own claim to be verified. failures carries a typed code: a broken hash chain names the entry it broke at, and a verdict mismatch carries the stored reading against the re-derived one. reasons is filled only when the receipt cannot be checked at all. summary.entries is the hash-chained practice log the verdict is re-derived from. summary.storedReady is the verdict as written, summary.rederivedReady is the verdict recomputed from the receipt's own attempts under its own recorded policy, and a disagreement between the two is the mismatch. witness.digest is the content address of the re-check itself.",
+      "footnote": "No digest and no count is drawn here, because both are true for one checkout and a picture that shows them is wrong by the next. What is drawn is the shape of each field, and the repository's own test holds these readings against records the re-verifier actually returns: a clean receipt, a tampered one, and one with no chain to check.",
+      "fields": [
+        {"key": "verdict", "value": "VERIFIED | FAILED | UNVERIFIED", "tone": "verified",
+         "note": "Three readings and no fourth. It keys off recomputed evidence, not the receipt's own verified flag."},
+        {"key": "failures[].code", "value": "CHAIN_BROKEN | VERDICT_MISMATCH", "tone": "none",
+         "note": "Typed, not prose. A broken chain names the entry it broke at; a mismatch carries stored against re-derived."},
+        {"key": "reasons", "value": "why it could not be checked", "tone": "none",
+         "note": "Filled only for UNVERIFIED. A receipt with no chained entries lands here instead of passing."},
+        {"key": "summary.entries", "value": "one row per witnessed attempt", "tone": "none",
+         "note": "The hash-chained practice log. Every row is recomputed from the row before it, from a genesis of zeros."},
+        {"key": "summary.storedReady", "value": "true | false", "tone": "none",
+         "note": "The mastery verdict as the receipt was written. Author-controlled, so it is compared and never trusted."},
+        {"key": "summary.rederivedReady", "value": "true | false", "tone": "none",
+         "note": "The same verdict recomputed from the receipt's own attempts under its own recorded threshold and minimum."},
+        {"key": "witness.digest", "value": "content address of the run", "tone": "none",
+         "note": "The re-check summary digested, so the outcome travels as evidence rather than as a sentence."}
+      ]
+    }
+  ]
+}

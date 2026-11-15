@@ -1,0 +1,221 @@
+name: release
+
+# Publish @harperz9/learn to npm with trusted publishing (OIDC). No npm token is stored anywhere.
+#
+# One-time setup on npmjs.com, package @harperz9/learn, Settings, Trusted publishing:
+#   provider GitHub Actions, organization or user HarperZ9, repository learn,
+#   workflow filename release.yml, environment npm.
+# npm checks the calling workflow's filename, so renaming this file stops publishing until the
+# trusted publisher is updated. Trusted publishing needs npm 11.5.1 or later on Node 22.14 or
+# later. npm records provenance on its own, so the publish step passes no provenance flag.
+#
+# To release: git tag v2.0.0 && git push origin v2.0.0
+# A manual run (workflow_dispatch) builds and smokes the tarball and never publishes.
+#
+# Actions are pinned by commit SHA; a moving tag is a supply-chain hole.
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    # Blocks the release when the repository is missing what search and
+    # registries read. Report and fixes: the job log. Tool: HarperZ9/discover.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: HarperZ9/discover@98138514412bbe283e5f70dfd9139d34382dad35 # v0.1.2
+        with:
+          mode: repo
+
+  build:
+    needs: discover
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.pack.outputs.version }}
+      tarball: ${{ steps.pack.outputs.tarball }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.11"
+      - name: Full test suite
+        run: node --test
+      - name: Qualify the local client package
+        shell: bash
+        run: |
+          python scripts/test_client_plugin.py
+          MODE=dev
+          if [[ "$GITHUB_REF" == refs/tags/v* ]]; then MODE=release; fi
+          python scripts/build_client_plugin.py --mode "$MODE" --tag "$GITHUB_REF_NAME" --out "$RUNNER_TEMP/client-plugins"
+      # The tag must match package.json, package-lock.json, src/index.mjs, the MCP serverInfo
+      # and the newest CHANGELOG heading; repository.url must name this repository.
+      - name: Release gate
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: node scripts/check-release.mjs "$GITHUB_REF_NAME" "$GITHUB_REPOSITORY" --notes RELEASE-NOTES.md
+      - name: Notes for a manual run
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        run: echo "Manual run of the release workflow; nothing was published." > RELEASE-NOTES.md
+      - name: Pack, and record the digest
+        id: pack
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TARBALL="harperz9-learn-${VERSION}.tgz"
+          mkdir -p dist
+          npm pack --pack-destination dist
+          test -f "dist/${TARBALL}"
+          (cd dist && sha256sum "${TARBALL}" > SHA256SUMS && cat SHA256SUMS)
+          cp "$RUNNER_TEMP"/client-plugins/*.zip dist/
+          cat "$RUNNER_TEMP"/client-plugins/*.sha256 >> dist/SHA256SUMS
+          cp RELEASE-NOTES.md dist/RELEASE-NOTES.md
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tarball=${TARBALL}" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  smoke:
+    needs: build
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "22"
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: dist
+          path: dist/
+      - name: Check the tarball against SHA256SUMS, then run it through npx
+        shell: bash
+        run: node scripts/smoke-tarball.mjs "dist/${{ needs.build.outputs.tarball }}" --sums dist/SHA256SUMS
+
+  publish:
+    needs: [build, smoke, native-client]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: npm
+    permissions:
+      contents: read
+      id-token: write # OIDC for npm trusted publishing; there is no token or secret
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+      - name: Require Node 22.14 or later and npm 11.5.1 or later
+        run: |
+          at_least() { node -e 'const [a, b] = process.argv.slice(1).map((v) => v.split(".").map(Number)); process.exit(a[0] !== b[0] ? +(a[0] < b[0]) : a[1] !== b[1] ? +(a[1] < b[1]) : +(a[2] < b[2]))' "$1" "$2"; }
+          at_least "$(node -p process.versions.node)" 22.14.0 || { echo "Node is older than 22.14.0"; exit 1; }
+          at_least "$(npm --version)" 11.5.1 || npm install -g npm@11.6.2
+          at_least "$(npm --version)" 11.5.1 || { echo "npm is older than 11.5.1"; exit 1; }
+          echo "node $(node -p process.versions.node), npm $(npm --version)"
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: dist
+          path: dist/
+      - name: Check the tarball against SHA256SUMS
+        run: node scripts/smoke-tarball.mjs "dist/${{ needs.build.outputs.tarball }}" --sums dist/SHA256SUMS --static-only
+      # A re-run after a partial failure must not fail on a version that is already published:
+      # the exact tarball (same sha512 integrity) passes, a different one stops the release.
+      - name: Publish, or confirm this exact tarball is already on npm
+        env:
+          VERSION: ${{ needs.build.outputs.version }}
+          TARBALL: ${{ needs.build.outputs.tarball }}
+        run: |
+          LOCAL=$(node -e 'const c = require("node:crypto"); console.log("sha512-" + c.createHash("sha512").update(require("node:fs").readFileSync(process.argv[1])).digest("base64"))' "dist/${TARBALL}")
+          REMOTE=$(npm view "@harperz9/learn@${VERSION}" dist.integrity 2>/dev/null || true)
+          if [ -n "$REMOTE" ]; then
+            if [ "$REMOTE" = "$LOCAL" ]; then echo "already published with integrity $REMOTE"; exit 0; fi
+            echo "@harperz9/learn@${VERSION} is on npm with integrity $REMOTE, not $LOCAL"; exit 1
+          fi
+          npm publish "./dist/${TARBALL}" --access public
+
+  github-release:
+    needs: [build, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
+        with:
+          name: dist
+          path: dist/
+      - uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16
+        with:
+          name: native-client
+          path: dist/
+      - name: Verify native package checksums
+        run: |
+          cat dist/*.sha256 >> dist/SHA256SUMS
+          # A CR byte passes coreutils 9 but fails sha256sum 8.32 and shasum.
+          if grep -l $'\r' dist/SHA256SUMS; then echo 'checksum file has CR bytes'; exit 1; fi
+          (cd dist && sha256sum -c SHA256SUMS)
+      - name: Create the GitHub Release with the tarball and SHA256SUMS, or check the existing one
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+          VERSION: ${{ needs.build.outputs.version }}
+          TARBALL: ${{ needs.build.outputs.tarball }}
+        run: |
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            files=("dist/${TARBALL}" dist/*.zip dist/*.mcpb dist/SHA256SUMS)
+            printf '%s\n' "${files[@]##*/}" | sort > expected-assets.txt
+            gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json assets --jq '.assets[].name' | sort > attached-assets.txt
+            cmp expected-assets.txt attached-assets.txt
+            gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir existing
+            for file in "${files[@]}"; do cmp "$file" "existing/${file##*/}"; done
+            echo "release $TAG already carries these exact bytes"; exit 0
+          fi
+          gh release create "$TAG" "dist/${TARBALL}" dist/*.zip dist/*.mcpb dist/SHA256SUMS --repo "$GITHUB_REPOSITORY" \
+            --verify-tag --title "learn ${VERSION}" --notes-file dist/RELEASE-NOTES.md
+
+  native-client:
+    needs: discover
+    runs-on: windows-latest
+    permissions:
+      contents: read
+    env:
+      RELEASE_TAG: ${{ github.ref }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1
+        with:
+          python-version: "3.12"
+      - name: Build and check the bundled Windows client
+        shell: pwsh
+        run: |
+          $mode = "release"
+          if ($env:GITHUB_REF -notlike "refs/tags/v*") { $mode = "dev" }
+          python scripts/stage_client_runtime.py "$env:RUNNER_TEMP/node-client-runtime"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          python scripts/build_client_plugin.py --mode $mode --tag $env:GITHUB_REF_NAME --node-runtime "$env:RUNNER_TEMP/node-client-runtime" --out "$env:RUNNER_TEMP/native-client"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          $archive = Get-ChildItem "$env:RUNNER_TEMP/native-client/*.zip"
+          python scripts/check_client_archive.py $archive.FullName
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
+        with:
+          name: native-client
+          path: ${{ runner.temp }}/native-client/
+          if-no-files-found: error
