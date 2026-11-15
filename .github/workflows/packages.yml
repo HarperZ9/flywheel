@@ -381,6 +381,10 @@ jobs:
             smoke: |
               /tmp/vc/bin/forum --version
               /tmp/vc/bin/forum --help > /dev/null
+          - package: accountable-surface
+            smoke: |
+              /tmp/vc/bin/accountable-surface-authority --help > /dev/null
+              printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' | /tmp/vc/bin/accountable-surface-mcp | grep -q '"serverInfo"'
     defaults:
       run:
         shell: bash
@@ -657,3 +661,59 @@ jobs:
       - name: Art receipt digests
         if: runner.os == 'Linux' && matrix.python == '3.12'
         run: python scripts/check_art_receipts.py
+
+  # accountable-surface's own CI: Windows, Python 3.12 and Node 24, with its two
+  # siblings on the path. In its own repository the job cloned coherence-membrane
+  # and proof-surface; here they are the folders beside it. The last step is
+  # new: the authority command answers --help and each server answers an MCP
+  # initialize request (the two servers take no flags).
+  accountable-surface:
+    name: accountable-surface (windows, python 3.12, node 24)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: packages/accountable-surface
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install from packages/accountable-surface
+        run: |
+          python -m pip install --upgrade pip pytest-timeout
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install -e ".[test,server]"
+      - name: The package's own tests, with the sibling sources on the path
+        run: |
+          $env:PYTHONPATH = "$PWD\src;$PWD\..\coherence-membrane\src;$PWD\..\proof-surface\src"
+          python -m pytest
+      - name: Web tests
+        shell: bash
+        run: node --test web/*.test.mjs
+      - name: Entry points answer
+        shell: bash
+        run: |
+          accountable-surface-authority --help > /dev/null
+          init='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'
+          printf '%s\n' "$init" | accountable-surface-mcp | grep -q '"serverInfo"'
+          printf '%s\n' "$init" | accountable-surface-server | grep -q '"serverInfo"'
+
+  accountable-surface-art:
+    name: accountable-surface (art receipts)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Art receipt digests
+        working-directory: packages/accountable-surface
+        run: python3 scripts/check_art_receipts.py
