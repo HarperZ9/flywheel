@@ -34,6 +34,12 @@ github.com/vercel/ai/issues/10775), OpenRouter "No endpoints found that
 support tool use" (github.com/mastra-ai/mastra/issues/2839). A host that
 words its refusal another way is not recognized: the request fails with the
 host's error, and `FLYWHEEL_NATIVE_TOOLS=0` selects the text protocol by hand.
+
+The match runs over the whole error message. A host that quotes the request's
+own text inside its error could therefore carry one of these phrases from a
+prompt. No such host is known here, and none was tested. Every session that
+changes protocol shows and records a notice (endpoints_tools.offered), so the
+change is visible when it happens.
 """
 from __future__ import annotations
 
@@ -52,7 +58,7 @@ _SAYS = re.compile(
 # rate limit, one way of choosing or combining tools, or tools together with another input.
 _OTHER = re.compile(r"context[ _-]?(?:length|window)|maximum context|too many tokens"
                     r"|too long|too large|rate limit|quota|tool_choice|parallel"
-                    r"|stream|with (?:images?|vision|audio|files?)")
+                    r"|\bstream|with (?:images?|vision|audio|files?)")
 _OTHER_CODES = ("context_length_exceeded", "string_above_max_length", "rate_limit_exceeded",
                 "insufficient_quota")
 _PARAMS = ("tools", "functions")
@@ -79,3 +85,15 @@ def notice(backend, status: int) -> str:
             "schemas. This model now uses the text protocol until the program ends, so "
             "`TOOL name {json}` lines in its replies are calls. Set FLYWHEEL_NATIVE_TOOLS=0 "
             "to choose the text protocol yourself.")
+
+
+def moved_notice(backend) -> str:
+    """The line for a session whose model was moved by another session of the program.
+
+    The list of moved models is shared by the process, so this session's
+    replies are read by the text protocol too. It shows and records this line
+    once, at its first request for the model after the move."""
+    return (f"{backend.name} ({backend.model}) does not take tool schemas: its host said so "
+            "to another session of this program. This model uses the text protocol until "
+            "the program ends, so `TOOL name {json}` lines in its replies are calls. Set "
+            "FLYWHEEL_NATIVE_TOOLS=0 to choose the text protocol yourself.")

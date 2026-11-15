@@ -159,16 +159,23 @@ class LedgeredProposer:
 
     def generate(self, prompt: str, *, seed: int, temperature: float,
                  max_new_tokens: int, system: str = "") -> ProposerOutput:
+        try:                    # before the provider is contacted: an unhashable prompt is not sent
+            asked = prompt_hash(prompt)
+        except UnicodeError as exc:
+            raise ValueError("the prompt is not valid UTF-8 (a lone surrogate), so the call "
+                             "cannot be recorded; nothing was sent upstream") from exc
         out = self.inner.generate(prompt, seed=seed, temperature=temperature,
                                   max_new_tokens=max_new_tokens, system=system)
-        resp_sha = prompt_hash(out.text if isinstance(out.text, str) else str(out.text))
-        self.ledger.append("endpoint_call", resp_sha, {
-            "endpoint": self.endpoint,
-            "model_ref": out.model_ref,        # provider provenance, not a secret
-            "seed": out.seed,
-            "prompt_sha": prompt_hash(prompt),
-            "response_sha": resp_sha,
-        })
+        try:
+            resp_sha = prompt_hash(out.text if isinstance(out.text, str) else str(out.text))
+            self.ledger.append("endpoint_call", resp_sha, {
+                "endpoint": self.endpoint,
+                "model_ref": out.model_ref,        # provider provenance, not a secret
+                "seed": out.seed, "prompt_sha": asked, "response_sha": resp_sha})
+        except UnicodeError:    # a reply that cannot be hashed or written still leaves an entry
+            self.ledger.append("endpoint_call_failed", "malformed_reply", {
+                "endpoint": self.endpoint, "prompt_sha": asked, "reason": "malformed_reply"})
+            raise
         return out
 
 
