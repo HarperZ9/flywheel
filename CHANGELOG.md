@@ -163,6 +163,10 @@ Tools under `packages/`
 - Their tests run in `.github/workflows/packages.yml` when a change touches `packages/`. The daily seal-watch check runs from `.github/workflows/seal-watch.yml`.
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
 
+Evidence demos under `demos/`
+- Five evidence demos and receipts now live under `demos/`, each as the final tree of its own repository: `flywheel-evidence-task`, `flywheel-receipt-demo`, `bootloops-second-checker`, `crewai-kickoff-replay-receipt`, `vllm-ci-forum-receipt`. `demos/README.md` lists what each shows, how to run it and the source commit.
+- Their checks run in `.github/workflows/demos.yml` when a change touches one of them. The two sealed receipts are byte-for-byte copies; seal-watch still checks the published repositories from fresh clones. The `flywheel-verify` wheel and sdist do not contain `demos/`.
+
 ### What broke
 
 Breaking changes, each with a section in `docs/MIGRATING-2.0.md`. 2.0.0 ships them
