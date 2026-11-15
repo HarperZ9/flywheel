@@ -20,10 +20,12 @@ stream in one of two ways:
                   return, token counts included. The hosted backends
                   (OpenAI-compatible, Anthropic, Gemini) have this. The text
                   that was shown must equal the text in that generation, or
-                  the reply is refused. One difference is allowed and named
+                  the reply is refused. Two differences are allowed and named
                   by the backend as `stream_text`: on a native turn a TOOL
                   line in the reply's prose is recorded with a mark in front
-                  (harness/endpoints_tools_prose.py) and was shown without.
+                  (harness/endpoints_tools_prose.py) and was shown without;
+                  and whitespace shown before a reply that holds only tool
+                  calls is not recorded, as in a plain reply.
   chat_stream     yields text and returns the model reference only. Ollama
                   has this. Its streamed reply carries no `x_token_usage`, so
                   `/cost` lists the call as uncounted.
