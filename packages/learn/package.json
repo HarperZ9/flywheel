@@ -1,0 +1,23 @@
+{
+  "name": "@harperz9/learn",
+  "version": "2.3.0",
+  "type": "module",
+  "description": "Study planner for the terminal and MCP: schedules reviews, tracks repeat mistakes and checks mastery from the attempts you record. Leaves graded questions to you.",
+  "license": "AGPL-3.0-only",
+  "author": "Zain Dana Harper <17142659+HarperZ9@users.noreply.github.com> (https://github.com/HarperZ9)",
+  "repository": { "type": "git", "url": "git+https://github.com/HarperZ9/learn.git" },
+  "homepage": "https://github.com/HarperZ9/learn#readme",
+  "bugs": { "url": "https://github.com/HarperZ9/learn/issues" },
+  "keywords": ["spaced-repetition", "study-planner", "retrieval-practice", "fsrs", "learning", "mcp", "cli", "zero-dependency", "provenance"],
+  "bin": { "learn": "src/cli.mjs", "learn-mcp": "src/mcp.mjs" },
+  "exports": {
+    ".": "./src/index.mjs",
+    "./doctor": "./src/doctor.mjs",
+    "./status": "./src/status.mjs",
+    "./browser": "./src/browser.mjs"
+  },
+  "scripts": { "test": "node --test" },
+  "publishConfig": { "access": "public" },
+  "engines": { "node": ">=20" },
+  "files": ["src/", "docs/", "README.md", "LICENSE"]
+}

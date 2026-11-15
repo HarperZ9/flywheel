@@ -32,6 +32,7 @@ Tests run in `.github/workflows/packages.yml` when a change touches `packages/`.
 | [terminal-state-fixtures](terminal-state-fixtures/) | Evaluation environments that score an agent by the state it leaves. Three environments, each with its own pyproject. | environments under `environments/` | `HarperZ9/terminal-state-fixtures` at `71bc42de` | mlflow environment tests, METR TaskFamily tests, repo facts |
 | [seal-watch](seal-watch/) | Clones two sealed evidence repos fresh every day, runs each one's verifier and a tamper self-test. | `python watch.py check|tamper|report` | `HarperZ9/seal-watch` at `3c5cfed2` | `.github/workflows/seal-watch.yml`, daily |
 | [chorus](chorus/) | Reads a comment section: ranked themes, strength of feeling, split topics, and a receipt anyone can re-run. Distribution name `chorus-discourse`. | `chorus` (`run`, `corpora`, `watch`, `daemon`, `digests`, `decision`, `mcp`) | `HarperZ9/chorus` at `baa3ebf1` | pytest, repo art check |
+| [learn](learn/) | A tutor that plans study, checks proof lessons, tracks mastery and misconceptions, and writes a receipt for each step. Node, npm name `@harperz9/learn`. | `learn`, `learn-mcp` (npm bins) | `HarperZ9/learn` at `ab5a7657` | `node --test` (419 tests), doctor, status, tarball smoke test |
 
 Each import is the final tree of the source repository in one commit. The commit message names
 the source commit. Releases published before the move stay on PyPI and on the source repository's

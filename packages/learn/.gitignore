@@ -1,0 +1,27 @@
+node_modules/
+*.log
+/runs/
+/tutor/
+/assist/
+.superpowers/
+.env
+.env.*
+
+# Local-only Claude instructions (global standard: never commit)
+CLAUDE.local.md
+
+# Build output (global standard: never commit), and tarballs from npm pack
+dist/
+packed/
+*.tgz
+
+# Python (the renderers and gates under tools/)
+__pycache__/
+*.pyc
+
+# The committed template must survive the .env.* rule above (global standard)
+!.env.example
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local
