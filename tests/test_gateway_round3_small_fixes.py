@@ -213,7 +213,9 @@ def test_one_body_read_has_a_budget_and_the_drain_sets_its_own():
             return b"x"
 
     started = time.monotonic()
-    with pytest.raises(TimeoutError):           # four read timeouts of 0.1 s
+    # A route's read: four read timeouts of 0.1 s, then `BodyTimeout`, which the gateway
+    # handler answers 408 (it was a TimeoutError, answered 500, until the fifth round).
+    with pytest.raises(gateway_read_timeout.BodyTimeout):
         gateway_read_timeout.HeaderDeadline(Drip(), 0.1).read(1000)
     assert 0.3 < time.monotonic() - started < 3
     drain = type("Sock", (), {"gettimeout": lambda self: 0.15})()
