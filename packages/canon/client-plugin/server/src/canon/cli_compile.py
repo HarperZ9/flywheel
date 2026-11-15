@@ -41,7 +41,7 @@ def run_compile_command(
 ) -> int:
     try:
         workspace = checked_workspace(parsed.workspace)  # type: ignore[attr-defined]
-        bundle, data = _bundle_and_data(parsed, workspace=workspace, stdin=stdin)
+        bundle, data = _bundle_and_data(parsed, workspace=workspace, stdin=stdin, scan_sources=True)
         if parsed.command == "compile" and parsed.out is not None:  # type: ignore[attr-defined]
             artifacts = _artifact_bytes(bundle)
             publish_artifacts(parsed.out, workspace=workspace, artifacts=artifacts)  # type: ignore[attr-defined]

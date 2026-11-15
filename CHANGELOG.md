@@ -138,7 +138,7 @@ Release from one tag (#463)
 - Starting `publish.yml` by hand is a dry run: every step up to the gates, then the would-be release as a workflow artifact. A run publishes only from a version tag.
 - After the upload, a job on Linux, macOS and Windows checks that PyPI serves the files that were built and that a fresh install passes `flywheel gate`.
 
-### Moved into this repository (#474, #476, #477, #478, #479, #480, #481, #482, #483, #485, #486, #487, #488, #512, #514, #515, #520, #521, #522, #523)
+### Moved into this repository (#474, #476, #477, #478, #479, #480, #481, #482, #483, #485, #486, #487, #488, #512, #514, #515, #520, #521, #522, #523, #533)
 
 Tools under `packages/`
 - Sixteen single-purpose tools now live under `packages/`, each as the final tree of its own repository: `proof-surface`, `proof-surface-report`, `repo-proof-index`, `model-provenance-validator`, `context-curator-lite`, `workflow-harness-lite`, `secret-redact-io`, `agent-hook-pack`, `agent-routing-kit`, `public-surface-sweeper`, `discover`, `accountable-engine`, `coherence-membrane`, `behavior-transform.io`, `terminal-state-fixtures`, `seal-watch`. `packages/README.md` lists what each does, its entry points and the source commit.
@@ -160,6 +160,7 @@ Tools under `packages/`
 - `accountable-surface` (distribution `accountable-surface` 0.3.1) now also lives under `packages/accountable-surface`. PyPI releases still publish from `HarperZ9/accountable-surface`, which stays open. (#514)
 - Forum's SQLite ledger storage under several writers: writers take turns, an append is one transaction, and a writer that cannot take the lock within 30 seconds raises `StorageBusy` where it used to pass on SQLite's `database is locked`. (forum#49) (#515)
 - Canon's residual scan after a context purge counts a purged window at every offset. A window that repeats within itself, such as seventeen equal letters, was counted once where it occurs twice, so up to fifteen leftover bytes directly after a kept row ending in the same letters were reported as no residue. The scrub itself was not affected. (canon#52) (#522)
+- `canon compile` scans its records and atoms for secrets before it writes, as `canon export` does. An atom whose value was an API-key-shaped string used to compile, and the string was in the CANON.md on stdout. (canon#53) (#533)
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
 
 Evidence demos under `demos/`
