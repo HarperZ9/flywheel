@@ -1,0 +1,24 @@
+PHASE: FOCUSED STATIC VERIFICATION, candidate production source
+CWD: <crewai-repository-root>
+
+COMMAND 1: .\.venv\Scripts\ruff.exe check lib/crewai/src/crewai/crew.py
+EXIT_CODE: 0
+All checks passed!
+
+COMMAND 2: .\.venv\Scripts\ruff.exe check --no-force-exclude lib/crewai/tests/test_kickoff_for_each_replay.py
+EXIT_CODE: 0
+All checks passed!
+
+COMMAND 3: .\.venv\Scripts\ruff.exe format --check lib/crewai/src/crewai/crew.py
+EXIT_CODE: 0
+1 file already formatted
+
+COMMAND 4: .\.venv\Scripts\ruff.exe format --check --no-force-exclude lib/crewai/tests/test_kickoff_for_each_replay.py
+EXIT_CODE: 0
+1 file already formatted
+
+COMMAND 5: git diff --check
+EXIT_CODE: 0
+
+COMMAND 6: git apply --check --reverse candidate.patch
+EXIT_CODE: 0

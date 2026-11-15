@@ -1,0 +1,8 @@
+PHASE: RELEVANT EXISTING TESTS, candidate production source
+PYTHON: 3.12.10
+CWD: <crewai-repository-root>
+COMMAND: .\.venv\Scripts\python.exe -m pytest -q -n 0 --tb=short --disable-warnings --allowed-hosts="127\.0\.0\.1\Z,::1\Z" -p harness.windows_pytest_cleanup lib/crewai/tests/test_crew.py -k "replay"
+EXIT_CODE: 0
+
+.........                                                                [100%]
+9 passed, 123 deselected, 173 warnings in 12.41s

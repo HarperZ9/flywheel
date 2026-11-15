@@ -1,0 +1,8 @@
+PHASE: CONTROL, unmodified pinned production source
+PYTHON: 3.12.10
+CWD: <crewai-repository-root>
+COMMAND: .\.venv\Scripts\python.exe -m pytest -q -n 0 --tb=short --disable-warnings lib/crewai/tests/test_kickoff_for_each_replay.py::test_regular_kickoff_persists_and_replays_latest_run
+EXIT_CODE: 0
+
+.                                                                        [100%]
+1 passed, 19 warnings in 2.45s

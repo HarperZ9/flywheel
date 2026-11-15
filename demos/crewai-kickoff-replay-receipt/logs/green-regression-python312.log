@@ -1,0 +1,8 @@
+PHASE: GREEN, candidate production source
+PYTHON: 3.12.10
+CWD: <crewai-repository-root>
+COMMAND: .\.venv\Scripts\python.exe -m pytest -q -n 0 --tb=short --disable-warnings lib/crewai/tests/test_kickoff_for_each_replay.py::test_kickoff_for_each_persists_only_the_most_recent_run_for_replay
+EXIT_CODE: 0
+
+.                                                                        [100%]
+1 passed, 36 warnings in 2.94s
