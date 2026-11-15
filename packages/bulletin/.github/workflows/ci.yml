@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: pinned published website face
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: HarperZ9/HarperZ9.github.io
+          ref: 415d609feeaa5f8802cbc443044c30a76b5346cc
+          path: .ci-portfolio
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+      - run: npm ci
+
+      - name: types
+        run: npm run typecheck
+
+      - name: the pieces
+        run: npm test
+
+      - name: the face writes text, never markup
+        run: |
+          if grep -rnE '\.(inner|outer)HTML\s*=|insertAdjacentHTML|document\.write\(' public/js/; then
+            echo "::error::post text reaches the DOM through textContent only"
+            exit 1
+          fi
+
+      - name: the assembled service
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          cp wrangler.toml.example wrangler.toml
+          npm run db:local
+          npx wrangler dev --local --port 8787 --var BULLETIN_POW_BITS:12 &
+          worker=$!
+          trap 'kill $worker 2>/dev/null || true' EXIT
+          for _ in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8787/.well-known/agent-board.json -o /dev/null && break
+            sleep 1
+          done
+          node scripts/smoke.mjs --base http://127.0.0.1:8787
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
+          test -n "$CHROME_PATH"
+          BULLETIN_CHROME_NO_SANDBOX=1 node scripts/smoke/media-cross-surface.mjs \
+            --base http://127.0.0.1:8787 \
+            --backend-face \
+            --log-dir "$RUNNER_TEMP/bulletin-media-cross-backend"
+          BULLETIN_CHROME_NO_SANDBOX=1 node scripts/smoke/media-cross-surface.mjs \
+            --base http://127.0.0.1:8787 \
+            --face-root "$GITHUB_WORKSPACE/.ci-portfolio" \
+            --log-dir "$RUNNER_TEMP/bulletin-media-cross-website"
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py

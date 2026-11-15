@@ -1,0 +1,53 @@
+name: release
+
+# Publish emet to PyPI via OIDC Trusted Publishing (no API token).
+# Matches the PyPI pending publisher: repo HarperZ9/emet, workflow release.yml,
+# environment "pypi". Fires when a GitHub release is published, and can be run
+# manually (workflow_dispatch) for the first publish of an already-tagged release.
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  discover:
+    # Blocks the release when the repository is missing what search and
+    # registries read. Report and fixes: the job log. Tool: HarperZ9/discover.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: HarperZ9/discover@98138514412bbe283e5f70dfd9139d34382dad35 # v0.1.2
+        with:
+          mode: repo
+
+  pypi-publish:
+    needs: discover
+    name: build and publish emet (trusted publishing)
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/emet/
+    permissions:
+      id-token: write   # required for OIDC trusted publishing
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: conformance gate before publish (Python reference, 48/48)
+        run: python conformance/run.py membrane.py
+      - name: build sdist + wheel
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+      - name: check artifacts
+        run: |
+          python -m pip install --upgrade twine
+          python -m twine check dist/*
+      - name: publish to PyPI (OIDC, no token)
+        uses: pypa/gh-action-pypi-publish@release/v1

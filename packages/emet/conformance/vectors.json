@@ -1,0 +1,686 @@
+{
+  "corpus_sha256": "aec90a7b0a164ab70545db1c8d0d473342376da296fc432515369e2be37655e0",
+  "corpus_version": 1,
+  "note": "A second independent implementation passing these vectors DEMONSTRATES re-derivability (SPEC section 12). The reference implementation passing them proves only internal consistency.",
+  "spec_version": "1.0.0",
+  "tool": "membrane.py",
+  "vectors": [
+    {
+      "anchor": [
+        "a.txt"
+      ],
+      "expect_exit": 0,
+      "expect_substr": "MATCH",
+      "files": {
+        "a.txt": "galvanized\n"
+      },
+      "id": "verify-match",
+      "run": [
+        "verify",
+        "a.txt"
+      ]
+    },
+    {
+      "anchor": [
+        "a.txt"
+      ],
+      "append": {
+        "a.txt": "X"
+      },
+      "expect_exit": 1,
+      "expect_substr": "DRIFT",
+      "files": {
+        "a.txt": "galvanized\n"
+      },
+      "id": "verify-drift-single-byte",
+      "run": [
+        "verify",
+        "a.txt"
+      ]
+    },
+    {
+      "expect_exit": 2,
+      "expect_substr": "UNVERIFIABLE",
+      "files": {
+        "a.txt": "x\n"
+      },
+      "id": "verify-unverifiable-no-anchor",
+      "run": [
+        "verify",
+        "a.txt"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "result=COHERENT",
+      "files": {
+        "s": "same\n",
+        "v": "same\n"
+      },
+      "id": "coherence-coherent",
+      "run": [
+        "coherence",
+        "s",
+        "v"
+      ]
+    },
+    {
+      "expect_exit": 1,
+      "expect_substr": "result=VIEW_DIFFERS_FROM_SOURCE",
+      "files": {
+        "s": "depth\n",
+        "v": "depth INJECTED\n"
+      },
+      "id": "coherence-injected-view-differs",
+      "run": [
+        "coherence",
+        "s",
+        "v"
+      ]
+    },
+    {
+      "expect_exit": 3,
+      "expect_substr": "in_band_authority_claims=3\n",
+      "files": {
+        "inj.txt": "GROUND_TRUTH_CANONICAL HIGHEST_SCRUTINY authority_pill\n"
+      },
+      "id": "refuse-three-markers",
+      "run": [
+        "refuse",
+        "inj.txt"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "in_band_authority_claims=0\n",
+      "files": {
+        "clean.txt": "ordinary text, depth bounded\n"
+      },
+      "id": "refuse-clean-zero",
+      "run": [
+        "refuse",
+        "clean.txt"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "result=CORROBORATED",
+      "files": {
+        "c.txt": "corroborate me\n"
+      },
+      "id": "corroborate-read-paths-agree",
+      "run": [
+        "corroborate",
+        "c.txt"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "emet_self_sha256=",
+      "files": {},
+      "id": "selftest-self-hash",
+      "note": "the canonical token is emet_self_sha256= (SPEC s.14); the legacy membrane_self_sha256= is also emitted through the 1.x deprecation window",
+      "run": [
+        "selftest"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "membrane_self_sha256=",
+      "files": {},
+      "id": "selftest-legacy-alias-present",
+      "note": "SPEC s.14 deprecation window: the legacy membrane_self_sha256= alias MUST still be emitted at 1.x (removed at 2.0)",
+      "run": [
+        "selftest"
+      ]
+    },
+    {
+      "expect_exit": 2,
+      "expect_substr": "UNVERIFIABLE",
+      "files": {
+        "v": "x\n"
+      },
+      "id": "coherence-missing-source-unverifiable",
+      "note": "inability to read raw bytes is UNVERIFIABLE, never a crash or a default (SPEC sections 3 and 9); both implementations must agree on the error path",
+      "run": [
+        "coherence",
+        "ghost",
+        "v"
+      ]
+    },
+    {
+      "expect_exit": 2,
+      "expect_substr": "UNVERIFIABLE",
+      "files": {},
+      "id": "refuse-missing-file-unverifiable",
+      "note": "refuse on a missing artifact is UNVERIFIABLE with a stable machine reason code, never a crash (SPEC section 9)",
+      "run": [
+        "refuse",
+        "ghost"
+      ]
+    },
+    {
+      "expect_exit": 3,
+      "expect_substr": "in_band_authority_claims=1\n",
+      "files": {
+        "inj.txt": "GROUND TRUTH CANONICAL\n"
+      },
+      "id": "refuse-space-separated",
+      "note": "both implementations now agree on a space-separated marker (was Python 1 / Rust 0)",
+      "run": [
+        "refuse",
+        "inj.txt"
+      ]
+    },
+    {
+      "expect_exit": 3,
+      "expect_substr": "in_band_authority_claims=1\n",
+      "files": {
+        "inj.txt": "authority-pill\n"
+      },
+      "id": "refuse-hyphen-pill",
+      "run": [
+        "refuse",
+        "inj.txt"
+      ]
+    },
+    {
+      "expect_exit": 3,
+      "expect_substr": "in_band_authority_claims=2\n",
+      "files": {
+        "inj.txt": "authority_pill authority_pill\n"
+      },
+      "id": "refuse-repeated-marker-occurrence-count",
+      "note": "a repeated marker counts once per non-overlapping occurrence (SPEC s.16); distinguishes occurrence-counting from distinct-entry counting, which the other refuse vectors do not -- surfaced by the Node.js clean-room implementation",
+      "run": [
+        "refuse",
+        "inj.txt"
+      ]
+    },
+    {
+      "env": {
+        "EMET_CORPUS": "/nonexistent/emet/markers.corpus"
+      },
+      "expect_exit": 2,
+      "expect_substr": "UNVERIFIABLE",
+      "files": {
+        "inj.txt": "ground_truth_canonical\n"
+      },
+      "id": "refuse-no-corpus",
+      "note": "missing corpus is UNVERIFIABLE, not a silent empty denylist",
+      "run": [
+        "refuse",
+        "inj.txt"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "chain=INTACT",
+      "files": {
+        "membrane_log.jsonl": "{\"chain\": \"62831bbd5c542e66f1dc9d39e063bf43cdf7cc4f93faa9d26c454dbcbbd25170\", \"fact\": {\"path\": \"a.txt\", \"result\": \"MATCH\"}, \"kind\": \"verify\", \"prev\": \"0000000000000000000000000000000000000000000000000000000000000000\"}\n{\"chain\": \"60c91198dd5a3d2e0ccc2e5d15448fdc965c81c845724246863ea51ecd74e869\", \"fact\": {\"path\": \"b.txt\", \"result\": \"MATCH\"}, \"kind\": \"verify\", \"prev\": \"62831bbd5c542e66f1dc9d39e063bf43cdf7cc4f93faa9d26c454dbcbbd25170\"}\n"
+      },
+      "id": "audit-intact",
+      "note": "recompute the hash-chained log; a valid chain is INTACT (SPEC sections 7, 13)",
+      "run": [
+        "audit"
+      ]
+    },
+    {
+      "expect_exit": 1,
+      "expect_substr": "chain=BROKEN",
+      "files": {
+        "membrane_log.jsonl": "{\"chain\": \"62831bbd5c542e66f1dc9d39e063bf43cdf7cc4f93faa9d26c454dbcbbd25170\", \"fact\": {\"path\": \"a.txt\", \"result\": \"DRIFT\"}, \"kind\": \"verify\", \"prev\": \"0000000000000000000000000000000000000000000000000000000000000000\"}\n"
+      },
+      "id": "audit-broken",
+      "note": "a tampered fact whose stored chain no longer recomputes is BROKEN",
+      "run": [
+        "audit"
+      ]
+    },
+    {
+      "expect_exit": 1,
+      "expect_substr": "chain=BROKEN",
+      "files": {
+        "membrane_log.jsonl": "{\"chain\": \"62831bbd5c542e66f1dc9d39e063bf43cdf7cc4f93faa9d26c454dbcbbd25170\", \"fact\": {\"path\": \"a.txt\", \"result\": \"MATCH\"}, \"kind\": \"FORGED\", \"prev\": \"0000000000000000000000000000000000000000000000000000000000000000\"}\n"
+      },
+      "id": "audit-kind-tamper",
+      "note": "the chain binds the event kind (SPEC section 7); relabeling kind alone is BROKEN",
+      "run": [
+        "audit"
+      ]
+    },
+    {
+      "anchor": [
+        "a.txt"
+      ],
+      "expect_exit": 0,
+      "expect_substr": "chain=INTACT",
+      "files": {
+        "a.txt": "x\n"
+      },
+      "id": "anchor-then-audit",
+      "note": "an implementation writes a hash-chained log entry on anchor and then audits it as INTACT (the write+verify loop, both implementations)",
+      "run": [
+        "audit"
+      ]
+    },
+    {
+      "expect_exit": 2,
+      "expect_substr": "UNVERIFIABLE",
+      "files": {},
+      "id": "anchor-unreadable-is-unverifiable",
+      "note": "anchor on an unreadable/absent target is UNVERIFIABLE + exit 2, never a silent skip (SPEC s.4); pins the cross-impl behavior an earlier Rust port diverged on (it exited 0)",
+      "run": [
+        "anchor",
+        "ghost"
+      ]
+    },
+    {
+      "anchor": [
+        "a.txt"
+      ],
+      "expect_exit": 0,
+      "expect_substr": "\"verdict\": \"MATCH\"",
+      "files": {
+        "a.txt": "galvanized\n"
+      },
+      "id": "verify-match-json",
+      "note": "SPEC s.13 --json envelope: canonical JSON (sorted keys, ', '/': ' separators) carries the governed verdict identically across implementations",
+      "run": [
+        "verify",
+        "--json",
+        "a.txt"
+      ]
+    },
+    {
+      "anchor": [
+        "a.txt"
+      ],
+      "append": {
+        "a.txt": "X"
+      },
+      "expect_exit": 1,
+      "expect_substr": "\"verdict\": \"DRIFT\"",
+      "files": {
+        "a.txt": "galvanized\n"
+      },
+      "id": "verify-drift-json",
+      "note": "the --json envelope reports DRIFT and exit_code 1 (SPEC s.5/s.13)",
+      "run": [
+        "verify",
+        "--json",
+        "a.txt"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "\"verdict\": \"COHERENT\"",
+      "files": {
+        "s": "same\n",
+        "v": "same\n"
+      },
+      "id": "coherence-json",
+      "run": [
+        "coherence",
+        "--json",
+        "s",
+        "v"
+      ]
+    },
+    {
+      "expect_exit": 3,
+      "expect_substr": "\"in_band_authority_claims\": 3",
+      "files": {
+        "inj.txt": "GROUND_TRUTH_CANONICAL HIGHEST_SCRUTINY authority_pill\n"
+      },
+      "id": "refuse-json",
+      "note": "the --json envelope carries the integer marker count under the SPEC s.13 key",
+      "run": [
+        "refuse",
+        "--json",
+        "inj.txt"
+      ]
+    },
+    {
+      "expect_exit": 1,
+      "expect_substr": "\"verdict\": \"BROKEN\"",
+      "files": {
+        "membrane_log.jsonl": "{\"chain\": \"62831bbd5c542e66f1dc9d39e063bf43cdf7cc4f93faa9d26c454dbcbbd25170\", \"fact\": {\"path\": \"a.txt\", \"result\": \"DRIFT\"}, \"kind\": \"verify\", \"prev\": \"0000000000000000000000000000000000000000000000000000000000000000\"}\n"
+      },
+      "id": "audit-broken-json",
+      "run": [
+        "audit",
+        "--json"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "\"self_sha256\": \"",
+      "files": {},
+      "id": "selftest-json",
+      "note": "the --json envelope reports the identity under self_sha256 and carries no verdict (selftest is an identity, not a judgement)",
+      "run": [
+        "selftest",
+        "--json"
+      ]
+    },
+    {
+      "expect_exit": 2,
+      "expect_substr": "reason=E_NO_ANCHOR",
+      "files": {
+        "a.txt": "x\n"
+      },
+      "id": "verify-no-anchor-reason-code",
+      "note": "SPEC s.9: UNVERIFIABLE carries a stable machine reason code, not prose; verify without an anchor MUST report E_NO_ANCHOR (enforces the enum a prose-emitting impl would fail)",
+      "run": [
+        "verify",
+        "a.txt"
+      ]
+    },
+    {
+      "expect_exit": 2,
+      "expect_substr": "reason=E_NOT_FOUND",
+      "files": {},
+      "id": "refuse-missing-reason-code",
+      "note": "SPEC s.9: an absent target reports reason=E_NOT_FOUND (distinct from E_NO_RAW_CHANNEL for a present-but-unreadable path)",
+      "run": [
+        "refuse",
+        "ghost"
+      ]
+    },
+    {
+      "anchor": [
+        "a.txt"
+      ],
+      "expect_exit": 0,
+      "expect_substr": "\"spec_version\": \"1.0.0\"",
+      "files": {
+        "a.txt": "x\n"
+      },
+      "id": "envelope-spec-version",
+      "note": "SPEC s.13: spec_version is a governed, byte-compared envelope field; pins its value so every conforming impl agrees",
+      "run": [
+        "verify",
+        "--json",
+        "a.txt"
+      ]
+    },
+    {
+      "anchor": [
+        "a.txt"
+      ],
+      "append": {
+        "a.txt": "X"
+      },
+      "expect_exit": 1,
+      "expect_substr": "\"verdict\": \"DRIFT\"",
+      "files": {
+        "a.txt": "galvanized\n",
+        "b.txt": "unanchored\n"
+      },
+      "id": "verify-multipath-precedence-json",
+      "note": "SPEC s.5 precedence: a.txt DRIFTs and b.txt is UNVERIFIABLE (no anchor); the dominant verdict is DRIFT and the exit is 1 (a confirmed difference dominates an inability to check)",
+      "run": [
+        "verify",
+        "--json",
+        "a.txt",
+        "b.txt"
+      ]
+    },
+    {
+      "expect_exit": 0,
+      "expect_substr": "chain=INTACT",
+      "files": {
+        "membrane_log.jsonl": "{\"chain\": \"e486f9bcd84c7baa35574d11576cb25af7b9bed9a26d8596fea44dc9dfdeeed4\", \"fact\": {\"path\": \"e_\\ud83d\\ude00.txt\", \"result\": \"MATCH\"}, \"kind\": \"verify\", \"prev\": \"0000000000000000000000000000000000000000000000000000000000000000\"}\n"
+      },
+      "id": "audit-astral-char-intact",
+      "note": "SPEC s.7: audit re-derives any conforming log regardless of which impl wrote it. A fact whose path holds a non-BMP/astral char (emoji, stored ASCII-escaped as a UTF-16 surrogate pair) MUST re-serialize identically and audit INTACT; an impl that mishandles surrogate pairs would falsely report BROKEN",
+      "run": [
+        "audit"
+      ]
+    },
+    {
+      "expect_exit": 1,
+      "expect_substr": "chain=BROKEN",
+      "files": {
+        "membrane_log.jsonl": "GARBAGE-NOT-JSON\n"
+      },
+      "id": "audit-unparseable-line-broken",
+      "note": "SPEC s.7: a log line that cannot be parsed is a tamper event and MUST audit BROKEN (exit 1), not UNVERIFIABLE - a corrupt line is a detected difference from a well-formed chain, never an inability to check",
+      "run": [
+        "audit"
+      ]
+    },
+    {
+      "expect_exit": 2,
+      "expect_substr": "reason=E_NO_ANCHOR",
+      "files": {},
+      "id": "verify-missing-unanchored-reason",
+      "note": "SPEC s.9/s.13: verify is anchor-relative, so a path that is both absent AND unanchored reports reason=E_NO_ANCHOR (the anchor check precedes the read); pins the governed reason so an existence-check-first impl cannot emit E_NOT_FOUND here",
+      "run": [
+        "verify",
+        "ghost.txt"
+      ]
+    },
+    {
+      "expect_exit": 2,
+      "expect_substr": "reason=source:E_NOT_FOUND",
+      "files": {
+        "v": "x\n"
+      },
+      "id": "coherence-missing-source-reason",
+      "note": "SPEC s.9/s.13: the governed coherence reason carries the failing leg - source:<code> or view:<code> - so a consumer can tell which side was unreadable; pins the prefix an impl that drops it would fail",
+      "run": [
+        "coherence",
+        "ghost",
+        "v"
+      ]
+    },
+    {
+      "capability": "receipt",
+      "expect_exit": 0,
+      "expect_substr": "RECEIPT_VALID",
+      "files": {
+        "r.json": "{\"corpus_sha256\": null, \"corpus_version\": null, \"format\": \"emet-witness-receipt/v1\", \"issued_at\": \"2026-07-02T12:34:56Z\", \"notes\": \"EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.\", \"re_derivation_method\": \"hash\", \"receipt_id\": \"771c16998b4c8ac936860d32471691f0a9ba27437d41594c1d3e5a68f7f310f0\", \"signature\": null, \"signature_algorithm\": \"hmac-sha256-optional\", \"subject\": [{\"path\": \"a.txt\", \"sha256\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\"}], \"verdict_record\": [{\"command\": \"verify\", \"got\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\", \"subject_index\": 0, \"verdict\": \"MATCH\", \"want\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\"}], \"witness\": {\"implementation\": \"emet-python-reference\", \"self_sha256\": \"761711e155ea14827117e37d933df0753405f36c9a77707f3dbe69a67947d56b\", \"spec_version\": \"1.0.0\"}}"
+      },
+      "id": "receipt-valid",
+      "note": "SPEC s.17.3: a content-addressed receipt re-derives its own id offline (zero shared state) and checks RECEIPT_VALID; the same receipt bytes check identically across implementations (byte-identical content address, s.17.2)",
+      "run": [
+        "check",
+        "r.json"
+      ]
+    },
+    {
+      "capability": "receipt",
+      "expect_exit": 1,
+      "expect_substr": "RECEIPT_TAMPERED",
+      "files": {
+        "r.json": "{\"corpus_sha256\": null, \"corpus_version\": null, \"format\": \"emet-witness-receipt/v1\", \"issued_at\": \"2026-07-02T12:34:56Z\", \"notes\": \"EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.\", \"re_derivation_method\": \"hash\", \"receipt_id\": \"071c16998b4c8ac936860d32471691f0a9ba27437d41594c1d3e5a68f7f310f0\", \"signature\": null, \"signature_algorithm\": \"hmac-sha256-optional\", \"subject\": [{\"path\": \"a.txt\", \"sha256\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\"}], \"verdict_record\": [{\"command\": \"verify\", \"got\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\", \"subject_index\": 0, \"verdict\": \"MATCH\", \"want\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\"}], \"witness\": {\"implementation\": \"emet-python-reference\", \"self_sha256\": \"761711e155ea14827117e37d933df0753405f36c9a77707f3dbe69a67947d56b\", \"spec_version\": \"1.0.0\"}}"
+      },
+      "id": "receipt-tampered-id-flip",
+      "note": "SPEC s.17.3: a doctored receipt_id no longer matches the re-derived content address, so check is RECEIPT_TAMPERED (exit 1) -- the verifier can FAIL, it is not a rubber stamp",
+      "run": [
+        "check",
+        "r.json"
+      ]
+    },
+    {
+      "capability": "receipt",
+      "env": {
+        "EMET_RECEIPT_SIGNING_KEY": "wrong-key"
+      },
+      "expect_exit": 1,
+      "expect_substr": "RECEIPT_TAMPERED",
+      "files": {
+        "r.json": "{\"corpus_sha256\": null, \"corpus_version\": null, \"format\": \"emet-witness-receipt/v1\", \"issued_at\": \"2026-07-02T12:34:56Z\", \"notes\": \"EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.\", \"re_derivation_method\": \"hash\", \"receipt_id\": \"771c16998b4c8ac936860d32471691f0a9ba27437d41594c1d3e5a68f7f310f0\", \"signature\": \"44e6cc5e1d9be8c7bc1f5991b56c343c7c7d56750cd7c364a04a245050f225e4\", \"signature_algorithm\": \"hmac-sha256-optional\", \"subject\": [{\"path\": \"a.txt\", \"sha256\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\"}], \"verdict_record\": [{\"command\": \"verify\", \"got\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\", \"subject_index\": 0, \"verdict\": \"MATCH\", \"want\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\"}], \"witness\": {\"implementation\": \"emet-python-reference\", \"self_sha256\": \"761711e155ea14827117e37d933df0753405f36c9a77707f3dbe69a67947d56b\", \"spec_version\": \"1.0.0\"}}"
+      },
+      "id": "receipt-tampered-signature",
+      "note": "SPEC s.17.4: a signed receipt whose HMAC does not verify under the available key is RECEIPT_TAMPERED (exit 1); the fixture was signed with a different key. Python + Node compute the HMAC natively, Rust composes it over its own SHA-256",
+      "run": [
+        "check",
+        "r.json"
+      ]
+    },
+    {
+      "capability": "receipt",
+      "expect_exit": 2,
+      "expect_substr": "RECEIPT_UNVERIFIABLE",
+      "files": {
+        "bad.json": "{not valid json"
+      },
+      "id": "receipt-unverifiable-malformed",
+      "note": "SPEC s.17.3: a malformed receipt is RECEIPT_UNVERIFIABLE (exit 2) with a stable reason code, never a stack trace -- an inability to check, not a detected difference",
+      "run": [
+        "check",
+        "bad.json"
+      ]
+    },
+    {
+      "capability": "receipt",
+      "expect_exit": 1,
+      "expect_substr": "RECEIPT_TAMPERED",
+      "files": {
+        "a.txt": "changed\n",
+        "r.json": "{\"corpus_sha256\": null, \"corpus_version\": null, \"format\": \"emet-witness-receipt/v1\", \"issued_at\": \"2026-07-02T12:34:56Z\", \"notes\": \"EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.\", \"re_derivation_method\": \"hash\", \"receipt_id\": \"771c16998b4c8ac936860d32471691f0a9ba27437d41594c1d3e5a68f7f310f0\", \"signature\": null, \"signature_algorithm\": \"hmac-sha256-optional\", \"subject\": [{\"path\": \"a.txt\", \"sha256\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\"}], \"verdict_record\": [{\"command\": \"verify\", \"got\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\", \"subject_index\": 0, \"verdict\": \"MATCH\", \"want\": \"a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447\"}], \"witness\": {\"implementation\": \"emet-python-reference\", \"self_sha256\": \"761711e155ea14827117e37d933df0753405f36c9a77707f3dbe69a67947d56b\", \"spec_version\": \"1.0.0\"}}"
+      },
+      "id": "receipt-subject-drift",
+      "note": "SPEC s.17.3 step 4: with --recompute-from-paths the subject bytes on disk differ from the recorded digest, so subject re-derivation diverges -> RECEIPT_TAMPERED (a point-in-time snapshot, not a blanket certificate)",
+      "run": [
+        "check",
+        "r.json",
+        "--recompute-from-paths"
+      ]
+    },
+    {
+      "capability": "rebind",
+      "expect_exit": 0,
+      "expect_substr": "result=MATCH",
+      "files": {
+        "manifest.json": "{\"format\": \"emet-rebind-manifest/v1\", \"issued_at\": \"2026-07-02T00:00:00Z\", \"manifest_id\": \"e8bb63f165b8096269eb682599021a358ae77a8331e13edc10f14ac512286654\", \"notes\": \"EMET rebind manifest: a portable set of known content anchors (digest -> identity). It carries facts of re-derivation, never authority, permission, or a release decision.\", \"records\": [{\"digest\": \"03e7926150a7fa18f114b4dd4e9cd6b7b4d30d948dcd17bf85555ca6ce407b1c\", \"identity\": \"photo-2026-001\"}]}",
+        "stripped.png": "original raw image bytes\n"
+      },
+      "id": "rebind-stripped-copy-matches",
+      "note": "SPEC s.18 (experimental): naked bytes whose embedded credential was stripped re-derive to a digest a known anchor records, so the artifact rebinds -> MATCH. Content-addressed rebinding needs no surviving in-band credential.",
+      "run": [
+        "rebind",
+        "stripped.png",
+        "--manifest",
+        "manifest.json"
+      ]
+    },
+    {
+      "capability": "rebind",
+      "expect_exit": 1,
+      "expect_substr": "result=DRIFT",
+      "files": {
+        "forged.png": "forged content\n",
+        "manifest.json": "{\"format\": \"emet-rebind-manifest/v1\", \"issued_at\": \"2026-07-02T00:00:00Z\", \"manifest_id\": \"e8bb63f165b8096269eb682599021a358ae77a8331e13edc10f14ac512286654\", \"notes\": \"EMET rebind manifest: a portable set of known content anchors (digest -> identity). It carries facts of re-derivation, never authority, permission, or a release decision.\", \"records\": [{\"digest\": \"03e7926150a7fa18f114b4dd4e9cd6b7b4d30d948dcd17bf85555ca6ce407b1c\", \"identity\": \"photo-2026-001\"}]}"
+      },
+      "id": "rebind-claim-wrong-bytes-drifts",
+      "literal": [
+        "photo-2026-001"
+      ],
+      "note": "SPEC s.18: the caller asserts the artifact IS an anchored identity (--claim) but the bytes hash differently -> DRIFT, a confirmed substitution. The verifier can FAIL; it is not a rubber stamp.",
+      "run": [
+        "rebind",
+        "forged.png",
+        "--manifest",
+        "manifest.json",
+        "--claim",
+        "photo-2026-001"
+      ]
+    },
+    {
+      "capability": "rebind",
+      "expect_exit": 2,
+      "expect_substr": "E_NO_ANCHOR",
+      "files": {
+        "manifest.json": "{\"format\": \"emet-rebind-manifest/v1\", \"issued_at\": \"2026-07-02T00:00:00Z\", \"manifest_id\": \"e8bb63f165b8096269eb682599021a358ae77a8331e13edc10f14ac512286654\", \"notes\": \"EMET rebind manifest: a portable set of known content anchors (digest -> identity). It carries facts of re-derivation, never authority, permission, or a release decision.\", \"records\": [{\"digest\": \"03e7926150a7fa18f114b4dd4e9cd6b7b4d30d948dcd17bf85555ca6ce407b1c\", \"identity\": \"photo-2026-001\"}]}",
+        "unknown.png": "never seen before\n"
+      },
+      "id": "rebind-unknown-is-unverifiable",
+      "note": "SPEC s.18: no anchor records these bytes and no claim was made, so the honest default is UNVERIFIABLE (exit 2) with reason E_NO_ANCHOR - an unknown artifact is unknown, never trusted.",
+      "run": [
+        "rebind",
+        "unknown.png",
+        "--manifest",
+        "manifest.json"
+      ]
+    },
+    {
+      "capability": "rebind",
+      "expect_exit": 2,
+      "expect_substr": "E_MANIFEST_TAMPERED",
+      "files": {
+        "manifest.json": "{\"format\": \"emet-rebind-manifest/v1\", \"issued_at\": \"2026-07-02T00:00:00Z\", \"manifest_id\": \"0000000000000000000000000000000000000000000000000000000000000000\", \"notes\": \"EMET rebind manifest: a portable set of known content anchors (digest -> identity). It carries facts of re-derivation, never authority, permission, or a release decision.\", \"records\": [{\"digest\": \"03e7926150a7fa18f114b4dd4e9cd6b7b4d30d948dcd17bf85555ca6ce407b1c\", \"identity\": \"photo-2026-001\"}]}",
+        "stripped.png": "original raw image bytes\n"
+      },
+      "id": "rebind-tampered-manifest-unverifiable",
+      "note": "SPEC s.18: a manifest whose manifest_id no longer re-derives is a doctored anchor set; EMET refuses to rebind against it -> UNVERIFIABLE (E_MANIFEST_TAMPERED), never a MATCH off corruption.",
+      "run": [
+        "rebind",
+        "stripped.png",
+        "--manifest",
+        "manifest.json"
+      ]
+    },
+    {
+      "capability": "eval-receipt",
+      "expect_exit": 0,
+      "expect_substr": "RECEIPT_VALID",
+      "files": {
+        "r.json": "{\"corpus_sha256\": null, \"corpus_version\": null, \"format\": \"emet-witness-receipt/v1\", \"issued_at\": \"2026-07-02T12:34:56Z\", \"notes\": \"EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.\", \"re_derivation_method\": \"hash\", \"receipt_id\": \"28768ad8dff97516b36cb12a0cbec60a9612cbd7cf33288c014973e955896c02\", \"signature\": null, \"signature_algorithm\": \"hmac-sha256-optional\", \"subject\": [{\"path\": \"emet-eval-record.json\", \"sha256\": \"f315755a268e9da3f7e9f408effbc9c20686d3ee9870a3ca01d855f493de392a\"}], \"verdict_record\": [], \"witness\": {\"implementation\": \"emet-python-reference\", \"self_sha256\": \"65271de8331eacb5af3e7c567d8b83373440a61c96ad8b9c6b39ccb667b4c63d\", \"spec_version\": \"1.0.0\"}}"
+      },
+      "id": "eval-receipt-valid",
+      "note": "SPEC s.17.3 + the out-of-core DeepEval reporter: an emet witness receipt minted over a canonical eval record (model, dataset digest+count, metric/judge, per-case scores-as-strings, config) re-derives its own content address offline and checks RECEIPT_VALID. The receipt binds the record's INTEGRITY; its verdict_record is empty by design, so it makes no MATCH/DRIFT claim about eval quality.",
+      "run": [
+        "check",
+        "r.json"
+      ]
+    },
+    {
+      "capability": "eval-receipt",
+      "expect_exit": 1,
+      "expect_substr": "RECEIPT_TAMPERED",
+      "files": {
+        "r.json": "{\"corpus_sha256\": null, \"corpus_version\": null, \"format\": \"emet-witness-receipt/v1\", \"issued_at\": \"2026-07-02T12:34:56Z\", \"notes\": \"EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.\", \"re_derivation_method\": \"hash\", \"receipt_id\": \"28768ad8dff97516b36cb12a0cbec60a9612cbd7cf33288c014973e955896c02\", \"signature\": null, \"signature_algorithm\": \"hmac-sha256-optional\", \"subject\": [{\"path\": \"emet-eval-record.json\", \"sha256\": \"0315755a268e9da3f7e9f408effbc9c20686d3ee9870a3ca01d855f493de392a\"}], \"verdict_record\": [], \"witness\": {\"implementation\": \"emet-python-reference\", \"self_sha256\": \"65271de8331eacb5af3e7c567d8b83373440a61c96ad8b9c6b39ccb667b4c63d\", \"spec_version\": \"1.0.0\"}}"
+      },
+      "id": "eval-receipt-tampered-record-field",
+      "note": "SPEC s.17.3: one hex char of the sealed record's subject digest was flipped while receipt_id was left intact, so the re-derived content address no longer matches -> RECEIPT_TAMPERED (exit 1). Corrupting one byte of the sealed record flips the verdict away from VALID; the verifier can FAIL.",
+      "run": [
+        "check",
+        "r.json"
+      ]
+    },
+    {
+      "capability": "eval-receipt",
+      "expect_exit": 1,
+      "expect_substr": "RECEIPT_TAMPERED",
+      "files": {
+        "emet-eval-receipt.json": "{\"corpus_sha256\": null, \"corpus_version\": null, \"format\": \"emet-witness-receipt/v1\", \"issued_at\": \"2026-07-02T12:34:56Z\", \"notes\": \"EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.\", \"re_derivation_method\": \"hash\", \"receipt_id\": \"28768ad8dff97516b36cb12a0cbec60a9612cbd7cf33288c014973e955896c02\", \"signature\": null, \"signature_algorithm\": \"hmac-sha256-optional\", \"subject\": [{\"path\": \"emet-eval-record.json\", \"sha256\": \"f315755a268e9da3f7e9f408effbc9c20686d3ee9870a3ca01d855f493de392a\"}], \"verdict_record\": [], \"witness\": {\"implementation\": \"emet-python-reference\", \"self_sha256\": \"65271de8331eacb5af3e7c567d8b83373440a61c96ad8b9c6b39ccb667b4c63d\", \"spec_version\": \"1.0.0\"}}",
+        "emet-eval-record.json": "{\"cases\": [{\"index\": \"0\", \"metrics\": [{\"judge_model\": \"gpt-4o\", \"name\": \"AnswerRelevancy\", \"passed\": \"true\", \"score\": \"0.92\", \"threshold\": \"0.7\"}], \"passed\": \"true\"}, {\"index\": \"1\", \"metrics\": [{\"judge_model\": \"gpt-4o\", \"name\": \"Faithfulness\", \"passed\": \"false\", \"score\": \"0.61\", \"threshold\": \"0.8\"}], \"passed\": \"false\"}], \"config\": {\"run\": \"nightly-2026-07-02\", \"temperature\": \"0\"}, \"dataset\": {\"algorithm\": \"sha256\", \"count\": 2, \"covers\": \"test_case_inputs\", \"digest\": \"11949d6c31725d2d61414c1e0b9bad684bd685a5119c8da5063bb6686f9eb382\"}, \"metric\": {\"harness\": \"deepeval\", \"harness_version\": \"3.6.4\", \"judge_models\": [\"gpt-4o\"], \"names\": [\"AnswerRelevancy\", \"Faithfulness\"]}, \"model\": \"Gpt-4o-2024-08-06\", \"schema\": \"emet-eval-record/v1\"}"
+      },
+      "id": "eval-receipt-tampered-record-bytes",
+      "note": "SPEC s.17.3 step 4: the sealed eval-record file on disk differs from the receipt's recorded digest by one byte, so --recompute-from-paths re-derivation diverges -> RECEIPT_TAMPERED. A receipt is a point-in-time snapshot of the record it sealed, not a blanket certificate.",
+      "run": [
+        "check",
+        "emet-eval-receipt.json",
+        "--recompute-from-paths"
+      ]
+    },
+    {
+      "capability": "eval-receipt",
+      "expect_exit": 2,
+      "expect_substr": "RECEIPT_UNVERIFIABLE",
+      "files": {
+        "bad.json": "{\"corpus_sha256\": null, \"corpus_version\": null, \"format\": \"emet-witness-receipt/v1\", \"issued_at\": \"2026-07-02T12:34:56Z\", \"notes\": \"EMET emits witness facts only. The receipt preserves the closed verdict lattice and carries no authority, permission, or release decision.\", \"re_derivation_method\": \"hash\", \"signature\": null, \"signature_algorithm\": \"hmac-sha256-optional\", \"subject\": [{\"path\": \"emet-eval-record.json\", \"sha256\": \"f315755a268e9da3f7e9f408effbc9c20686d3ee9870a3ca01d855f493de392a\"}], \"verdict_record\": [], \"witness\": {\"implementation\": \"emet-python-reference\", \"self_sha256\": \"65271de8331eacb5af3e7c567d8b83373440a61c96ad8b9c6b39ccb667b4c63d\", \"spec_version\": \"1.0.0\"}}"
+      },
+      "id": "eval-receipt-unverifiable-malformed",
+      "note": "SPEC s.17.3: an eval receipt with its receipt_id removed cannot be re-derived and is RECEIPT_UNVERIFIABLE (exit 2) with a stable reason code, never a stack trace -- an inability to check, not a detected difference.",
+      "run": [
+        "check",
+        "bad.json"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+"""The Accountable Surface -- a live seam where a model perceives and acts only
+through accountability: witnessed perception, a pre-execution gate, and a
+tamper-evident, durable memory, under human stewardship.
+
+Mission: "Senses and sensibility are what lead to the new frontier. Machines
+learning to hold themselves accountable."
+
+The core (`surface`) is stdlib + coherence-membrane + proof-surface. The live
+MCP server (`server`) additionally needs `mcp` (the `[server]` extra).
+"""
+
+from __future__ import annotations
+
+from .api_effector import (
+    GITHUB_ISSUE_COMMENTS,
+    ApiCall,
+    ApiEffector,
+    ApiOperation,
+    ApiService,
+    FakeApiDriver,
+)
+from .action_receipt import (
+    ActionReceiptReceptor,
+    receipt_from_outcome,
+    verify_receipts,
+)
+from .credentials import MissingCredential, has_secret, require_secret
+from .effector import FilesystemEffector, Plan, RefusedActuation, Verdict
+from .native_control_effector import (
+    SAFE_READ_VERBS,
+    FakeNativeControlRunner,
+    NativeControlListEffector,
+    NativeControlRunner,
+    NativeControlWriteEffector,
+)
+from .http_driver import HttpDriver, parse_html
+from .os_effector import CommandEffector, SubprocessRunner
+from .registry import EffectorRegistry, Exposed, load_effectors
+from .reference import ArxivSource, FakeSource, Grounding, Reference, ReferenceCortex, parse_arxiv_atom
+from .surface import (
+    AccountableSurface,
+    ActionOutcome,
+    ActuationOutcome,
+    GoalOutcome,
+    JournalEntry,
+    Step,
+)
+from .browser_effector import (
+    BrowserAction,
+    BrowserDriver,
+    BrowserEffector,
+    FakeBrowserDriver,
+)
+from .web_effector import FakePageDriver, WebAction, WebEffector
+
+__all__ = [
+    "AccountableSurface",
+    "ActionOutcome",
+    "ActuationOutcome",
+    "GoalOutcome",
+    "Step",
+    "JournalEntry",
+    "FilesystemEffector",
+    "Plan",
+    "RefusedActuation",
+    "Verdict",
+    "WebEffector",
+    "WebAction",
+    "FakePageDriver",
+    "BrowserEffector",
+    "BrowserAction",
+    "BrowserDriver",
+    "FakeBrowserDriver",
+    "HttpDriver",
+    "parse_html",
+    "CommandEffector",
+    "SubprocessRunner",
+    "ApiEffector",
+    "ApiCall",
+    "ApiOperation",
+    "ApiService",
+    "FakeApiDriver",
+    "GITHUB_ISSUE_COMMENTS",
+    "MissingCredential",
+    "require_secret",
+    "has_secret",
+    "EffectorRegistry",
+    "Exposed",
+    "load_effectors",
+    "ReferenceCortex",
+    "Reference",
+    "Grounding",
+    "FakeSource",
+    "ArxivSource",
+    "parse_arxiv_atom",
+    "NativeControlListEffector",
+    "NativeControlWriteEffector",
+    "NativeControlRunner",
+    "FakeNativeControlRunner",
+    "SAFE_READ_VERBS",
+    "ActionReceiptReceptor",
+    "receipt_from_outcome",
+    "verify_receipts",
+]
+__version__ = "0.3.1"
