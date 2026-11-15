@@ -1,0 +1,473 @@
+{
+ "receipts": {
+  "hero-dark.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "3235a9fcc1e82709cd868317361849b12380e1b1609e8e9631c299f1123e5e10",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgb8",
+    "height": 480,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 1280
+   },
+   "outputs": {
+    "hero-dark.png": "2b3a7f41769d30eca59ac9862bd80bf73ef000804786e0352fbf933f52cfe1e8",
+    "hero-dark.svg": "73f701b6d5178afbb430f0d76d6e45ad9914becc7b252f5949e36ad41dc9d9a5"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "2ee96b52752be65cf2ebef34782bc8dfab958b88059611ca4dc05d25cd9b7440",
+   "reconcile": null,
+   "scene_sha256": "8b2f5392f5019b2dc2ef864773dc7e1c1f7615036b261d5a4db5ee61e3b02a51",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "hero-light.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "533e24d1aa3d4187b0d93b17e2e8ec08168fc61ae7add9269f0014731db58041",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgb8",
+    "height": 480,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 1280
+   },
+   "outputs": {
+    "hero-light.png": "eafd5ba97354d07ada0ae52545d6ad6c51e324c41b00bec38d5d6521d4d3a919",
+    "hero-light.svg": "a4aefd3c6cb7f03de65cd36366cb127b5d6afbfe6cf190cbac9465062367f254"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "6341d7037035faf6f24ce7cfe485815399f48f05ebd5615fe7fc8e030562911d",
+   "reconcile": null,
+   "scene_sha256": "a0523c68e6fb60bbbfeaecde224b6f32e6fc0410035662e2f72292208c7e27d4",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "lockup-horizontal-dark.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "54ec4d15bfb026465eb6c16bacc957034125504dd8f2472930bca9094e1be72d",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgba8",
+    "height": 160,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 496
+   },
+   "outputs": {
+    "lockup-horizontal-dark.png": "65ee236ce61006b26a5f5e7609dcc02573b13291ac855b8dfbf04692d7be048e",
+    "lockup-horizontal-dark.svg": "e7ab895388b09ed7d012cc0db6050f7ab527009e8db0dee522ba06ab66ddec7d"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "26025b531dffa58208b51336a296e2e23ddac875d2c5397401ce9f7ca8d20166",
+   "reconcile": null,
+   "scene_sha256": "c5b48c3580873a0d74dc81be06c81ba08a3c089c42bde9ca72d5550ed994df59",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "lockup-horizontal-light.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "e6717d26739fa286fd703ea0e651ca50f0e985db805125667de8b1ecaa2d5b75",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgba8",
+    "height": 160,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 496
+   },
+   "outputs": {
+    "lockup-horizontal-light.png": "1361d46bcde40038868097ff40606fa0c64d4e5c61f324552d73d3784c3d1681",
+    "lockup-horizontal-light.svg": "14c5d8a13ad6dc51c6a7549f55aff78123cef1921cd64aa340d34ae647167271"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "de1d2d5f42ca17d99b0d115904385f2ea0f86dd39b2d63793b7fd20b3835ae7c",
+   "reconcile": null,
+   "scene_sha256": "1231d9c00849cf866645d1ce97f70c94ce2b0c659fbfb2a9c9426b9ba81bb0fd",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "lockup-stacked-dark.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "3edb0dcc6b7c305a645317ec93ddfce4bd4fb0e556b38e7bc008ab2dce650e20",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgba8",
+    "height": 251,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 229
+   },
+   "outputs": {
+    "lockup-stacked-dark.png": "3967b33264c3873f6beee507c77851142059239d5caa11a561b489bcf30c22c7",
+    "lockup-stacked-dark.svg": "847bacd5648416816bc27b21b957af30f1e064886c6bada8ea07fef128691e2f"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "919321f10b032c1781ebe117bb10d91d543421cbc68a56e389272f058ea76344",
+   "reconcile": null,
+   "scene_sha256": "8465e4cef43b14233e88ac748cc768aed4b8a9e5456356f0565d93898a00093b",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "lockup-stacked-light.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "1db70904871c23fedde14899d2ead7134d44415414a1dfd84a82921cc6ab8dd5",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgba8",
+    "height": 251,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 229
+   },
+   "outputs": {
+    "lockup-stacked-light.png": "d32acbf814d3d6497d236ecc56ec08aeb75150b2165fb7b0799b62b6760f1fd8",
+    "lockup-stacked-light.svg": "b799b93720b2b85e5a0497704c8f5729143ed336534ed17a16d0c7d16c02399a"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "9955ac846a2d33201ff993f3bd1b42839831e4f6f4af326f34222057153b3937",
+   "reconcile": null,
+   "scene_sha256": "4dd1594325fe3e73d549a2f78f412f2a650f80cee01f9885d09e0ddafacaf83e",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "mark-full-dark-512.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "6a8f2fddc6bdcc549646ab032f72cfb9cadfead88c5c17034275b36614f7725b",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgba8",
+    "height": 512,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 512
+   },
+   "outputs": {
+    "mark-full-dark-512.png": "ee3986b74c3d73cec56a0f826f68be7a333224ba8bb808b60a8ad05d89299c0b",
+    "mark-full-dark.svg": "ed6750d7a1cc8272a02f56bcfbad8047a0ec8065f84e8650eef85c8d77005746"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "13f5d5f98dd81809630009bcf3bdea34b52909d53ffe96725a6c41624b604b4b",
+   "reconcile": null,
+   "scene_sha256": "ab0c7fea797f769b0e59c681285e6db5bf5a03b3197a4b4ba8bc146102d5d26f",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "mark-full-light-512.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "34036b1bae93df2384319fac0849b2fbbc3e5b76709888b1132d766a61c33245",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgba8",
+    "height": 512,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 512
+   },
+   "outputs": {
+    "mark-full-light-512.png": "93d0d819fb7aee75aa8226a931f6a0bfd176962017c54c073c2f666df3a25ba6",
+    "mark-full-light.svg": "5f087c682472eb4c7ce1a9dff48d8bc2245d2655b1f8a2d64c1882d2a3b3ff15"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "094b3f1f7c35c002f7aa60b283faf880ce1d5813f0b38774b173f014d278bde6",
+   "reconcile": null,
+   "scene_sha256": "c55a42e959ad4034c24c099590ae5feb15d6de298ccaf01c175853fde0fb8263",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "mark-full-tile-512.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "022026c9d992a32f8eedea53a561b6ad7c1c6d82e696853dedcb56314087bf2c",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgb8",
+    "height": 512,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 512
+   },
+   "outputs": {
+    "mark-full-tile-512.png": "87ba55329e3760ae9f3caeb7034cfdd911eca1a4b1be41f5328b3856917298a4",
+    "mark-full-tile.svg": "e8c336c7cf4303e26bc0cd65cb33a75a7d609ec8abbe3700622b8a54b6d14364"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "57a0b06304bbd516383a188884f9c542a10147c5460aec32277cd510e8a07ba3",
+   "reconcile": null,
+   "scene_sha256": "282892d03ff257ea453eea2b8e64c383f5944d920f8be3914a28138a4859a0f7",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "mark-full-tile-64.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "4ba98396b12f96760159919e4ee7e50fd29fa6e78e47dd166abc20079d0b6bda",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgb8",
+    "height": 64,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 64
+   },
+   "outputs": {
+    "mark-full-tile-64.png": "6908e5b5980a7de3a16d6b1d04aa3e30482d349ae484270993f4bb0b8ad6518f",
+    "mark-full-tile.svg": "e8c336c7cf4303e26bc0cd65cb33a75a7d609ec8abbe3700622b8a54b6d14364"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "760696fe0f696aa65ac848c798b7f9b931800ea3709c9ced4ccfa954fcd69f24",
+   "reconcile": null,
+   "scene_sha256": "282892d03ff257ea453eea2b8e64c383f5944d920f8be3914a28138a4859a0f7",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "mark-micro-tile-16.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "64990965f900d9d569083cd1109ef7b58769a2d79cd3dfa6e4aec818547f445e",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgb8",
+    "height": 16,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 16
+   },
+   "outputs": {
+    "mark-micro-tile-16.png": "9e41ff673577be95d04afcccdf7ad1ab759acd01316ea5c16ab5c2ddbcc1c27a",
+    "mark-micro-tile.svg": "1fd88797e8b11e7d5bbaa91573456f8d7b06fb7a05947fe5d073c52b76e37db1"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "3028d02cbadfbe34ee9fe19dec7c2a98e3b9d0fa416cc05601c96df9a47e85ae",
+   "reconcile": null,
+   "scene_sha256": "550535ebeade6d1cfb326396b043c81e6825f0daae51636274718164eed2d4b9",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "mark-micro-tile-32.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "ac945535cc2ef1084b387b77c2135a8ff0b6022929fb663429432b4068860bde",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgb8",
+    "height": 32,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 32
+   },
+   "outputs": {
+    "mark-micro-tile-32.png": "cfc2366bc00b4e7a3e51972d813c07d9da546f5ea1ef41ce8df9d42972962b46",
+    "mark-micro-tile.svg": "1fd88797e8b11e7d5bbaa91573456f8d7b06fb7a05947fe5d073c52b76e37db1"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "08cba6df9ba88a9dbbd5b3534cc47c8e50e857ad4d56262f96ad0adbb09e5f88",
+   "reconcile": null,
+   "scene_sha256": "550535ebeade6d1cfb326396b043c81e6825f0daae51636274718164eed2d4b9",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  },
+  "social-dark.png": {
+   "backend": "chrome-154.0.8037.95-skia",
+   "content_sha256": "1c18b6b3b0076486bb91e761e2a8757bac8eb814c899f16c7d335eb921fcc87a",
+   "does_not_prove": [
+    "It does not show the figure's numbers come from a real run, except where the alt text quotes a README result.",
+    "It does not show the PNG bytes are the same under another Chrome build; the SVG and the scene are the portable record.",
+    "It does not show the artwork meets the brand rules; that is a human review against ART-DIRECTION.md."
+   ],
+   "media": {
+    "format": "rgb8",
+    "height": 640,
+    "kind": "image",
+    "transfer": "srgb",
+    "width": 1280
+   },
+   "outputs": {
+    "social-dark.png": "4ebfa862300b4b0eee9db718d7bf8a9a5b70ff1860df50d2da306309c74ca88c",
+    "social-dark.svg": "550d4eae21477261f8dfc13836084b0265f3419a1df6e830728ee4e1166b79cd"
+   },
+   "producer": {
+    "name": "harperz9.repo-art",
+    "version": "0.1.0"
+   },
+   "receipt_sha256": "3f324da82943f23cc66a4682a58f84b2969cea0017774b4d1f22d8f9fdb79e89",
+   "reconcile": null,
+   "scene_sha256": "c875402df7b8b79139ef165fe9aa0c133e571ba60352a7ac9e980925bb8f7be0",
+   "schema": "superstack.receipt/1",
+   "seed": "plexus",
+   "seed_rule": "xmur3-mulberry32/1",
+   "seed_u32": 3023915389,
+   "time": {
+    "base": "flicks",
+    "per_second": 705600000,
+    "t": 0
+   }
+  }
+ },
+ "schema": "harperz9.repo-art.receipts/1"
+}

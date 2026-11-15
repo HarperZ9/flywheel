@@ -1,0 +1,26 @@
+{
+  "author": {
+    "name": "Zain Dana Harper"
+  },
+  "description": "Show which local tools produce and consume each capability, and the route between them.",
+  "displayName": "Plexus",
+  "documentationUrl": "https://github.com/HarperZ9/plexus/blob/main/client-plugin/README.md",
+  "homepage": "https://harperz9.github.io/plugins/plexus/support.html",
+  "icon": "./.claude-plugin/icon.png",
+  "keywords": [
+    "tool-discovery",
+    "capability-graph",
+    "interop",
+    "pipeline-planning",
+    "routing",
+    "manifests",
+    "local-first"
+  ],
+  "license": "FSL-1.1-MIT",
+  "name": "plexus-local",
+  "privacyPolicyUrl": "https://harperz9.github.io/plugins/plexus/privacy.html",
+  "repository": "https://github.com/HarperZ9/plexus",
+  "supportUrl": "https://harperz9.github.io/plugins/plexus/support.html",
+  "termsOfServiceUrl": "https://harperz9.github.io/plugins/plexus/terms.html",
+  "version": "0.4.0"
+}

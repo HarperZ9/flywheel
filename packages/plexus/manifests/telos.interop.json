@@ -1,0 +1,50 @@
+{
+  "organ": "telos",
+  "invoke": {
+    "cli": "telos",
+    "mcp_server": "demo/telos-mcp.mjs",
+    "node_entry": "demo/telos-mcp.mjs"
+  },
+  "emits": [
+    {
+      "capability": "telos.room/1",
+      "title": "five-flagship room summary",
+      "module": "src/telos-mcp.mjs:telos_room",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "telos.workflow/1",
+      "title": "golden workflow verification",
+      "module": "src/telos-mcp.mjs:telos_workflow",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "telos.status/1",
+      "title": "workbench readiness + next actions",
+      "module": "src/telos-mcp.mjs:telos_status",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "project-telos.flagship-action/v1",
+      "title": "flagship-action envelope",
+      "module": "src/telos-mcp.mjs:telos_status",
+      "summary": "",
+      "consumable_as": []
+    }
+  ],
+  "consumes": [
+    {
+      "capability": "project-telos.flagship-action/v1",
+      "title": "cross-tool action",
+      "module": "src/telos-mcp.mjs:telos_room",
+      "summary": "",
+      "consumable_as": []
+    }
+  ],
+  "evidence": [
+    "demo/telos-mcp.mjs"
+  ]
+}

@@ -1,0 +1,189 @@
+{
+  "header": {
+    "name": "plexus",
+    "role": "toolchain wiring discovery",
+    "tagline": "Point it at your tools and it computes how they plug together.",
+    "words": [
+      "emit",
+      "consume",
+      "wire",
+      "plan",
+      "declare"
+    ]
+  },
+  "flows": [
+    {
+      "file": "wiring-lane.svg",
+      "kicker": "one tool set, one runnable order",
+      "title": "How a pile of tools becomes a plan you can check later",
+      "footnote": "Verify re-derives the plan from the manifests. The saved body is never trusted.",
+      "alt": "Eight stages from manifest to verify: manifest, discover, capability, wiring, goal, plan, receipt, verify. Each tool ships a small manifest naming what it emits and what it consumes. Discovery reads every manifest and hashes its canonical content. A capability is a typed name, and an edge exists wherever one tool emits a name another consumes. Naming a goal produces a dependency order with any feedback loops reported rather than forced flat. The receipt binds the plan to the content hash of every manifest behind it plus a hash over the plan body. Verify re-derives the plan from the live mesh and compares receipts, so a tampered body and a manifest that changed both fail. Two outcomes: still holds, and drifted.",
+      "stages": [
+        {
+          "title": "Manifest",
+          "note": "Each tool ships one: what it emits, what it needs."
+        },
+        {
+          "title": "Discover",
+          "note": "Every manifest read, and its content hashed."
+        },
+        {
+          "title": "Capability",
+          "note": "A typed name, on both sides of an edge."
+        },
+        {
+          "title": "Wiring",
+          "note": "An edge wherever a name matches across tools."
+        },
+        {
+          "title": "Goal",
+          "note": "The tool you want fed, named on the command line."
+        },
+        {
+          "title": "Plan",
+          "note": "An order over the graph, with cycles reported."
+        },
+        {
+          "title": "Receipt",
+          "note": "The plan hash, and every manifest hash behind it."
+        },
+        {
+          "title": "Verify",
+          "note": "Re-derive from the mesh, then compare receipts."
+        }
+      ],
+      "returns": [
+        {
+          "from": 7,
+          "to": 5,
+          "label": "VERIFY NEVER TRUSTS THE SAVED PLAN BODY"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "STILL HOLDS",
+          "note": "the same manifests re-derive the same plan",
+          "tone": "verified"
+        },
+        {
+          "label": "DRIFTED",
+          "note": "a manifest moved under the saved plan",
+          "tone": "drift"
+        }
+      ]
+    },
+    {
+      "file": "honesty-lane.svg",
+      "kicker": "one mesh, and what it will not pretend",
+      "title": "How the parts that do not connect get named instead of hidden",
+      "footnote": "Every edge is declared by its producer. Nothing here imports or runs the source it cites.",
+      "alt": "Eight stages of the honesty surface: tool set, emits, consumes, match, leftover, loop, collision, report. Only the manifests present are considered. A capability name appearing on both an emit and a consume side becomes an edge. Every name that matched on only one side is a leftover: an unmet input that nothing in the set produces, or an output nobody downstream takes. A cycle is surfaced as a feedback loop rather than forced into a false linear order, and an organ id claimed by two manifests is named as a collision rather than resolved last writer wins. Three outcomes: wired, colliding, and unmet.",
+      "stages": [
+        {
+          "title": "Tool set",
+          "note": "The manifests present, and nothing else."
+        },
+        {
+          "title": "Emits",
+          "note": "What each one declares that it produces."
+        },
+        {
+          "title": "Consumes",
+          "note": "What each one declares that it needs."
+        },
+        {
+          "title": "Match",
+          "note": "A name on both sides becomes one edge."
+        },
+        {
+          "title": "Leftover",
+          "note": "Every name that matched on one side only."
+        },
+        {
+          "title": "Loop",
+          "note": "An edge set that returns where it started."
+        },
+        {
+          "title": "Collision",
+          "note": "One organ id claimed by two manifests."
+        },
+        {
+          "title": "Report",
+          "note": "Named in the output, never quietly resolved."
+        }
+      ],
+      "returns": [
+        {
+          "from": 7,
+          "to": 4,
+          "label": "EACH LEFTOVER IS NAMED, ONE BY ONE"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "WIRED",
+          "note": "every input has a producer in the set",
+          "tone": "verified"
+        },
+        {
+          "label": "COLLIDING",
+          "note": "two manifests claim the same organ id",
+          "tone": "drift"
+        },
+        {
+          "label": "UNMET",
+          "note": "an input nothing in the set emits",
+          "tone": "none"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "edge-evidence.svg",
+      "kicker": "declared, never probed",
+      "title": "What one wiring edge settles, and what it only repeats",
+      "source": "plexus discover --dir manifests",
+      "heads": [
+        "key",
+        "what settled it",
+        "what it does not settle"
+      ],
+      "fields": [
+        {
+          "key": "producer",
+          "value": "COMPUTED",
+          "note": "The organ whose emitted port satisfied the name. Only organs in the manifest set this run loaded can appear."
+        },
+        {
+          "key": "consumer",
+          "value": "COMPUTED",
+          "note": "The organ that named this capability among its own inputs."
+        },
+        {
+          "key": "capability",
+          "value": "COMPUTED",
+          "note": "The consumer's input name. A port satisfies it by equality, or by naming it in consumable_as."
+        },
+        {
+          "key": "self_loop",
+          "value": "COMPUTED",
+          "note": "True when both ends are the same organ. Reported rather than dropped, so a cycle stays visible in the plan."
+        },
+        {
+          "key": "via",
+          "value": "COPIED",
+          "tone": "drift",
+          "note": "The producer's own pointer at the code behind the port. plexus never resolves it, so a path at nothing reads as a real one."
+        },
+        {
+          "key": "evidence",
+          "value": "CONSTANT",
+          "note": "Always declared. The field is here to say the edge was matched on strings and that no tool was run."
+        }
+      ],
+      "alt": "The six keys plexus discover returns for one wiring edge, one to a row, each with what settled it. Four are computed by discovery: the producing organ, the consuming organ, the capability that matched, and whether both ends are the same organ. One is copied out of a manifest without being read: via, the producer's own pointer at the code behind the port. One is a constant: evidence, always the word declared. The via row is accented, because it is the field that looks like a citation and is the one plexus never follows.",
+      "footnote": "An edge forms by matching capability strings the manifests report about themselves. That is enough to settle who names what, and it is not enough to settle that the cited module exists or that the two sides compose. The edge carries a second pointer, the consumer's own module, which discover holds and never serializes, so it is not drawn here either."
+    }
+  ]
+}
