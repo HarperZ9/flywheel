@@ -109,6 +109,11 @@ jobs:
             test: |
               python -m pytest -q
               python examples/tour.py
+          - package: mneme
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest -q
+              python examples/tour.py
     defaults:
       run:
         shell: bash
