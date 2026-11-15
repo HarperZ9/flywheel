@@ -1,0 +1,13 @@
+{
+  "videos": [
+    {
+      "id": "example-case-film",
+      "title": "Viral voting machine clip: what the county record shows",
+      "key_phrase": "voting machine clip",
+      "description": "A viral clip says a voting machine flipped a vote. We read the county's own test record to see what it shows.\n\n0:00 The claim, stated fairly\n0:40 What the county tested\n2:10 What the record cannot tell us\n3:30 Verdict\n\nSources:\nhttps://example.org/county-logic-and-accuracy-test\n\nChecked with Daylight Commons: https://github.com/HarperZ9/daylight-commons\n\n#elections #factcheck #votingmachines",
+      "sources": ["https://example.org/county-logic-and-accuracy-test"],
+      "pinned_comment": "What if the same clip had been filmed during the county's public test instead?",
+      "shorts_cut": "0:40 to 1:20, the record reveal, re-framed vertical with the claim on screen."
+    }
+  ]
+}
