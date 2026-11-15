@@ -20,10 +20,15 @@ published figure and the CI budget come from the same code.
             timer in the stub's sleep is not counted as gateway time. For each
             gateway call it also notes the ledger's disk commits: how many,
             and the seconds the operating system spent inside `os.fsync`
-            (gateway_ledger_health) before the first byte and in all.
-  overhead() median gateway sample minus median stub sample. With `own=True`
-            each gateway sample first has its disk commit seconds taken out:
-            what is left is the gateway's own work.
+            before the first byte and in all. Those seconds are taken by the
+            rig's own clock around the system call (`Rig.syscalls`), not from
+            what the gateway reports, so gateway work placed next to the
+            commit is not counted as the disk's. What the gateway reports is
+            kept beside it ("reported") so the two can be compared.
+  overhead() median gateway sample minus median stub sample: what a caller
+            waits, both commits included. With `own=True` each gateway
+            sample first has its disk commit seconds taken out: what is left
+            is the gateway's own work.
   commit_cost() what one bare append-and-commit costs in a folder, with no
             gateway code involved: the disk's share, measured on its own.
 
@@ -66,6 +71,7 @@ class Rig:
     credential: str                     # the gateway token, or the virtual key
     ledger: object
     keys: object = None                 # the key list, when the caller is a key
+    syscalls: list = None               # seconds of each `os.fsync`, taken around the call
 
 
 def _backend(dialect: str, url: str):
@@ -94,11 +100,13 @@ def _serve_gateway(home):
 
 @contextmanager
 def rig(home, dialect: str = "openai", delay: float = 0.05, key: bool = False,
-        gateway_delay: float = 0.0):
+        gateway_delay: float = 0.0, disk_delay: float = 0.0):
     """A stub and a real gateway pointed at it. `home` is an empty directory.
 
     `gateway_delay` sleeps that long inside the gateway on every call, before
-    the upstream is contacted. The timing gate uses it as its control."""
+    the upstream is contacted. `disk_delay` makes every `os.fsync` take that
+    much longer, inside the timed system call: a slow disk. The timing gate
+    uses both as controls."""
     from harness import gateway, gateway_key_gate, gateway_keys, gateway_turn
     from harness.gateway_ledger import GatewayLedger
     store, stub = MemoryStore(), Stub(dialect, delay).start()
@@ -112,15 +120,27 @@ def rig(home, dialect: str = "openai", delay: float = 0.05, key: bool = False,
     gateway._ROUTER_LEDGER, gateway_turn.make_backend = ledger, make
     gateway_key_gate.open_keys = lambda where: gateway_keys.Keys(where, store=store)
     os.environ[gateway_turn.UPSTREAM_ENV] = dialect
-    server = _serve_gateway(home)
+    server, syscalls, real_fsync = _serve_gateway(home), [], os.fsync
+
+    def fsync(fd):                      # the rig's clock, at the system call itself
+        began = time.perf_counter()
+        try:
+            if disk_delay:
+                time.sleep(disk_delay)
+            return real_fsync(fd)
+        finally:
+            syscalls.append(time.perf_counter() - began)
+    os.fsync = fsync
     try:
-        made = Rig(f"http://127.0.0.1:{server.server_address[1]}", stub, TOKEN, ledger)
+        made = Rig(f"http://127.0.0.1:{server.server_address[1]}", stub, TOKEN, ledger,
+                   syscalls=syscalls)
         if key:
             made.keys = gateway_keys.Keys(home, store=store)
             made.credential = made.keys.create(
                 "bench", token_limit=10 ** 12, spend_limit=1e6, price_in=3, price_out=15)[0]
         yield made
     finally:
+        os.fsync = real_fsync
         server.shutdown()
         server.server_close()
         stub.stop()
@@ -171,27 +191,30 @@ def measure(made: Rig, path: str, stream: bool, calls: int, warmup: int = 3) -> 
     """Seconds for `calls` warm requests, straight to the stub and through the gateway.
 
     Returns {"direct": [(first, total)], "gateway": [(first, total)],
-    "commit": [(before first byte, total, count)]}. The first two have the
-    stub's wait for that call subtracted, and are taken in turns so a busy
-    moment on the machine lands on both. "commit" is one row per gateway call:
-    the seconds the ledger's disk commits took and how many there were. A
-    plain reply is sent after both of its entries are committed; a stream's
-    first byte comes after the started entry's commit only."""
+    "commit": [(before first byte, total, count)], "reported": [(total, count)]}.
+    The first two have the stub's wait for that call subtracted, and are taken
+    in turns so a busy moment on the machine lands on both. "commit" is one row
+    per gateway call: the seconds its `os.fsync` calls took on the rig's clock
+    and how many there were. A plain reply is sent after both of its entries
+    are committed; a stream's first byte comes after the started entry's
+    commit, the first of the call. "reported" is what the gateway's ledger
+    says the same commits took (gateway_ledger_health)."""
     body = json.dumps({**BODIES[path], "stream": stream}).encode()
     marks = ((STUB_MARK[made.stub.dialect], GATEWAY_MARK[path]) if stream else (None, None))
-    out = {"direct": [], "gateway": [], "commit": []}
+    out = {"direct": [], "gateway": [], "commit": [], "reported": []}
     for index in range(warmup + calls):
         for name, url, credential, mark in (("direct", made.stub.url, "none", marks[0]),
                                             ("gateway", made.gateway, made.credential, marks[1])):
-            before = list(_commits(made.ledger))
+            before, seen = list(_commits(made.ledger)), len(made.syscalls)
             first, total = call(url, path, body, credential, mark)
             wait, after = made.stub.waits[-1], _commits(made.ledger)
             if index >= warmup:
                 out[name].append((first - wait, total - wait))
                 if name == "gateway":
-                    spent, started = after[1] - before[1], after[2] - before[2]
-                    out["commit"].append((started if stream else spent, spent,
-                                          after[0] - before[0]))
+                    took = made.syscalls[seen:]
+                    out["commit"].append((sum(took[:1]) if stream else sum(took), sum(took),
+                                          len(took)))
+                    out["reported"].append((after[1] - before[1], after[0] - before[0]))
     return out
 
 
@@ -209,6 +232,9 @@ def overhead(samples: dict, which: int = 0, own: bool = False) -> float:
     return statistics.median(rows) - statistics.median(row[which] for row in samples["direct"])
 
 
+_FSYNC = os.fsync                       # the system call, whatever a rig put in its place
+
+
 def commit_cost(folder, count: int = 40) -> list:
     """Seconds for each of `count` bare commits: append 300 bytes to a file in `folder`,
     then `os.fsync`. No gateway code runs, so this is what the disk alone costs here."""
@@ -217,6 +243,6 @@ def commit_cost(folder, count: int = 40) -> list:
         for _ in range(count):
             probe.write(b"x" * 299 + b"\n")
             began = time.perf_counter()
-            os.fsync(probe.fileno())
+            _FSYNC(probe.fileno())
             took.append(time.perf_counter() - began)
     return took

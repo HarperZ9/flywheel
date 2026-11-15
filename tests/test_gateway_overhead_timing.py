@@ -1,81 +1,63 @@
-"""The gateway's own time per call, with the upstream's wait taken out.
+"""What a caller waits for the gateway, and how much of it is the gateway's own work.
 
-Budget: 25 ms of the gateway's own time, to the first byte and to the end of
-the reply, as the median of five warm calls after two warm-up calls. The
-seconds the operating system spends committing ledger entries to the disk are
-measured apart and are not in that figure (below). It holds for
-/v1/messages and /v1/responses, streamed and not, with the gateway token, and
-for one plain and one streamed call with a virtual key. Each call is sent
-straight to a loopback stub and through a real gateway pointed at that stub
-(scripts/gateway_bench_rig.py); the stub holds its first byte for 50 ms and
-its recorded wait is subtracted from every sample. For a stream, the first
-byte means the first text delta a client can read.
+Two budgets, both asserted, on medians of warm calls with the upstream's wait
+taken out. Each call is sent straight to a loopback stub and through a real
+gateway pointed at that stub (scripts/gateway_bench_rig.py); the stub holds
+its first byte for 50 ms and its recorded wait is subtracted from every
+sample. For a stream, the first byte means the first text delta a client can
+read.
 
-Where the budget comes from: 30 warm calls per case on Windows 11 with Python
-3.12.10, measured 2026-11-14 while other work ran on the machine
-(scripts/bench_gateway_overhead.py; figures in docs/BENCHMARKS.md). Medians
-were 1 to 2 ms with the gateway token and 1.5 to 3.5 ms with a virtual key.
-More than one call in twenty took 20 to 27 ms: on Windows a socket connect
-made with a timeout sometimes comes back about 15 ms late, and the gateway
-connected to its upstream that way. The first budget was 50 ms, above the
-slowest warm calls in that run, with the note: if the upstream connect is
-made faster, lower the budget; do not raise it to hide a slower gateway.
+  TOTAL   what a caller waits: everything the gateway adds, the two disk
+          commits of a call included (the started entry before the request
+          leaves, the end entry before the reply is sent). Budget: TOTAL_BUDGET
+          on the median of TOTAL_CALLS warm calls, to the first byte and to the
+          end, for a plain and a streamed call with the gateway token and with
+          a virtual key.
+  OWN     the same with the seconds inside `os.fsync` taken out: the gateway's
+          own work. Budget: 25 ms on the median of five warm calls, for
+          /v1/messages and /v1/responses, streamed and not, and with a key.
 
-The connect was made faster on 2026-11-15 and the disk commit is measured
-apart since then, so the budget is 25 ms. The gateway's own time, after
-both: 1.3 to 3.4 ms on the Windows 11 machine above, 1.4 to 3.5 ms on a
-Linux CI runner and 2.2 to 7.3 ms on a Windows CI runner (CI run
-43683218626, one run each). 25 ms is three times the slowest of those and
-an eighth of the 200 ms the control adds. If this gate fails, read the line
-it prints: it says whether the time was the gateway's or the disk's. Do not
-rerun it and do not raise it.
+Why two. A commit to the disk costs what the disk takes, and a CI runner's
+disk sometimes takes 100 to 300 ms for one `os.fsync` (below). A single tight
+budget over both failed on runners for the disk's reasons; a budget over the
+gateway's own time alone, which the fifth review round left as the only one,
+bounded nothing a caller could feel through the commits: the fourth
+independent review planted 200 ms beside the commit and the gate passed. So
+the total has its own budget, and the instrument was moved.
 
-On CI before that (2026-11-14 and 15, six runs, commit time and connect
-included) Linux runners measured medians of 1.1 to 4.4 ms. Windows runners
-measured 2.1 to 7.0 ms in one run and 7.0 to 24.1 ms in five. Each case
-prints what it measured, on a pass too, so a job log shows the room that was
-left.
+The instrument. The seconds inside `os.fsync` are taken by the rig's own
+clock around the system call (`Rig.syscalls`). Until the sixth review round
+they were taken from what the gateway's ledger reported about itself, so
+anything the gateway did between its own two clock reads was counted as the
+disk's. Now only the system call is the disk's. The ledger's own report is
+compared with the rig's on every call and may differ by WINDOW_SLACK at most.
+The number of commits per call is asserted (two).
 
-The Windows tail, and what was done about each of its two causes (2026-11-15).
-This gate failed on Windows runners three times in two days with medians of
-52 to 88 ms, on pull requests that changed no gateway code.
+Where the budgets come from.
+  OWN, 25 ms: unchanged from the fifth round. Measured then: 1.3 to 3.4 ms on a
+  Windows 11 machine, 1.4 to 3.5 ms on a Linux CI runner and 2.2 to 7.3 ms on
+  a Windows CI runner (CI run 43683218626).
+  TOTAL: see TOTAL_BUDGET below, with the measurement it was set from. If the
+  total gate fails, read the line it prints: it gives the total, the commits
+  and a bare commit in the same folder, so it says whether the time was the
+  gateway's or the disk's. Do not rerun it and do not raise it without a
+  measured cause.
 
-  1. The late connect, before the first byte. A Python socket with a timeout
-     connects without blocking and then waits; on Windows that wait is a
-     timer tick late in a quarter to a half of loopback connects. The gateway
-     connected to its upstream that way. Fixed in the gateway: a loopback
-     upstream is now connected blocking (harness/endpoints_connect.py, with
-     the measurement).
-  2. The disk commit, in the record step. In the failing run 43674784134 a
-     streamed call showed its first text delta after 2.3 ms and its end after
-     306.8 ms. Everything between the two is the ledger entry: one append and
-     one `os.fsync`. CI run 43683218626 then showed it directly, on a Linux
-     runner: the two commits of one call took 309.7 and 168.9 ms in two of
-     five calls and 0.6 ms in the others, and a bare append-and-commit in the
-     same folder, with no gateway code, took up to 183.0 ms. The runner's
-     disk does this on both systems. The gateway commits each entry to the
-     disk before it goes
-     on, twice per call since the started entry was added, and how long the
-     operating system takes inside `os.fsync` is the disk's time, not the
-     gateway's. So the gate now measures the two apart. The ledger notes the
-     seconds spent inside `os.fsync` (gateway_ledger_health), each call's
-     sample has its own commit seconds taken out, and the budget applies to
-     what is left: the gateway's own work. The commit time is
-     printed beside it with what a bare append-and-commit costs in the same
-     folder with no gateway code involved, and the number of commits per call
-     is asserted (two), so an added commit fails here.
-
-What the figure leaves out: the provider's network time and TLS, the system
+What the figures leave out: the provider's network time and TLS, the system
 credential store (the key store here is in memory), the first call's module
-loading, concurrency (one request at a time), and the time the operating
-system spends inside `os.fsync`, which is reported and not budgeted.
+loading, and concurrency (one request at a time).
 
-Controls: 200 ms added inside the gateway must break the budget; so must 200
-ms added to the ledger's write, just before the commit; a commit that takes
-100 ms must leave the budgeted figure where it was and show up as commit
-time; and a stub that waits four times as long must leave the overhead where
-it was. A timing check that could not fail, or that counted the provider's
-wait or the disk's as the gateway's, would say nothing.
+Controls, each a planted fault that must fail a budget:
+  - 200 ms added inside the gateway: OWN and TOTAL fail;
+  - 200 ms added to the ledger's write, just before the commit: both fail;
+  - 200 ms hidden between the gateway's two clock reads around `os.fsync`
+    (the fourth review's plant): OWN fails, TOTAL fails, and the ledger's
+    report differs from the rig's clock by more than WINDOW_SLACK;
+  - a disk whose commit takes 100 ms: OWN stays where it was, the commit
+    figure shows it, and TOTAL fails, because a caller does wait for it;
+  - a stub that waits four times as long leaves the overhead where it was.
+A timing check that could not fail, or that counted the provider's wait as
+the gateway's, would say nothing.
 """
 import statistics
 import time
@@ -87,20 +69,39 @@ from scripts import gateway_bench_rig as bench
 # Run by publish.yml against the built wheel before a release is published.
 pytestmark = pytest.mark.release_gate
 
-BUDGET_SECONDS = 0.025
+BUDGET_SECONDS = 0.025                  # OWN: the gateway's work, commits taken out
+# TOTAL: what a caller waits, both commits included. PROVISIONAL until the CI
+# measurement of this round is read; see the module docstring.
+TOTAL_BUDGET = 0.050
+TOTAL_CALLS = 30
+WINDOW_SLACK = 0.005                    # the ledger's commit report against the rig's clock
 STUB_DELAY = 0.050
 CALLS, WARMUP = 5, 2
 CASES = [(path, stream, False) for path in bench.PATHS for stream in (False, True)]
 CASES += [("/v1/messages", False, True), ("/v1/responses", True, True)]
+TOTAL_CASES = [("/v1/messages", False, False), ("/v1/messages", True, False),
+               ("/v1/messages", False, True), ("/v1/responses", True, True)]
 
 
 COMMITS_PER_CALL = 2                    # the started entry and the end entry
 
 
 def within_budget(samples: dict) -> bool:
-    """The gateway's own time, with each call's disk commit seconds taken out."""
+    """OWN: the gateway's own time, with each call's `os.fsync` seconds taken out."""
     return (bench.overhead(samples, 0, own=True) < BUDGET_SECONDS
             and bench.overhead(samples, 1, own=True) < BUDGET_SECONDS)
+
+
+def within_total(samples: dict) -> bool:
+    """TOTAL: what a caller waits, to the first byte and to the end, commits included."""
+    return (bench.overhead(samples, 0) < TOTAL_BUDGET
+            and bench.overhead(samples, 1) < TOTAL_BUDGET)
+
+
+def honest_window(samples: dict) -> bool:
+    """The ledger reports as commit time what the system call took, and no more."""
+    return all(abs(reported - commit[1]) < WINDOW_SLACK and count == commit[2]
+               for (reported, count), commit in zip(samples["reported"], samples["commit"]))
 
 
 def commit_ms(samples: dict) -> list:
@@ -109,8 +110,16 @@ def commit_ms(samples: dict) -> list:
 
 def shown(samples: dict) -> dict:
     """The samples in milliseconds, for an assertion message."""
-    return {name: [(round(first * 1000, 1), round(total * 1000, 1)) for first, total in rows]
+    return {name: [tuple(round(value * 1000, 1) if isinstance(value, float) else value
+                         for value in row) for row in rows]
             for name, rows in samples.items()}
+
+
+def _spread(values: list) -> str:
+    ranked = sorted(values)
+    return (f"median {statistics.median(ranked) * 1000:.1f}, p90 "
+            f"{ranked[int(0.9 * (len(ranked) - 1))] * 1000:.1f}, slowest "
+            f"{ranked[-1] * 1000:.1f} ms")
 
 
 @pytest.fixture
@@ -146,9 +155,11 @@ def test_the_gateway_adds_less_than_the_budget(tmp_path, no_real_store, capsys, 
               f"commit here: median {statistics.median(bare) * 1000:.1f}, slowest "
               f"{bare[-1] * 1000:.1f} ms", end="")
     assert within_budget(samples), shown(samples)
-    # Two commits per call, no more: the time inside them is not budgeted, so their
-    # number is. A third commit added to a call fails here.
+    # Two commits per call, no more, counted at the system call. A third commit fails here.
     assert [count for _first, _total, count in samples["commit"]] == [COMMITS_PER_CALL] * CALLS
+    # The ledger's own report of its commit time is the system call's time: nothing else
+    # the gateway does is counted as the disk's.
+    assert honest_window(samples), shown(samples)
     # Every gateway call reached the stub and was recorded: a call answered
     # without the upstream would be fast and would not be the thing measured.
     assert served == ["endpoint_call_started", "endpoint_call"] * (CALLS + WARMUP)
@@ -157,6 +168,30 @@ def test_the_gateway_adds_less_than_the_budget(tmp_path, no_real_store, capsys, 
     assert bench.overhead(samples, 1, own=True) > -0.010
     if key:
         assert charged == CALLS + WARMUP
+
+
+@pytest.mark.parametrize("path,stream,key", TOTAL_CASES)
+def test_what_a_caller_waits_with_both_commits_is_within_the_total_budget(
+        tmp_path, no_real_store, capsys, path, stream, key):
+    """TOTAL: the median of TOTAL_CALLS warm calls, both disk commits included."""
+    with bench.rig(tmp_path / "home", "openai", STUB_DELAY, key=key) as made:
+        samples = bench.measure(made, path, stream, TOTAL_CALLS, WARMUP)
+        bare = bench.commit_cost(tmp_path / "home", 100)
+    direct = [statistics.median(row[which] for row in samples["direct"]) for which in (0, 1)]
+    first = [row[0] - direct[0] for row in samples["gateway"]]
+    total = [row[1] - direct[1] for row in samples["gateway"]]
+    with capsys.disabled():             # the measurement the budget is set from, on every run
+        print(f"\n  GATEWAY TOTAL {path} {'stream' if stream else 'plain'} "
+              f"{'key' if key else 'token'} ({TOTAL_CALLS} calls, budget "
+              f"{TOTAL_BUDGET * 1000:.0f} ms on the median): first {_spread(first)}; end "
+              f"{_spread(total)}; the two commits of a call "
+              f"{_spread([row[1] for row in samples['commit']])}; own end "
+              f"{bench.overhead(samples, 1, own=True) * 1000:.1f} ms; a bare commit here "
+              f"(100): {_spread(bare)}", end="")
+    assert [count for _first, _total, count in samples["commit"]] == (
+        [COMMITS_PER_CALL] * TOTAL_CALLS)
+    assert within_total(samples), shown(samples)
+    assert within_budget(samples) and honest_window(samples), shown(samples)
 
 
 def test_the_stub_wait_is_subtracted_not_counted(tmp_path):
@@ -179,6 +214,7 @@ def test_the_budget_fails_when_the_gateway_adds_200_ms(tmp_path, path, stream):
     with bench.rig(tmp_path / "home", "openai", STUB_DELAY, gateway_delay=0.200) as made:
         samples = bench.measure(made, path, stream, 3, 1)
     assert not within_budget(samples), shown(samples)
+    assert not within_total(samples), shown(samples)
     assert bench.overhead(samples, 0, own=True) >= 0.190
     assert bench.overhead(samples, 1, own=True) >= 0.190
 
@@ -196,26 +232,47 @@ def test_the_budget_fails_when_the_ledger_write_before_the_commit_adds_200_ms(
     with bench.rig(tmp_path / "home", "openai", STUB_DELAY) as made:
         samples = bench.measure(made, "/v1/messages", False, 3, 1)
     assert not within_budget(samples), shown(samples)
+    assert not within_total(samples), shown(samples)
     assert bench.overhead(samples, 1, own=True) >= 0.380      # two entries, 200 ms each
 
 
-def test_a_slow_disk_commit_is_reported_and_not_counted_as_the_gateways_time(
-        tmp_path, monkeypatch):
-    """A commit that takes 100 ms: the budgeted figure stays, the commit figure shows it."""
-    from harness import gateway_ledger_health as health
-    real = health.os.fsync
-
-    def slow_fsync(fd):
-        time.sleep(0.100)
-        return real(fd)
+@pytest.mark.parametrize("stream", [False, True])
+def test_200_ms_hidden_inside_the_commit_window_fails_every_gate(tmp_path, stream):
+    """The fourth review's plant. 200 ms of gateway time placed between the two clock
+    reads the ledger takes around `os.fsync` used to be counted as the disk's: the gate
+    passed with 400 ms added to every call. The rig's clock is at the system call now."""
+    import os
     with bench.rig(tmp_path / "home", "openai", STUB_DELAY) as made:
+        at_the_system_call = os.fsync   # the rig's timed call
+
+        def padded(fd):                 # what the gateway calls: slow work, then the commit
+            time.sleep(0.200)
+            return at_the_system_call(fd)
+        os.fsync = padded
+        try:
+            samples = bench.measure(made, "/v1/messages", stream, 3, 1)
+        finally:
+            os.fsync = at_the_system_call
+    assert not within_budget(samples), shown(samples)
+    assert not within_total(samples), shown(samples)
+    assert not honest_window(samples), shown(samples)
+    assert bench.overhead(samples, 1, own=True) >= 0.380      # two commits, 200 ms beside each
+    assert bench.overhead(samples, 0, own=True) >= (0.190 if stream else 0.380)
+
+
+def test_a_slow_disk_commit_is_the_disks_time_and_still_breaks_what_a_caller_waits(tmp_path):
+    """A commit that takes 100 ms. OWN stays where it was and the commit figure shows the
+    disk; TOTAL fails, because the caller waits for both commits."""
+    with bench.rig(tmp_path / "quick", "openai", STUB_DELAY) as made:
         quick = bench.measure(made, "/v1/messages", True, CALLS, 1)
-        monkeypatch.setattr(health.os, "fsync", slow_fsync)
+    with bench.rig(tmp_path / "slow", "openai", STUB_DELAY, disk_delay=0.100) as made:
         slow = bench.measure(made, "/v1/messages", True, CALLS, 1)
-    assert within_budget(slow), shown(slow)
+    assert within_budget(slow) and honest_window(slow), shown(slow)
     assert all(total >= 0.190 and count == COMMITS_PER_CALL
                for _first, total, count in slow["commit"]), slow["commit"]
     assert bench.overhead(slow, 1) >= 0.190                   # the whole figure does move
+    assert bench.overhead(slow, 0) >= 0.090                   # one commit before the first byte
+    assert not within_total(slow), shown(slow)
     for which in (0, 1):                                      # the gateway's own does not
         moved = abs(bench.overhead(slow, which, own=True) - bench.overhead(quick, which, own=True))
         assert moved < BUDGET_SECONDS, (shown(quick), shown(slow))

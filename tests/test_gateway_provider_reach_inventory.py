@@ -44,6 +44,9 @@ INVENTORY = {
                               "tests/test_gateway_chat_route_accounting.py"),
     "gateway_agent_transport.py": (TRACE, "/api/agent, both tool protocols",
                                    "tests/test_gateway_agent_contact_invariant.py"),
+    "gateway_ledger_relay.py": (NO_INFERENCE, "a child process sends its ledger entries to the "
+                                "gateway over loopback; no provider", ""),
+    "http_no_redirect.py": (OTHER, "the opener for clients that send a credential", ""),
     "gateway.py": (NO_INFERENCE, "the health probe of, and the proxy to, the model server on "
                    "this machine", ""),
     "model_roster.py": (NO_INFERENCE, "lists the models an endpoint serves", ""),
