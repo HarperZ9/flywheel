@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install (dev extras only; no runtime deps)
+        run: pip install -e ".[dev]"
+      - name: Lint (ruff)
+        run: ruff check src tests examples
+      - name: Type check (mypy)
+        run: mypy src/crucible
+      - name: Run tests with coverage
+        run: pytest -q --cov=crucible --cov-report=term-missing --cov-fail-under=85
+      - name: Run the demo (smoke check)
+        run: python examples/demo.py
+      - name: Check that every version site agrees
+        run: python scripts/check_version_sites.py .
+      - name: Build and check distributions
+        run: |
+          python -m build
+          python -m twine check dist/*
+      - name: Smoke-test the built wheel in a fresh environment
+        run: python scripts/smoke_wheel.py dist/*.whl
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py

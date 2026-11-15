@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+type: software
+title: "EMET"
+abstract: "Checks whether a file still matches the SHA-256 you recorded for it and answers MATCH, DRIFT or UNVERIFIABLE. Receipts anyone can recheck offline. Python, Rust, Node.js and Go."
+version: "1.3.1"
+date-released: 2026-10-23
+authors:
+  - family-names: "Harper"
+    given-names: "Zain Dana"
+    orcid: "https://orcid.org/0009-0001-7175-5393"
+repository-code: "https://github.com/HarperZ9/emet"
+url: "https://harperz9.github.io/emet.html"
+license-url: "https://github.com/HarperZ9/emet/blob/main/LICENSE"
+keywords:
+  - attestation
+  - conformance
+  - in-toto
+  - integrity
+  - llm-security
+  - provenance
+  - python
+  - reproducibility

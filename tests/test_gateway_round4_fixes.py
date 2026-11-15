@@ -99,11 +99,14 @@ HOSTILE = ("ok\x1b[2J", "c1 \x85\x9b\x90", "bidi \u202e\u2066\u200f", "del \x7f"
 def test_r10_show_prints_no_control_character_from_a_recorded_string(tmp_path, capsys, flags):
     from harness import gateway_ledger, gateway_ledger_cli
     ledger = gateway_ledger.GatewayLedger(tmp_path)
-    for index, text in enumerate(HOSTILE):
+    for index, text in enumerate(HOSTILE):  # a start, then its end: an end alone is a fault now
+        call = f"{index:024x}"
+        ledger.append("endpoint_call_started", call, {"key": "owner", "call": call})
         ledger.append("endpoint_call", "sha", {"key": "owner", "model_ref": text,
-                                               "reason": text, "n": index})
+                                               "reason": text, "n": index, "call": call})
     ledger.close()
-    assert gateway_ledger_cli.main(["show", *flags], environ={"FLYWHEEL_HOME": str(tmp_path)}) == 0
+    assert gateway_ledger_cli.main(["show", "--kind", "endpoint_call", *flags],
+                                   environ={"FLYWHEEL_HOME": str(tmp_path)}) == 0
     out = capsys.readouterr().out
     raw = sorted({ch for ch in out if ch != "\n" and not (" " <= ch <= "~")})
     assert raw == [], f"printed raw: {[hex(ord(ch)) for ch in raw]}"

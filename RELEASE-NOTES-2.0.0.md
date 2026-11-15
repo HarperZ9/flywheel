@@ -108,8 +108,18 @@ sentences are corrected. A fifth round (#511) then built what the fourth had
 left as stated limits: a call is in the ledger before it is made, calls in
 flight when a ledger write fails are recorded, the chat routes and
 `/v1/embeddings` record a failed call, a late request body gets 408 on every
-route, and one rule decides when a key is suspended. #475 and #511 were
-tested by their author and have not had an independent review.
+route, and one rule decides when a key is suspended. A fourth independent
+review then read #475 and #511 and found two items that blocked the release
+and five others: seven gateway routes still reached a provider with no
+ledger entry, the published overhead table predated the second disk commit
+and the timing gate no longer bounded what a caller waits, `verify` checked
+one half of the rule a call record keeps, a redirect carried the provider
+key to a second host on three routes, and settling a call could charge it
+twice. A sixth round (#513) fixed each of these in the tool, and then sent
+every gateway route over HTTP against a counting stub, which found two more
+faults: fourteen routes behind the grant step answered 403 to every request,
+and `/v1/embeddings` waited for a body it had already read. Both are fixed.
+#513 was tested by its author and has not had an independent review.
 You will notice these:
 
 - **The gateway ledger is a file.** It lives in `gateway-ledger/` under the
@@ -129,16 +139,22 @@ You will notice these:
   suspends its key. The gateway tries the ledger again when a call comes in,
   at most once a second; when the write works it serves that call, and the
   ledger records the gap and then the end of each call that was in flight,
-  marked `late`. `/v1/embeddings` is refused with the others.
+  marked `late`. Every route that runs a model at a roster endpoint is
+  refused with the others: `/v1/embeddings`, `/api/route`, `/api/eval/run`,
+  `/api/bench/run`, `/api/capability`, `/api/workflow`, `/api/plan/run` and
+  the v1 body of `/api/subagents/spawn` (#513).
 - **A call is in the ledger before it is made.** Each call has two entries:
   `endpoint_call_started`, committed to the disk before the request leaves
   the gateway, and its end entry (`endpoint_call` or `endpoint_call_failed`)
   with the same `call` id. A script that counted entries to count calls
   should count the kind `endpoint_call`. The two commits (fsync) are on by
-  default and together took 2.3 to 3.7 ms on the measured machine; one took
-  a median of 1.2 ms and 2.9 ms on the two drives measured.
+  default and together took 3.3 to 3.6 ms on the measured machine, where a bare
+  commit took a median of 1.21 ms. A slow disk makes them the larger
+  part of what a caller waits.
   `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips them and accepts that a power loss
-  can lose the newest entries.
+  can lose the newest entries. This holds on every route that runs a model
+  at a roster endpoint: the gateway refuses, before anything is sent, a
+  model request for which no started entry is open (#513).
 - **A gateway that is killed in the middle of a call leaves an unsettled
   call.** The started entry is there and the end entry is not.
   `flywheel gateway-ledger verify` and `show` name it and exit 3 (1 still
@@ -146,6 +162,13 @@ You will notice these:
   its key until you settle it: read what the provider billed, then run
   `flywheel gateway-ledger settle CALL --input N --output N`, or
   `--no-charge`. Flywheel does not check that figure against the provider.
+  A call is charged once: if its key was already charged before the gateway
+  stopped, `settle` charges nothing more and says so (#513).
+- **`flywheel gateway-ledger verify` checks the call records too.** An end
+  entry with no started entry before it, a second end for one call, a call
+  id started twice, and an end that differs from its start are each named,
+  and `verify` and `show` then exit 4. A gateway does not write such a
+  record. Exit 1 is still a broken chain and 3 an unsettled call (#513).
 - **A request with text that is not valid UTF-8 gets 400.** A body whose
   strings hold a lone surrogate (the escape `\ud800` with no second half) is
   refused before a key is admitted, and nothing is sent upstream.
@@ -198,7 +221,9 @@ You will notice these:
   with the gateway token.
 - **A redirecting upstream fails.** The gateway no longer follows a redirect
   from a provider address, because that would send the provider key to the
-  new host. Set the endpoint's base URL to the final address.
+  new host. Set the endpoint's base URL to the final address. That holds on
+  every route and for every client in Flywheel that sends a credential,
+  the chat routes, `/v1/embeddings` and the model-list read included (#513).
 - **Lean child processes get a restricted environment.** A proof under check
   can no longer read a provider key or another variable from the process
   that started Lean. `LEAN_PATH`, `LEAN_SYSROOT`, `ELAN_HOME`,
@@ -214,6 +239,17 @@ You will notice these:
   failed provider call.** The first two left no entry for a provider error;
   embeddings left no entry at all, and now also answers 503 when the ledger
   is unavailable.
+- **Every other route that runs a model records its calls.** `/api/eval/run`,
+  `/api/audit/run`, `/api/bench/run`, `/api/workflow`, `/api/plan/run`,
+  `/api/capability`, the v1 body of `/api/subagents/spawn` and a live-screen
+  frame delivery (`/api/live-screen/deliver`) left no ledger entry. Each
+  call now has its started entry before the request leaves and one end
+  entry. An entry made for one of these routes carries `route` (#513).
+- **Routes behind the grant step work over HTTP.** `/api/route`,
+  `/v1/embeddings`, `/api/bench/run`, `/api/capability`, `/api/companion`
+  and nine more answered 403 to every request, whatever grant it carried,
+  and `/v1/embeddings` then timed out. A request still needs the gateway
+  token and a grant approved for that exact operation (#513).
 - **`flywheel gateway-ledger show --json` prints ASCII.** Characters outside
   printable ASCII are `\uXXXX` escapes; a JSON parser reads the same row.
 
@@ -301,24 +337,21 @@ row there says what would close it: an issue with a design note (#489 to
   `anthropic` and `openai` Python SDKs were, against a gateway on a loopback
   port with a stub upstream.
 - **Gateway overhead was measured on one Windows machine**, one request at a
-  time, against a loopback stub: a median of 3.5 to 4.7 ms with the gateway
-  token and 4.8 to 5.4 ms with a virtual key, to the end of the reply. About
-  2 ms of that is the ledger entry being committed to the disk. The figures
-  were taken before the gateway read a key's row a second time (#470); that
-  read took 0.16 ms on the same machine and the table was not measured again.
-  It was not measured again after #473 either, which reads the request
-  head line by line under a deadline and holds one lock from the row read to
-  the admission; the 50 ms timing gate ran with both changes.
-  Since #511 a call commits two ledger entries where it committed one, and
-  on Windows a loopback upstream is connected without a timer wait that
-  cost about 15 ms on a quarter to a half of calls. One run of the timing
-  gate on the same machine after both: 2.6 to 6.5 ms to the end of the
-  reply, of which the two commits were 2.3 to 3.7 ms. The published table
-  was not measured again. The timing gate now budgets the gateway's own
-  time and reports the time inside the commit apart from it, because that
-  time is the disk's.
-  Provider network time, concurrency and other machines are outside the
-  figure.
+  time, against a loopback stub: what a caller waits for the gateway is a
+  median of 5.8 to 7.2 ms with the gateway token and 8.2 to 9.5 ms with a virtual key,
+  to the end of the reply, and 3.4 to 4.2 ms to the first text of a stream. Each
+  call commits two ledger entries to the disk and waits for both; the two
+  commits are 3.3 to 3.6 ms of each figure and are included. Measured
+  2026-11-15 over 100 warm calls per case, on a machine that was
+  not quiet (#513). The figures first published for 2.0.0, 3.5 to 4.7 ms and
+  4.8 to 5.4 ms, were taken when a call committed one entry; the difference
+  is the price of a call being in the ledger before it is made. A timing
+  gate holds two budgets on CI runners: 50 ms on the median of what a caller
+  waits, commits included, and 25 ms on the gateway's own work. Calls that
+  arrive together each pay their own two commits; one commit shared between
+  them is not built.
+  Provider network time, concurrency and other machines and disks are
+  outside the figure.
   [docs/BENCHMARKS.md](docs/BENCHMARKS.md) has the table.
 - **On Linux and macOS the command sandbox was tested by its arguments.** No
   command was run there for the writable-workspace change.
@@ -364,9 +397,10 @@ row there says what would close it: an issue with a design note (#489 to
   token-count request. A field that changes the price of a token is not seen
   by a spend limit, which uses the prices you gave the key; a token limit is
   not affected. A token-count request is not charged and leaves no ledger
-  entry; it is the one request sent to a provider without one. It goes only
-  to an Anthropic upstream's count route, which the Claude API documents as
-  free to use. No live call was made to confirm that.
+  entry. It goes only to an Anthropic upstream's count route, which the
+  Claude API documents as free to use. No live call was made to confirm
+  that. Two other requests run no model and leave no entry either: a
+  provider's model list, read for `/api/models`, and endpoint health probes.
 - **Key totals and settings are in a file** (`gateway-keys.json`) that any
   process of the same user can rewrite: limits, totals, allow-lists, the
   output cap, the in-flight limit and the suspension flag. Check the totals
@@ -389,12 +423,19 @@ row there says what would close it: an issue with a design note (#489 to
 
 - **One gateway process per Flywheel home.** A second gateway on the same
   home answers every model call with 503. Give it its own `FLYWHEEL_HOME`.
-- **The 503 covers the routes that write to the ledger**: `/v1/messages`,
-  `/v1/messages/count_tokens`, `/v1/responses`, `/v1/chat/completions` with a
-  provider endpoint, `/api/route` and `/v1/embeddings`. The local model on
-  the chat path never wrote to this ledger and is not refused. The gateway's
-  agent runs keep their own record, a private trace for each run with a
-  started record before each provider request, and are not refused either.
+- **The 503 covers every route that runs a model at a roster endpoint**:
+  `/v1/messages`, `/v1/messages/count_tokens`, `/v1/responses`,
+  `/v1/chat/completions` with a provider endpoint, `/api/route`,
+  `/v1/embeddings`, `/api/eval/run`, `/api/bench/run`, `/api/capability`,
+  `/api/workflow`, `/api/plan/run` and the v1 body of
+  `/api/subagents/spawn`. The model server on this machine, reached through
+  the chat path's local names, `/api/companion` and the raw proxy, never
+  wrote to this ledger and is not refused. The gateway's agent runs keep
+  their own record, a private trace for each run with a started record
+  before each provider request, and are not refused either.
+- **A separate program the gateway starts keeps its own record.** A lane's
+  server, a plugin or a subscription client sends its own requests with its
+  own credentials. The gateway ledger does not hold them.
 - **Calls in flight when a ledger write first fails have already reached
   the provider.** A call that starts then is refused before it is sent.
   The calls already in flight end with 500, or with a stream error after
@@ -407,7 +448,7 @@ row there says what would close it: an issue with a design note (#489 to
   `verify` names it and you settle it with what the provider billed.
   Flywheel does not read that figure from the provider, and it cannot tell
   a call that was billed from one that never left, because the started
-  entry is written before the request does.
+  entry is written before the request does. Settling charges a call once.
 - **A stream's text leaves before its end entry exists.** The end entry
   holds the hash of the whole reply and is on disk before the stream's last
   event; the started entry is on disk before the stream begins. Treat a

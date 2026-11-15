@@ -1,0 +1,123 @@
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+from pathlib import Path
+
+import pytest
+
+from index_graph.cli import main
+
+FIX = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture
+def workspace(tmp_path):
+    for name in ("py-lib", "py-app"):
+        dst = tmp_path / name
+        shutil.copytree(FIX / name, dst)
+        (dst / ".git").mkdir()   # makes it a discoverable repo at runtime
+    return tmp_path
+
+
+def test_backward_compat_bare_invocation_writes_map(tmp_path, capsys):
+    rc = main(["--root", str(tmp_path), "--json"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    data = json.loads(out)
+    assert "repositories" in data  # the existing map shape
+
+
+def test_python_module_entrypoint_runs_version():
+    root = Path(__file__).resolve().parents[1]
+    env = {**os.environ, "PYTHONPATH": str(root / "src")}
+    result = subprocess.run(
+        [sys.executable, "-m", "index_graph.cli", "--version"],
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0
+    assert "index " in result.stdout
+
+
+def test_source_checkout_index_module_entrypoint_runs_without_pythonpath():
+    root = Path(__file__).resolve().parents[1]
+    env = os.environ.copy()
+    env.pop("PYTHONPATH", None)
+    result = subprocess.run(
+        [sys.executable, "-m", "index", "--version"],
+        cwd=root,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert "index " in result.stdout
+
+
+def test_graph_subcommand_json(workspace, capsys):
+    rc = main(["graph", "--root", str(workspace), "--json"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    data = json.loads(out)
+    assert "relations" in data and "roles" in data
+
+
+def test_context_focus_unknown_returns_2(workspace, capsys):
+    rc = main(["context", "--root", str(workspace), "--focus", "nope-xyz"])
+    assert rc == 2
+
+
+def test_context_focus_known(workspace, capsys):
+    rc = main(["context", "--root", str(workspace), "--focus", "py-lib"])
+    out = capsys.readouterr().out
+    assert rc == 0 and "## Relations" in out
+
+
+def test_graph_cycles_human(capsys, tmp_path):
+    from index_graph import cli
+    # build_graph takes a name->Path dict via _repo_paths; drive _cmd_graph
+    # through a temp workspace with a 2-cycle (tmp_path auto-cleaned).
+    d = tmp_path
+    for repo, dep in (("alpha", "beta"), ("beta", "alpha")):
+        r = d / repo
+        (r / "src" / repo).mkdir(parents=True)
+        (r / "pyproject.toml").write_text(
+            f'[project]\nname="{repo}"\ndependencies=["{dep}"]\n', encoding="utf-8")
+        (r / "src" / repo / "__init__.py").write_text(f"import {dep}\n", encoding="utf-8")
+        (r / ".git").mkdir()
+    rc = cli.main(["graph", "--root", str(d), "--cycles"])
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "cycle" in out.lower()
+    assert "alpha" in out and "beta" in out
+
+
+def test_atlas_json_emits_two_layer_pack(tmp_path, capsys):
+    import json
+    from index_graph import cli
+    # two repos with a doc that describes one and [[links]] the other
+    for repo, dep in (("alpha", None), ("beta", None)):
+        r = tmp_path / repo
+        (r / "src" / repo).mkdir(parents=True)
+        (r / "pyproject.toml").write_text(f'[project]\nname="{repo}"\n', encoding="utf-8")
+        (r / "src" / repo / "__init__.py").write_text("x = 1\n", encoding="utf-8")
+        (r / ".git").mkdir()
+    (tmp_path / "alpha" / "DESIGN.md").write_text("# Alpha Design\n\nUses [[beta]].\n", encoding="utf-8")
+    rc = cli.main(["atlas", "--root", str(tmp_path), "--json"])
+    assert rc == 0
+    pack = json.loads(capsys.readouterr().out)
+    assert any(d["id"].endswith("DESIGN.md") for d in pack["docs"])
+    ke = pack["knowledge_edges"]
+    assert any(e["type"] == "describes" and e["to"] == "alpha" for e in ke)
+    assert any(e["type"] == "links-to" and e["to"] == "beta" for e in ke)
+    assert "relations" in pack  # superset of the context pack

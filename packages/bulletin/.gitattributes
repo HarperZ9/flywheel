@@ -1,0 +1,6 @@
+# One line ending in the repository. A CRLF checkout is fine locally; what
+# lands in a commit is LF, so a checksum computed on Windows matches the one a
+# Linux CI job computes over the same file.
+* text=auto eol=lf
+*.png binary
+*.woff2 binary

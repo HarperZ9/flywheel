@@ -246,23 +246,24 @@ class Keys:
                 return name, row
         return None
 
-    def debit(self, name: str, counts: dict, estimated: bool = False) -> dict:
-        """Add one call's counts to a key's totals; returns the row after it."""
+    def debit(self, name: str, counts: dict, estimated: bool = False, call: str = "") -> dict:
+        """Add one call's counts to a key's totals, once for a `call` id; the row after it."""
+        from . import gateway_key_charges as charges
         with self._held():
             rows = self._read()
             row = rows.get(name)
             if row is None:
                 raise KeysError(f"no gateway key named '{name}'")
-            totals, spent = row["totals"], 0
+            if charges.seen(row, call) is not None:
+                return row
+            totals, spent = row["totals"], sum(counts.get(key) or 0 for key in COUNTS)
             for key in COUNTS:
-                amount = counts.get(key) or 0
-                totals[f"{key}_tokens"] += amount
-                spent += amount
+                totals[f"{key}_tokens"] += counts.get(key) or 0
+            charges.note(row, call, spent)
             totals["calls"] += 1
             totals["tokens"] += spent
-            if estimated:
-                totals["estimated_calls"] += 1
-                totals["estimated_tokens"] += spent
+            totals["estimated_calls"] += 1 if estimated else 0
+            totals["estimated_tokens"] += spent if estimated else 0
             self._write(rows)
         if WARM:
             threading.Thread(target=self._warm, daemon=True).start()

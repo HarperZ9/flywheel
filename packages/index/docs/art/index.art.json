@@ -1,0 +1,56 @@
+{
+  "$comment": "Source of truth for the artwork on this repository's front page. Edit a sentence here and re-run scripts/render_repo_art.py; tests/test_repo_art.py fails if the committed SVG stops matching.",
+  "header": {
+    "name": "index",
+    "role": "offline workspace graph",
+    "tagline": "Map a workspace offline. Refute a claim the code does not support.",
+    "words": ["scan", "graph", "symbols", "verify", "certificate"]
+  },
+  "flows": [
+    {
+      "file": "claim-oracle.svg",
+      "kicker": "one claim, end to end",
+      "title": "How a structural claim is settled against the code itself",
+      "alt": "Eight stages from workspace discovery to a rechecked certificate. Fingerprints ask whether ground truth has moved, and a graph built over changed code is rebuilt before any claim is grounded against it. A claim is answered from the graph rather than from memory, ending as match, refuted or unverifiable.",
+      "footnote": "The verdict is computed from the graph, so an agent's confidence has no route into it.",
+      "stages": [
+        {"title": "Discover", "note": "The workspace is walked and pruned into a repo list."},
+        {"title": "Classify", "note": "Each repo takes its ecosystem from its own manifests."},
+        {"title": "Graph", "note": "Imports and symbols become edges carrying a file and line."},
+        {"title": "Freshness", "note": "Fingerprints answer one question: has ground truth moved?"},
+        {"title": "Claim", "note": "An agent asserts a dependency, or that a symbol exists."},
+        {"title": "Ground", "note": "The claim meets the graph, and never the agent's memory."},
+        {"title": "Certificate", "note": "The verdict is sealed over a hash of the whole graph."},
+        {"title": "Recheck", "note": "A consumer recomputes that hash instead of trusting it."}
+      ],
+      "returns": [
+        {"from": 3, "to": 2, "label": "GROUND TRUTH MOVED: THE GRAPH IS REBUILT FIRST"}
+      ],
+      "outcomes": [
+        {"label": "MATCH", "note": "the graph carries the edge, with file and line", "tone": "verified"},
+        {"label": "REFUTED", "note": "the graph is complete here, with no such edge", "tone": "drift"},
+        {"label": "UNVERIFIABLE", "note": "an endpoint sits outside the scanned workspace", "tone": "none"}
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "what-leaves.svg",
+      "kicker": "every origin and every path goes through this",
+      "title": "What a shared map carries about the machine that made it",
+      "source": "python -c \"import index_graph.gitmeta as g; print(g.sanitize_credentials.__doc__)\"",
+      "alt": "Seven things git or the filesystem hands index, and what each one becomes in the written map. A password in a remote URL is replaced whole, a credential-shaped query parameter keeps its name and loses its value, and an ssh username is left alone because it is not a secret. Paths are measured from the scan root, a repository outside that root reduces to its own directory name, and the root itself reduces to sixteen hex characters. The marked row is the one setting that puts real absolute paths in the file, which the map then records against itself.",
+      "footnote": "A map is written to be read somewhere else, so an origin is rewritten before it reaches a row and a path is measured from the scan root. Redaction works by pattern, which covers the parameter names listed here and cannot cover one it has never seen. The marked row is the setting that puts real paths in the file, and a map made that way says so in absolute_paths_included.",
+      "heads": ["what index is handed", "what the map carries", "why it lands that way"],
+      "fields": [
+        {"key": "a password in a remote", "value": "scheme, host, path", "note": "The userinfo goes as a unit, under any scheme, once a colon says a password came with the name."},
+        {"key": "a credential parameter", "value": "name kept, value gone", "note": "token, password, secret and api_key, bare or prefixed. The rest of the query goes with it."},
+        {"key": "ssh://git@host", "value": "left as it is", "note": "A username is not a secret, and blanking it costs a reader how the clone was set up."},
+        {"key": "a repo under the root", "value": "path relative to it", "note": "Forward slashes on every platform, and the root itself reads as a single dot."},
+        {"key": "a repo outside it", "value": "its own name only", "note": "relative_to raises and the fallback is the directory name, so no absolute path arrives by that route."},
+        {"key": "the scan root", "value": "16 hex characters", "note": "A sha256 prefix. Two maps under one root agree without either naming it."},
+        {"key": "portable turned off", "value": "absolute paths, flagged", "tone": "drift", "note": "The one setting that writes real paths, recorded in the map as absolute_paths_included."}
+      ]
+    }
+  ]
+}

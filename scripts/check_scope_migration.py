@@ -120,6 +120,26 @@ ALLOWED = (
     "packages/relay/scripts/build_client_package.py",
     "packages/relay/scripts/check_native_client.py",
     "packages/relay/scripts/check_native_workflow.py",
+    "packages/index/scripts/build_client_package.py",
+    "packages/index/scripts/check_native_client.py",
+    "packages/crucible/scripts/build_client_package.py",
+    "packages/crucible/scripts/check_native_client.py",
+    # forum 1.17.0 writes the field in two records of its released format: the
+    # native-client check record, and the route-preflight skill's output (that
+    # skill's files are byte-pinned release material in forum's .gitattributes)
+    "packages/forum/scripts/check_native_forum.py",
+    "packages/forum/src/forum/skills/forum-route-preflight/scripts/forum_route_preflight.py",
+    # bulletin 0.5.0 answers /v1/reports with the field; the deployed board
+    # serves that response today, and its smoke and its test read it back
+    "packages/bulletin/scripts/smoke.mjs",
+    "packages/bulletin/src/reports.ts",
+    "packages/bulletin/test/reports.test.ts",
+    # emet's Flywheel reporter reads evaluation artifacts under either name, and its
+    # changelog, its guide and its test say so
+    "packages/emet/CHANGELOG.md",
+    "packages/emet/docs/FLYWHEEL-EVALUATION-RECEIPTS.md",
+    "packages/emet/emet/reporters/flywheel.py",
+    "packages/emet/test_reporter_flywheel.py",
     # canon writes the field in every capsule, receipt and report of its released
     # format: 74 files, each named in _CANON_KEPT above
     *_CANON_KEPT,

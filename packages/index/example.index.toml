@@ -1,0 +1,23 @@
+# Example index configuration. Copy to <workspace-root>/.index.toml.
+# Rules match each repo's workspace-relative path; first match wins. With no rule
+# match, repos fall back to a remote-host heuristic (local / public / private).
+
+[[rule]]
+pattern = "oss/**"
+class   = "public"
+
+[[rule]]
+pattern = "work/**"
+class   = "internal"
+
+[scan]
+jobs    = 16
+prune   = ["vendor", "target"]   # added to the built-in safety set
+descend_into_repos = false       # true discovers repos nested inside repo roots
+include_root_repo  = false       # true keeps the scan root as a repo in multi-repo workspaces
+
+[privacy]
+omit_origin_classes = ["internal"]
+
+[output]
+portable = true

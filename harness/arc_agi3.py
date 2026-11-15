@@ -36,7 +36,8 @@ def _default_transport(method: str, path: str, payload, *, api_key: str,
         data=json.dumps(payload).encode() if payload is not None else None,
         headers={"X-API-Key": api_key, "Content-Type": "application/json"},
         method=method)
-    with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
+    from .http_no_redirect import open_request      # the key reaches only this host
+    with open_request(req, _TIMEOUT) as resp:
         return resp.status, json.loads(resp.read().decode() or "{}")
 
 

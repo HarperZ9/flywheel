@@ -1,0 +1,637 @@
+# Changelog
+
+## Unreleased
+
+- `compat/workspace-repo-map/` holds the source of the retired `workspace-repo-map` 0.2.1
+  package on PyPI (an import warning that names `index-graph`). The `index-graph` wheel and
+  sdist leave it out.
+
+## 2.16.0 (2026-10-03)
+
+Adds `index navigate` and `index outline-map`: code for a plain-language question, found one
+typed question per level, with a frozen benchmark beside it.
+
+- `index navigate ROOT "question"` finds the code for a plain-language question. It walks
+  directory, file and symbol with one typed question per level, follows every child at
+  least half as likely as the top child (up to four), keeps the rest in a backlog for
+  backtracking, and delivers only the best leaf of each file it reached. `--json` adds
+  the source text and the decision path (`index.decision-path/v1`). Code files only by
+  default; `--include-docs` adds prose and config.
+- `index outline-map ROOT --node ID` prints one outline node's children as a map: a name
+  and description for a model, and a handle with the node id for the code. A host model
+  can walk the tree itself and only ever choose among nodes that exist.
+- MCP tools `index.navigate` and `index.outline-map`, in the full server and the
+  read-only client profile.
+- Benchmark on 60 frozen questions from merged pull requests (query file SHA-256
+  `a264681f...`): navigate recall@5 0.389 against grep 0.422 (difference -0.033,
+  interval -0.114 to 0.055) at 0.33 of grep's tokens (interval 0.27 to 0.41). The bar
+  set before the run passes on point estimates; the stricter interval version does not.
+  Details, the design-set shortfall and limits in `docs/NAVIGATE.md`; inputs, builder
+  and results in `benchmarks/navigate/`.
+
+- The local client profile marks Git as unavailable before any Git code runs. In a
+  Git workspace, `index.map` no longer reads `INDEX_GIT_TIMEOUT_SECONDS` or copies the
+  environment for a Git call that the audit hook would refuse. A test with a planted
+  token checks that the client tools never read it. The full CLI and MCP server keep
+  their Git behavior.
+- The plugin folder now carries its own copy of the server code under
+  `client-plugin/server/src`, so a directory install that receives only that folder
+  starts. `python scripts/build_client_package.py --sync-vendored` rewrites it from
+  `src/`, and a test fails when the copy drifts. The launcher no longer falls back to
+  the repository's `src` and reports a missing copy in one line.
+- The plugin folder stays within the directory limits: 512 files, and 256 KiB for every file that is not an image or font.
+- The Claude plugin manifest carries directory listing fields: display name, keywords,
+  homepage, documentation, support, privacy and terms links, and a 1024 px icon.
+- Claude Code now asks for the readable workspace and the optional state directory
+  when the plugin is enabled. The Claude `.mcp.json` passes them as `${user_config.*}`
+  launch arguments with the same settings and defaults as the MCPB. Portable and Codex
+  manifests are unchanged.
+- The client README gains a data and network table derived from the launcher code.
+- The client README and PRIVACY.md gain a "What this plugin runs and handles" section:
+  hooks (none), the exact launch command, network (none), files written in the state
+  directory, and every environment variable the client code reads.
+
+## 2.15.0 (2026-10-01)
+
+Adds local client packages with explicit launch permissions. Client-specific installation
+and marketplace acceptance remain separate qualification steps.
+
+- Add a local MCP profile with an explicit readable workspace, typed permission refusals, and process/network denial at launch. The full CLI/MCP remains available separately.
+- Add portable source plugins for Claude/Codex-compatible clients and Windows x64 ZIP/MCPB packages containing the runtime, licenses, source hashes and checksums.
+- Check actual stdio behavior before packaging, reject untracked or credential-like release payloads, and attach checked client assets to the same product release.
+- Add an explicit launch-time state directory for bounded map caching and existing job status, result and cooperative cancellation. Tool arguments cannot grant writes. Job start/resume and Git remain unavailable because processes are denied.
+
+## 2.14.1 (2026-09-29)
+
+- Router inventory preserves workspace-relative repository and document names
+  when Windows directory junctions point to offloaded repositories. Duplicate
+  basenames retain distinct relative keys instead of raising a path error.
+- Graph preloads retain each repository's captured physical root. A changed root
+  fails explicitly; repository-internal junctions outside that root stay excluded
+  during preload reuse and fallback after an ordinary file change. Junctions
+  entering below a nested repository's marker retain that ownership boundary.
+  This preserves the shared traversal without claiming an atomic filesystem
+  snapshot.
+- An exhausted inventory budget raises the existing `ScanBudgetExceeded` result
+  before repository sorting. Partial discovery does not become a complete map.
+
+## 2.14.0 (2026-09-27)
+
+- Route: add `index route --path REPO --json`, the `index.route` MCP tool, and
+  the `build_route()` Python entry point for explicit-path context envelopes that
+  validate named repositories under the root without discovering unrelated sibling
+  repositories. The route receipt is portable, reconciles selected and rejected
+  paths, and embeds the existing context-envelope payload.
+- Context envelopes: add opt-in bounded serialized output with `--bounded-output`,
+  the `bounded_output` MCP/Python argument, and `source_ref_omissions` records. The
+  default remains the existing lossless-by-reference retained-selection budget; the
+  opt-in mode compacts oversized source-ref lists into omission counts, hashes, and
+  reissue handles and reports packet size as serialized UTF-8 bytes divided by four,
+  rounded up, not as tokenizer truth. CLI and MCP calls now measure their emitted
+  transport surfaces; bounded CLI JSON writes the measured UTF-8 LF byte payload
+  directly so Windows newline translation cannot exceed the reported budget. MCP
+  rejects malformed boolean values, and minimal overflow receipts preserve
+  pre-existing omitted-repo metadata.
+- Releases: a tag push runs the test suite and checks the tag against the package
+  version before it builds, uploads to PyPI with `skip-existing` so a partial
+  upload can be re-run, and creates the GitHub Release with the wheel, the sdist
+  and `SHA256SUMS.txt` once PyPI serves those same files. `RELEASE.md` lists the
+  steps, and `tests/test_version_sites.py` fails when the README or CHANGELOG
+  names a version other than the package's.
+
+## 2.13.0 (2026-09-10)
+
+- Router-job events distinguish graph completion/failure from terminal job
+  status. Progress and buffered timing rows use one worker-attempt emission
+  clock, with graph duration preserved separately. Result acceptance and
+  standalone graph progress semantics are unchanged.
+- Router document-prefix indexing speeds navigation by avoiding full document
+  reads when a path prefix is enough, while preserving source-backed rows.
+
+## 2.12.0 (2026-09-07)
+
+- Status discovery derives MCP capabilities from the served tool definitions and
+  includes router-job commands. Source packages omit historical planning notes.
+
+- LSP bounds its unchanged-metadata fast path to two seconds and reads content
+  immediately for files modified within the latest one-second uncertainty window.
+  Same-size edits can no longer remain indefinitely hidden by a restored mtime.
+  This retains a bounded stale window for older timestamp-preserving edits.
+- Graph/router builds use bounded process workers on CLI/MCP entrypoints. Python
+  callers can select `executor="process"`; threads remain the library default for
+  custom resolvers and embedded callers. Dependency output keeps its stable order.
+- Graph progress reports actual completed repositories and distinct building,
+  resolving, complete, and failed phases. CLI/MCP diagnostics use JSON lines on
+  stderr; Python callers can supply `on_progress` without parsing log output.
+- Failed or cancelled graph consumers cancel queued repository work before
+  executor shutdown. Already-active workers are still joined; this is not forced
+  process termination or immediate cancellation.
+- Linked repository roots use the same resolved source path for fingerprinting
+  and parsing. Output nodes retain the caller's requested path, including when
+  equivalent roots reuse a cache entry.
+- Source read or traversal I/O errors inside complete graph builds now raise
+  `GraphSourceError`, emit failed progress, and prevent partial cache writes.
+  CLI JSON reports `UNVERIFIABLE` with exit2; MCP reports a typed tool error.
+- Repository builds share one pruned filesystem listing. Child Git repositories
+  are separate graph boundaries; plain source folders and ignored local source
+  files remain included under the existing directory-pruning rules. Fingerprints
+  hash working bytes, including edits hidden by Git index flags or clean filters.
+- Graph cache keys include the Index version and resolver method implementation,
+  preventing stale edges after a resolver update. Custom resolvers must update
+  `cache_version` when instance state or external configuration changes behavior,
+  or disable caching. Implementation signatures
+  use stable code values so resolver warmup does not create duplicate cache keys.
+- Within a repository build, built-in resolver parsing reuses the working bytes read
+  for fingerprinting. The temporary byte cache is capped at 16 MiB and 4,096 files;
+  files beyond the cap are still read, and the cache expires after the build.
+  Above-cap reads keep first-read digests instead of source bodies, so unchanged
+  larger repositories can still populate the persistent repo cache. Digest
+  mismatch, source I/O failure, interrupted traversal, or journal overflow skips
+  persistence rather than storing facts under older bytes.
+- Persistent repo-cache reads and writes are enabled only for Index's exact
+  shipped built-in resolver types, or for custom resolvers that explicitly set
+  `uses_shared_source_reader = True` and route graph-relevant reads through
+  Index's shared source readers. Unopted custom or mixed resolver sets bypass
+  persistent repo cache in both directions. The repo-cache key is bumped to v4
+  so earlier candidate cache entries cannot be reused under this contract.
+- `router-job start/status/result/cancel/resume` and matching
+  `index.router.job.*` MCP operations share one validated local argument contract.
+  Jobs keep work running outside the interactive call, report actual progress,
+  and return content only after request and result integrity checks pass.
+- Router doc links use Markdown paths without opening every document body.
+  Atlas, wiki, and workbench retain their body-dependent discovery.
+- Router `--no-cache` now bypasses per-repo facts as well as the final text cache.
+  MCP `index_graph` and `index_router` accept `no_cache: true` for the same refresh.
+
+## 2.11.0 (2026-09-07)
+
+- Reliability: interactive workspace MCP cache keys now use the cheap CLI cache
+  identity instead of recursively walking resolver-relevant files before cache
+  lookup, fixing a fresh-process import cycle and letting warm calls return
+  before repository discovery.
+- Reliability: `index router`, `index graph`, `index context`, and
+  `index context-envelope` accept `--budget-ms`; matching interactive MCP
+  workspace tools accept `budget_ms`. Budgeted large-workspace scans return typed
+  UNVERIFIABLE results instead of silently serving a partial map or running until
+  the host times out.
+- Reliability: `index map --resume-state PATH` records completed repository rows
+  as JSONL so complete inventory runs over large workspaces can resume. Cached
+  rows are reused only while their Git/control-file, dirty/untracked, marker, and
+  row-affecting config identity still matches; stale rows rebuild.
+- Reliability: map rows now expose `metadata_status: "unknown"` when the
+  required Git status check fails, and map summaries expose top-level metadata
+  counts so `dirty_count` cannot be read as a complete cleanliness aggregate
+  while any row's Git metadata is unknown.
+- Reliability: the `index.map` MCP tool no longer uses the interactive TTL text
+  cache or advertises `budget_ms`, so a fresh inventory call cannot hide a newly
+  discovered nested repository behind a stale cache key.
+
+## 2.9.0 (2026-07-07)
+
+- Workbench: `index workbench` renders every index surface (the workspace map, docs,
+  the context lens, health, and the flagship spine) into one self-contained single-page
+  HTML artifact, so the whole workspace picture opens from a single file with no server
+  and no dependencies.
+- Context Lens: `index lens` gives a live view of budgeted context assembly as one
+  sliding budget-frontier stack: replay how an envelope was packed under a token budget,
+  see exactly which repos were retained or omitted and the typed failure code behind
+  every omission. A lens verdict is faithful to the underlying envelope, with plain-text
+  descriptions throughout.
+- Watch: `index watch` adds live auto-resync. The watcher holds the prior workspace
+  fingerprint and re-runs the pure freshness compare on each tick, emitting a
+  re-checkable `index.freshness-sync/1` receipt (both roots, FRESH/STALE verdict, named
+  repo deltas) on every real change; FRESH ticks are silent. Zero-dependency stdlib
+  polling; `--regen workbench|atlas` rebuilds the artifact on change. A rescan that
+  raises reports UNVERIFIABLE and the loop recovers on the next tick.
+- Bench faithfulness: `index bench` now measures `edge_grounding`, the fraction of
+  internal dependency edges the compact pack keeps that carry file:line source evidence.
+  1.0 means every structural fact retained is provably in the source, so the reported
+  reduction is faithful, not just small. On a real workspace: 91.6x reduction with 100
+  percent of kept edges grounded.
+- Performance: workbench page-weight budgets keep large-workspace artifacts lean (61.8MB
+  down to 5.6MB on a 2k-document workspace), and the workbench map now draws only the
+  internal graph while externals stay counted.
+- Performance: workspace repo discovery now prunes traversal below discovered repo
+  roots by default, treats a multi-repo scan root as a container unless
+  `scan.include_root_repo = true`, preserves duplicate basenames with relative keys,
+  and caches `index bench` output for repeated agent-loop calls (`--no-cache` forces
+  a cold run).
+- Performance: graph construction now caches each repo's resolver facts behind a
+  content fingerprint. On the original local workspace with bench text caching disabled,
+  the first repo-cache populate run took 82.7s and the next unchanged bench run took
+  20.6s because unchanged repos were fingerprinted but not reparsed.
+- Visual identity refresh: spectrum banner, feature-first README header and body, a
+  current plain-language introduction (`docs/INTRODUCTION.md`), the delivery contract
+  evolved to the new visual identity, and a live PyPI downloads badge.
+- Docs: `PRODUCT.md` states the invented-category principle (context lens, spine view).
+
+- MCP stability: tool-call failures now return an `index.mcp-tool-error/v1`
+  JSON receipt with `UNVERIFIABLE` status instead of a bare text error, and
+  `SystemExit` from invalid workspace config is contained inside the tool result
+  rather than terminating the stdio process. Large workspace repo discovery also
+  uses an `os.walk` error hook, so unreadable directories are skipped with a
+  warning instead of aborting the scan.
+
+- Symbol navigation: `index symbols QUERY` navigates the symbol graph for one symbol the way
+  an IDE jumps, from the CLI and in JSON, each hop carrying `file:line` evidence. Three
+  sections, selectable with `--def` / `--refs` / `--impls` (all three by default):
+  go-to-definition (matching definitions with their sites), find-references (resolved callers,
+  with unresolved same-name references listed separately and never as a caller), and
+  find-implementations. Find-implementations is new: it resolves in-repo subclasses of a class
+  and method overrides of a method, from a new AST-derived inheritance edge (`subclass` and
+  `override`, each `file:line`-backed and labeled `exact` or `cross_module`). A base class that
+  names an external or statically-unbindable class yields no edge, so an implementation result
+  is never guessed. The subcommand exits `0` on a match and `2` when every requested section
+  was empty. A new MCP tool `index.symbol-implementations` exposes find-implementations
+  natively, alongside the existing `index.symbol-definition` and `index.symbol-references`.
+  Reuses the wave-1 symbol graph wholesale via a shared `build_symbol_navigator`. Python only;
+  multi-language navigation is specced (not built) in `docs/PROTOCOL.md`.
+
+- LSP server: `index lsp --root ROOT` starts a stdio language server that puts index's
+  verified symbol graph inside the IDE (VSCode/Neovim/JetBrains). It speaks JSON-RPC 2.0
+  with hand-rolled `Content-Length` framing (zero new runtime dependencies) and advertises
+  `textDocument/definition` and `textDocument/references`. Go-to-definition resolves the
+  identifier under the cursor to its AST-exact `file:line`, or returns `null` when nothing in
+  the workspace defines it, never a guessed jump; find-references returns only resolved
+  callers with `file:line` evidence and never surfaces an unresolved reference as a caller.
+  Three negatives are refused rather than answered wrong: a symbol that lives only in a
+  different repo is never returned (the server searches only its own `--root`); an unresolved
+  name returns empty, not a false positive; and a workspace that changed on disk since
+  `initialize` is detected by a fingerprint of the Python tree and returns a JSON-RPC error
+  (`-32603`, "workspace changed") instead of an answer from a stale graph. Reuses the wave-1
+  `build_symbol_graph`, symbol definitions, and call resolution wholesale. Python only.
+  Schema in `docs/PROTOCOL.md`.
+
+- Symbol-level intelligence: the AST pass now extends past module imports down to
+  functions, classes, and methods. `index internals-symbols` emits a deterministic
+  call/reference graph, GO-TO-DEFINITION and FIND-REFERENCES data derived from the
+  Python AST, and `index wiki` gains one sealed page per symbol (definition, resolved
+  callers/callees with file:line, and honestly-surfaced unresolved references). Within
+  a module, calls resolve exactly (high confidence); a call to a name imported from
+  another module in this repo resolves best-effort if it names a real definition
+  (moderate); anything the static scan cannot bind is marked unresolved, never guessed.
+  `index wiki --verify` re-derives the symbol graph and flags a claimed resolved call
+  the real graph does not contain as DRIFT (`symbol-call-not-in-graph`), the same
+  three-verdict seal the module graph uses; unresolved references are never claimed
+  edges and never cause a false DRIFT. Above a symbol-count threshold the per-symbol
+  pages are omitted to keep large-repo packs lean; the graph stays available on the
+  CLI. New MCP tools `index.symbol-graph`, `index.symbol-definition`, and
+  `index.symbol-references` expose the same graph natively. Python only; other
+  languages keep their module-level graph. Schema in `docs/PROTOCOL.md`.
+
+- On-demand wiki server: `index serve` starts a stdlib `http.server` that serves
+  the verified wiki for one repo on demand. Request a repo by its forge path
+  (`GET /<forge-host>/<org>/<repo>`, e.g. `http://localhost:8000/github.com/org/repo`)
+  and index reconstructs the git URL (`https://<host>/<org>/<repo>`), runs the
+  existing `index wiki <url>` code path (shallow clone, derive from the module
+  graph, clean up), and serves the self-contained HTML. The posture is
+  consent-clean by construction: generation is on demand only, nothing is
+  crawled or pre-indexed; the landing page and every served page state that the
+  wiki derives structure from the dependency graph, generates no prose, is
+  commit-pinned and re-checkable with `index wiki --verify`, and defers to the
+  repo owner's authored docs; a `/robots.txt` disallows indexing and every
+  response carries `X-Robots-Tag: noindex, nofollow`. Only http(s) forge URLs of
+  the shape `host/org/repo` are accepted; a malformed route returns a typed 400
+  with a plain reason and a clone failure returns a plain 502 page, never a
+  traceback. The server binds `127.0.0.1` by default; `--host`/`--port` are
+  allowed but default to loopback. This is the local server component only; no
+  external publishing happens, and deploying or hosting it anywhere is a separate
+  operator decision. There is deliberately no MCP `serve` tool: a long-running
+  server does not fit MCP stdio, so the surface stays CLI-only.
+- Wiki from a URL: `index wiki https://github.com/org/repo` (or any git URL) now
+  shallow-clones the repo to a temp dir, derives the sealed wiki, and removes the
+  clone, giving the paste-a-repo experience without a server. A local path
+  positional works the same way (`index wiki /path/to/repo`), and a source that is
+  neither a git URL nor an existing directory is rejected rather than guessed.
+- Router deep dives: `index router` (the CLAUDE.md/AGENTS.md workspace map) now
+  ends with a per-repo pointer to the verified wiki (`index wiki --root <dir>`),
+  so an agent that opens the map is one command from a re-checkable per-repo view.
+- Packaging: the PyPI maturity classifier moves from Development Status 3 (Alpha)
+  to 4 (Beta), matching the shipped surface (2.8.0, zero runtime dependencies,
+  460 tests, sealed certificates, verified wiki, staleness contract).
+- Onboarding overhaul: the README first screen now answers what/who/problem/try-in-5-minutes
+  in plain product language and leads with the single-repo wow (`index wiki` on one repo,
+  producing one self-contained verified artifact; the workspace atlas comes second). The
+  install/run/import naming triple (`pip install index-graph`, `index`, `import index_graph`)
+  is stated on one visible line, and a rendered single-repo wiki demo ships at
+  `examples/wiki-demo.html`, regenerated deterministically by the real generator
+  (`python examples/wiki_demo.py`, which self-verifies the pack to MATCH before writing).
+  The Project Telos operator-spine material is preserved but moved below the value demo. No
+  new capability claims.
+- The default map write is explicit: bare `index` (and `index map`) prints a one-line
+  `index map: writing <path>` notice on stdout before touching the filesystem, and a new
+  `--dry-run` flag reports the would-be write path and repo counts without writing anything
+  (rejected alongside `--json`, which already writes nothing). Default write behavior is
+  otherwise unchanged and backward compatible. Negative fixtures assert that a dry run
+  leaves no new file behind and that the notice precedes the write.
+- Typed invalidation reports (the staleness contract): `index invalidate --root ROOT --out PIN`
+  pins the current tree (per-file hashes plus the structural snapshot, content-addressed per
+  `docs/PROTOCOL.md` hashing), and `index invalidate --root ROOT --pin PIN [--json]` diffs the
+  pin against the live tree and names exactly what the changes invalidate. The report
+  (`index.invalidation/1`) carries `pinned_ref`, `current_ref`, a FRESH or STALE verdict, and
+  splits the fingerprinted scope (the certificate, context-pack, and graph-snapshot artifacts
+  plus each pinned repo) into `invalidated`, each entry typed with a reason code from a closed
+  set (`file-changed`, `file-removed`, `dependency-edge-changed`, `doc-changed`, `unversioned`),
+  and `still_valid`. Counts must reconcile (invalidated + still_valid = scope), and
+  `reconcile_invalidation` re-derives the ledger from the report itself, so a forged count, an
+  unknown reason code, a double-booked scope, or a verdict that disagrees with its own lists
+  turns to DRIFT. A tampered pin reads as STALE with file-changed reasons, never a crash; a
+  document that is not a pin reads as UNVERIFIABLE. Exposed as the `index.invalidate` MCP tool
+  with CLI parity; the negative fixtures live in the test suite. Python API in
+  `index_graph.freshness.invalidate`.
+- Typed focus rejection: a `--focus` selector (or MCP `focus`/`repo` argument) that resolves to
+  no repo now fails typed instead of with a bare "unknown focus repo" string. The
+  `index.focus-rejection/v1` receipt names the unresolved selector, a reason code from a closed
+  set (`unresolved-focus`, `empty-workspace`), a bounded candidate list (near matches first),
+  the full candidate count, and whether the list was truncated. The `context`, `context-envelope`,
+  and `viz` CLI faces print the receipt (JSON with `--json`) and keep exit code 2; the
+  `index_focus` and `index.context.envelope` MCP tools return the receipt as a payload rather
+  than a protocol error, following the `index.select` not-found precedent. Python API in
+  `index_graph.context.focus`; `build_context_envelope` raises `FocusRejection` (a `ValueError`
+  subclass) carrying the receipt.
+- The verified wiki: `index wiki [--root REPO] [--out PATH] [--format html|json]` derives a
+  multi-page, self-contained wiki for ONE repo from the internals module graph (tier 1:
+  zero-dep, model-free, deterministic; no generated prose). Pages: overview (identity,
+  ecosystems, graph-derived entry points, module and doc inventory, pinned commit SHA),
+  module pages (imports, dependents, cycle membership, every edge with its file:line
+  evidence; package clusters above 120 modules), an architecture diagram rendered from the
+  real graph via the existing SVG/mermaid machinery, and the repo's markdown joined in
+  verbatim, labeled authored-by-humans. Every page footer states the derivation boundary
+  and its own evidence count. The artifact embeds an `index.wiki/1` manifest (commit SHA or
+  "unversioned", per-page canonical SHA-256, generation inputs), and
+  `index wiki --verify PATH` recomputes page hashes plus the graph derivation for the
+  current tree: MATCH / DRIFT (page tampered, claimed edge absent from the real graph, or
+  repo moved off the pinned commit) / UNVERIFIABLE, exit 0/1/2. The negative fixtures live
+  in the test suite: a tampered page, a hash-consistent forged edge, and hostile
+  markdown/module names must all fail the right way. MCP tool `index.wiki` and the status
+  payload advertise the same surface. Python API in `index_graph.wiki`.
+- Markdown renderer: fixed an infinite loop on a paragraph whose first line contains `|`
+  without a table separator beneath it (for example a badge or link row in a README). The
+  renderer now always consumes the line that opened the paragraph, so such prose renders
+  as a plain paragraph instead of hanging the atlas or wiki render.
+- Path selection receipts: `index select --root ROOT [--suffix .md] [--max-files N] [--json]`
+  and the `index.select` MCP tool split every candidate path into selected or rejected, where
+  each rejection carries a typed `index.path-selection/v1` receipt with a reason code from a
+  closed set (`excluded-by-rule`, `suffix-mismatch`, `over-budget`, `not-found`, `unreadable`)
+  and the rule that dropped it. The counts must reconcile (candidates = selected + rejected),
+  and `reconcile_selection` re-derives the ledger from the lists themselves, so a silent drop,
+  a forged count, an unknown reason code, or a double-booked path turns the verdict to DRIFT
+  with a typed failure code. The negative fixtures live in the test suite: a reconciliation
+  that cannot fail on a tampered selection would not be a check. Python API in
+  `index_graph.context.select`.
+- Router performance: `index router` and the `index_router` MCP tool now build a
+  describes-only docs pack instead of the full atlas link/mention graph. Full
+  `index atlas` output still keeps wiki-link and prose-mention edges, while
+  router generation stays responsive on large workspaces.
+- Doctor: `index doctor --json` now runs a bounded MCP `index.map` probe against a temporary one-repo workspace and reports `DRIFT` if the source/package MCP map path is stale or broken.
+- Context envelopes: adds `index context-envelope --budget N [--focus REPO] [--hops N] --json` and
+  the `index.context.envelope` MCP tool for budgeted, receipt-backed, source-ref-only context packets.
+  The envelope records retained repos, omitted repos, token budget pressure, graph-pack receipts, and
+  privacy boundaries without exporting raw source. It now also carries a compact `selection` summary
+  and `index.context-envelope-freshness/v1` root plus retained-repo hashes for re-checkable
+  large-workspace handoffs.
+- Context source refs: retained entries now carry structured `project-telos.source-ref/v1` handles with
+  workspace-relative path, repo path, source hash, optional line, signal kind, and a `gather.docs`
+  expansion command. Omissions carry normalized `failure_code` fields such as `budget_exceeded`, so
+  unattended agents and self-improving daemons can distinguish missing context from verified denial.
+- Python resolver evidence: `pyproject.toml` dependency edges now include line numbers when the
+  dependency string can be cheaply mapped back to the manifest.
+- Enterprise readiness: adds `docs/ENTERPRISE-READINESS.md` for context envelopes, action receipts, readability gates, and host-neutral operation.
+- Operator surface: the status payload now advertises shared Project Telos CLI/MCP/plugin/IDE/TUI/app contracts for enterprise, research, creative, scientific, and education workflows.
+- CLI compatibility: `python -m index_graph.cli` now dispatches the normal CLI instead of only importing
+  the module, so module-mode hosts and harnesses get the same behavior as the installed `index` command.
+- Internal: split `cli.py` into per-subcommand handler modules (`cli_handlers/`) and parser-builder
+  helpers (`cli_parser.py`), keeping every module under the size ceiling. No behavior change; the
+  `index_graph.cli:main` entry point and all subcommand output are identical.
+
+Presentation and operator-surface housekeeping for Project Telos parity.
+
+- README: uses the shared five-flagship navigation, fixes the CI badge to the current `HarperZ9/index` repository, and adds a current-status block.
+- Status payload: exposes current operator commands, MCP tool names, and the 2.8 capability summary under `native`.
+- MCP tools: records native availability for `index.map`, `index.context`, `index.context.envelope`, `index.status`, and `index.doctor` alongside the existing graph/focus/verify/router/internals tools.
+- Operator commands: documents `index status --json`, `index doctor --json`, and `index demo --json` as part of the shared Project Telos action envelope.
+- Router: carries the first dependency signal into generated workspace maps, so compact `AGENTS.md`/`CLAUDE.md` output names the file and line behind each internal edge.
+
+## 2.8.0
+
+### Added
+- `index bench`: a token-economics benchmark you can reproduce on your own workspace.
+  It measures the bytes index reads (the manifests and sources of every ecosystem) against
+  the bytes of the one structural pack it emits, and reports the reduction. Bytes are exact
+  and model-agnostic; the token figures use the common ~4 bytes/token approximation, and
+  the reduction ratio is independent of that constant, so the headline number does not
+  depend on any tokenizer. `--json` emits a re-checkable `index.bench/1` report. This turns
+  the "a structural map is cheaper than reading the code" thesis into a number you verify
+  rather than trust. On a 47-repo, ~50 MB reference workspace the structural pack came back
+  roughly 70x smaller than the source it distills.
+
+### Notes
+- Additive and backward compatible. Zero new dependencies. The benchmark reuses the same
+  relevant-file walk as the freshness fingerprint, so it counts exactly what the graph reads.
+
+## 2.7.0
+
+### Added
+- Content freshness: a certificate can now know when the ground truth moved under it.
+  `index check --freshness` stamps the certificate with a deterministic per-repo
+  content fingerprint (a SHA-256 over the graph-relevant files of all nine ecosystems).
+  `index freshness --cert CERT --root ROOT` recomputes the workspace fingerprint and
+  returns FRESH, STALE (naming the repos added, removed, or changed), or UNVERIFIABLE
+  (the certificate carries no stamp), with exit codes 0/1/2. This is the mid-loop "has
+  anything changed since I verified?" check, re-checkable like every index verdict.
+- The fingerprint is conservative by construction: it may report STALE for a content
+  change that does not alter the resolved graph, but it never reports FRESH when a
+  graph-relevant file changed. The relevant-file set is declared by the resolvers
+  themselves, so a new ecosystem is covered automatically.
+
+### Notes
+- Additive and backward compatible. Zero new dependencies. A certificate minted without
+  `--freshness` is byte-identical to one from 2.6.0 (the `freshness` key is present only
+  when asked).
+
+## 2.6.0
+
+### Added
+- Four new ecosystem resolvers, widening dependency reach from five languages to nine with
+  no new runtime dependency: C# (`.csproj` PackageReference and ProjectReference, plus
+  `using`), Ruby (Gemfile gems and `require`/`require_relative`, gemspec name), PHP
+  (`composer.json` require and `use` namespaces), and C/C++ (CMake `project`,
+  `add_library`, `target_link_libraries`, and `#include`, best-effort). Each follows the
+  existing manifest-plus-import evidence pattern.
+
+### Notes
+- Additive and backward compatible. Zero new dependencies, standard library only.
+
+## 2.5.0
+
+### Added
+- `index mcp`: a zero-dependency, MCP-shaped stdio protocol face. Newline-delimited
+  JSON-RPC 2.0 over stdin/stdout (no SDK, no model) speaking `initialize`, `tools/list`,
+  and `tools/call`, with five deterministic tools (`index_graph`, `index_focus`,
+  `index_verify`, `index_router`, `index_internals`). An agent host or orchestrator
+  connects and consumes index's verified map natively. The protocol pillar, not embeddings.
+
+### Notes
+- Additive and backward compatible. Zero new dependencies.
+
+## 2.4.0
+
+### Added
+- `index verify`: a deterministic claim-grounding oracle. `--depends "A -> B"` or
+  `--exists NAME` grounds the claim against the real graph and returns MATCH (with the
+  file:line evidence), REFUTED, or UNVERIFIABLE, its own honest triad. Re-checkable
+  (schema `index.verification/1`, a content hash plus a recheck command), with distinct
+  exit codes 0/1/2. The anti-hallucination check: a model confirms a dependency against
+  the graph instead of trusting its memory.
+
+### Notes
+- Additive and backward compatible. Zero new dependencies.
+
+## 2.3.0
+
+### Added
+- `index router`: a deterministic, evidence-carrying workspace map for CLAUDE.md / AGENTS.md.
+  Renders entry points, the depended-on core, where each repo lives with its role and
+  dependencies, and which docs describe what, from the dependency graph and the docs atlas.
+  Re-runnable; replaces the hand-maintained index/read-first/brief.
+- `index context --focus` gains `--hops N` (a k-hop-bounded neighborhood) and emits a
+  preservation manifest: the focus, the hop bound, the kept node count, and the boundary
+  edges and nodes it dropped. A compact pack now declares its losses instead of reading as
+  complete (the information-bottleneck discipline).
+
+### Notes
+- Additive and backward compatible. Zero new dependencies.
+
+## 2.2.0
+
+### Added
+- Required-edge conformance. The `[architecture]` block gains `require` rules: intended
+  dependencies that must exist. `index check` reports an `absence` finding (DRIFT) when a
+  required edge between two existing repos is not realized, and `require_unmatched`
+  (UNVERIFIABLE) when a rule names a repo not in the workspace, mirroring an unmatched
+  layer. With the existing forbidden-edge and layer checks (divergence), this completes the
+  Reflexion-model conformance triad: convergence, divergence, and absence. An empty
+  `require` leaves the criterion hash byte-identical to 2.1.0.
+
+### Notes
+- Additive and backward compatible. Zero new dependencies.
+
+## 2.1.0
+
+### Added
+- Soundness-typed coverage on the module graph. `index internals` and the `index check`
+  certificate now report what the static scan could not verify: files it failed to parse,
+  and dynamic imports (`importlib.import_module`, `__import__`, `require` of a variable).
+  A certificate is now honest about its soundness scope instead of implying completeness.
+  `internals --json` carries a `coverage` object; the certificate carries an optional
+  `coverage` field naming the repos with unverifiable regions. Grounded in the call-graph
+  soundness literature: a static tool cannot see dynamic dispatch, so it says so.
+
+### Notes
+- Additive and backward compatible. Zero new dependencies. `extract_internal_edges` keeps
+  its signature.
+
+## 2.0.0
+
+### Added
+- `index internals`: an intra-repo module dependency graph, so the map sees inside a
+  repo and not only repo as atom. Python is AST-exact; JavaScript/TypeScript, Rust, and
+  Go are best-effort and file-level. Reports internal cycles and per-module fan-in and
+  fan-out.
+- `[architecture]` config block in `.index.toml`: declare ordered layers, forbidden
+  edges, a cycle ceiling (`max_cycles`), and ownership globs. A criterion the tool can
+  measure real structure against.
+- `index check`: evaluate the graph against the declared criterion. Every violation
+  carries evidence to the file and line. Exits non-zero when findings exist, so it gates
+  CI.
+- `index snapshot` and `index drift`: write a canonical, byte-stable snapshot, then diff
+  two snapshots into added and removed repos and edges, introduced and cleared cycles,
+  and role changes.
+- A re-checkable certificate for `check` and `drift`: a content hash, a criterion hash,
+  and one of three verdicts, MATCH, DRIFT, or UNVERIFIABLE, never a fourth. A consumer
+  re-runs the `recheck` command and confirms the verdict from the evidence, rather than
+  trusting it. The seam is specified in `docs/PROTOCOL.md`.
+
+### Notes
+- Additive and backward compatible: `map`, `graph`, `context`, `viz`, and `atlas` and
+  their JSON are unchanged. Zero new runtime dependencies. The tool runs fully offline,
+  with no API, no account, and no model required, and is agnostic to whatever produced
+  the code it reads.
+- `.index.toml` is now read tolerantly of a UTF-8 byte-order mark.
+
+## 1.2.0
+
+### Added
+- Rust (`Cargo.toml`), Go (`go.mod`), and Java (Maven `pom.xml`, best-effort Gradle)
+  dependency resolvers. Workspaces in these ecosystems now show inter-repo edges, each
+  with evidence and a confidence grade. Rust and Go reach `high` confidence when a
+  manifest and an import agree; Java is manifest-only (`moderate`).
+
+### Changed
+- `resolve_edges` gains a longest-prefix fallback for path-like dependency names, so a
+  Go import of a module's sub-package resolves to that module. Python and JavaScript
+  resolution is unchanged.
+
+## 1.1.0
+
+### Added
+- `index atlas`: a two-layer code-and-knowledge map. Markdown docs become first-class
+  nodes joined to the code they describe, rendered as one self-contained, navigable HTML
+  dashboard (pan and zoom, unified repo and doc search, in-place rendered markdown with
+  clickable `[[wiki-links]]`, focus, and a navigation trail).
+- Dependency dashboard: cycle detection and highlighting, edge-evidence tooltips, a
+  legend, and neighborhood highlighting. `index graph --cycles` reports dependency cycles.
+
+### Changed
+- License moved to fair source (FSL-1.1-MIT): source-available with a competing-use
+  restriction, converting to MIT two years after each release. 1.0.0 remains MIT.
+
+## 1.0.0
+
+Renamed to **index** (`pip install index-graph`, command `index`); flagship release. (Was `workspace-repo-map`.)
+
+## 0.4.0
+
+- Add `viz` subcommand: render the dependency graph as a self-contained interactive
+  HTML dashboard (default), a standalone SVG network graph, or a Mermaid flowchart.
+- `viz --format all` also emits `context.json` and a `context-manifest.json` handoff
+  (artifact paths + content hashes) for downstream consumers.
+- Renders are deterministic (byte-identical for identical input) and self-contained
+  (no external URLs, no runtime dependencies).
+
+## 0.3.0
+
+### Added
+- `graph` subcommand: infer a repo→repo dependency graph from Python and
+  JavaScript/TypeScript manifests and source imports. Every edge carries its
+  evidence (witnessing file/line + signal kind) and a confidence grade.
+- `context` subcommand: render a synthesis context pack (structural roles +
+  relations + extracted prose) with a salience-faithfulness audit and a
+  `--focus <repo>` neighborhood closure.
+
+### Changed
+- The CLI now uses subcommands (`map`, `graph`, `context`). The previous flat
+  invocation (`workspace-repo-map --root ...`) is preserved and dispatches to `map`.
+- Makes generated repository maps portable by default.
+- Replaces absolute local root paths with a root hash prefix.
+- Omits protected remotes and redacts credential-shaped remote URL material.
+
+## 0.2.0 - 2026-06-18
+
+- Config-driven classification via optional `.repomap.toml` (ordered path-glob rules,
+  neutral remote-host fallback). Personal taxonomy moves to user config.
+- Unifies the CLI into a single argument parser; removes the duplicate.
+- Adds a stable public API (`__all__`, `__version__`) and a versioned output
+  (`schema_version: 1`); drops the duplicated `relative` field and protected-specific
+  counts in favor of generic `class_counts`.
+- Parallelizes per-repo git calls; output remains deterministic.
+- Adds a portable (default) / local output mode and an `annotations` passthrough.
+- Raises the Python floor to 3.11 (stdlib `tomllib`); runtime dependencies stay empty.
+
+## 0.1.0 - 2026-06-13
+
+- Initial public release candidate.
+- Ships compact JSON repository inventory mapping for multi-repo local
+  workspaces.
+- Adds Python package metadata, CI, license, authorship, and contribution
+  boundary files.

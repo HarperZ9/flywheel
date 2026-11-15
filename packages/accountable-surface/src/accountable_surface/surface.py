@@ -1,0 +1,511 @@
+"""The Accountable Surface (Phase 2 spike) -- the live seam where a model
+perceives-and-acts under witness + gate.
+
+A standalone composition of EXISTING, audited parts, proving the keystone before
+any surgery on released ORCA 1.0.0:
+
+  * perception -- coherence-membrane organs (here, WebDocumentOrgan) emit
+    witnessed Observations; nothing reaches the model un-witnessed.
+  * action     -- every proposed action is routed through proof-surface's
+    pre-execution gate (allow / deny / needs-human) via the membrane's
+    build_gate_request/decide bridge. The surface NEVER executes; it returns the
+    gate's advisory decision for the operator/runtime to enforce.
+  * memory     -- every perception and every decision is journaled.
+
+The surface holds no authority. It perceives, it asks the gate, it records -- the
+operational form of "awareness is not authority" and "machines learning to hold
+themselves accountable."
+
+Run/imports require coherence_membrane and proof_surface on the path, e.g.:
+  PYTHONPATH="<coherence-membrane>/src;<proof-surface>/src" python -m pytest ...
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass, field
+from functools import partial
+from pathlib import Path
+from typing import Any
+
+from coherence_membrane.membrane import build_gate_request, decide
+from coherence_membrane.observation import Observation, Provenance, Status, sha256_hex
+from coherence_membrane.organs.web import WebDocumentOrgan
+
+from accountable_surface.bounds import bound_of, bound_refusal, render_bound
+from accountable_surface.certify import action_certificate
+from accountable_surface.effector import RefusedActuation
+from accountable_surface.grant import action_authorization, irreversible_granted
+from accountable_surface.journal_chain import GENESIS, entry_hash, read_journal
+from accountable_surface.preconditions import bind_state_precondition
+
+
+def _irreversible_refusal(authorization, action_kind: str, allow_irreversible: bool) -> str | None:
+    """Why an irreversible plan may not act, or None when it may.
+
+    The grant is the authority: ``scope.allowed_irreversible_actions`` must name the
+    action kind. The caller's ``allow_irreversible`` is a second opt-in that can only
+    narrow; on its own it authorizes nothing."""
+    if not irreversible_granted(authorization, action_kind):
+        return (f"irreversible action {action_kind!r} is not listed in the grant's "
+                "allowed_irreversible_actions; a caller argument alone is not authority. "
+                "Ask the operator for a grant that names it, or for human approval")
+    if not allow_irreversible:
+        return (f"the grant permits irreversible {action_kind!r}, but this call did not opt in "
+                "with allow_irreversible=True")
+    return None
+
+
+@dataclass(frozen=True)
+class JournalEntry:
+    kind: str  # "perception" | "decision"
+    summary: str
+    detail: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return {"kind": self.kind, "summary": self.summary, "detail": self.detail}
+
+    @classmethod
+    def from_dict(cls, record: dict[str, Any]) -> "JournalEntry":
+        return cls(
+            kind=record["kind"],
+            summary=record["summary"],
+            detail=record.get("detail", {}),
+        )
+
+
+@dataclass(frozen=True)
+class ActionOutcome:
+    """The gate's advisory result for a proposed action. `executed` is ALWAYS
+    False -- the surface reports a decision; it never acts on it."""
+
+    decision: str  # "allow" | "deny" | "needs-human"
+    reasons: list[str]
+    checks: dict[str, str]
+    executed: bool
+    request: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ActuationOutcome:
+    """The result of the full actuation loop. `acted` is whether the effector
+    touched the world; `verified` is whether the surface's own re-perception
+    confirmed the intended effect; `rolled_back` reverses a failed reversible act."""
+
+    acted: bool
+    decision: str  # the gate decision: allow / deny / needs-human
+    verified: bool
+    verdict: str  # "pass" | "failed" | "not-acted"
+    rolled_back: bool
+    reasons: list[str]
+    before_digest: str
+    after_digest: str | None
+    grounding: Any = None  # the Grounding that justified the action (its citation), or None
+    certificate: dict = field(default_factory=dict)  # the composed action Certificate (to_dict)
+
+
+@dataclass(frozen=True)
+class Step:
+    """One intended action in a task plan: an effector, a target, and the content
+    (bytes for the filesystem, a WebAction for the web). The plan may come from a
+    model -- each step is still independently gated."""
+
+    effector: Any
+    target: str
+    content: Any
+
+
+@dataclass(frozen=True)
+class GoalOutcome:
+    """The result of pursuing a goal within a grant envelope."""
+
+    achieved: bool
+    steps_attempted: int
+    steps_acted: int
+    halted_reason: str  # "" iff achieved; else why the task stopped
+    outcomes: list
+
+
+class AccountableSurface:
+    """Perceive through witnessed organs; gate every action; actuate only through a
+    gated, self-verifying effector; journal everything. It never acts except on a
+    gate `allow`, and it verifies its own work by re-perceiving."""
+
+    def __init__(self, journal_path: str | Path | None = None) -> None:
+        self._web = WebDocumentOrgan()
+        self.journal: list[JournalEntry] = []
+        self._journal_path: Path | None = Path(journal_path) if journal_path else None
+        self.replay_errors: int = 0
+        self.journal_tamper: int = 0   # chain breaks found on replay: edit / delete / reorder
+        self._chain_head: str = GENESIS
+        if self._journal_path is not None:
+            self._replay()
+
+    def _replay(self) -> None:
+        """Load an existing append-only journal into memory and chain-verify it. A line
+        that does not parse is counted in `replay_errors`; an entry whose hash chain is
+        broken (edited, deleted, or reordered) is counted in `journal_tamper`. Both are
+        surfaced, never silently dropped; an absent file is an empty journal, not an error."""
+        result = read_journal(self._journal_path)
+        self.journal = [JournalEntry.from_dict(record) for record in result["records"]]
+        self.replay_errors = result["replay_errors"]
+        self.journal_tamper = result["tamper_count"]
+        self._chain_head = result["head"]
+
+    def _record(self, entry: JournalEntry) -> None:
+        """Append an entry to the in-memory journal and, when persisting, to the
+        append-only JSONL file (one compact JSON object per line) carrying its hash
+        chain fields. The surface only ever appends -- it never rewrites or truncates."""
+        self.journal.append(entry)
+        if self._journal_path is not None:
+            content = entry.to_dict()
+            h = entry_hash(self._chain_head, content)
+            line = json.dumps({**content, "_prev": self._chain_head, "_hash": h},
+                              sort_keys=True, separators=(",", ":"))
+            with self._journal_path.open("a", encoding="utf-8") as handle:
+                handle.write(line + "\n")
+            self._chain_head = h
+
+    def verify_journal(self) -> dict:
+        """Re-derive the persisted journal's hash chain and report whether it is intact.
+        Catches an edited, deleted, or reordered entry that still parses. An in-memory
+        surface (no path) has nothing persisted to tamper, so it is trivially chain_ok."""
+        if self._journal_path is None or not self._journal_path.exists():
+            return {"chain_ok": True, "tamper_count": 0, "replay_errors": 0,
+                    "entries": len(self.journal)}
+        result = read_journal(self._journal_path)
+        return {"chain_ok": result["tamper_count"] == 0 and result["replay_errors"] == 0,
+                "tamper_count": result["tamper_count"],
+                "replay_errors": result["replay_errors"],
+                "entries": len(result["records"])}
+
+    def perceive(self, subject: Any) -> Observation:
+        """Perceive a subject (URL, bytes, or path) into a witnessed Observation
+        and record it in the journal."""
+        observation = self._web.observe(subject)[0]
+        self._record(
+            JournalEntry(
+                kind="perception",
+                summary=f"{observation.organ}: {observation.summary}",
+                detail={
+                    "subject": observation.subject,
+                    "status": observation.status.value,
+                    "digest": observation.provenance.digest,
+                    "title": observation.data.get("title"),
+                    "link_count": observation.data.get("link_count"),
+                },
+            )
+        )
+        return observation
+
+    def propose(
+        self,
+        *,
+        action_kind: str,
+        target: str,
+        authorization: dict[str, Any],
+        observation: Observation | None = None,
+        expected_digest: str | None = None,
+        budget: dict[str, Any] | None = None,
+        estimated_cost: dict[str, Any] | None = None,
+    ) -> ActionOutcome:
+        """Route a proposed action through the write-gate. Returns the advisory
+        decision; the surface does not execute it.
+
+        ``expected_digest`` (a state precondition) must be a **raw 64-char lowercase
+        hex SHA-256** -- NOT the ``sha256:``-prefixed form that ``Provenance.digest``
+        carries. A prefixed value is rejected as malformed and fails closed as an
+        *authorization* deny (not a *state* deny); strip the prefix before passing it."""
+        request = build_gate_request(
+            action_kind=action_kind,
+            target=target,
+            authorization=authorization,
+            observation=observation,
+            expected_digest=expected_digest,
+            budget=budget,
+            estimated_cost=estimated_cost,
+        )
+        gate = decide(request)
+        # decide() returns proof-surface's GateDecision, or a fail-closed dict if
+        # proof-surface is not installed. Read both shapes without assuming.
+        decision = getattr(gate, "decision", None)
+        if decision is None and isinstance(gate, dict):
+            decision = gate.get("decision", "needs-human")
+        reasons = getattr(gate, "reasons", None)
+        if reasons is None and isinstance(gate, dict):
+            reasons = gate.get("reasons", [])
+        checks = getattr(gate, "checks", None)
+        if checks is None and isinstance(gate, dict):
+            checks = gate.get("checks", {})
+
+        outcome = ActionOutcome(
+            decision=str(decision),
+            reasons=list(reasons or []),
+            checks=dict(checks or {}),
+            executed=False,
+            request=request,
+        )
+        self._record(
+            JournalEntry(
+                kind="decision",
+                summary=f"{action_kind} -> {target}: {outcome.decision}",
+                detail={
+                    "decision": outcome.decision,
+                    "reasons": outcome.reasons,
+                    "checks": outcome.checks,
+                },
+            )
+        )
+        return outcome
+
+    def actuate(
+        self,
+        effector: Any,
+        *,
+        target: str,
+        content: Any,
+        authorization: dict[str, Any],
+        expected_digest: str | None = None,
+        allow_irreversible: bool = False,
+        justification: str | None = None,
+        cortex: Any = None,
+    ) -> ActuationOutcome:
+        """Run the full accountable-actuation loop: perceive -> plan -> gate -> ACT
+        -> re-perceive -> verify. The effector acts ONLY on a gate `allow`; the
+        surface verifies the effect by re-perceiving and rolls back a failed-but-
+        reversible actuation. Every step is journaled."""
+        before = effector.perceive(target)
+        plan = effector.preview(target, content, before)
+        bound = bound_of(effector)
+        refusal, outcome, grounding = self._preflight(
+            plan, effector=effector, authorization=authorization, before=before, bound=bound,
+            expected_digest=expected_digest, allow_irreversible=allow_irreversible,
+            justification=justification, cortex=cortex, read_authority=None,
+        )
+        if refusal is not None:
+            return refusal
+        try:
+            effector.act(plan, outcome, content)
+        except RefusedActuation as exc:
+            # The effector's construction-bound is a stricter, second gate: even a
+            # gate `allow` cannot make it act outside its bound. Report, never crash.
+            return self._record_actuation(
+                plan, acted=False, decision=outcome.decision, verdict="refused-by-effector",
+                verified=False, rolled_back=False, reasons=[str(exc)],
+                before=before, after=None, grounding=grounding, bound=bound,
+            )
+        after = effector.perceive(target)
+        verdict = effector.verify(plan, after)
+        verified = verdict.status == "pass"
+        rolled_back = False
+        if not verified and plan.reversible:
+            effector.rollback(plan)
+            rolled_back = True
+            after = effector.perceive(target)
+        return self._record_actuation(
+            plan, acted=True, decision="allow", verdict=verdict.status,
+            verified=verified, rolled_back=rolled_back,
+            reasons=[verdict.detail] if verdict.detail else [],
+            before=before, after=after, grounding=grounding, bound=bound,
+        )
+
+    def _actuate_with_authorized_read(self, effector: Any, **kwargs) -> ActuationOutcome:
+        """Remote-only actuation path fed by a server-built read envelope."""
+        from accountable_surface.authorized_actuation import actuate_with_authorized_read
+
+        return actuate_with_authorized_read(self, effector, **kwargs)
+
+    def _preflight(
+        self, plan, *, effector, authorization, before, bound, expected_digest,
+        allow_irreversible, justification, cortex, read_authority=None,
+    ):
+        """Everything that has to hold before the effector is allowed to act.
+
+        Returns `(refusal, gate_outcome, grounding)`. A non-None `refusal` is already
+        journaled and is the final outcome, so the caller must not act.
+        """
+        refuse = partial(self._record_actuation, plan, acted=False, verified=False,
+                         rolled_back=False, before=before, after=None, bound=bound,
+                         read_authority=read_authority)
+        reason = bound_refusal(authorization, effector)
+        if reason is not None:
+            return refuse(decision="deny", verdict="bound-not-granted", reasons=[reason]), None, None
+        gate_observation = before
+        gate_expected_digest = expected_digest
+        if expected_digest is not None:
+            precondition, reason = bind_state_precondition(before, expected_digest)
+            if precondition is None:
+                return refuse(decision="deny", verdict="precondition-unverifiable",
+                              reasons=[reason]), None, None
+            gate_observation = precondition.observation
+            gate_expected_digest = precondition.expected_digest
+        outcome = self.propose(
+            action_kind=plan.action_kind,
+            target=plan.target,
+            authorization=action_authorization(authorization),
+            observation=gate_observation,
+            expected_digest=gate_expected_digest,
+        )
+        if outcome.decision != "allow":
+            return refuse(decision=outcome.decision, verdict="not-acted",
+                          reasons=outcome.reasons), None, None
+        grounding = None
+        if justification is not None and cortex is not None:
+            grounding = self.ground(justification, cortex)
+            if grounding.confidence == "ungrounded":
+                return refuse(
+                    decision="needs-human", verdict="ungrounded-premise", grounding=grounding,
+                    reasons=[f"action premise {justification!r} is ungrounded -- no supporting references"],
+                ), None, None
+        if not plan.reversible:
+            reason = _irreversible_refusal(authorization, plan.action_kind, allow_irreversible)
+            if reason is not None:
+                return refuse(decision="needs-human", verdict="irreversible-needs-human",
+                              grounding=grounding, reasons=[reason]), None, None
+        return None, outcome, grounding
+
+    def _record_actuation(
+        self, plan, *, acted, decision, verdict, verified, rolled_back, reasons, before, after,
+        grounding=None, bound=None, read_authority=None,
+    ) -> ActuationOutcome:
+        """Journal an actuation outcome (a witnessed before/after digest pair) and
+        return it. The surface attests to what it did, not merely that it tried."""
+        cert = action_certificate(
+            decision=decision, verdict=verdict, acted=acted,
+            before_digest=before.provenance.digest,
+            after_digest=after.provenance.digest if after is not None else None,
+            grounding=grounding,
+        )
+        state = "not-acted" if not acted else ("verified" if verified else "UNVERIFIED")
+        detail = {
+            "acted": acted,
+            "decision": decision,
+            "verified": verified,
+            "verdict": verdict,
+            "rolled_back": rolled_back,
+            # The effector's construction bound decides how far this allow
+            # could travel, so the journal records it on EVERY actuation:
+            # without it a narrow actuation and a wide one read identically.
+            "effector_bound": render_bound(bound),
+            "before_sha256": before.data.get("sha256"),
+            "after_sha256": after.data.get("sha256") if after is not None else None,
+            "grounding": ({"confidence": grounding.confidence, "digest": grounding.digest}
+                          if grounding is not None else None),
+            "certificate": cert.to_dict(),
+        }
+        if read_authority is not None:
+            detail["read_authority"] = read_authority
+        self._record(
+            JournalEntry(
+                kind="actuation",
+                summary=f"{plan.action_kind} -> {plan.target}: {state}"
+                + (" (rolled back)" if rolled_back else ""),
+                detail=detail,
+            )
+        )
+        return ActuationOutcome(
+            acted=acted,
+            decision=decision,
+            verified=verified,
+            verdict=verdict,
+            rolled_back=rolled_back,
+            reasons=reasons,
+            before_digest=before.provenance.digest,
+            after_digest=after.provenance.digest if after is not None else None,
+            grounding=grounding,
+            certificate=cert.to_dict(),
+        )
+
+    def pursue(
+        self, goal: str, steps, *, authorization: dict[str, Any], max_steps: int | None = None,
+        allow_irreversible: bool = False,
+    ) -> GoalOutcome:
+        """Execute a task plan (a sequence of Steps) autonomously within ONE operator
+        grant envelope -- perceive→plan→gate→act→verify per step -- with NO per-step human
+        prompt (the envelope is pre-authorized), but halting on the first step that is
+        denied, escalated, refused, or fails verification. Bounded autonomy made safe by
+        per-step accountability: a plan (even a model's plan) is not authority."""
+        limit = len(steps) if max_steps is None else min(max_steps, len(steps))
+        outcomes: list[ActuationOutcome] = []
+        acted = 0
+        halted = ""
+        for index, step in enumerate(steps):
+            if index >= limit:
+                halted = f"step budget reached ({limit} of {len(steps)})"
+                break
+            outcome = self.actuate(
+                step.effector, target=step.target, content=step.content, authorization=authorization,
+                allow_irreversible=allow_irreversible,
+            )
+            outcomes.append(outcome)
+            if not outcome.acted:
+                halted = f"step {index} not acted ({outcome.decision} / {outcome.verdict})"
+                break
+            acted += 1
+            if not outcome.verified:
+                halted = f"step {index} acted but FAILED verification (rolled_back={outcome.rolled_back})"
+                break
+        achieved = halted == "" and len(outcomes) == len(steps) and all(o.acted and o.verified for o in outcomes)
+        self._record(
+            JournalEntry(
+                kind="goal",
+                summary=f"goal {goal!r}: {'achieved' if achieved else 'halted'} ({acted}/{len(steps)} steps)"
+                + (f" -- {halted}" if halted else ""),
+                detail={"achieved": achieved, "steps": len(steps), "acted": acted, "halted_reason": halted},
+            )
+        )
+        return GoalOutcome(achieved, len(outcomes), acted, halted, outcomes)
+
+    def ground(self, subject: str, cortex: Any) -> Any:
+        """Perceive relevant, witnessed knowledge for a subject via a reference cortex.
+        References are provenance-bound and relevance-scored; the cortex flags when it
+        cannot ground (confidence) and asserts nothing. Journaled, not trusted."""
+        grounding = cortex.ground(subject)
+        self._record(
+            JournalEntry(
+                kind="grounding",
+                summary=f"ground {subject!r}: {grounding.confidence} ({len(grounding.references)} refs)",
+                detail={
+                    "subject": subject,
+                    "confidence": grounding.confidence,
+                    "refs": [{"source": r.source, "ref_id": r.ref_id, "relevance": r.relevance}
+                             for r in grounding.references],
+                    "digest": grounding.digest,
+                },
+            )
+        )
+        return grounding
+
+    def interocept(self, *, include_entries: bool = False) -> Observation:
+        """Perceive the surface's OWN session -- a witnessed, tamper-evident view
+        of what it has perceived and what the gate decided. A pure read: it does
+        not append to the journal, grants no authority, and its journal_digest
+        re-derives, so the self-report cannot silently drift."""
+        entries = [{"kind": e.kind, "summary": e.summary} for e in self.journal]
+        payload = json.dumps(entries, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        perceptions = 0
+        decision_counts: dict[str, int] = {}
+        for entry in self.journal:
+            if entry.kind == "perception":
+                perceptions += 1
+            elif entry.kind == "decision":
+                decision = str(entry.detail.get("decision", "?"))
+                decision_counts[decision] = decision_counts.get(decision, 0) + 1
+        decisions = sum(decision_counts.values())
+        data = {
+            "perceptions": perceptions,
+            "decisions": decisions,
+            "decision_counts": decision_counts,
+            "pending_needs_human": decision_counts.get("needs-human", 0),
+            "journal_digest": "sha256:" + sha256_hex(payload),
+        }
+        if include_entries:
+            data["entries"] = entries
+        return Observation(
+            organ="interoception",
+            subject="self://session",
+            summary=f"self: {perceptions} perceptions, {decisions} decisions",
+            status=Status.PASS,
+            provenance=Provenance.witness_bytes("self://session", payload, "high"),
+            data=data,
+        )

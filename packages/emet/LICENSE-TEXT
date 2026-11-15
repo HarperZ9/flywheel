@@ -1,0 +1,36 @@
+Creative Commons Attribution 4.0 International (CC BY 4.0)
+
+Copyright (c) 2026 Zain Dana Harper
+
+Text: CC BY 4.0. Code: AGPL-3.0-only.
+
+This licence covers the written works in this repository, in every format
+they are published in:
+
+- papers/ (the paper in LaTeX and PDF, and its README)
+- docs/rationale/*.md (the rationale essays)
+- docs/rationale/walkthrough/transcript.txt and
+  docs/rationale/witness-walkthrough/transcript.txt (the explainer transcripts)
+
+You may share and adapt these works for any purpose, commercial use
+included. You must give appropriate credit, link to the licence, and say
+whether you made changes. Credit a work as:
+
+    Zain Dana Harper, "EMET: An Authority-Incapable Byte-Level Integrity
+    Witness for AI-Assisted Work" (2026).
+    https://doi.org/10.5281/zenodo.21230267
+    Licensed under CC BY 4.0.
+
+Licence summary: https://creativecommons.org/licenses/by/4.0/
+Full legal code: https://creativecommons.org/licenses/by/4.0/legalcode
+
+The Zenodo deposit at the DOI above records the same licence.
+
+Quoted material from other authors stays under its owners' terms.
+Everything else in this repository, including all code and the software
+documentation, is under the GNU Affero General Public License, version 3
+only (AGPL-3.0-only). Those terms are in LICENSE. Releases up to and
+including 1.3.1 were published under MPL-2.0 and keep that licence.
+
+The render.py scripts beside the transcripts are code and fall under
+AGPL-3.0-only with the rest of the code.

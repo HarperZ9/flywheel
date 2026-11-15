@@ -47,10 +47,13 @@ entry, which `flywheel gateway-ledger verify` reports as an unsettled call.
 When the started entry cannot be written the request is refused with 503 and
 nothing is sent.
 
-`Call` is the same accounting without a `Turn`: the chat routes
-(/v1/chat/completions, /api/route) use it through
-`endpoint_ledgered.LedgeredProposer`, so every route that reaches a provider
-records through one object.
+`Call` is the same accounting without a `Turn`. Every other route that runs
+a model at a roster endpoint uses it through
+`endpoint_ledgered.LedgeredProposer` or `endpoint_ledgered.recorded`, and
+/v1/embeddings uses it directly. Which routes those are is not kept in a
+list here: `gateway_reach` gives a proposer built with no ledger the
+gateway's, and makes the transports refuse a model request for which no
+`Call` is open.
 """
 from __future__ import annotations
 

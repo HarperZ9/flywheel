@@ -1,0 +1,980 @@
+# Usage
+
+`index` scans a workspace for Git repositories and shows you how they fit together. It began as a compact JSON inventory map, and it has grown into a small family of commands: the inventory map, a repo dependency graph built from real code evidence, a synthesis context pack, an interactive dependency dashboard, and `index atlas`, the two-layer map that brings your markdown docs in alongside the code. Version 2.0 adds a verified architecture layer: a module-level graph, a declarative `[architecture]` check, and drift detection, each backed by a re-checkable certificate. It ships a CLI (`index`) and a small importable Python API. There are no runtime dependencies, and it needs Python 3.11 or newer.
+
+## Install
+
+```bash
+python -m pip install index-graph
+```
+
+Or from a checkout (editable):
+
+```bash
+python -m pip install -e .
+```
+
+## CLI
+
+The console script is `index` (equivalently `python -m index_graph`). With no subcommand it runs `map`, which preserves the original flat invocation.
+
+```text
+index [--root ROOT] [--output OUTPUT] [--json] [--dry-run]
+      [--config CONFIG] [--jobs JOBS] [--resume-state STATE] [--version]
+```
+
+| Flag        | Default                          | Meaning                                              |
+| ----------- | -------------------------------- | ---------------------------------------------------- |
+| `--root`    | current directory                | Workspace root to scan.                              |
+| `--output`  | `<root>/INDEX.json`              | Output path (ignored when `--json` is given).        |
+| `--json`    | off                              | Print the JSON map to stdout instead of writing it.  |
+| `--dry-run` | off                              | Report the write path and repo counts without writing anything (rejected with `--json`, which already writes nothing). |
+| `--config`  | `<root>/.index.toml` if present  | Path to a `.index.toml`. A missing explicit path is fatal. |
+| `--jobs`    | config or a CPU heuristic        | Override the parallel git worker count (must be at least 1). |
+| `--resume-state` | off                        | JSONL checkpoint file for complete map builds; completed repo rows are reused only while their Git/config/marker identity still matches. |
+| `--version` | n/a                              | Print the version (for example `index 1.0.0`) and exit. |
+
+The default write is explicit: `index` prints `index map: writing <path>` before it touches the filesystem, so the write location is never a surprise. For very large workspaces, pass `--resume-state PATH` to write each completed repository row to a JSONL checkpoint as it finishes; rerunning the same command reuses only rows whose Git state, marker presence, and row-affecting config still match, while stale or newly discovered repositories are scanned again. A row whose required Git status check fails is still listed for coverage, but it carries `metadata_status: "unknown"` and a safe `metadata_error` instead of presenting zero dirty or untracked files as a verified clean fact.
+
+With no config, classification falls back to a remote-host heuristic: `local` (no remote), `public` (the origin host is in the known public set), or `private`. Supply a `.index.toml` (see `example.index.toml`) for ordered path-glob rules.
+
+### Example 1, print a map to stdout
+
+```bash
+index --root ./my-workspace --json
+```
+
+Example output (yours will differ in paths, hashes, and timestamps):
+
+```json
+{
+  "schema_version": 1,
+  "tool_version": "1.0.0",
+  "generated_at": "2026-06-18T10:16:44-07:00",
+  "root_sha256_prefix": "617a55395ac0d599",
+  "absolute_paths_included": false,
+  "repo_count": 2,
+  "dirty_count": 0,
+  "dirty_count_status": "complete",
+  "metadata_status": "ok",
+  "metadata_ok_count": 2,
+  "metadata_unknown_count": 0,
+  "class_counts": {
+    "public": 1,
+    "local": 1
+  },
+  "top_level": [
+    { "name": "proj-a", "kind": "directory", "class": "entry", "bytes": null,
+      "modified": "2026-06-18T10:16:37-07:00" },
+    { "name": "proj-b", "kind": "directory", "class": "entry", "bytes": null,
+      "modified": "2026-06-18T10:16:37-07:00" }
+  ],
+  "repositories": [
+    { "path": "proj-a", "class": "public", "branch": "main", "head": "eb4e19b",
+      "origin": "https://github.com/example/proj-a.git",
+      "dirty_count": 0, "untracked_count": 1, "markers": ["README.md"],
+      "metadata_status": "ok" },
+    { "path": "proj-b", "class": "local", "branch": "main", "head": "e4f1b0c",
+      "origin": "", "dirty_count": 0, "untracked_count": 0,
+      "markers": ["pyproject.toml"], "metadata_status": "ok" }
+  ]
+}
+```
+
+### Example 2, write a map file (default mode)
+
+```bash
+index --root ./my-workspace
+```
+
+Example output:
+
+```text
+index map: writing /path/to/my-workspace/INDEX.json
+wrote /path/to/my-workspace/INDEX.json
+repos=2 dirty_verified=0 metadata_status=ok metadata_unknown=0
+```
+
+The JSON file content matches the structure shown in Example 1.
+
+### Example 2b, preview the write without touching disk
+
+```bash
+index --root ./my-workspace --dry-run
+```
+
+Example output (nothing is written):
+
+```text
+index map: would write /path/to/my-workspace/INDEX.json (dry-run, nothing written)
+repos=2 dirty_verified=0 metadata_status=ok metadata_unknown=0
+```
+
+### Example 3, custom output path and worker count
+
+```bash
+index --root ./my-workspace --output ./inventory.json --jobs 8
+```
+
+Example output:
+
+```text
+wrote /path/to/inventory.json
+repos=2 dirty_verified=0 metadata_status=ok metadata_unknown=0
+```
+
+### Example 4, use an explicit config
+
+```bash
+index --root ./my-workspace --config ./example.index.toml --json
+```
+
+Rules in the config are matched against each repo's workspace-relative path (first match wins) before the remote-host fallback. A `--config` path that does not exist is a fatal error (non-zero exit).
+
+## Configuration (`.index.toml`)
+
+Place a `.index.toml` at the workspace root (auto-discovered) or pass `--config PATH`. Every section is optional, and with no file the neutral remote-host heuristic applies.
+
+```toml
+# Ordered classification rules, first match wins. `pattern` is matched against each
+# repo's workspace-relative POSIX path (and against top-level entry names).
+[[rule]]
+pattern = "oss/**"     # *  matches within one path segment (stops at "/")
+class   = "public"     # ** matches across segments; "oss/**" also matches bare "oss"
+
+[[rule]]
+pattern = "work/**"
+class   = "internal"
+
+[scan]
+jobs    = 16            # parallel git workers (default: a CPU heuristic)
+prune   = ["vendor"]   # ADDED to the built-in safety set (.git, node_modules, .venv, ...)
+markers = ["go.mod"]   # REPLACES the default marker-file list when present
+descend_into_repos = false  # false prunes traversal below discovered repo roots
+include_root_repo  = false  # false treats a multi-repo scan root as a container
+
+[privacy]
+omit_origin_classes = ["internal"]   # blank the `origin` for repos of these classes
+
+[output]
+portable    = true                   # false = absolute paths + a `root` field (private local maps)
+annotations = { team = "infra" }     # arbitrary key/values emitted verbatim under "annotations"
+```
+
+When no rule matches a repo, classification falls back to the remote host. No remote becomes `local`, a public-hosting domain (`github.com`, `gitlab.com`, `bitbucket.org`, `codeberg.org`, `git.sr.ht`) becomes `public`, and anything else becomes `private`. Credential-shaped material in remote URLs is redacted in **every** mode. Setting `portable = false` additionally emits absolute paths and a `root` field, and is meant only for maps that never leave the machine.
+
+## Python API
+
+The package exposes a stable surface via `__all__`:
+
+```python
+from index_graph import (
+    build_map, write_map, discover_repos,
+    Map, RepoRow, SCHEMA_VERSION,
+    Config, Rule, load_config, default_config,
+    classify, build_route, __version__,
+)
+```
+
+Key entry points:
+
+- `build_map(root: Path, config: Config, tool_version: str) -> Map`. Scan and return the in-memory map.
+- `write_map(root, config, tool_version, output: Path) -> Map`. The same, but also writes pretty JSON to `output`.
+- `load_config(path: Path | None, root: Path) -> Config` and `default_config() -> Config`.
+- `classify(path: str, is_repo: bool, origin: str, config: Config) -> str`.
+- `Map.to_json()` and `RepoRow.to_json()`. Plain-dict serialization.
+- `build_route(root, paths=[...])` builds a portable `index.route/v1` receipt and context envelope from explicit repository paths without discovering siblings.
+
+### Example, build a map in code
+
+```python
+from pathlib import Path
+from index_graph import build_map, default_config, __version__
+
+config = default_config()
+m = build_map(Path("./my-workspace"), config, __version__)
+
+print(m.repo_count, m.dirty_count, m.dirty_count_status)   # e.g. 2 0 complete
+print(m.metadata_status, m.metadata_unknown_count)          # e.g. ok 0
+print(m.class_counts)                # e.g. {'public': 1, 'local': 1}
+for row in m.repositories:
+    print(row.path, row.class_, row.branch, row.head)
+```
+
+Example output:
+
+```text
+2 0 complete
+ok 0
+{'public': 1, 'local': 1}
+proj-a public main eb4e19b
+proj-b local main e4f1b0c
+```
+
+### Example, classify a single path
+
+```python
+from index_graph import classify, default_config
+
+cfg = default_config()
+classify("proj-a", True, "https://github.com/example/proj-a.git", cfg)  # -> "public"
+classify("proj-b", True, "", cfg)                                       # -> "local"
+```
+
+## Dependency graph and context pack
+
+`index` can infer a repo to repo dependency graph from real code, and emit a synthesis context pack with roles, relations, and extracted prose.
+
+### `graph` subcommand
+
+```text
+index graph --root ROOT [--json] [--cycles]
+```
+
+| Flag       | Default           | Meaning                                                     |
+| ---------- | ----------------- | ----------------------------------------------------------- |
+| `--root`   | current directory | Workspace root to scan.                                     |
+| `--json`   | off               | Emit a JSON array of relation objects instead of text.      |
+| `--cycles` | off               | Report dependency cycles instead of the full graph.         |
+
+Edges are read from nine ecosystems, each from its own manifest and its own source imports. None of them adds a runtime dependency.
+
+| Ecosystem | Manifest signal | Import signal |
+| --- | --- | --- |
+| Python | `pyproject.toml`, `setup.cfg` | `import` / `from` in `.py` |
+| JavaScript, TypeScript | `package.json` | `import` / `require` in `.js`, `.ts` |
+| Rust | `Cargo.toml` dependencies | `use`, `extern crate` in `.rs` |
+| Go | `go.mod` require | `import` in `.go` |
+| Java | Maven `pom.xml`, best-effort Gradle | manifest-only |
+| C# | `.csproj` PackageReference, ProjectReference | `using` in `.cs` |
+| Ruby | `Gemfile` gems, `*.gemspec` name | `require`, `require_relative` in `.rb` |
+| PHP | `composer.json` require, require-dev | `use` namespaces in `.php` |
+| C, C++ | CMake `target_link_libraries`, `add_subdirectory` | `#include` in sources, best-effort |
+
+Each edge carries the file (and line) that witnesses it, and a confidence grade:
+
+- `high`: both a declared dependency and an observed import agree.
+- `moderate`: a single signal, manifest-only or import-only.
+- `low`: the name is ambiguous (two different repos expose the same normalized name), or the target name is too short to resolve reliably.
+
+With `--cycles`, `index graph` lists any dependency cycles it finds and says so plainly when the graph is a clean DAG.
+
+#### Example, `graph --json` output shape
+
+```json
+[
+  {
+    "from": "py-app",
+    "to": "py-lib",
+    "external": false,
+    "confidence": "high",
+    "signals": [
+      { "kind": "manifest", "file": "py-app/pyproject.toml", "line": null, "raw": "py-lib" },
+      { "kind": "import",   "file": "py-app/py_app/cli.py",  "line": 3,    "raw": "import py_lib" }
+    ]
+  }
+]
+```
+
+### `context` subcommand
+
+```text
+index context --root ROOT [--json] [--focus REPO] [--audit]
+```
+
+| Flag           | Default           | Meaning                                                         |
+| -------------- | ----------------- | --------------------------------------------------------------- |
+| `--root`       | current directory | Workspace root to scan.                                         |
+| `--json`       | off               | Emit the context pack as JSON instead of Markdown.              |
+| `--focus REPO` | none              | Emit only the named repo's dependency neighborhood (bidirectional closure). |
+| `--hops N`     | none (full)       | Bound `--focus` to an N-hop neighborhood; the pack then carries a `preserved` manifest naming what it kept and the boundary edges and nodes it dropped, so a compact pack declares its losses. |
+| `--audit`      | off               | Print only the salience-faithfulness audit (hubs and mismatches), not the pack. |
+
+Exit codes:
+
+- `0`: the context pack was written or printed successfully.
+- `2`: `--focus <repo>` names a repo not found in the workspace.
+
+An unresolvable focus fails typed, not with a bare error string. The command prints an
+`index.focus-rejection/v1` receipt (JSON with `--json`, one readable line otherwise) naming
+the unresolved selector, a reason code from a closed set (`unresolved-focus`, or
+`empty-workspace` when there are no repos at all), a bounded candidate list with near
+matches first, the full candidate count, and whether the list was truncated:
+
+```json
+{
+  "schema": "index.focus-rejection/v1",
+  "selector": "gathr",
+  "reason_code": "unresolved-focus",
+  "candidates": ["gather", "crucible", "forum"],
+  "candidate_count": 3,
+  "truncated": false
+}
+```
+
+The same receipt shape covers `context-envelope --focus`, `viz --focus`, and the
+`index_focus` and `index.context.envelope` MCP tools, where the receipt comes back as the
+tool payload rather than a protocol error. Python callers of `build_context_envelope` get a
+`FocusRejection` (a `ValueError` subclass) carrying the receipt on `.receipt`.
+
+`index context-envelope --bounded-output --json` keeps the default retained-selection
+budget contract available while adding a host-response contract for native harnesses.
+In that opt-in mode, `budget.packet_approx_tokens` measures the response surface being
+emitted: CLI JSON stdout for the CLI, the JSON-RPC tool response wrapper for MCP, and
+the canonical serialized envelope for the default Python API. Bounded CLI JSON stdout
+is emitted as the measured UTF-8 byte payload with LF line endings, so host newline
+translation does not add unmeasured bytes. Each surface uses UTF-8 bytes divided by
+four and rounded up. It is a deterministic byte heuristic, not a model tokenizer count.
+If the response would exceed `--budget`, oversized source-ref lists are replaced by
+`source_ref_omissions` records with counts, hashes, provenance, and `index.context.envelope`
+reissue handles. Malformed MCP `bounded_output` values are rejected instead of being coerced.
+
+For MCP hosts, unexpected tool-call failures are also returned as payloads rather than
+stdio process exits where possible. The payload schema is `index.mcp-tool-error/v1`,
+with `status: "UNVERIFIABLE"`, the error type, message, root, and next actions. This
+includes `SystemExit` raised by invalid workspace configuration, which prevents a bad
+`.index.toml` from surfacing to the host as an opaque transport close.
+
+The map subcommand (`index map`, or the flat `index --root ...`) is unaffected.
+
+
+### `route` subcommand
+
+```text
+index route --root ROOT --path REPO [--path REPO ...] [--budget N] [--hops N] [--json]
+```
+
+`route` is the explicit-scope path for callers that already know which
+repositories matter. Each `--path` is validated under `--root`, rejected with a
+stable reason code when it escapes the root or is not a repository, and then
+passed directly to the existing graph and context-envelope builders. It does not
+run workspace-wide repository discovery, so selecting `--path public/index` does
+not pay to inventory unrelated sibling repositories. The JSON receipt uses
+`schema: "index.route/v1"`, reconciles `selected + rejected`, omits absolute
+paths, and embeds the `project-telos.context-envelope/v1` payload under
+`envelope`.
+
+MCP exposes the same surface as `index.route` with `{root, paths, budget?, hops?}`. Python callers can use `build_route(root, paths=[...])`.
+
+### `select` subcommand
+
+```text
+index select --root ROOT [--suffix S ...] [--max-files N] [--json]
+```
+
+| Flag            | Default           | Meaning                                                      |
+| --------------- | ----------------- | ------------------------------------------------------------ |
+| `--root`        | current directory | Root to select files under.                                   |
+| `--suffix S`    | none (all files)  | Keep only files ending in this suffix; repeatable (`--suffix .md --suffix .py`). |
+| `--max-files N` | none              | File budget. Files beyond it are rejected with `over-budget` receipts, never silently dropped. |
+| `--json`        | off               | Emit `{"selection": ..., "reconciliation": ...}` as JSON.     |
+
+Every candidate path lands in exactly one of two buckets: `selected`, or `rejected` with a typed receipt.
+
+```json
+{
+  "schema": "index.path-selection/v1",
+  "path": "node_modules",
+  "reason_code": "excluded-by-rule",
+  "rule_ref": "index_graph.graph.walk.EXCLUDE_DIRS"
+}
+```
+
+`reason_code` is drawn from a closed set: `excluded-by-rule` (a directory pruned by the shared exclude rule; nothing beneath it is walked, so one receipt covers the subtree), `suffix-mismatch`, `over-budget`, `not-found` (the root itself does not exist), and `unreadable` (a selected file that failed the read probe). The receipt validator rejects an unknown reason code, a wrong schema id, a missing field, or extra fields.
+
+The result carries a `counts` ledger, and the reconciliation report re-derives it from the lists themselves: `candidates` must equal `selected + rejected`, declared counts must match list lengths, every receipt must validate, and no path may be booked in both buckets. Any gap turns the verdict to `DRIFT` with a typed failure code (`result-schema`, `counts-mismatch`, `selected-count-mismatch`, `rejected-count-mismatch`, `invalid-receipt`, `duplicate-path`). A reconciliation that cannot fail on a tampered selection would not be a check, so the test suite keeps known-bad fixtures (a forged count, a silently dropped receipt, an invented reason code, a double-booked path) that must turn the verdict to `DRIFT`.
+
+Exit codes:
+
+- `0`: the reconciliation verdict is `MATCH`.
+- `1`: the reconciliation verdict is `DRIFT`.
+
+The importable API mirrors the CLI: `from index_graph.context.select import select_paths, probe_readable, reconcile_selection, reject_selected, validate_receipt`.
+
+### `viz` subcommand
+
+```text
+index viz --root ROOT [--format FORMAT] [--focus REPO] [--no-external] [--out PATH | --out-dir DIR]
+```
+
+| Flag           | Default           | Meaning                                                                  |
+| -------------- | ----------------- | ------------------------------------------------------------------------ |
+| `--root`       | current directory | Workspace root to scan.                                                  |
+| `--format`     | html              | Output format: `html`, `svg`, `mermaid`, or `all` (every format plus a manifest). |
+| `--focus REPO` | none              | Render only the named repo's dependency neighborhood (bidirectional closure). |
+| `--no-external`| off               | Omit external (third-party) dependencies from the graph.                 |
+| `--out PATH`   | `<root>/graph.html` (or format-dependent) | Write a single format to a specific file path. |
+| `--out-dir DIR`| `<root>/`         | Write all outputs to a directory.                                        |
+
+#### Format details
+
+- **html** (default): a self-contained interactive dashboard. Click a node to see its dependencies and evidence, filter by role and confidence, read an edge tooltip back to the witnessing file, and see cycles highlighted. It opens from `file://` with no external URLs and no runtime dependencies, and a double render of the same input is byte-identical. (Pan and zoom live in `index atlas`, below.)
+- **svg**: a standalone SVG network graph, good for embedding or printing. Self-contained and deterministic.
+- **mermaid**: Mermaid flowchart markup (`.mmd`). It renders in GitHub markdown and online Mermaid editors. Deterministic, though it needs a Mermaid renderer to produce the picture.
+- **all**: writes `graph.html`, `graph.svg`, `graph.mmd`, `context.json`, and `context-manifest.json`. The manifest holds artifact paths and per-file SHA-256 hashes, for auditing and for handing off to a static-site builder or asset verifier.
+
+#### Example, render the full graph as HTML
+
+```bash
+index viz --root ./my-workspace
+```
+
+This writes `/my-workspace/graph.html`. Open it in any browser from `file://`.
+
+#### Example, render one repo's neighborhood as a Mermaid diagram
+
+```bash
+index viz --root ./my-workspace --focus my-app --format mermaid --out ./my-app-deps.mmd
+```
+
+#### Example, batch render all formats with a manifest
+
+```bash
+index viz --root ./my-workspace --format all --out-dir ./viz-output
+```
+
+This writes `viz-output/graph.{html,svg,mmd}`, `context.json`, and `context-manifest.json`.
+
+### `atlas` subcommand
+
+`index atlas` is the headline. It builds the same dependency graph and then layers your markdown documents on top of it, so the code and the prose that explains it sit on one map.
+
+```text
+index atlas --root ROOT [--format html] [--json] [--out PATH] [--no-external]
+```
+
+| Flag            | Default           | Meaning                                                                 |
+| --------------- | ----------------- | ----------------------------------------------------------------------- |
+| `--root`        | current directory | Workspace root to scan.                                                 |
+| `--format html` | none              | Render the interactive two-layer dashboard as one self-contained HTML file. |
+| `--json`        | off               | Print the two-layer pack as JSON (a strict superset of the context pack). |
+| `--out PATH`    | stdout            | Write the HTML to a file instead of printing it.                        |
+| `--no-external` | off               | Omit external (third-party) dependency nodes.                           |
+
+With neither `--format` nor `--json`, `atlas` prints a one-line summary with the repo, doc, and edge counts.
+
+The pack adds three keys on top of the context pack:
+
+- `docs`: one entry per markdown file, as `{ "id": <workspace-relative path>, "title": <first heading or filename>, "dir": <directory> }`.
+- `knowledge_edges`: the doc edges, each as `{ "type": "describes" | "links-to" | "mentions", "from": <doc id>, "to": <repo name or doc id>, "to_kind": "repo" | "doc" }`.
+- `knowledge_warnings`: any `[[wiki-link]]` that did not resolve to a repo or doc.
+
+The three doc edge types come from evidence, not inference. `describes` means the doc lives inside that repo's tree. `links-to` comes from a `[[wiki-link]]` in the body. `mentions` comes from a repo or doc name appearing in prose, and it is the weakest of the three, so it is deduped against the stronger two and dimmed in the dashboard.
+
+#### Example, the atlas pack shape
+
+```json
+{
+  "repos": [ "..." ],
+  "relations": [ "..." ],
+  "docs": [
+    { "id": "api/README.md", "title": "API", "dir": "api" },
+    { "id": "docs/architecture.md", "title": "Architecture", "dir": "docs" }
+  ],
+  "knowledge_edges": [
+    { "type": "describes", "from": "api/README.md", "to": "api", "to_kind": "repo" },
+    { "type": "links-to",  "from": "api/README.md", "to": "docs/architecture.md", "to_kind": "doc" }
+  ],
+  "knowledge_warnings": []
+}
+```
+
+#### Example, render the two-layer dashboard
+
+```bash
+index atlas --root ./my-workspace --format html --out atlas.html
+```
+
+Open `atlas.html` in any browser, offline. Pan and zoom the graph, search repos and doc titles together, click a doc to read its rendered markdown with clickable `[[links]]`, and double-click a node to focus its neighborhood. The whole file is self-contained, and the markdown is rendered server-side and escaped, so untrusted doc content cannot inject anything.
+
+### `wiki` subcommand
+
+`index wiki` is the single-repo altitude: the atlas maps a workspace, the wiki explains one unfamiliar repo. It derives a multi-page wiki from the intra-repo module graph (the same graph `index internals` reports), joins the repo's own markdown in verbatim, and seals the result so it can be re-checked. There is no model and no generated prose; every structural statement is a projection of the graph, and every edge shown carries its file:line evidence.
+
+```text
+index wiki [SOURCE] [--root REPO] [--out PATH] [--format html|json]
+index wiki --verify PATH [--root REPO] [--json]
+```
+
+`SOURCE` is optional: a git URL (`index wiki https://github.com/org/repo`) is shallow-cloned to a temp dir, derived, and removed, so you can point the wiki at a repo you have not cloned; a local path (`index wiki /path/to/repo`) reads in place. With no `SOURCE`, `--root` is used. A `SOURCE` that is neither a git URL nor an existing directory is rejected rather than guessed.
+
+| Flag            | Default           | Meaning                                                                 |
+| --------------- | ----------------- | ----------------------------------------------------------------------- |
+| `SOURCE`        | none              | A git URL (cloned then removed) or a local path; overrides `--root`.    |
+| `--root`        | current directory | The single repo to derive the wiki from (not a workspace).              |
+| `--out PATH`    | stdout            | Write the artifact to a file instead of printing it.                    |
+| `--format`      | html              | `html`: one self-contained file with client-side page navigation; `json`: the sealed wiki pack. |
+| `--verify PATH` | none              | Verify a sealed wiki artifact (HTML or JSON) against the current tree.  |
+| `--json`        | off               | With `--verify`, emit the verification report (`index.wiki-verification/1`) as JSON. |
+
+The artifact carries four kinds of page:
+
+- **Overview**: repo identity, detected ecosystems, graph-derived entry points (modules with no internal importer), module count, doc inventory, graph coverage, and the commit SHA the wiki is pinned to (`git rev-parse HEAD`, or `"unversioned"` for a non-git root).
+- **Module pages**: one per module, with imports, dependents, file path, language, and cycle membership. Every edge names the file and line that witnesses it. On repos above 120 modules the wiki clusters modules into package pages; the aggregated package edges keep the module-level file:line evidence underneath.
+- **Architecture**: an SVG diagram rendered from the real module graph by the same machinery as `index viz`, with the Mermaid source alongside. Never inferred.
+- **Docs**: the repo's markdown, rendered offline by the escaping-safe renderer and labeled as authored by humans. Hostile doc content cannot break out of the page.
+
+Every page footer states the derivation boundary, structure derived from the dependency graph, no generated prose, plus that page's own evidence count.
+
+The pack embeds an `index.wiki/1` manifest: the pinned commit, a canonical SHA-256 per page (the hashing rule in `docs/PROTOCOL.md`), and the generation inputs. `--verify` recomputes the page hashes, re-derives the module graph from the current tree and requires every claimed edge to exist in it, and compares the pinned commit to the current HEAD. The verdict is one of three words:
+
+- `MATCH`: the pages match their seals, every claimed edge is in the real graph, and the tree is at the pinned commit. Exit 0.
+- `DRIFT`: a page was tampered with, the wiki claims a module edge the real graph does not contain (even if the manifest hash was re-forged to match), or the repo moved off its pinned commit. Findings name each breach. Exit 1.
+- `UNVERIFIABLE`: the artifact is not a readable wiki (missing manifest, wrong schema, unparseable file) or the root does not exist. Exit 2.
+
+The HTML artifact embeds the sealed pack as a JSON data island, so `--verify` accepts either the HTML file or the JSON pack. The test suite keeps the known-bad fixtures (a tampered page, a forged edge with a consistently re-sealed hash, hostile markdown and module names): a verifier that cannot fail on a known-bad input is not a verifier.
+
+The MCP tool `index.wiki` mirrors this surface: called with `root` it returns the JSON pack, and with `verify` it returns the verification report. Python API: `from index_graph.wiki import build_wiki_pack, render_wiki_html, verify_wiki, run_verify`.
+
+### `serve` subcommand
+
+`index serve` is the hosted, URL-swap face of `index wiki`. It runs a local `http.server` that derives a repo's verified wiki on demand: you request a repo by its forge path and the server builds and returns the self-contained wiki HTML, then discards the clone.
+
+```text
+index serve [--host HOST] [--port PORT]
+```
+
+| Flag       | Default     | Meaning                                                              |
+| ---------- | ----------- | ------------------------------------------------------------------- |
+| `--host`   | `127.0.0.1` | Interface to bind. Defaults to loopback; override only deliberately. |
+| `--port`   | `8000`      | Port to bind. `0` picks an ephemeral port.                          |
+
+The routes are:
+
+- `GET /` returns a plain landing page that explains the server in consent-clean terms.
+- `GET /<forge-host>/<org>/<repo>` reconstructs the git URL `https://<forge-host>/<org>/<repo>`, runs the same shallow-clone-derive-clean-up path as `index wiki <url>`, and serves the wiki. For example, `http://127.0.0.1:8000/github.com/org/repo`.
+- `GET /robots.txt` returns `User-agent: *` / `Disallow: /`, and every response also carries an `X-Robots-Tag: noindex, nofollow` header.
+
+The posture is consent-clean by construction, because the verified-wiki class draws fire for non-consensual generation that outranks official docs:
+
+- **On demand only.** Nothing is crawled and nothing is pre-indexed. The wiki is derived when a route is requested and the clone is removed as soon as the response is built.
+- **Honest on every page.** The landing page and every served page state that the wiki derives structure from the dependency graph, generates no prose, is commit-pinned and re-checkable with `index wiki --verify`, and defers to the repo owner's authored docs. The banner is injected into every served wiki, so it is never missing.
+- **No indexing.** The `robots.txt` disallow and the `X-Robots-Tag` header keep the on-demand pages out of search indexes.
+- **Local only.** This is the local server component. No external publishing happens here; deploying or hosting it anywhere is a separate operator decision.
+
+Only http(s) forge URLs of the shape `host/org/repo` are accepted. A malformed route (wrong number of segments, a traversal-shaped or dot-leading segment, an scp-style `git@` path, or a host with no dot) returns a typed `400` with a plain reason and no traceback. A clone that fails returns a plain `502` page, again with no stack trace. The strict route parser also refuses to reconstruct anything but an `https://` URL, so ssh and scp remotes are never cloned.
+
+There is no MCP `serve` tool. A long-running HTTP server does not fit the MCP stdio model (one request, one JSON reply), so this surface is CLI-only; the `index wiki` MCP tool remains the way an agent host consumes a single-repo wiki over the protocol. Python API: `from index_graph.wiki import make_server, parse_route, serve_forever`.
+
+## Verified architecture intelligence
+
+Beyond drawing the shape, `index` can look inside a repo, measure the real structure against a rule you declare, watch it change over time, and hand back a verdict you can re-run. These commands are additive; the five above are unchanged. Everything here runs offline, with no API, account, or model.
+
+### `internals` subcommand
+
+```text
+index internals --root REPO [--json] [--cycles]
+```
+
+| Flag       | Default           | Meaning                                                       |
+| ---------- | ----------------- | ------------------------------------------------------------- |
+| `--root`   | current directory | The single repo to look inside.                               |
+| `--json`   | off               | Emit the module graph as JSON (modules, edges, cycles, fan).  |
+| `--cycles` | off               | Report only the internal cycles.                              |
+
+The module graph is exact for Python (read from the syntax tree) and best-effort and file-level for JavaScript, TypeScript, Rust, and Go. Java stays repo-level. Each internal edge names the file and line that witnesses it. The bounds are stated in `docs/PROTOCOL.md`.
+
+#### Example, internals summary
+
+```bash
+index internals --root ./my-repo
+```
+
+```text
+modules=50 edges=94 cycles=0 coverage=complete
+```
+
+The summary ends with coverage: `complete` when every file parsed and every import resolved statically, otherwise a count of the files the scan could not parse and the dynamic imports it could not follow. `--json` carries the detail under a `coverage` object, and `index check --internals` folds the same coverage into the certificate so a verdict is honest about its soundness scope.
+
+### `internals-symbols` subcommand
+
+```text
+index internals-symbols --root REPO [--json] [--coverage]
+```
+
+| Flag         | Default           | Meaning                                                            |
+| ------------ | ----------------- | ------------------------------------------------------------------ |
+| `--root`     | current directory | The single repo to look inside.                                    |
+| `--json`     | off               | Emit the full symbol graph as JSON (symbols, calls, fan, coverage). |
+| `--coverage` | off               | Report only the coverage summary.                                  |
+
+Where `index internals` stops at module imports, `index internals-symbols` goes down to
+functions, classes, and methods, and records who calls whom. This is the GO-TO-DEFINITION
+and FIND-REFERENCES data, derived from the Python AST and byte-identical across runs.
+
+A call within the same module resolves exactly (`resolution: exact`, `confidence: high`);
+`self.m()` inside a method resolves to a sibling method the same way. A call to a name
+imported from another module in this repo resolves best-effort if it names a real definition
+(`resolution: cross_module`, `confidence: moderate`). Anything the static scan cannot bind,
+an undefined name, an attribute on an object whose type is unknown, an import that names no
+definition, is surfaced as `resolution: cross_module_unresolved` with `to_symbol: null`,
+never a guessed edge. `getattr` and variable-function dispatch and unparsable files are
+recorded under `coverage`, not invented.
+
+```bash
+index internals-symbols --root ./my-repo
+```
+
+```text
+symbols=1036 calls=5517 resolved=1014 unresolved=4503
+```
+
+Only Python has symbol-level extraction today; other languages keep their module-level graph.
+The per-symbol pages in `index wiki` are a projection of this graph, sealed and re-checkable:
+`index wiki --verify` re-derives the symbol graph and flags a claimed resolved call the real
+graph does not contain as DRIFT. See `docs/PROTOCOL.md` for the full schema.
+
+### `symbols` subcommand (navigate: def / refs / impls)
+
+```text
+index symbols QUERY --root REPO [--json] [--def] [--refs] [--impls]
+```
+
+| Flag      | Default           | Meaning                                                                   |
+| --------- | ----------------- | ------------------------------------------------------------------------- |
+| `QUERY`   | required          | A symbol id (`module::name` or `Class::method`) or a bare name.           |
+| `--root`  | current directory | The single repo to look inside.                                           |
+| `--json`  | off               | Emit the navigation result as JSON.                                       |
+| `--def`   | off               | Only go-to-definition.                                                    |
+| `--refs`  | off               | Only find-references.                                                      |
+| `--impls` | off               | Only find-implementations. With no mode flag, all three sections report.  |
+
+Where `index internals-symbols` dumps the whole graph, `index symbols` navigates it for one
+symbol, the way an IDE does, each hop carrying `file:line` evidence:
+
+- **go-to-definition** (`--def`): every symbol whose id or bare name matches, with its site.
+- **find-references** (`--refs`): every resolved caller, plus a separate, honestly-labeled list
+  of unresolved same-name references. An unresolved reference is never reported as a caller.
+- **find-implementations** (`--impls`): for a class query, the in-repo subclasses; for a method
+  query, the in-repo overrides of that method. A base class that names an external or
+  statically-unbindable class yields no edge, so an implementation result is never guessed.
+
+```bash
+index symbols "Animal::speak" --root ./my-repo --impls
+```
+
+```text
+symbol query: Animal::speak  (repo my-repo)
+implementations (0 subclasses, 2 overrides):
+  override pets/dog::Dog::speak  pets/dog.py:5  [cross_module]
+  override pets/cat::Cat::speak  pets/cat.py:5  [cross_module]
+```
+
+The exit code is `0` when the query matched something and `2` when every requested section was
+empty, so a script can tell "no such symbol" from a hit without parsing text. The same
+navigation is exposed over MCP as `index.symbol-definition`, `index.symbol-references`, and
+`index.symbol-implementations`. Only Python is AST-exact today; multi-language navigation is
+specced in `docs/PROTOCOL.md`.
+
+### `navigate` and `outline-map` subcommands (code for a question)
+
+```text
+index navigate ROOT QUESTION [--files N] [--beam N] [--ratio R] [--include-docs] [--all-leaves] [--json]
+index outline-map ROOT [--node ID] [--include-docs] [--json]
+```
+
+| Flag             | Default | Meaning                                                                    |
+| ---------------- | ------- | -------------------------------------------------------------------------- |
+| `ROOT`           | required | The repository to walk.                                                   |
+| `QUESTION`       | required | The question, in plain words.                                             |
+| `--files`        | 5       | Stop after this many distinct files.                                       |
+| `--beam`         | 4       | Most children followed at one node.                                        |
+| `--ratio`        | 0.5     | Follow children at least this share of the top child's probability.        |
+| `--include-docs` | off     | Also walk prose and config files; code files only by default.              |
+| `--all-leaves`   | off     | Deliver every leaf reached, not only the best leaf of each file.           |
+| `--json`         | off     | Leaves with source text, token counts and the decision path.               |
+| `--node`         | root    | For `outline-map`: the node id from a previous map's handle.               |
+
+`navigate` walks directory, file and symbol with one typed question per level and returns
+only the leaves it reached. The JSON payload (`index.navigate/v1`) carries `files`,
+`leaves` (id, file, start, end, kind, probability, text), `tokens_shown`,
+`question_tokens` and `path` (`index.decision-path/v1`: each node asked, its options, the
+distribution and the children followed). The exit code is `0` when a leaf was reached and
+`2` when none was.
+
+`outline-map` prints one node's children as a map (`index.outline-map/v1`): each entry has
+a `name`, a `description` for a model and a `handle` with the child's `node` id, kind, file
+and line span. Pass a handle's `node` back to go one level down; a leaf returns its `text`.
+An unknown node id exits non-zero with the id named.
+
+```bash
+index navigate . "path selection with typed rejection receipts" --files 3
+index outline-map . --node src/index_graph/navigate/
+```
+
+The same tools are exposed over MCP as `index.navigate` and `index.outline-map`, in the
+full server and in the read-only client profile. The benchmark behind the defaults, with
+its frozen query file and results, is in `docs/NAVIGATE.md` and `benchmarks/navigate/`.
+
+### The `[architecture]` criterion
+
+A check needs a rule to measure against. Declare one in `.index.toml`:
+
+```toml
+[architecture]
+# ordered layers, lowest first; a lower layer may not import a higher one
+layers = ["core", "domain", "service", "web"]
+# edges that must never exist, by repo or module glob
+forbid = [{ from = "core/**", to = "web/**" }]
+# edges that must exist (an intended dependency); a missing one is an "absence"
+require = [{ from = "web", to = "core" }]
+# the most dependency cycles tolerated (omit to leave cycles unchecked)
+max_cycles = 0
+# optional ownership assertions
+[architecture.owns]
+"payments/**" = "team-payments"
+```
+
+The block is optional. With none declared, `check` returns UNVERIFIABLE rather than a hollow pass.
+
+### `check` subcommand
+
+```text
+index check --root ROOT [--internals] [--json] [--config CFG]
+```
+
+| Flag          | Default              | Meaning                                                   |
+| ------------- | -------------------- | --------------------------------------------------------- |
+| `--root`      | current directory    | Workspace root to scan.                                   |
+| `--internals` | off                  | Include intra-repo module checks, not only repo-level.    |
+| `--json`      | off                  | Emit the certificate as JSON.                             |
+| `--config`    | `<root>/.index.toml` | Path to the config holding the `[architecture]` block.    |
+
+`check` exits non-zero when the verdict is not MATCH, so it works directly as a CI gate. Each finding names the rule it broke, the offending edge, and the file and line. A `require` rule whose intended edge is missing yields an `absence` finding, so `check` catches both edges that must not exist and edges that must (the Reflexion-model triad: convergence, divergence, absence).
+
+#### Example, a check certificate
+
+```bash
+index check --root . --json
+```
+
+```json
+{
+  "schema": "index.certificate/1",
+  "tool_version": "2.0.0",
+  "kind": "check",
+  "content_sha256": "…",
+  "criterion_sha256": "…",
+  "verdict": "DRIFT",
+  "findings": [
+    { "rule": "layer", "detail": "core must not depend upward on web",
+      "edge": "core -> web", "evidence": "core/db.py:12" }
+  ],
+  "recheck": "index check --root . --json"
+}
+```
+
+### `snapshot` and `drift` subcommands
+
+```text
+index snapshot --root ROOT --out FILE
+index drift --from OLD --to NEW [--json]
+```
+
+`snapshot` writes a canonical, byte-stable projection of the graph. `drift` diffs two snapshots into added and removed repos and edges, introduced and cleared cycles, and role changes, with a MATCH or DRIFT verdict. Like `check`, `drift` exits non-zero on DRIFT.
+
+#### Example, watch for drift in CI
+
+```bash
+index snapshot --root . --out baseline.json    # record once, commit it
+# later, in CI:
+index snapshot --root . --out now.json
+index drift --from baseline.json --to now.json
+```
+
+### The certificate and the protocol
+
+Both `check` and `drift` return a certificate whose verdict is one of three words, MATCH, DRIFT, or UNVERIFIABLE, never a fourth. You confirm it by re-running its `recheck` command and recomputing its hashes, not by trusting it. The snapshot and certificate shapes, the hashing rule, and the resolution bounds are specified in [`docs/PROTOCOL.md`](docs/PROTOCOL.md), so any consumer, whether a CI job, a reviewer, or another tool, can read them without depending on `index`.
+
+Pass `--freshness` to `index check` to stamp the certificate with a content fingerprint of the workspace (see the next section). A certificate minted without it is byte-identical to one from before this option existed.
+
+## Workspace map (`router`)
+
+`index router` renders a deterministic, evidence-carrying map of the workspace, shaped for a model's `CLAUDE.md` or `AGENTS.md`: where each repo lives with its role and dependencies, the entry points, the depended-on core, and which docs describe what. It is derived from the dependency graph and the docs atlas and re-runs identically, so it replaces the `index.md` plus read-first plus brief that teams maintain by hand.
+
+```text
+index router --root ROOT [--out FILE] [--budget-ms MS] [--no-cache]
+```
+
+With `--out` it writes the map to a file; otherwise it prints to stdout. Every line is a graph fact (roles, edges, doc-describes), nothing invented. Router uses a bounded interactive discovery budget by default. If the scan cannot complete inside the budget or the complete repo set is too large for an interactive graph build, it exits non-zero with an `UNVERIFIABLE` message instead of printing a partial map as if it were complete. Use `--budget-ms 0` for an explicit unbounded graph build, and use `index map --resume-state PATH` when the goal is complete repository inventory rather than a graph/doc router.
+
+Graph/router builds emit `index.graph-progress/v1` JSON lines on stderr, leaving
+stdout as the result stream. Phases are `building`, `resolving`, `complete`, and
+`failed`; `completed_repos`, `total_repos`, and `elapsed_ms` describe observed work.
+The counts do not certify source quality. MCP hosts may display stderr diagnostics;
+these lines are not protocol progress notifications or a guarantee that a host will
+extend its timeout. A cached text result performs no graph build and emits no graph
+progress. The existing text-cache TTL can retain nested source changes until expiry.
+Use router `--no-cache`, or `no_cache: true` on MCP `index_graph`/`index_router`, to
+bypass both result caching and per-repository graph facts for a fresh build.
+
+CLI graph/router and corresponding MCP calls use at most four process workers by
+default. Python callers keep thread execution unless they explicitly select
+`build_graph(paths, executor="process", on_progress=callback)`. Process callers must
+use picklable resolvers and a guarded `if __name__ == "__main__":` entrypoint.
+Progress callbacks run in the caller, including when workers run in other processes.
+
+Graph scans keep the existing `EXCLUDE_DIRS` pruning but do not apply `.gitignore`
+as a source filter. A nested `.git` directory or file marks a separate repository:
+include that repository in the discovered input set to cover it independently.
+The repo cache hashes working bytes and includes Index/resolver implementation
+identity. Persistent repo-cache reads and writes are enabled only when every
+resolver is either one of Index's exact shipped built-in resolver types or a
+custom resolver that explicitly declares `uses_shared_source_reader = True`.
+Set that custom resolver flag only when every file declared by
+`fingerprint_names`, `fingerprint_suffixes`, or `fingerprint_globs`, and every
+other graph-relevant source read that can affect returned facts, goes through
+`index_graph.graph.walk.read_source_bytes` or `read_source_text`. Unopted custom
+resolvers bypass persistent repo cache reads and writes, including when mixed
+with built-in resolvers; graph coverage is unchanged, but repeat builds reparse
+those repos. Subclasses of built-in resolvers count as custom until they opt in.
+Monkeypatching a shipped built-in method keeps the exact runtime type, so tests
+or hosts that replace source-read behavior should pass `use_cache=False`.
+Custom resolvers whose instance state or external configuration changes their
+behavior must still update `cache_version` or disable caching. The repo-cache key
+version changes with this contract, so earlier candidate cache entries are not
+reused. Router doc discovery reads locations;
+commands that need Markdown content still read document bodies.
+Fingerprinting and built-in resolver parsing share a temporary working-byte cache
+inside each repo build, capped at 16 MiB and 4,096 files. The cap limits reuse, not
+source coverage; larger inputs are still read. Source bytes are not retained in
+the persistent graph cache and the temporary cache expires after each build.
+If either cap is exceeded, above-cap reads keep a first-read digest journal rather
+than retaining source bodies. A later built-in read of the same above-cap file must
+match that first digest before the build can write persistent repo facts. Digest
+mismatch, source I/O failure, interrupted traversal, or journal overflow skips
+persistent cache for that build while preserving source coverage. The journal is
+bounded by entry count, not file bytes, so very large file-count repositories can
+still fall back to repeat parsing instead of retaining all source in memory. A graph
+is an observation made during a scan, not an atomic filesystem snapshot; edit-free
+inputs are required for matched comparisons.
+Fingerprinting and built-in resolvers use the resolved repository root consistently;
+node metadata retains the root path the caller supplied. A source read or traversal
+I/O failure aborts a complete graph with `GraphSourceError`, rather than silently
+dropping the affected source. CLI JSON returns `UNVERIFIABLE` and exit2; MCP returns
+a typed tool error. Parser limitations and custom resolvers remain separate concerns.
+
+### Background router jobs
+
+`index router-job start --root ROOT` returns JSON with a `job_id` while the local
+worker builds the router. Read it with `index router-job status JOB_ID`, then
+`index router-job result JOB_ID`. The result receipt contains text only after
+completion validation. `cancel JOB_ID` requests cooperative cancellation;
+`resume JOB_ID` retries a stopped attempt. All five commands emit JSON. `start`
+also accepts `--max-docs`, `--budget-ms` (default0), and `--no-cache`.
+
+MCP exposes the same actions as `index.router.job.start`, `.status`, `.result`,
+`.cancel`, and `.resume`. Start takes `root` and optional `max_docs`, `budget_ms`,
+and `no_cache`; other actions require only `job_id`. State remains local under
+`INDEX_ROUTER_JOB_DIR` or the platform user cache. These files can contain private
+workspace paths and router content. See [Router jobs](docs/ROUTER-JOBS.md) for
+worker ownership, result validation, and recovery limits. Use background jobs for
+large workspaces that exceed an interactive request's time limit.
+
+Background progress distinguishes graph completion from accepted job completion.
+New local event rows carry scope and a worker-attempt clock; a `graph_complete`
+phase still means the router result is unavailable. Fetch through `result` to
+validate completion, including when an event log ends unexpectedly.
+
+## Grounding a claim (`verify`)
+
+`index verify` is a deterministic oracle for a single structural claim, so a model can confirm what it is about to act on instead of trusting its memory. `--depends "A -> B"` asks whether A depends on B; `--exists NAME` asks whether a repo exists. The answer is one of three: MATCH (true, with the file:line that witnesses it), REFUTED (false), or UNVERIFIABLE (the claim names a repo not in the workspace).
+
+```text
+index verify --root ROOT [--depends "A -> B" | --exists NAME] [--json]
+```
+
+It exits 0 on MATCH, 1 on REFUTED, 2 on UNVERIFIABLE, and `--json` emits a re-checkable record (`index.verification/1`) carrying the content hash and the exact command to re-run.
+
+## Has the ground truth moved? (`freshness`)
+
+A certificate proves a verdict about the workspace as it was when the certificate was minted. `index freshness` answers the next question: has anything changed since? It is the mid-loop re-grounding check, so a verdict an agent keeps relying on cannot quietly go stale.
+
+First, stamp a certificate with a content fingerprint:
+
+```text
+index check --root ROOT --freshness --json > cert.json
+```
+
+The fingerprint is a deterministic SHA-256 over the graph-relevant files of every ecosystem in each repo (manifests and sources), folded per repo. Then, at any later point, re-check it:
+
+```text
+index freshness --cert cert.json --root ROOT [--json]
+```
+
+The verdict is FRESH (nothing graph-relevant changed), STALE (it lists the repos added, removed, or changed), or UNVERIFIABLE (the certificate carries no freshness stamp). It exits 0, 1, or 2 to match, and `--json` emits a re-checkable report (`index.freshness-report/1`) with both fingerprints and the command to re-run.
+
+The fingerprint is conservative on purpose. It may report STALE for a content change that does not alter the resolved graph, but it never reports FRESH when a graph-relevant file changed, so FRESH is never a false assurance. The set of relevant files is declared by the resolvers, so a new ecosystem is covered without any change here.
+
+## What exactly went stale? (`invalidate`)
+
+`index freshness` tells you the workspace moved. `index invalidate` tells you what that movement invalidates, so an agent can refresh only what the diff actually touched instead of discarding everything it verified.
+
+First, pin the current tree:
+
+```text
+index invalidate --root ROOT --out pin.json
+```
+
+The pin (`index.invalidation-pin/1`) records the per-file hash of every graph-relevant file, the root docs the context pack reads, and the structural snapshot, content-addressed by a `pinned_ref`. Later, diff the live tree against it:
+
+```text
+index invalidate --root ROOT --pin pin.json [--json]
+```
+
+The report (`index.invalidation/1`) splits the fingerprinted scope, the `certificate`, `context-pack`, and `graph-snapshot` artifacts plus one `repo:NAME` scope per pinned repo, into `invalidated` and `still_valid`. Every invalidated entry carries a reason code from a closed set: `file-changed`, `file-removed`, `dependency-edge-changed`, `doc-changed`, or `unversioned` (content now in scope that the pin never versioned, like a new repo). Counts must reconcile: invalidated + still_valid = scope, always.
+
+The report is sharper than the freshness fold. A README edit invalidates the certificate and the context pack (their hashes cover repo descriptions) but leaves `graph-snapshot` still valid, because the structural projection does not read prose. The verdict is FRESH or STALE, with exit codes 0 and 1; a document that is not a pin reads as UNVERIFIABLE with exit code 2, and a tampered pin reads as STALE with `file-changed` reasons, never a crash.
+
+`--json` emits `{"report": ..., "reconciliation": ...}`. The reconciliation re-derives the ledger from the report itself and turns any gap to DRIFT (a forged count, an unknown reason code, a double-booked scope, a verdict that disagrees with its own lists), so the report is a claim you can re-check rather than trust. The importable API mirrors the CLI: `from index_graph.freshness.invalidate import mint_pin, invalidation_report, reconcile_invalidation`.
+
+## Token economy (`bench`)
+
+A recurring claim is that a structural map is cheaper for an agent than reading the code. `index bench` lets you check that on your own workspace instead of taking it on faith.
+
+```text
+index bench --root ROOT [--json] [--no-cache]
+```
+
+It measures the bytes index reads, the manifests and source files of every ecosystem it walks to build the graph, against the bytes of the single structural pack it emits, and reports the reduction:
+
+```text
+token economy: index's structural pack vs the source it reads
+  source read    49,880,045 bytes  (~12,470,011 tokens)  3267 files in 47 repos
+  index pack        716,288 bytes  (~179,072 tokens)  69.6x smaller
+```
+
+Bytes are exact and model-agnostic. The token figures use the common ~4 bytes/token approximation, and the reduction ratio divides out that constant, so the headline number does not depend on any tokenizer. `--json` emits a re-checkable `index.bench/1` report with the byte counts, the ratio, and the command to re-run. Bench output uses Index's filesystem cache by default so repeated agent workflows can reuse the same workspace-wide report inside the freshness window. The graph builder also caches each repo's resolver facts behind a graph-relevant fingerprint, so an unchanged repo is fingerprinted but not reparsed on the next process run. Pass `--no-cache` or set `INDEX_CACHE_TTL_SECONDS=0` for a cold text-output measurement; `--no-cache` also bypasses the repo graph cache. Set `INDEX_GRAPH_REPO_CACHE_DIR` to move the per-repo graph cache. The pack answers structural questions, who depends on whom, the roles, the cycles; reading the code is still what you do for behavior, so this is the cost of the structural answer, not a claim that the pack replaces the source.
+
+## Agent protocol face (`mcp`)
+
+`index mcp` serves a zero-dependency, MCP-shaped protocol over stdin and stdout: newline-delimited JSON-RPC 2.0 (`initialize`, `tools/list`, `tools/call`), no SDK and no model. An agent host or orchestrator connects and calls index's deterministic tools by name.
+
+```text
+index mcp
+```
+
+The tools are `index_graph`, `index_focus` (a repo's neighborhood plus the preservation manifest), `index_verify` (ground a depends or exists claim), `index_router` (the workspace map), `index.route` (explicit-path context-envelope routing), `index_internals` (a repo's module graph), `index.select` (path selection with typed rejection receipts), `index.invalidate` (without `pin` it mints and returns a pin of the current tree; with `pin` it emits the `index.invalidation/1` report plus its reconciliation), `index.wiki` (the sealed single-repo wiki pack, or a verification report when called with `verify`), and the symbol quartet `index.symbol-graph` (the whole call/reference graph for a repo), `index.symbol-definition` (GO-TO-DEFINITION, the file:line of a symbol), `index.symbol-references` (FIND-REFERENCES, the resolved callers of a symbol, with unresolved references reported separately), and `index.symbol-implementations` (FIND-IMPLEMENTATIONS, in-repo subclasses of a class or overrides of a method, with an external base never guessed into an edge). Interactive workspace MCP tools accept `budget_ms`, where `0` means the caller chose the unbounded path; `index.map` accepts `resume_state` for the same JSONL checkpoint used by the CLI and is rebuilt for each call because it is an authoritative repository inventory. Each tool reuses the same function its matching subcommand does, so the protocol face never disagrees with the CLI. An unresolvable `focus` or `repo` argument returns an `index.focus-rejection/v1` receipt as the payload instead of a protocol error, and large-workspace budget failures return an `index.mcp-tool-error/v1` payload with `UNVERIFIABLE` status.
+
+## Notes
+
+- This CLI is agent assisted. Review the output before sharing it in public.
+- Maps are portable by default. Repo paths are root-relative, the absolute root is replaced by a short hash prefix, and credential-shaped material in remote URLs is redacted.
+- The output schema is versioned (`schema_version: 1`).
+
+## Local client packages
+
+Add `--state-directory ABSOLUTE_DIRECTORY` to the launcher only when the client
+may write private map/cache/job state there. The directory must already exist.
+The MCPB exposes the same option as **Optional private state directory**;
+its empty default grants no writes.
+With this grant, `index.map` accepts `no_cache: true`. Existing
+jobs under `DIRECTORY/jobs` support status, result and cooperative cancellation;
+their request roots must remain in the selected workspace. Start and resume of
+worker processes remain unavailable on this profile.
+
+The optional client bundle adds a bounded MCP profile that defaults to read-only access with an explicit
+workspace selected at launch. See [client package setup](client-plugin/README.md).
+Windows x64 MCPB and ZIP bundles include their runtime; source plugins require
+Python 3.11+. The full CLI/MCP retains advanced operations. Client-specific
+installation and marketplace acceptance require separate verification.

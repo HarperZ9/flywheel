@@ -134,6 +134,39 @@ jobs:
               python tools/check_repo_art.py
               python tools/render_repo_art.py
               git diff --exit-code -- .
+          # index's CI ran Linux on Python 3.12: its suite, then the compat suite.
+          - package: index
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest
+              python -m pytest compat/workspace-repo-map/tests -q
+          # crucible's CI ran Linux on Python 3.11 and 3.12, each with every step
+          # below: lint, type check, tests with the coverage floor, the demo, the
+          # version check, the build, and a smoke run of the built wheel.
+          - package: crucible
+            python: "3.11"
+            install: python -m pip install -e ".[dev]"
+            test: |
+              ruff check src tests examples
+              mypy src/crucible
+              pytest -q --cov=crucible --cov-report=term-missing --cov-fail-under=85
+              python examples/demo.py
+              python scripts/check_version_sites.py .
+              python -m build
+              python -m twine check dist/*
+              python scripts/smoke_wheel.py dist/*.whl
+          - package: crucible
+            python: "3.12"
+            install: python -m pip install -e ".[dev]"
+            test: |
+              ruff check src tests examples
+              mypy src/crucible
+              pytest -q --cov=crucible --cov-report=term-missing --cov-fail-under=85
+              python examples/demo.py
+              python scripts/check_version_sites.py .
+              python -m build
+              python -m twine check dist/*
+              python scripts/smoke_wheel.py dist/*.whl
     defaults:
       run:
         shell: bash
@@ -340,6 +373,18 @@ jobs:
             smoke: |
               /tmp/vc/bin/canon --help > /dev/null
               /tmp/vc/bin/canon-client --help > /dev/null
+          - package: index
+            smoke: |
+              /tmp/vc/bin/index --version
+              /tmp/vc/bin/index --help > /dev/null
+          - package: forum
+            smoke: |
+              /tmp/vc/bin/forum --version
+              /tmp/vc/bin/forum --help > /dev/null
+          - package: accountable-surface
+            smoke: |
+              /tmp/vc/bin/accountable-surface-authority --help > /dev/null
+              printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' | /tmp/vc/bin/accountable-surface-mcp | grep -q '"serverInfo"'
     defaults:
       run:
         shell: bash
@@ -387,3 +432,349 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           python scripts/build_client_package.py "$env:RUNNER_TEMP/canon-native" --native
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  # emet's own conformance workflow, job for job: the Python reference, the
+  # Rust, Node and Go implementations against the same vectors, the receipt
+  # parity test across three languages, and the installed console script. The
+  # EMET_SKIP_CAPABILITIES values are emet's own: they name the capabilities
+  # each later implementation does not have yet.
+  emet-python-reference:
+    name: emet (python reference)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/emet
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: behavior proof (membrane)
+        run: python test_membrane.py
+      - name: corpus unit tests
+        run: python test_corpus.py
+      - name: monitor behavior tests
+        run: python test_monitor.py
+      - name: organs behavior tests
+        run: python test_organs.py
+      - name: forward delivery contract
+        run: python test_forward_delivery_contract.py
+      - name: front-page artwork re-renders to the committed bytes
+        run: python test_repo_art.py
+      - name: proof surface receipt test
+        run: python test_proof_surface_receipt.py
+      - name: portable witness receipt behavior proof
+        run: python test_witness_receipt.py
+      - name: stripped-credential rebind behavior proof
+        run: python test_rebind.py
+      - name: DeepEval eval-receipt reporter behavior proof
+        run: python test_deepeval_reporter.py
+      - name: Flywheel evaluation artifact witness controls
+        run: python test_reporter_flywheel.py
+      - name: conformance, Python reference (expect 48 of 48)
+        run: python conformance/run.py membrane.py
+      - name: selftest re-derives its own identity
+        run: python membrane.py selftest
+      - name: proof surface receipt adapter emits a closed-lattice receipt
+        run: |
+          python membrane.py anchor README.md
+          python adapters/proof_surface_receipt.py verify README.md anchors.json > receipt.json
+          python - <<'PY'
+          import json
+          data = json.load(open("receipt.json", encoding="utf-8"))
+          assert data["receipt_id"].startswith("emet-verify-")
+          assert data["verdict"] in {"MATCH", "DRIFT", "UNVERIFIABLE"}
+          assert "TRUSTED" not in json.dumps(data)
+          PY
+      - name: rationale walkthrough transcript is re-derivable
+        run: python test_walkthrough.py
+      - name: Art receipt digests
+        run: python scripts/check_art_receipts.py
+
+  emet-rust:
+    name: emet (rust implementation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/emet
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: build the rust implementation
+        run: rustc -O impl/rust/emet.rs -o impl/rust/emet
+      - name: rust receipt behavior tests
+        run: cargo test --release --manifest-path impl/rust/Cargo.toml
+      - name: conformance, Rust (expect 40 of 40)
+        run: python conformance/run.py impl/rust/emet
+        env:
+          EMET_SKIP_CAPABILITIES: rebind,eval-receipt
+
+  emet-js:
+    name: emet (node implementation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/emet
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: node receipt behavior tests
+        run: node --test impl/js/test_receipt.js
+      - name: conformance, Node.js (expect 40 of 40)
+        run: python conformance/run.py impl/js/emet.js
+        env:
+          EMET_SKIP_CAPABILITIES: rebind,eval-receipt
+
+  emet-go:
+    name: emet (go implementation)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/emet
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@d35c59abb061a4a6fb18e82ac0862c26744d6ab5 # v5.5.0
+        with:
+          go-version: "1.23"
+          cache: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: build the go implementation
+        run: CGO_ENABLED=0 go build -o impl/go/emet impl/go/emet.go
+      - name: conformance, Go (expect 35 of 35)
+        run: python conformance/run.py impl/go/emet
+        env:
+          EMET_SKIP_CAPABILITIES: receipt,rebind,eval-receipt
+
+  emet-cross-lang:
+    name: emet (receipt parity across languages)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/emet
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - name: build the rust implementation where the parity test looks first
+        run: |
+          mkdir -p impl/rust/target/release
+          rustc -O impl/rust/emet.rs -o impl/rust/target/release/emet
+      - name: receipt parity and the negatives that must fail (Python, Rust, Node)
+        run: python test_witness_receipt_cross_lang.py
+        env:
+          EMET_REQUIRE_CROSS_LANG: "1"
+
+  emet-packaging:
+    name: emet (installed console script)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/emet
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: install the emet package
+        run: python -m pip install .
+      - name: the installed console script re-derives its own identity
+        run: emet selftest
+      - name: conformance against the installed console script (expect 48 of 48)
+        run: python conformance/run.py "$(python -c 'import shutil; print(shutil.which("emet"))')"
+
+  # forum's own CI, step for step: Linux and Windows on Python 3.11 to 3.13,
+  # each with lint, the type check, the suite under its coverage floor and the
+  # demo. The client-package test ran in forum's release workflow on a tag; it
+  # runs here on every change.
+  forum:
+    name: forum (${{ matrix.os }}, python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13"]
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/forum
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install from packages/forum
+        run: |
+          python -m pip install --upgrade pip pytest-timeout
+          python -m pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check src tests
+      - name: Type check
+        run: mypy src/forum
+      - name: The package's own tests, under its coverage floor
+        run: python -m pytest -q --cov=forum --cov-report=term-missing --cov-fail-under=85
+      - name: The demo
+        run: python examples/demo.py
+      - name: The client-package test from its release workflow
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: python scripts/test_client_plugin.py
+      - name: Art receipt digests
+        if: runner.os == 'Linux' && matrix.python == '3.12'
+        run: python scripts/check_art_receipts.py
+
+  # accountable-surface's own CI: Windows, Python 3.12 and Node 24, with its two
+  # siblings on the path. In its own repository the job cloned coherence-membrane
+  # and proof-surface; here they are the folders beside it. The last step is
+  # new: the authority command answers --help and each server answers an MCP
+  # initialize request (the two servers take no flags).
+  accountable-surface:
+    name: accountable-surface (windows, python 3.12, node 24)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: pwsh
+        working-directory: packages/accountable-surface
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          package-manager-cache: false
+      - name: Install from packages/accountable-surface
+        run: |
+          python -m pip install --upgrade pip pytest-timeout
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python -m pip install -e ".[test,server]"
+      - name: The package's own tests, with the sibling sources on the path
+        run: |
+          $env:PYTHONPATH = "$PWD\src;$PWD\..\coherence-membrane\src;$PWD\..\proof-surface\src"
+          python -m pytest
+      - name: Web tests
+        shell: bash
+        run: node --test web/*.test.mjs
+      - name: Entry points answer
+        shell: bash
+        run: |
+          accountable-surface-authority --help > /dev/null
+          init='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}'
+          printf '%s\n' "$init" | accountable-surface-mcp | grep -q '"serverInfo"'
+          printf '%s\n' "$init" | accountable-surface-server | grep -q '"serverInfo"'
+
+  accountable-surface-art:
+    name: accountable-surface (art receipts)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Art receipt digests
+        working-directory: packages/accountable-surface
+        run: python3 scripts/check_art_receipts.py
+
+  # bulletin's own CI, step for step, on Node 24: types, the unit tests, the
+  # check that post text reaches the page as text, and the assembled service
+  # (a local Worker, the HTTP smoke, and the browser smoke against both the
+  # backend face and the published site at the commit bulletin pins). Nothing
+  # is deployed: wrangler runs with --local.
+  bulletin:
+    name: bulletin (node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/bulletin
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: pinned published website face
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: HarperZ9/HarperZ9.github.io
+          ref: 415d609feeaa5f8802cbc443044c30a76b5346cc
+          path: packages/bulletin/.ci-portfolio
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: packages/bulletin/package-lock.json
+      - run: npm ci
+      - name: types
+        run: npm run typecheck
+      - name: the pieces
+        run: npm test
+      - name: the face writes text, never markup
+        run: |
+          if grep -rnE '\.(inner|outer)HTML\s*=|insertAdjacentHTML|document\.write\(' public/js/; then
+            echo "::error::post text reaches the DOM through textContent only"
+            exit 1
+          fi
+      - name: the assembled service
+        env:
+          WRANGLER_SEND_METRICS: "false"
+        run: |
+          cp wrangler.toml.example wrangler.toml
+          npm run db:local
+          npx wrangler dev --local --port 8787 --var BULLETIN_POW_BITS:12 &
+          worker=$!
+          trap 'kill $worker 2>/dev/null || true' EXIT
+          for _ in $(seq 1 60); do
+            curl -sf http://127.0.0.1:8787/.well-known/agent-board.json -o /dev/null && break
+            sleep 1
+          done
+          node scripts/smoke.mjs --base http://127.0.0.1:8787
+          export CHROME_PATH="$(command -v google-chrome || command -v chromium)"
+          test -n "$CHROME_PATH"
+          BULLETIN_CHROME_NO_SANDBOX=1 node scripts/smoke/media-cross-surface.mjs             --base http://127.0.0.1:8787             --backend-face             --log-dir "$RUNNER_TEMP/bulletin-media-cross-backend"
+          BULLETIN_CHROME_NO_SANDBOX=1 node scripts/smoke/media-cross-surface.mjs             --base http://127.0.0.1:8787             --face-root "$PWD/.ci-portfolio"             --log-dir "$RUNNER_TEMP/bulletin-media-cross-website"
+      - name: Art receipt digests
+        run: python3 scripts/check_art_receipts.py
