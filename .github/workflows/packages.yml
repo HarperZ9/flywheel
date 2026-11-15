@@ -814,7 +814,12 @@ jobs:
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: ${{ matrix.python }}
-      - run: pip install -e ".[dev]"
+      # pytest-timeout: the repository rule for every job that runs pytest
+      # (tests/test_windows_release_workflow.py). These runs use the package as
+      # their pytest root (-c pyproject.toml), so the repository addopts that
+      # need the plugin do not apply; the install keeps the job working if
+      # that option is ever dropped.
+      - run: pip install -e ".[dev]" pytest-timeout
       - name: The package's own tests
         run: python -m pytest -q -c pyproject.toml
 
@@ -833,7 +838,7 @@ jobs:
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev]" pytest-timeout
       - run: >-
           python -m pytest -q -c pyproject.toml tests/test_tool_annotations.py
           tests/test_claude_plugin_bundle.py tests/test_claude_plugin_launch.py
@@ -858,7 +863,7 @@ jobs:
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
           python-version: "3.12"
-      - run: pip install -e ".[dev,mcp,hosted]"
+      - run: pip install -e ".[dev,mcp,hosted]" pytest-timeout
       - run: python -c "import fastmcp; print('fastmcp', fastmcp.__version__)"
       - run: python -m pytest -q -c pyproject.toml tests/test_tool_annotations.py tests/test_hosted_mcp.py tests/test_house_mcp.py tests/test_local_mcp.py tests/test_mcp_editing.py tests/test_voice_mcp.py
       - run: python -m pytest -q -c pyproject.toml
