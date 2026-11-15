@@ -165,14 +165,17 @@ class Account:
         try:
             _turn.record_failed(self.ledger, self.upstream, self.turn, reason, detail,
                                 partial=partial)
-        except Exception as exc:        # noqa: BLE001
-            raise self.lost(exc, partial is not None) from exc
+        except Exception as exc:        # noqa: BLE001 - a partial charge may have been made
+            raise self.lost(exc, partial is not None, charged=None) from exc
         self.state = "closed"
 
-    def lost(self, exc: BaseException, delivered: bool) -> "_turn.AccountingFailed":
+    def lost(self, exc: BaseException, delivered: bool, charged=0) -> "_turn.AccountingFailed":
         """Record a call whose accounting met a fault no one planned for.
 
-        Uses only what was computed before contact. Returns the error the
+        Uses only what was computed before contact. `charged` is what the key
+        had been debited for the call when the fault came: 0 on the served
+        path, where the debit is the last step before the entry, and None
+        (left out of the entry) when it is not known. Returns the error the
         client is told."""
         from .provider_fault_boundary import redacted_text
         self.state = "closed"
@@ -185,7 +188,8 @@ class Account:
         held = ""
         if self.caller.row is not None:
             from .gateway_key_policy import suspend
-            meta["charged_tokens"] = 0
+            if charged is not None:
+                meta["charged_tokens"] = charged
             held = suspend(self.caller, reason)
         try:
             with _turn._APPEND:
@@ -202,4 +206,4 @@ class Account:
     def settle(self, delivered: bool) -> None:
         """Close an account that contacted an upstream and was never recorded."""
         if self.state == "contacted":
-            self.lost(RuntimeError("the call ended without a ledger entry"), delivered)
+            self.lost(RuntimeError("the call ended without a ledger entry"), delivered, None)

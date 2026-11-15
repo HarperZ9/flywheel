@@ -98,8 +98,9 @@ a hard cap on what a provider can bill.
   tool definitions, images and documents.
 - A call that reached the provider and whose accounting then failed for a
   reason nobody planned for is recorded as failed with the reason
-  `accounting_error`, is not charged, and suspends the key until
-  `flywheel gateway-key clear NAME`.
+  `accounting_error` and suspends the key until
+  `flywheel gateway-key clear NAME`. Nothing more is charged for it after
+  the fault.
 - A call that fails after the provider answered, other than an unfinished
   stream, is not charged.
 - Fees that are not tokens (web search per search, code execution per

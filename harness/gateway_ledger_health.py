@@ -27,10 +27,11 @@ had answered, on every call, for as long as it lasted.
            They are never read as part of the ledger.
 
 What this cannot do. Every model interface writes its entry after the
-upstream has answered, because the entry holds the hash of the reply. So the
-one call during which the failure is first seen has already reached the
+upstream has answered, because the entry holds the hash of the reply. So
+every call already in flight when the failure is first seen has reached its
 provider: a plain reply is then held back and answered 500, and a stream's
-text has already left. Calls after it are refused before the upstream.
+text has already left. Calls that start after it are refused before the
+upstream.
 """
 from __future__ import annotations
 
@@ -105,11 +106,11 @@ def _fail(ledger, exc) -> None:
                      "since": int(ledger.clock()), "retry_at": time.monotonic() + RETRY_SECONDS}
     try:
         ledger._file.close()            # nothing held in a buffer may reach the file later
-    except (OSError, ValueError):
+    except Exception:                   # noqa: BLE001 - the file is given up either way
         _LOG.info("gateway ledger segment closed with its last write unfinished")
     _LOG.error("GATEWAY LEDGER WRITE FAILED (%s). Model calls answer 503 and reach no "
-               "provider until the ledger can be written again. The call that met the "
-               "failure had already reached its provider.", ledger.failed["error"])
+               "provider until the ledger can be written again. Calls already in flight "
+               "had reached their provider.", ledger.failed["error"])
 
 
 def usable(ledger):
