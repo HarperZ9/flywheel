@@ -26,9 +26,9 @@ Pushing the tag starts two workflows.
    - every asset against its sums file;
    - `python scripts/verify_compat_records.py --control`: the record set from
      each 1.x minor verifies, and no record with one changed byte does;
-   - every test marked `release_gate`, which includes the 50 ms budgets for
-     the coding session and the gateway and the one-second budget for the
-     record check;
+   - every test marked `release_gate`, which includes the timing budgets
+     for the coding session (50 ms) and the gateway (25 ms of its own time)
+     and the one-second budget for the record check;
    - `flywheel gate`, which must end with `verdict=PASS rewitness=MATCH`;
    - one coding request against a scripted model.
 4. **publish.** The wheel and the sdist go to PyPI by Trusted Publishing. No

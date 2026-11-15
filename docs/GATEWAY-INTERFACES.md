@@ -1132,7 +1132,12 @@ waited about 6 ms on the measured machine, and it used to be the next call's
 key check. Every check and every debit still reads the file.
 
 A test holds the figure in CI: `tests/test_gateway_overhead_timing.py` fails
-when the median of five warm calls is 50 ms or more over the stub, for both
-interfaces, streamed and not. Its controls add 200 ms inside the gateway,
-which must fail, and make the stub four times slower, which must change
-nothing.
+when the median of five warm calls spends 25 ms or more of the gateway's own
+time over the stub, for both interfaces, streamed and not. The time the
+operating system spends committing the call's two ledger entries to the disk
+is measured apart and printed, because it is the disk's: one CI runner took
+up to 310 ms for it on a call whose own gateway time was under 3 ms. Its
+controls add 200 ms inside the gateway and 200 ms to the ledger write before
+the commit, which must fail; make a commit take 100 ms, which must be
+reported and not counted; and make the stub four times slower, which must
+change nothing. The test also asserts two commits per call.

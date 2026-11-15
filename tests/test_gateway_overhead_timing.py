@@ -1,7 +1,9 @@
 """The gateway's own time per call, with the upstream's wait taken out.
 
-Budget: 50 ms of gateway time, to the first byte and to the end of the reply,
-as the median of five warm calls after two warm-up calls. It holds for
+Budget: 25 ms of the gateway's own time, to the first byte and to the end of
+the reply, as the median of five warm calls after two warm-up calls. The
+seconds the operating system spends committing ledger entries to the disk are
+measured apart and are not in that figure (below). It holds for
 /v1/messages and /v1/responses, streamed and not, with the gateway token, and
 for one plain and one streamed call with a virtual key. Each call is sent
 straight to a loopback stub and through a real gateway pointed at that stub
@@ -15,15 +17,24 @@ Where the budget comes from: 30 warm calls per case on Windows 11 with Python
 were 1 to 2 ms with the gateway token and 1.5 to 3.5 ms with a virtual key.
 More than one call in twenty took 20 to 27 ms: on Windows a socket connect
 made with a timeout sometimes comes back about 15 ms late, and the gateway
-connects to its upstream that way. The budget sits above the slowest warm
-calls in the published run, so a median would need most calls to be slower
-than the worst ones measured, and it is a quarter of the 200 ms the control
-adds.
+connected to its upstream that way. The first budget was 50 ms, above the
+slowest warm calls in that run, with the note: if the upstream connect is
+made faster, lower the budget; do not raise it to hide a slower gateway.
 
-On CI (2026-11-14, four runs) Linux runners measured medians of 1.1 to 3.9
-ms. Windows runners measured 2.1 to 7.0 ms in one run and 11.6 to 23.6 ms in
-three. Each case prints what it measured, on a pass too, so a job log shows
-the room that was left.
+The connect was made faster on 2026-11-15 and the disk commit is measured
+apart since then, so the budget is 25 ms. The gateway's own time, after
+both: 1.3 to 3.4 ms on the Windows 11 machine above, 1.4 to 3.5 ms on a
+Linux CI runner and 2.2 to 7.3 ms on a Windows CI runner (CI run
+43683218626, one run each). 25 ms is three times the slowest of those and
+an eighth of the 200 ms the control adds. If this gate fails, read the line
+it prints: it says whether the time was the gateway's or the disk's. Do not
+rerun it and do not raise it.
+
+On CI before that (2026-11-14 and 15, six runs, commit time and connect
+included) Linux runners measured medians of 1.1 to 4.4 ms. Windows runners
+measured 2.1 to 7.0 ms in one run and 7.0 to 24.1 ms in five. Each case
+prints what it measured, on a pass too, so a job log shows the room that was
+left.
 
 The Windows tail, and what was done about each of its two causes (2026-11-15).
 This gate failed on Windows runners three times in two days with medians of
@@ -38,13 +49,18 @@ This gate failed on Windows runners three times in two days with medians of
   2. The disk commit, in the record step. In the failing run 43674784134 a
      streamed call showed its first text delta after 2.3 ms and its end after
      306.8 ms. Everything between the two is the ledger entry: one append and
-     one `os.fsync`. The gateway commits each entry to the disk before it goes
+     one `os.fsync`. CI run 43683218626 then showed it directly, on a Linux
+     runner: the two commits of one call took 309.7 and 168.9 ms in two of
+     five calls and 0.6 ms in the others, and a bare append-and-commit in the
+     same folder, with no gateway code, took up to 183.0 ms. The runner's
+     disk does this on both systems. The gateway commits each entry to the
+     disk before it goes
      on, twice per call since the started entry was added, and how long the
      operating system takes inside `os.fsync` is the disk's time, not the
      gateway's. So the gate now measures the two apart. The ledger notes the
      seconds spent inside `os.fsync` (gateway_ledger_health), each call's
-     sample has its own commit seconds taken out, and the 50 ms budget
-     applies to what is left: the gateway's own work. The commit time is
+     sample has its own commit seconds taken out, and the budget applies to
+     what is left: the gateway's own work. The commit time is
      printed beside it with what a bare append-and-commit costs in the same
      folder with no gateway code involved, and the number of commits per call
      is asserted (two), so an added commit fails here.
@@ -71,7 +87,7 @@ from scripts import gateway_bench_rig as bench
 # Run by publish.yml against the built wheel before a release is published.
 pytestmark = pytest.mark.release_gate
 
-BUDGET_SECONDS = 0.050
+BUDGET_SECONDS = 0.025
 STUB_DELAY = 0.050
 CALLS, WARMUP = 5, 2
 CASES = [(path, stream, False) for path in bench.PATHS for stream in (False, True)]
