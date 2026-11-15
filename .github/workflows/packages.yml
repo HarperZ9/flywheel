@@ -816,7 +816,7 @@ jobs:
           python-version: ${{ matrix.python }}
       - run: pip install -e ".[dev]"
       - name: The package's own tests
-        run: python -m pytest -q
+        run: python -m pytest -q -c pyproject.toml
 
   articulate-macos-plugin:
     name: articulate (macos, plugin)
@@ -835,7 +835,7 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[dev]"
       - run: >-
-          python -m pytest -q tests/test_tool_annotations.py
+          python -m pytest -q -c pyproject.toml tests/test_tool_annotations.py
           tests/test_claude_plugin_bundle.py tests/test_claude_plugin_launch.py
           tests/test_local_mcp_plugin_surface.py tests/test_local_tools_stay_local.py
           tests/test_claude_plugin_claims.py tests/test_claude_plugin_scripts.py
@@ -860,8 +860,8 @@ jobs:
           python-version: "3.12"
       - run: pip install -e ".[dev,mcp,hosted]"
       - run: python -c "import fastmcp; print('fastmcp', fastmcp.__version__)"
-      - run: python -m pytest -q tests/test_tool_annotations.py tests/test_hosted_mcp.py tests/test_house_mcp.py tests/test_local_mcp.py tests/test_mcp_editing.py tests/test_voice_mcp.py
-      - run: python -m pytest -q
+      - run: python -m pytest -q -c pyproject.toml tests/test_tool_annotations.py tests/test_hosted_mcp.py tests/test_house_mcp.py tests/test_local_mcp.py tests/test_mcp_editing.py tests/test_voice_mcp.py
+      - run: python -m pytest -q -c pyproject.toml
 
   # The pre-commit hook from a scratch repository, installed from the package
   # path. The configuration is examples/pre-commit-from-flywheel.yaml with its
