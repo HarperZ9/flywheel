@@ -1,14 +1,10 @@
-"""Round 4 gateway fixes: findings R2, R5, R6, R10 and R11 of the third independent review.
+"""Round 4 gateway fixes: findings R2 and R10 of the third independent review.
 
 R2   an unfinished stream is charged for the whole request, tool definitions
      included, and no longer for the system prompt and message text alone;
-R5   a ledger write that fails with an error other than OSError or ValueError
-     marks the ledger failed, so later calls answer 503 before any upstream;
-R6   an entry whose head record could not be rewritten is on disk as a served
-     call although the reply was held back: the resumed ledger says so;
-R10  `gateway-ledger show --json` escapes C1 and bidi control characters;
-R11  a body that misses its deadline on a route outside the three model
-     interfaces is answered 408.
+R10  `gateway-ledger show --json` escapes C1 and bidi control characters.
+
+R5 and R6 are in tests/test_gateway_ledger_round4.py.
 
 A real gateway on a loopback port, a stub upstream, keys in the in-memory
 store. No provider is called.
@@ -91,3 +87,26 @@ def test_r2_the_input_estimate_is_at_least_the_calls_own_reservation():
     Caller.ticket = None                    # no reservation (the owner, or a direct call)
     charged = gateway_unaccounted.partial_charge(Turn(), "client_disconnected", began, [])
     assert Caller.keys.counts["input"] == 4     # a quarter of 13 characters, rounded up
+
+
+# --- R10 -----------------------------------------------------------------------------------
+
+HOSTILE = ("ok\x1b[2J", "c1 \x85\x9b\x90", "bidi \u202e\u2066\u200f", "del \x7f", "nul \x00",
+           "line \u2028\u2029", "plain \u6f22\u5b57 \U0001f600")
+
+
+@pytest.mark.parametrize("flags", [["--json"], ["--json", "--full"], [], ["--full"]])
+def test_r10_show_prints_no_control_character_from_a_recorded_string(tmp_path, capsys, flags):
+    from harness import gateway_ledger, gateway_ledger_cli
+    ledger = gateway_ledger.GatewayLedger(tmp_path)
+    for index, text in enumerate(HOSTILE):
+        ledger.append("endpoint_call", "sha", {"key": "owner", "model_ref": text,
+                                               "reason": text, "n": index})
+    ledger.close()
+    assert gateway_ledger_cli.main(["show", *flags], environ={"FLYWHEEL_HOME": str(tmp_path)}) == 0
+    out = capsys.readouterr().out
+    raw = sorted({ch for ch in out if ch != "\n" and not (" " <= ch <= "~")})
+    assert raw == [], f"printed raw: {[hex(ord(ch)) for ch in raw]}"
+    if "--json" in flags:                   # a parser still reads back what was recorded
+        rows = [json.loads(line) for line in out.splitlines()]
+        assert [row["meta"]["model_ref"] for row in rows] == list(HOSTILE)

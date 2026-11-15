@@ -10,7 +10,7 @@
   "harness/compaction.py": "feeae2640fecf40b747e4ada7b74b0a541168a331f2fa262eeb261bdfbddb62f",
   "harness/credential_handles.py": "9fb2622a9a9ef7b0e99311d84f66db4fc6ddad358db8a677f52de5227f0cd600",
   "harness/ed25519_verify.py": "bd2b48c9788f7e64f8ba5b1ea02ff68c7daea16d91cb284fb5163fe0eea8e405",
-  "harness/endpoint_registry.py": "351e95755791af11dc41b4332a694a79e1a26dc5caf1ccb6636aef75b5aeabaa",
+  "harness/endpoint_registry.py": "ac1bd5f03bae04967cb4b7a85572ea9aa7db99c840895359b094336a33bd4178",
   "harness/evidence_json.py": "bafe71d923eaf7885185001dee8fb9e949c40cb548c0721ff2604d46533d8d46",
   "harness/gateway.py": "48c9105fd503604b3aa1cef93307deac1f4342f8433dfc5bb6a0f3f96ce16266",
   "harness/gateway_agent_failures.py": "07f401e312036b0a9eb87e594aa1376ae6befb1367371d4150832d56e3a81275",

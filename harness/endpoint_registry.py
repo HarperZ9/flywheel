@@ -159,7 +159,7 @@ class LedgeredProposer:
 
     def generate(self, prompt: str, *, seed: int, temperature: float,
                  max_new_tokens: int, system: str = "") -> ProposerOutput:
-        try:                    # before the provider is contacted: what cannot be hashed is not sent
+        try:                    # before the provider is contacted: an unhashable prompt is not sent
             asked = prompt_hash(prompt)
         except UnicodeError as exc:
             raise ValueError("the prompt is not valid UTF-8 (a lone surrogate), so the call "

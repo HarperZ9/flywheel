@@ -121,10 +121,10 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
 
     An estimate is the larger of the word count and a quarter of the
     characters, rounded up; the input estimate is also at least a quarter of
-    the request's bytes, which counts tool definitions. An OpenAI-format stream reports usage in its last
-    chunk, so every such stream that stops early is estimated, hosted OpenAI
-    included. The entry is marked `estimated`. A stream the upstream cut
-    before any event is not charged."""
+    the request's bytes, which counts tool definitions. An OpenAI-format
+    stream reports usage in its last chunk, so every such stream that stops
+    early is estimated, hosted OpenAI included. The entry is marked
+    `estimated`. A stream the upstream cut before any event is not charged."""
     caller = turn.caller
     if caller is None or caller.row is None:
         return {}
