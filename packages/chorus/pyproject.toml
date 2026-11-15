@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "chorus-discourse"
+version = "0.3.2"
+description = "Read a comment section: ranked themes, strength of feeling, split topics, and a receipt anyone can re-run."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Zain Dana Harper", email = "17142659+HarperZ9@users.noreply.github.com" }]
+keywords = ["discourse", "comments", "clustering", "nlp", "research"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Text Processing :: Linguistic",
+  "Topic :: Scientific/Engineering :: Information Analysis",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://harperz9.github.io/chorus.html"
+Source = "https://github.com/HarperZ9/chorus"
+Issues = "https://github.com/HarperZ9/chorus/issues"
+Changelog = "https://github.com/HarperZ9/chorus/blob/main/CHANGELOG.md"
+
+[project.scripts]
+chorus = "chorus.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+# Without this, pytest imports whatever copy of the package happens to be
+# installed in the environment instead of this repo's src/. That is not a
+# style preference: chorus was resolving to a stale editable install pointing
+# at an old worktree, and plexus to a copy in site-packages, so both suites
+# were green while testing source that was not this checkout.
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"

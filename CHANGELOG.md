@@ -161,11 +161,16 @@ Tools under `packages/`
 - Sixteen single-purpose tools now live under `packages/`, each as the final tree of its own repository: `proof-surface`, `proof-surface-report`, `repo-proof-index`, `model-provenance-validator`, `context-curator-lite`, `workflow-harness-lite`, `secret-redact-io`, `agent-hook-pack`, `agent-routing-kit`, `public-surface-sweeper`, `discover`, `accountable-engine`, `coherence-membrane`, `behavior-transform.io`, `terminal-state-fixtures`, `seal-watch`. `packages/README.md` lists what each does, its entry points and the source commit.
 - Each keeps its own `pyproject.toml` or `package.json` and installs from its folder, for example `python -m pip install ./packages/proof-surface`. The `flywheel-verify` wheel and sdist do not contain them.
 - Their tests run in `.github/workflows/packages.yml` when a change touches `packages/`. The daily seal-watch check runs from `.github/workflows/seal-watch.yml`.
+- `chorus` (distribution `chorus-discourse` 0.3.2) now also lives under `packages/chorus` and installs with `python -m pip install ./packages/chorus`. PyPI releases still publish from `HarperZ9/chorus`, which stays open.
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
 
 Evidence demos under `demos/`
 - Five evidence demos and receipts now live under `demos/`, each as the final tree of its own repository: `flywheel-evidence-task`, `flywheel-receipt-demo`, `bootloops-second-checker`, `crewai-kickoff-replay-receipt`, `vllm-ci-forum-receipt`. `demos/README.md` lists what each shows, how to run it and the source commit.
 - Their checks run in `.github/workflows/demos.yml` when a change touches one of them. The two sealed receipts are byte-for-byte copies; seal-watch still checks the published repositories from fresh clones. The `flywheel-verify` wheel and sdist do not contain `demos/`.
+
+Research artifacts under `docs/research/`
+- Two sealed research artifacts now live under `docs/research/`, each as the final tree of its own repository: `witnessing-spine` and `faithful-transpile`. `docs/research/README.md` lists what each is, how to check it and the source commit.
+- Their checks run in `.github/workflows/research-artifacts.yml` when a change touches one of them. The DOI of The Conservation of Faithfulness, 10.5281/zenodo.23126484, is unchanged.
 
 ### What broke
 

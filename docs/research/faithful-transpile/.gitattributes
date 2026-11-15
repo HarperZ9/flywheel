@@ -1,0 +1,28 @@
+# Every tracked file listed in MANIFEST.sha256 is sealed by the SHA-256 of its exact
+# bytes (`sha256sum -c MANIFEST.sha256`). With core.autocrlf=true, the Git for Windows
+# default, checkout rewrites LF to CRLF, so the same commit gave a different verdict
+# on Windows than on Linux. `-text` turns off line-ending conversion for the sealed
+# set, so checkout writes the committed blob on every platform and the check gives
+# one verdict everywhere. MANIFEST.sha256 is pinned too: a CRLF copy puts a carriage
+# return on each path and sha256sum then cannot open any listed file.
+# Root-level paths start with "/" so they do not also match files in subfolders.
+# Files outside the manifest (LICENSE-TEXT, docs/, .github/) keep default handling.
+/.gitignore -text
+/00-ABSTRACT.md -text
+/DEMO-two-minds.md -text
+/ENDGAME.md -text
+/LICENSE -text
+/MANIFEST.sha256 -text
+/PRINCIPLE.md -text
+/README.md -text
+/THESIS.md -text
+/VERDICT.md -text
+/center.py -text
+/vision-arm-REPORT.md -text
+center/** -text
+sims/** -text
+
+# Repo art receipts (docs/art/receipts.json) record the SHA-256 of each output's
+# stored bytes, so Git must not rewrite line endings on checkout. Without this, a
+# Windows clone with core.autocrlf=true fails the SVG digests.
+docs/art/** -text

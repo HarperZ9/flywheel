@@ -30,13 +30,19 @@ jobs:
     # The install step below adds pytest-timeout before any test command in
     # this matrix runs: the repository's pytest.ini passes --timeout, and a
     # package with no pytest settings of its own inherits it.
-    name: ${{ matrix.package }}
+    name: ${{ matrix.package }}${{ matrix.python && format(' (python {0})', matrix.python) || '' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
       fail-fast: false
       matrix:
         include:
+          # A row may name a Python version. Rows without one run on 3.12.
+          # chorus ran on 3.10 and 3.12 in its own repository; this is the 3.10 leg.
+          - package: chorus
+            python: "3.10"
+            install: python -m pip install -e . pytest
+            test: python -m pytest -q
           - package: proof-surface
             install: python -m pip install -e ".[test]"
             test: |
@@ -99,6 +105,11 @@ jobs:
               python tools/check_repo_facts.py
               python tools/check_repo_art.py
               python tools/behavior_flagship.py doctor --json
+          - package: chorus
+            install: python -m pip install -e . pytest
+            test: |
+              python -m pytest -q
+              python tools/check_repo_art.py
     defaults:
       run:
         shell: bash
@@ -109,7 +120,7 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
         with:
-          python-version: "3.12"
+          python-version: ${{ matrix.python || '3.12' }}
       - name: Install from packages/${{ matrix.package }}
         run: |
           python -m pip install --upgrade pip pytest-timeout

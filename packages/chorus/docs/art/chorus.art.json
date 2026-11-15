@@ -1,0 +1,87 @@
+{
+  "header": {
+    "name": "chorus",
+    "role": "discourse synthesis, with a re-derivable receipt",
+    "tagline": "Read a comment section synthesized, and re-run the reading yourself.",
+    "words": ["score", "weight", "cluster", "contest", "verify"]
+  },
+  "flows": [
+    {
+      "file": "synthesis-lane.svg",
+      "kicker": "from a pile of comments to a reading you can re-run",
+      "title": "How a corpus becomes themes, contested topics, and a receipt",
+      "footnote": "Nothing in this lane consults a model. Every step is a pure function of the corpus and the parameters, which is what lets the receipt promise that a stranger holding the same comments gets the same digest. The model overlay is a separate advisory layer, and it stays out of the hash.",
+      "alt": "Eight stages of turning a corpus of comments into a discourse digest: normalize, engagement, score, weight, cluster, themes, contested, and receipt. Gathered rows become discourse items, and rows that are not discourse are skipped. Engagement is read from the source when it is present; when a source genuinely has no signal, engagement is zero and the absence is recorded, so a missing vote is never counted as a real zero-weight one. Sentiment comes from a thirty word lexicon with negation, intensifier, capitalization and punctuation rules, and the same text always scores the same. Weight is the natural log of one plus engagement, multiplied by one plus half the sentiment intensity, so a loud comment nobody engaged with stays small. Clustering is a hashed TF-IDF cosine against the nearest leader across five hundred and twelve dimensions, seeded most-engaged first. Each theme carries its size, its sentiment split, its controversy, and the single highest-weight voice that disagrees with the majority. Contested aspects are measured separately across every comment that mentions a term, so a topic the corpus is split on survives the clustering that would file praise and complaint about it under different themes. The receipt hashes the inputs, the parameters and the digest body. Three outcomes: re-derived, rejected, and advisory only.",
+      "stages": [
+        {"title": "Normalize", "note": "Gathered rows into discourse items."},
+        {"title": "Engagement", "note": "Read when present, absent when not."},
+        {"title": "Score", "note": "Thirty lexicon words, plus the rules."},
+        {"title": "Weight", "note": "Engagement damped, intensity applied."},
+        {"title": "Cluster", "note": "Nearest leader over hashed TF-IDF."},
+        {"title": "Themes", "note": "Size, split, dissent and controversy."},
+        {"title": "Contested", "note": "Every voice on a term, not a theme."},
+        {"title": "Receipt", "note": "Inputs, params and body, all hashed."}
+      ],
+      "returns": [
+        {"from": 2, "to": 0, "label": "SAME TEXT, SAME SCORE, EVERY TIME"},
+        {"from": 6, "to": 4, "label": "A SPLIT TOPIC SURVIVES CLUSTERING"}
+      ],
+      "outcomes": [
+        {"label": "RE-DERIVED", "note": "the digest follows from the inputs", "tone": "verified"},
+        {"label": "REJECTED", "note": "a tampered body fails its receipt", "tone": "drift"},
+        {"label": "ADVISORY ONLY", "note": "model opinion stays out of the hash", "tone": "none"}
+      ]
+    },
+    {
+      "file": "verify-lane.svg",
+      "kicker": "the digest does not get to vouch for itself",
+      "title": "How a stranger re-derives a digest and rejects a tampered one",
+      "footnote": "Recomputing a hash over a tampered body is the obvious forgery, so the check first requires the submitted body to match its receipt. It then throws away the sentiment the digest carries, re-scores every comment from its text, re-clusters with the parameters and method-version verifier the receipt recorded, and compares what comes back.",
+      "alt": "Eight stages of verifying a discourse digest: receipt, version, vocabulary, inputs, rescore, recluster, rehash, and verdict. The receipt supplies the parameters and hashes the original run recorded. The method version selects the verifier for that pipeline; unsupported versions fail instead of being guessed. The lexicon is hashed into the receipt, so editing the word list invalidates every digest that was built with the old one. The corpus hash is checked before any work is done. Then the stored sentiment is thrown away and every comment is re-scored from its own text, which is why fabricated sentiment cannot verify. Clustering and weighting re-run from the parameters the receipt recorded, not from the live defaults, so raising a default cannot silently break an already-versioned receipt. The digest body is rebuilt from that re-derivation and hashed. The verdict is one boolean with nothing taken on trust: a digest whose themes, weights or sentiment distribution do not follow from the inputs fails, even when its own stored hash was recomputed to match its tampered body. Three outcomes: verified, tampered, and no receipt.",
+      "stages": [
+        {"title": "Receipt", "note": "The params and hashes a run recorded."},
+        {"title": "Version", "note": "The method version selects a supported verifier."},
+        {"title": "Vocabulary", "note": "The lexicon hash, pinned to the run."},
+        {"title": "Inputs", "note": "The corpus hash, before anything else."},
+        {"title": "Rescore", "note": "The stored sentiment is thrown away."},
+        {"title": "Recluster", "note": "The recorded params drive the rerun."},
+        {"title": "Rehash", "note": "The body rebuilt from what came back."},
+        {"title": "Verdict", "note": "One boolean, nothing taken on trust."}
+      ],
+      "returns": [
+        {"from": 2, "to": 0, "label": "A CHANGED LEXICON FAILS THE RECEIPT"},
+        {"from": 6, "to": 4, "label": "RECORDED PARAMS, NOT LIVE DEFAULTS"}
+      ],
+      "outcomes": [
+        {"label": "VERIFIED", "note": "the same corpus rebuilds the digest", "tone": "verified"},
+        {"label": "TAMPERED", "note": "the body does not follow the inputs", "tone": "drift"},
+        {"label": "NO RECEIPT", "note": "a digest without one is uncheckable", "tone": "none"}
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "method-table.svg",
+      "kicker": "every number the digest reports",
+      "title": "Where each figure in a digest comes from, and what it is not",
+      "source": "src/chorus/sentiment.py, synthesize.py and receipt.py",
+      "heads": ["what it holds", "how many", "where the number comes from"],
+      "fields": [
+        {"key": "lexicon words", "value": "thirty words", "note": "Fifteen positive and fifteen negative, each carrying a valence between minus three and plus three. The list is hashed into every receipt."},
+        {"key": "intensifiers", "value": "ten of them", "note": "Looked for up to three tokens back. A word like extremely widens a valence away from zero; one like slightly pulls it in."},
+        {"key": "negators", "value": "nine of them", "note": "A negated valence flips sign and keeps about three quarters of its size, so a negation weakens a claim rather than erasing it."},
+        {"key": "the compound", "value": "minus one to one", "note": "The summed valence divided by the root of itself squared plus fifteen, so no single loud comment runs away with a theme."},
+        {"key": "caps and marks", "value": "two emphases", "note": "An all-caps valence word of more than one letter counts a quarter more, and up to four exclamation marks add five percent each."},
+        {"key": "the weight", "value": "one formula", "note": "The log of one plus engagement, times one plus half the sentiment intensity, so a loud comment nobody engaged with stays small."},
+        {"key": "clustering", "value": "512 dimensions", "note": "Hashed TF-IDF cosine against the nearest leader, joining above eighteen hundredths, seeded most-engaged first so it re-derives."},
+        {"key": "controversy", "value": "zero to one", "note": "The population standard deviation of a theme's sentiment. Zero is consensus at any volume, and near one is a hard two-sided split."},
+        {"key": "contested aspects", "value": "twelve, at three", "note": "A term needs three mentioning voices and real disagreement on both sides, so one-sided praise never gets reported as a fight."},
+        {"key": "the receipt", "value": "seven fields", "note": "Input hash, lexicon hash, cluster parameters, weight formula, model reference, digest body hash, and method version."},
+        {"key": "the model overlay", "value": "outside the hash", "tone": "drift", "note": "Advisory opinion on the items the lexicon is least sure of, tagged with its own provenance and kept out of the re-derivable core."},
+        {"key": "engagement signal", "value": "present over total", "note": "How many items actually carried one. An absent signal is recorded absent, so a missing vote is never counted as a zero-weight one."}
+      ],
+      "alt": "Twelve rows covering every number a digest reports and where it comes from. The lexicon is thirty words, fifteen positive and fifteen negative, each carrying a valence between minus three and plus three, and the whole list is hashed into every receipt. Ten intensifiers are looked for up to three tokens back, widening or narrowing a valence. Nine negators flip a valence and keep about three quarters of its size, so a negation weakens a claim rather than erasing it. The compound score runs from minus one to one, the summed valence divided by the root of itself squared plus fifteen, so no single loud comment runs away with a theme. Two emphases apply: an all-caps valence word of more than one letter counts a quarter more, and up to four exclamation marks add five percent each. Weight is the log of one plus engagement, times one plus half the sentiment intensity. Clustering runs a hashed TF-IDF cosine over five hundred and twelve dimensions against the nearest leader, joining above eighteen hundredths, seeded most-engaged first. Controversy is the population standard deviation of a theme's sentiment, zero at consensus and near one at a hard split. Twelve contested aspects are surfaced, each needing three mentioning voices and real disagreement on both sides. The receipt carries seven fields. The accented row is the model overlay, which is advisory opinion on the items the lexicon is least sure of and is deliberately kept outside the digest hash. The last row is engagement coverage, which reports how many items actually carried a signal, because an absent signal is recorded absent rather than counted as a zero.",
+      "footnote": "Nothing in this table is a verdict. Sentiment is a weight the ranking uses, the lexicon is English-only and literal with no reading of sarcasm or context, and the clustering is lexical rather than semantic. The digest says all of that about itself, and the receipt hashes the saying along with the numbers."
+    }
+  ]
+}
