@@ -386,6 +386,11 @@ jobs:
               /tmp/vc/bin/articulate --version
               /tmp/vc/bin/articulate --help > /dev/null
               printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' | /tmp/vc/bin/articulate-mcp | grep -q '"serverInfo"'
+          - package: gather
+            smoke: |
+              /tmp/vc/bin/gather --version
+              /tmp/vc/bin/gather --help > /dev/null
+              /tmp/vc/bin/gather pilot migrate-manifest --help > /dev/null
           - package: accountable-surface
             smoke: |
               /tmp/vc/bin/accountable-surface-authority --help > /dev/null
@@ -1028,3 +1033,69 @@ jobs:
       - run: python -m articulate.cli check README.md CHANGELOG.md docs/*.md --gate
       - name: Art receipt digests
         run: python3 scripts/check_art_receipts.py
+
+  # gather's own CI, step for step: Linux on Python 3.11 and 3.12 with lint, the
+  # type check, the suite under its 78% coverage floor and the two demos; the
+  # Windows child-spawn tests on 3.12.
+  gather:
+    name: gather (python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.11", "3.12"]
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/gather
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install from packages/gather
+        run: |
+          python -m pip install --upgrade pip pytest-timeout
+          pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check src tests examples
+      - name: Type check
+        run: mypy src/gather
+      - name: Run tests with coverage
+        run: pytest -q --cov=src/gather --cov-report=term-missing --cov-fail-under=78
+      - name: Run the demos (smoke check)
+        run: |
+          python examples/demo.py
+          python examples/pipeline.py
+      - name: A format 1 manifest migrates as a dry run and the examples are format 2
+        run: |
+          gather pilot migrate-manifest examples/pilot/showcase-offline.json | grep -q "nothing to do"
+          gather pilot migrate-manifest examples/pilot/showcase-live.json | grep -q "nothing to do"
+      - name: Art receipt digests
+        if: matrix.python == '3.12'
+        run: python3 scripts/check_art_receipts.py
+
+  gather-windows-spawn:
+    name: gather (windows, child-spawn tests)
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/gather
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Install from packages/gather
+        run: |
+          python -m pip install --upgrade pip pytest-timeout
+          pip install -e ".[dev]"
+      - name: The child-spawn tests
+        run: pytest -q -rs tests/test_spawn_working_folder.py tests/test_spawn_children.py tests/test_video_spawn.py tests/test_vendored.py

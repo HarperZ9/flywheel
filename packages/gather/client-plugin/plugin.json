@@ -1,0 +1,11 @@
+{
+  "name": "gather-local",
+  "version": "2.6.0",
+  "description": "Read local documents and get a digest receipt for each one your assistant can cite.",
+  "author": {
+    "name": "Zain Dana Harper"
+  },
+  "license": "AGPL-3.0-only",
+  "repository": "https://github.com/HarperZ9/gather",
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+}
