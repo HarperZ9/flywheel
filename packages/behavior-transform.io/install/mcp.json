@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "behavior-transform": {
+      "command": "python",
+      "args": ["tools/behavior_transform_mcp.py"],
+      "description": "IO-boundary safety layer: receipt-gated write/exec/fetch/model-boundary. Host: flywheel."
+    }
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "name": "behavior-transform",
+  "version": "0.1.0",
+  "description": "IO-boundary safety membrane: blocks secrets, gates exec/fetch/read/search, requires receipts at the model boundary. Hosted by flywheel.",
+  "author": "behavior-transform.io maintainer",
+  "mcpServers": {
+    "behavior-transform": { "command": "python", "args": ["${CLAUDE_PLUGIN_ROOT}/../tools/behavior_transform_mcp.py"] }
+  }
+}
