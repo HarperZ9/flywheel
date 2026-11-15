@@ -3,6 +3,11 @@
 Release notes for each version live in `RELEASE-NOTES-<version>.md`. This file
 lists the changes in each release with the pull request that made them.
 
+## Unreleased
+
+- `packages/mneme` now holds Mneme `main` at `160df160` (schema 6): audit rows name a random alias, `forget` removes the export files Mneme wrote and overwrites the files it deletes, and `mneme forget-subject` erases one user's records with a receipt that `mneme verify-erasure` checks. The version stays 0.7.0. Use one Mneme version per database file: an older Mneme that reopens a schema 6 store writes rows with its older guarantees.
+- `scripts/check_data_location_copy.py` gains proof pointers: a sentence can pass by naming the tests that hold the tool to it and the limit a reader needs, and the check fails when a named test is gone. Three Mneme sentences moved from the allow-list to proof pointers, and one new changelog sentence joined them.
+
 ## 2.0.0 (2026-11-15)
 
 The coding session streams replies from hosted providers, calls tools through each provider's function calling and marks Anthropic requests for prompt caching. The local gateway answers the Anthropic Messages and OpenAI Responses formats itself and can give a tool a key with a budget. Records name what a result covers in a `scope` field, which replaces `does_not_prove`; every record a 1.x release wrote still verifies.

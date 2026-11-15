@@ -135,3 +135,37 @@ def test_a_correction_must_name_where_content_goes():
 def test_the_desktop_docs_are_surfaces_too():
     names = {p.relative_to(ROOT).as_posix() for p in copy.surfaces(ROOT)}
     assert "desktop/docs/MOBILE-SETUP.md" in names
+
+
+def test_a_proven_sentence_passes_only_where_it_is_listed():
+    for path, sentence in copy.PROVEN:
+        assert _violations(sentence + "\n", path) == [], sentence
+        assert _violations(sentence + "\n", "README.md") != [], sentence
+
+
+def test_every_proof_names_tests_and_a_limit_and_they_exist_here():
+    assert copy.missing_proofs(ROOT) == []
+    for proof in copy.PROVEN.values():
+        assert proof.tests and len(proof.limit) > 40
+        assert all("::test_" in test_id for test_id in proof.tests)
+
+
+def test_a_proof_whose_test_is_gone_fails_the_check(tmp_path):
+    (path, sentence), proof = next(iter(copy.PROVEN.items()))
+    page = tmp_path / path
+    page.parent.mkdir(parents=True)
+    page.write_text(sentence + "\n", encoding="utf-8")
+    missing = copy.scan(tmp_path)
+    assert {v.rule for v in missing} == {"proof_missing"}
+    assert len(missing) == len(proof.tests)
+    for test_id in proof.tests:
+        file, _, name = test_id.partition("::")
+        target = tmp_path / file
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("a", encoding="utf-8") as handle:
+            handle.write(f"def {name}(tmp_path):\n    pass\n")
+    assert copy.scan(tmp_path) == []
+    renamed = tmp_path / proof.tests[0].partition("::")[0]
+    renamed.write_text(renamed.read_text(encoding="utf-8").replace(
+        proof.tests[0].partition("::")[2], "test_renamed"), encoding="utf-8")
+    assert [v.rule for v in copy.scan(tmp_path)] == ["proof_missing"]
