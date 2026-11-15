@@ -1,0 +1,30 @@
+{
+  "proof_surface_version": "0.1",
+  "packet_id": "public-surface-sweeper-example",
+  "surface": "example repository public release surface",
+  "status": "needs-polish",
+  "claims": [
+    {
+      "claim": "Required public release files are visible.",
+      "evidence": "required-file findings=0"
+    },
+    {
+      "claim": "Secret-shaped values are surfaced before publication.",
+      "evidence": "secret-shaped findings=0"
+    },
+    {
+      "claim": "Public text hygiene is checkable.",
+      "evidence": "em-dash findings=1"
+    }
+  ],
+  "checks": [
+    {
+      "tool": "public-surface-sweeper",
+      "status": "warn",
+      "summary": "score=90, findings=1"
+    }
+  ],
+  "action_items": [
+    "README.md:14: replace em dash with plain punctuation"
+  ]
+}
