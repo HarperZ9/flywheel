@@ -31,7 +31,31 @@
   flag alone: add the kind to the grant.
 - The world session refuses its own root directory as a write target (a request
   with an empty target used to crash the request handler).
-
+- The accountable actuation pipeline (`pipeline.py`): plan, before read, pure policy
+  check (R1 to R9), gate bound to the page the policy saw, act, independent after
+  read, typed verdict, and a hash-chained receipt for every step. Refuses secret
+  fields and secret-shaped values; stops on a CAPTCHA or bot check and pauses the
+  origin until a person clears it; holds send, submit, buy, delete, and accept steps
+  for a console-bound approval; holds steps echoed from agent-addressed page text.
+- An approval cannot widen the grant. An irreversible step whose action kind is
+  not in `scope.allowed_irreversible_actions` is refused at the policy check
+  (`R7.grant`), before a person is asked to approve it. A grant that names the kind
+  still holds each such step for a person.
+- `run_plan` validates a whole action plan first, stops at the first step not
+  verified, and returns a plan certificate.
+- Content-addressed evidence and offline re-derivation at four levels, the
+  `accountable-surface-replay` command (verify, explain, export), and the stdlib-only
+  `verify_actuation.py`. The package now loads its public names on first use, so the
+  replay path imports no effector.
+- `settle_ms` on a post-condition: the readback waits for a late effect; a timeout
+  is unverifiable.
+- One tool catalog with titles and annotations for all three MCP servers, and a
+  `--profile plugin` stdio profile with split read and write tools.
+- The browser origin bound now holds where a navigation lands after a redirect.
+- A live test suite (`-m live`) drives the pipeline in a real headless Chromium on
+  127.0.0.1.
+- Action-receipt labels are parameters, so any effector can emit a correctly
+  labelled `project-telos.action-receipt/v1` event.
 - Interoperable MCP server for the accountable-actuation core
   (`accountable_surface.interop_mcp` + `interop_runtime`). A zero-third-party-dependency
   JSON-RPC-over-stdio server (stdlib framing, no FastMCP) so other harnesses -- Claude
