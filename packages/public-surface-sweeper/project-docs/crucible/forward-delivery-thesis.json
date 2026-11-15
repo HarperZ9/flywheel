@@ -1,0 +1,22 @@
+{
+  "title": "Public Surface Sweeper forward delivery contract",
+  "disposition": "publishable",
+  "claims": [
+    {
+      "text": "the forward delivery contract test suite passes",
+      "falsification": "python -m pytest -q returns a nonzero exit code or reports failing tests"
+    },
+    {
+      "text": "the bundled clean repository fixture reports ready with zero findings",
+      "falsification": "public-surface-sweeper examples/clean-repo --summary reports a non-ready status or nonzero findings"
+    },
+    {
+      "text": "the repository can self-audit its workspace delivery surface as MATCH",
+      "falsification": "workspace mode reports DRIFT, UNVERIFIABLE, absolute paths, raw secret values, network calls, or filesystem writes for this repository"
+    },
+    {
+      "text": "workspace mode produces bounded rollout counts for public and private-line workspaces",
+      "falsification": "workspace mode fails to return repository counts and MATCH/DRIFT/UNVERIFIABLE totals for C:/dev/public or C:/dev/opsec"
+    }
+  ]
+}

@@ -1,0 +1,214 @@
+{
+  "header": {
+    "name": "public-surface-sweeper",
+    "role": "release hygiene before the push",
+    "tagline": "Read a repository the way a stranger will, before you publish it.",
+    "words": [
+      "rule",
+      "score",
+      "verdict",
+      "remote",
+      "warning"
+    ]
+  },
+  "flows": [
+    {
+      "file": "sweep-lane.svg",
+      "kicker": "one repository, one score",
+      "title": "What a sweep reads before it says a repository is ready",
+      "footnote": "Every rule reads a file that is already on disk. Nothing is fetched, nothing is written, and no rule reports a value it found.",
+      "alt": "Eight stages of a single sweep: root, skip list, readable, punctuation, required, contract, credentials, filters. The walk starts at the repository root and covers everything under it. Twenty five directory names are never entered, among them the virtual environment, the build output and the caches. A file is read only if it decodes as UTF-8, holds no null byte, and is under a megabyte. An em dash anywhere in a scanned file is an error rather than a note. Four files have to be present at the root by name. Five further rules ask whether the release surface is inspectable at all: a changelog, funding metadata, agent instructions, usage docs and a workflow. Five known credential shapes are matched by their own patterns, then a generic name-equals-value rule catches the rest. Two filters drop candidates before they are counted: a span a provider rule already claimed, and a value that reads as a placeholder. Three outcomes: ready, needs polish, and blocked.",
+      "stages": [
+        {
+          "title": "Root",
+          "note": "One repository, walked from the top."
+        },
+        {
+          "title": "Skip list",
+          "note": "Twenty five directories are never read."
+        },
+        {
+          "title": "Readable",
+          "note": "Text only, under a megabyte, no nulls."
+        },
+        {
+          "title": "Punctuation",
+          "note": "An em dash is an error, not a note."
+        },
+        {
+          "title": "Required",
+          "note": "Four files must be present by name."
+        },
+        {
+          "title": "Contract",
+          "note": "Five more make the surface inspectable."
+        },
+        {
+          "title": "Credentials",
+          "note": "Five known shapes, then generic pairs."
+        },
+        {
+          "title": "Filters",
+          "note": "A claimed span or a placeholder is dropped."
+        }
+      ],
+      "returns": [
+        {
+          "from": 7,
+          "to": 6,
+          "label": "A DROPPED MATCH NEVER REACHES THE SCORE"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "READY",
+          "note": "nothing was raised at any severity",
+          "tone": "verified"
+        },
+        {
+          "label": "NEEDS POLISH",
+          "note": "warnings only, and it still exits zero",
+          "tone": "none"
+        },
+        {
+          "label": "BLOCKED",
+          "note": "one error, and the command exits one",
+          "tone": "drift"
+        }
+      ]
+    },
+    {
+      "file": "matrix-lane.svg",
+      "kicker": "many repositories, one table",
+      "title": "How a workspace of repositories is reduced to one verdict each",
+      "footnote": "The matrix carries no absolute path, no value that any rule matched, and no result of any network call. It is a table of verdicts and counts.",
+      "alt": "Eight stages of the workspace matrix: walk, git config, remote, duplicates, surface, public, developer, status. Every directory under the given root is walked once, skipping the same build and cache names the single sweep skips. A repository is recognised by a readable git config file. Only a remote that parses as a GitHub slug is kept, so a local-only checkout is passed over. When two checkouts share a slug the shallower path wins, and a mirror directory loses on purpose. Each surviving repository is scanned across its named files, its workflows and its docs, rather than its whole tree. Six rules decide the public verdict. Four more decide the developer verdict. The overall status is the worst of the three verdicts rather than an average of them, so one drift is enough. Three outcomes: match, drift, and unverifiable.",
+      "stages": [
+        {
+          "title": "Walk",
+          "note": "Every directory under the root, once."
+        },
+        {
+          "title": "Git config",
+          "note": "A repository is a readable git config."
+        },
+        {
+          "title": "Remote",
+          "note": "Only a GitHub remote is kept."
+        },
+        {
+          "title": "Duplicates",
+          "note": "One checkout per remote, the shallowest."
+        },
+        {
+          "title": "Surface",
+          "note": "Named files, workflows and docs only."
+        },
+        {
+          "title": "Public",
+          "note": "Six rules decide the public verdict."
+        },
+        {
+          "title": "Developer",
+          "note": "Four more decide the second verdict."
+        },
+        {
+          "title": "Status",
+          "note": "The worst verdict wins. Nothing averages."
+        }
+      ],
+      "returns": [
+        {
+          "from": 7,
+          "to": 4,
+          "label": "THE THIRD VERDICT READS THE SAME FINDINGS"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "MATCH",
+          "note": "all three verdicts came back clean",
+          "tone": "verified"
+        },
+        {
+          "label": "DRIFT",
+          "note": "at least one verdict did not",
+          "tone": "drift"
+        },
+        {
+          "label": "UNVERIFIABLE",
+          "note": "the surface could not be read at all",
+          "tone": "none"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "rule-severity.svg",
+      "kicker": "ten rules, one severity each",
+      "title": "What a rule refuses, and what it had to read to refuse it",
+      "source": "public-surface-sweeper --json .",
+      "heads": [
+        "rule",
+        "severity",
+        "what it reads"
+      ],
+      "fields": [
+        {
+          "key": "required-file",
+          "value": "ERROR",
+          "note": "Four names have to be present at the root. Absence is the finding, and the contents of the files are never read."
+        },
+        {
+          "key": "em-dash",
+          "value": "ERROR",
+          "note": "One character, anywhere in a scanned text file. The house style has no em dash, so this is an error and not a note."
+        },
+        {
+          "key": "private-key",
+          "value": "ERROR",
+          "note": "A PEM header for a key of any type. The block under it is never read, only the line that opens it."
+        },
+        {
+          "key": "github-token",
+          "value": "ERROR",
+          "note": "One of five prefixes with twenty or more characters after it, bounded by a word break at both ends."
+        },
+        {
+          "key": "aws-access-key",
+          "value": "ERROR",
+          "note": "The fixed prefix and sixteen uppercase characters exactly. A longer run does not match, because the bound is anchored."
+        },
+        {
+          "key": "secret-assignment",
+          "value": "ERROR",
+          "tone": "drift",
+          "note": "A name like token or password set to a long value. Dropped if a provider rule claimed the span, or the value reads as an example."
+        },
+        {
+          "key": "readme-visual-asset",
+          "value": "WARNING",
+          "note": "An image that is not a badge by its alt text, not a badge by its host, and that resolves to a file which exists."
+        },
+        {
+          "key": "readme-developer",
+          "value": "WARNING",
+          "note": "An entry heading, a workflow heading, and a fenced block that names a real command. All three, or the warning stands."
+        },
+        {
+          "key": "public-funding",
+          "value": "WARNING",
+          "note": "Funding metadata at any of four paths. Whether it is filled in correctly is not the question here."
+        },
+        {
+          "key": "developer-ci",
+          "value": "WARNING",
+          "note": "One yml or yaml file under the workflows directory. Whether that workflow passes is settled somewhere else."
+        }
+      ],
+      "alt": "Ten of the rules a sweep applies, one to a row, each with its severity and what it had to read. Five errors cover missing required files, an em dash, a PEM private key header, a GitHub token prefix, and an AWS access key identifier. Four warnings cover a README without a substantive image, a README without all three developer entry points, absent funding metadata, and an absent workflow file. The generic credential assignment row is accented, because it is the one rule whose match can still be dropped: by a provider rule that already claimed the same span, or by a value that reads as a placeholder.",
+      "footnote": "An error takes twenty five points off a hundred and a warning takes ten, with the floor at zero. Only an error fails the command by default, so a repository can fall short of ready and still exit clean."
+    }
+  ]
+}

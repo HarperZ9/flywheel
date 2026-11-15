@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="480" viewBox="0 0 1200 480" role="img" aria-labelledby="title desc">
+  <title id="title">Clean repository fixture hero</title>
+  <desc id="desc">A simple geometric banner for a repository surface fixture.</desc>
+  <rect width="1200" height="480" fill="#101820"/>
+  <rect x="64" y="64" width="1072" height="352" fill="#f7f3e8"/>
+  <path d="M140 334 L314 146 L494 334 Z" fill="#245c4f"/>
+  <path d="M424 334 L604 142 L784 334 Z" fill="#f2b84b"/>
+  <path d="M706 334 L884 146 L1060 334 Z" fill="#a43d3d"/>
+  <circle cx="600" cy="238" r="48" fill="#101820"/>
+  <text x="600" y="398" text-anchor="middle" font-family="Arial, sans-serif" font-size="42" fill="#101820">Clean Repo Fixture</text>
+</svg>

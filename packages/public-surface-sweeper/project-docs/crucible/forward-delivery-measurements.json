@@ -1,0 +1,45 @@
+{
+  "measurements": [
+    {
+      "claim": "the forward delivery contract test suite passes",
+      "deviation": 0.0,
+      "tolerance": 0.5,
+      "method": "pytest",
+      "evidence": [
+        "python -m pytest -q",
+        "20 passed"
+      ]
+    },
+    {
+      "claim": "the bundled clean repository fixture reports ready with zero findings",
+      "deviation": 0.0,
+      "tolerance": 0.5,
+      "method": "public-surface-sweeper summary",
+      "evidence": [
+        "public_surface_sweeper examples/clean-repo --summary",
+        "score=100, status=ready, total_findings=0, errors=0, warnings=0"
+      ]
+    },
+    {
+      "claim": "the repository can self-audit its workspace delivery surface as MATCH",
+      "deviation": 0.0,
+      "tolerance": 0.5,
+      "method": "workspace delivery matrix",
+      "evidence": [
+        "public_surface_sweeper C:/dev/public/public-surface-sweeper --workspace --json",
+        "repository_count=1, MATCH=1, DRIFT=0, UNVERIFIABLE=0",
+        "privacy_boundary absolute_paths_included=false raw_secret_values_included=false network_calls_performed=false filesystem_writes_performed=false"
+      ]
+    },
+    {
+      "claim": "workspace mode produces bounded rollout counts for public and private-line workspaces",
+      "deviation": 0.0,
+      "tolerance": 0.5,
+      "method": "workspace delivery matrix",
+      "evidence": [
+        "C:/dev/public repository_count=39 counts MATCH=1 DRIFT=38 UNVERIFIABLE=0",
+        "C:/dev/opsec repository_count=3 counts MATCH=0 DRIFT=3 UNVERIFIABLE=0"
+      ]
+    }
+  ]
+}
