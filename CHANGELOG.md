@@ -219,6 +219,7 @@ Fixes
 - On Linux and macOS a read-only project is enforced by the sandbox. In 1.x the folder was writable there, whatever the documentation said. (#448)
 - A Windows folder the account cannot label runs read-only with the reason, where it used to refuse every command. (#448)
 - The recheck runner test and the POSIX sandbox test no longer depend on the host. (#420, #446)
+- Forum's SQLite ledger storage under several writers: writers take turns, an append is one transaction, and a writer that cannot take the lock within 30 seconds raises `StorageBusy` where it used to pass on SQLite's `database is locked`. (forum#49)
 
 ### Fixed after the security review (2026-11-14)
 - Fixed: `/v1/messages` in front of an Anthropic upstream broke on tools the provider runs itself. A streamed reply with a `server_tool_use` block was cut, and a reply with a `web_search_tool_result` or other provider result block was recorded as failed with nothing charged, although a stream had delivered it. Such replies are now delivered as sent, recorded as `endpoint_call` and charged from the reported usage, and the entry carries the provider's `server_tool_use` counts. Unknown block and delta types are relayed untouched. A block of the exact type `tool_result` is still refused. The coding session keeps its broader rule.
