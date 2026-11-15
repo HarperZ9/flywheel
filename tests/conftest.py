@@ -118,6 +118,19 @@ def _real_home_pointer_left_alone(tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
+def _no_gateway_process_left_behind():
+    """`gateway_ledger_gate.startup` marks the process as a gateway, where a model request
+    leaves only inside a ledger account (harness.gateway_reach). That is process state: a
+    test that starts a gateway must not leave it on for the tests after it."""
+    yield
+    import sys
+    reach = sys.modules.get("harness.gateway_reach")
+    if reach is not None:
+        reach.release()
+        reach.at("")                    # the route a handler method called in this thread set
+
+
+@pytest.fixture(autouse=True)
 def _isolated_home_pointer(tmp_path_factory, monkeypatch):
     """The per-user home pointer is the owner's machine state: a hook mounted
     without --home follows it to a home. A test that starts a gateway reaches

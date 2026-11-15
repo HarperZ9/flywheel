@@ -110,6 +110,14 @@ def test_control_a_started_entry_written_after_contact_is_seen_by_the_watch(
         return real(self, send)
     monkeypatch.setattr(gateway_account.Call, "reach", reach)
     seen = _watch(monkeypatch)
+    # Since the sixth review round the transports refuse a request that leaves outside an
+    # account (harness.gateway_reach), which stops this planted fault before the upstream:
+    assert post(url, "/v1/messages", raw)[0] == 500 and _upstream.requests == []
+    # With that rule off, the fault goes through, and the watch shows the wrong order.
+    from harness import gateway_key_policy, gateway_reach
+    gateway_key_policy.clear(keys, "ci-bot")    # the refused call suspended its key
+    gateway_reach.release()
+    del seen[:]
     assert post(url, "/v1/messages", raw)[0] == 200
     assert seen[:3] == [("contact",), ("write", STARTED), ("commit",)]
 

@@ -874,9 +874,11 @@ what a provider can bill. What it leaves open, in full:
   the key list marks it revoked.
 - On Linux and macOS the key list file is readable by its owner only.
 - A gateway key that reaches a log line or an error message is redacted.
-- The gateway follows no redirect from an upstream. A redirect would send
-  the provider key to the new address. An upstream base URL that redirects
-  fails with the redirect's status; set it to the final address.
+- The gateway follows no redirect from an upstream, on any route. A redirect
+  would send the provider key to the new address. An upstream base URL that
+  redirects fails with the redirect's status; set it to the final address.
+  The same holds for every client in Flywheel that sends a credential: the
+  model-list read, the optional judge model, an MCP server over HTTP.
 - On a stream passed through from an Anthropic upstream, the fields
   `x_receipt` and `x_flywheel` come from the gateway only. An upstream event
   that carries either is relayed without it.
@@ -898,10 +900,32 @@ real system credential store.
 
 ## The gateway ledger
 
-Every provider call the gateway routes is recorded in one ledger:
-`/v1/messages`, `/v1/responses`, `/v1/chat/completions`, `/api/route` and
-`/v1/embeddings` write to the same one. It is a file under the Flywheel home,
+Every model call the gateway makes at a roster endpoint is recorded in one
+ledger, on every route: `/v1/messages`, `/v1/responses`,
+`/v1/chat/completions`, `/api/route`, `/v1/embeddings`, `/api/eval/run`,
+`/api/audit/run`, `/api/bench/run`, `/api/capability`, `/api/workflow`,
+`/api/plan/run`, a live-screen frame delivery (`/api/live-screen/deliver`)
+and the v1 body of `/api/subagents/spawn`, whose worker processes record
+through the gateway that started them. It is a file under the Flywheel home,
 so it outlives the gateway process.
+
+The rule sits at the transports, not in a list of routes. In a gateway
+process the code that sends a model request refuses it unless a started entry
+is open for it (`harness/gateway_reach.py`). A route that builds a proposer
+without naming a ledger gets the gateway's. A route that calls a backend
+directly, with no account, is refused before anything is sent, and the
+gateway log says which route it was. `tests/test_gateway_route_reach.py`
+sends every method of every gateway route over HTTP against a provider stub
+that counts requests, and fails when a model request arrives with no started
+entry.
+
+Not in this ledger: a gateway agent run (`/api/agent`, the v2 spawn body),
+which keeps its own private trace with a started record before each request;
+the model server on this machine (`--serve-url`), reached through the chat
+path's local names, `/api/companion` and the raw `/v1/*` and `/generate`
+proxy; requests that run no model (token counting, a provider's model list,
+endpoint health probes); and whatever a separate program the gateway starts
+(a lane, a plugin, a subscription client) sends on its own.
 
 A call is in the ledger before it is made. Each call that will contact a
 provider has two entries:
@@ -911,6 +935,9 @@ provider has two entries:
   (`endpoint`, `interface`), the hash of the request (`prompt_sha`), the
   caller (`key`, and `key_fp` for a virtual key), `call`, and for a virtual
   key `reserved`: the input and output tokens the call reserved at admission.
+  A call made for a route other than the model interfaces carries `route`,
+  the gateway path that made it, and a call a worker process made carries
+  `via`.
 - the end entry, with the same `call`: `endpoint_call` for a served call, or
   `endpoint_call_failed` with a `reason`.
 
@@ -931,7 +958,7 @@ header line.
 ### Read and verify it
 
 ```bash
-flywheel gateway-ledger verify                 # exit 0 only when every segment holds
+flywheel gateway-ledger verify                 # exit 0 only when every segment and call record holds
 flywheel gateway-ledger show                   # every entry, oldest first
 flywheel gateway-ledger show --key ci-bot      # the calls of one gateway key
 flywheel gateway-ledger show --key owner       # calls made with the gateway token
@@ -943,7 +970,16 @@ flywheel gateway-ledger settle CALL --input 451 --output 9    # end one by hand
 
 `verify` recomputes every hash and link, checks each segment's header against
 the segment before it and the last segment against the head record, and names
-the line that is wrong. `show --key NAME` lists only the entries whose `key`
+the line that is wrong. It then checks the call records themselves: only an
+end entry closes a call, and an end entry with no started entry before it, a
+second end entry for one call, a call id started twice, and an end entry that
+differs from its start on the route, the request hash or the caller are each
+named as a `CALL RECORD FAULT`. The exit codes: 0 when everything holds, 1
+when the chain of hashes is broken, 4 when the chain holds and a call record
+is at fault, 3 when both hold and a call is unsettled. A gateway does not
+write a faulty call record; `verify` finding one means the ledger was written
+by something else or the gateway has a fault. The tests read the ledger
+through the same check. `show --key NAME` lists only the entries whose `key`
 is that name: served calls, failed calls and refusals. Entries that name no
 key (the chat path) count as the owner's. No key can be named `owner`:
 `flywheel gateway-key create owner` is refused, so that filter lists the
@@ -965,7 +1001,14 @@ can also be one that was never sent.
   entry `state=UNSETTLED` and exits 3 as well; `show --unsettled` lists only
   those.
 - A gateway that starts and finds such calls appends one `calls_unsettled`
-  entry that names them, and logs it at error level.
+  entry that names them, and logs it at error level. When a call's key had
+  already been charged before the gateway stopped (it stopped after the
+  debit and before the end entry), the entry says so, with the amount. A
+  later start in the same segment does not name the same calls again.
+- A running gateway names a call unsettled at once, with the same kind of
+  entry, when the call ended with no end entry and none kept for later, or
+  when a worker process ended with a call still open. `verify` then reports
+  it from the files while the gateway runs.
 - The reservation of an unsettled call counts against its key: it is added
   to the key's totals at every admission check, so the key cannot spend it
   twice. A refusal for that reason says so.
@@ -978,6 +1021,13 @@ can also be one that was never sent.
   file in the ledger folder and the gateway applies it at its next model
   call. A call a running gateway is still making is shown as `open`, and
   `settle` refuses it.
+- A call is charged once. Every debit carries its call id, and the key's row
+  keeps the ids of the calls it was last charged for. `settle` charges
+  nothing for a call its key was already charged for and writes
+  `already_charged` with the amount; a settle that is repeated after it
+  stopped half way charges nothing more; two requests that arrive together
+  apply one settle request once. The counts in a settle request file are
+  checked as the command line checks them: whole numbers, zero or more.
 
 Settling records what you say. Flywheel does not check it against the
 provider.
@@ -1054,12 +1104,14 @@ an unsettled call.
 So a call costs two commits. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips them. A
 crash of the gateway process then still loses nothing, and a power loss can
 lose the entries the operating system had not yet written, started entries
-included. On the measured machine an append took a median of 0.02 ms without
-the fsync and 1.2 ms and 2.9 ms with it on two drives (380 appends each,
-2026-11-14); the two commits of one call together took 2.3 to 3.7 ms there
-(2026-11-15). The time inside the commit is the disk's: on a slow or busy
-disk it is the larger part of what the gateway adds to a call, and the
-ledger counts it (`tests/test_gateway_overhead_timing.py` prints it).
+included (`tests/test_gateway_ledger_sync_off.py` holds the first two). On
+the measured machine a bare append and commit, with no gateway code, took a
+median of 1.21 ms and 2.17 ms at the 95th
+percentile (200 commits, 2026-11-15), and the two commits
+of one call together took 3.3 to 3.6 ms. The time inside the commit is the
+disk's: on a slow or busy disk it is the larger part of what a caller waits.
+Calls that arrive together each pay their own two commits; one commit shared
+between them is not built (issue #516).
 
 ### Restarts and a broken chain
 
@@ -1080,8 +1132,12 @@ cannot be created or written. In each case the gateway logs the cause at
 error level and answers model calls with 503 and `retry-after: 5` before it
 contacts any upstream: `/v1/messages` (plain and streamed),
 `/v1/messages/count_tokens`, `/v1/responses` (plain and streamed),
-`/v1/chat/completions` with a provider endpoint, `/api/route` and
-`/v1/embeddings`. Nothing is served without a record, and nothing is billed. The gateway tries the ledger
+`/v1/chat/completions` with a provider endpoint, `/api/route`,
+`/v1/embeddings`, `/api/eval/run`, `/api/bench/run`, `/api/capability`,
+`/api/workflow`, `/api/plan/run` and the v1 body of `/api/subagents/spawn`.
+`/api/audit/run` answers with its deterministic summary and says the reviewer
+model was not reached. Nothing is served without a record, and nothing is
+billed. The gateway tries the ledger
 again on every call, so the refusals end when the other process stops or the
 folder becomes writable.
 
@@ -1091,8 +1147,9 @@ with the segment file and its entry count means calls will be recorded.
 is removed. A head record with no segment file is reported as a broken
 ledger at start, the same way a changed byte is.
 
-The local model on the chat path (`flywheel`, `serve`, `local`) does not
-write to this ledger and is not refused.
+The model server on this machine, reached through the chat path's local
+names (`flywheel`, `serve`, `local`), `/api/companion` and the raw proxy,
+does not write to this ledger and is not refused.
 
 ### What the ledger does not show
 
@@ -1104,40 +1161,61 @@ chained; the ledger is the record to check them against.
 
 ## Overhead
 
-On the measured machine the gateway adds a median of 3.5 to 4.7 ms to a call
-made with the gateway token and 4.8 to 5.4 ms to a call made with a virtual
-key, counted to the end of the reply. About 2 ms of that is the ledger entry
-being committed to the disk before the reply is sent; before the ledger was
-kept on disk the same figures were 1.3 to 2.0 ms and 2.6 to 3.4 ms. Those figures are from 2026-11-14, on one
-Windows 11 machine, with one client sending one request at a time to a
-loopback stub in place of the provider, over 30 warm calls per case. The time
-to the first text of a stream is 1.0 to 1.6 ms over the stub for either
-caller. More than one call in twenty took 20 to 27 ms. Those calls waited on
-the gateway's own connection to the upstream: on Windows a connect made with a
-timeout sometimes comes back about 15 ms late. On GitHub's Windows runners
-that landed on most calls, and the timing test measured medians of 11.6 to
-23.6 ms there against 1.1 to 3.9 ms on Linux. The first call after the
-gateway starts loads modules and took 62 to 66 ms more than the stub.
+What a caller waits for the gateway, on the measured machine: a median of
+5.8 to 7.2 ms on a call made with the gateway token and 8.2 to 9.5 ms on a call made with
+a virtual key, counted to the end of the reply. Both figures include the two
+disk commits of a call, the started entry before the request leaves and the
+end entry before the reply is sent, which together are 3.3 to 3.6 ms of each. The
+time to the first text of a stream is 3.4 to 4.2 ms; it includes one commit, the
+started entry's. The gateway's own work, with the commits taken out, is
+2.4 to 6.2 ms. Those figures are from 2026-11-15, on one Windows 11 machine
+that was not quiet, with one client sending one request at a time to a
+loopback stub in place of the provider, over 100 warm calls per case. The
+slowest twentieth of calls took 6.5 to 10.6 ms. The first call after the gateway
+starts loads modules and took 117.4 to 121.2 ms more than the stub.
+
+The figures before the started entry existed were lower: 3.5 to 4.7 ms and
+4.8 to 5.4 ms, with 1.0 to 1.6 ms to the first text of a stream (2026-11-14,
+one commit per call). The second commit and the commit before the first byte
+are what a call now pays for being in the ledger before it is made.
 
 The figures leave out the provider's network time and TLS, the system
 credential store read for a key, concurrency, connection reuse, any hosted
-provider and every other machine. They are not comparable with figures
-published at a request rate. The table, the method, where the time goes and
-the command to rerun it are in [BENCHMARKS.md](BENCHMARKS.md), "Gateway
-overhead".
+provider and every other machine and disk. They are not comparable with
+figures published at a request rate. The table, the method, where the time
+goes and the command to rerun it are in [BENCHMARKS.md](BENCHMARKS.md),
+"Gateway overhead".
 
 After a virtual key's call is charged, the gateway on Windows opens the key
 list once on a separate thread. The first open of that file after a change
 waited about 6 ms on the measured machine, and it used to be the next call's
 key check. Every check and every debit still reads the file.
 
-A test holds the figure in CI: `tests/test_gateway_overhead_timing.py` fails
-when the median of five warm calls spends 25 ms or more of the gateway's own
-time over the stub, for both interfaces, streamed and not. The time the
-operating system spends committing the call's two ledger entries to the disk
-is measured apart and printed, because it is the disk's: one CI runner took
-up to 310 ms for it on a call whose own gateway time was under 3 ms. Its
-controls add 200 ms inside the gateway and 200 ms to the ledger write before
-the commit, which must fail; make a commit take 100 ms, which must be
-reported and not counted; and make the stub four times slower, which must
-change nothing. The test also asserts two commits per call.
+Two budgets hold the figures in CI (`tests/test_gateway_overhead_timing.py`).
+
+- What a caller waits, both commits included: the median of 30 warm calls
+  must stay under 50 ms, to the first byte and to the end, for a plain
+  and a streamed call, with the gateway token and with a virtual key. The
+  budget comes from GitHub's runners on 2026-11-15, where each job measures
+  four cases of 30 calls: the medians to the end of the reply were 1.5 to 5.1 ms
+  on Linux and 8.1 to 16.6 ms on Windows over 12 jobs. On a Windows runner
+  whose disk was busy the 90th percentile reached 105 ms and the slowest
+  call took 354 ms, with the median still under 15 ms. 50 ms is three times the
+  slowest median seen. When this budget fails, the
+  test's message gives a bare commit measured in the same folder, which
+  tells a slow disk from a slower gateway.
+- The gateway's own work, with the seconds inside `os.fsync` taken out: the
+  median of five warm calls must stay under 25 ms, for both interfaces,
+  streamed and not.
+
+The seconds inside `os.fsync` are taken by the test's own clock around the
+system call, not from what the gateway reports about itself, and the
+gateway's report is compared with that clock on every call. Until the sixth
+review round only the second budget existed and it used the gateway's own
+report, so time spent next to the commit was counted as the disk's: 200 ms
+placed there passed. The controls plant 200 ms inside the gateway, 200 ms in
+the ledger write before the commit, and 200 ms between the gateway's two
+clock reads around the commit; each must fail both budgets. A disk whose
+commit takes 100 ms must leave the gateway's own figure where it was and
+must fail the total, because the caller waits for it. A stub four times
+slower must change nothing. The test also asserts two commits per call.

@@ -98,8 +98,13 @@ class SystemOneJudge:
     def _post(self, body: bytes) -> bytes:
         req = urllib.request.Request(self._url(), data=body, method="POST",
                                      headers={"Content-Type": "application/json"})
-        with urllib.request.urlopen(req, timeout=self.config.timeout_s) as resp:
-            return resp.read(1_000_000)
+        from ..endpoint_ledgered import recorded
+        from ..endpoints_http import send as open_request   # no redirect; checked in a gateway
+
+        def send():
+            with open_request(req, self.config.timeout_s) as resp:
+                return resp.read(1_000_000)
+        return recorded("preaction-judge", body, send)  # in a gateway: a ledger call
 
     def judge(self, payload: dict) -> dict:
         state = canonical_json(payload)
