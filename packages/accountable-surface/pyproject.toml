@@ -1,0 +1,82 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "accountable-surface"
+version = "0.3.1"
+description = "Gate AI-agent actions with explicit grants, durable journals, MCP server support, and verification."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "LicenseRef-FSL-1.1-MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Zain Dana Harper" }]
+keywords = ["accountability", "perception", "actuation", "witness", "gate", "agent", "mcp", "stewardship"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Quality Assurance",
+]
+# Core perception and gate come from the sibling repos coherence-membrane and
+# proof-surface. Both are on PyPI now, so they are declared here. They used to be
+# omitted because neither was published, which left a wheel that installed
+# cleanly and then raised ModuleNotFoundError on first import. accountable_surface
+# .mcp names the same three in _RUNTIME_DEPS; mcp stays optional under [server]
+# because only the MCP server path needs it.
+dependencies = [
+  "coherence-membrane>=0.1.0",
+  "proof-surface>=0.1.0",
+]
+
+[project.urls]
+Homepage = "https://harperz9.github.io"
+Repository = "https://github.com/HarperZ9/accountable-surface"
+Issues = "https://github.com/HarperZ9/accountable-surface/issues"
+Changelog = "https://github.com/HarperZ9/accountable-surface/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/HarperZ9/accountable-surface/blob/main/USAGE.md"
+
+[project.optional-dependencies]
+server = ["mcp>=1.0,<2"]   # the live MCP server (accountable_surface.server); pin <2 (mcp 2.x renamed FastMCP -> MCPServer)
+browser = ["playwright>=1.40"]  # the optional real headless-browser backend (PlaywrightDriver)
+test = ["pytest>=8", "build>=1.0"]
+
+[project.scripts]
+accountable-surface-server = "accountable_surface.server:main"
+accountable-surface-mcp = "accountable_surface.interop_mcp:main"  # interop stdio MCP server (no FastMCP dep)
+accountable-surface-authority = "accountable_surface.authority_cli:main"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/accountable_surface"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+  "/AGENTS.md",
+  "/AUTHORS.md",
+  "/CHANGELOG.md",
+  "/CLAUDE.md",
+  "/CONTRIBUTING.md",
+  "/CREDO.md",
+  "/LICENSE",
+  "/README.md",
+  "/THEORY.md",
+  "/THESIS.md",
+  "/USAGE.md",
+  "/pyproject.toml",
+  "/verify_journal.py",
+  "/docs/**",
+  "/examples/**",
+  "/interop/**",
+  "/project-docs/**",
+  "/src/**",
+  "/tests/**",
+  "/tools/**",
+  "/web/**",
+]
