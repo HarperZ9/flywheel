@@ -16,6 +16,7 @@ Read 2026-11-14 in the installed packages:
 """
 import pytest
 
+from tests import gateway_messages_support as support
 from tests.gateway_keys_support import (  # noqa: F401  (fixtures)
     keyed, no_usage, served, turn2)
 
@@ -47,7 +48,7 @@ def test_the_anthropic_sdk_works_with_a_virtual_key_in_either_header(keyed, serv
     message = _message(client)
     assert message.content[0].text == TEXT
     assert (message.usage.input_tokens, message.usage.output_tokens) == (451, 9)
-    assert ledger.entries[0].meta["key"] == "ci-bot"
+    assert support.recorded(ledger)[0].meta["key"] == "ci-bot"
     assert keys.row("ci-bot")["totals"]["tokens"] == 460
 
 
@@ -78,7 +79,7 @@ def test_the_openai_sdk_works_with_a_virtual_key(keyed, served):
     _sdk, client = _openai(url, raw)
     response = client.responses.create(model="gpt-5.3-codex", input="What changed?")
     assert response.output_text == TEXT and response.usage.total_tokens == 460
-    assert ledger.entries[0].meta["key"] == "ci-bot"
+    assert support.recorded(ledger)[0].meta["key"] == "ci-bot"
     assert keys.row("ci-bot")["totals"]["tokens"] == 460
 
 
@@ -112,7 +113,7 @@ def test_a_budget_refusal_is_not_retried_by_an_sdk_with_retries_on(keyed, served
     sdk, client = _openai(url, raw, retries=2)
     with pytest.raises(sdk.RateLimitError):
         client.responses.create(model="gpt-5.3-codex", input="What changed?")
-    assert [entry.kind for entry in ledger.entries] == ["endpoint_call_refused"]
+    assert [entry.kind for entry in support.recorded(ledger)] == ["endpoint_call_refused"]
     assert upstream.requests == []
 
 
