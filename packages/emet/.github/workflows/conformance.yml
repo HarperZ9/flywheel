@@ -1,0 +1,162 @@
+name: conformance
+on: [push, pull_request]
+
+permissions:
+  contents: read
+
+jobs:
+  python-reference:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: behavior proof (membrane)
+        run: python test_membrane.py
+      - name: corpus unit tests
+        run: python test_corpus.py
+      - name: monitor behavior tests
+        run: python test_monitor.py
+      - name: organs behavior tests
+        run: python test_organs.py
+      - name: forward delivery contract
+        run: python test_forward_delivery_contract.py
+      - name: front-page artwork re-renders to the committed bytes
+        run: python test_repo_art.py
+      - name: proof surface receipt test
+        run: python test_proof_surface_receipt.py
+      - name: portable witness receipt behavior proof
+        run: python test_witness_receipt.py
+      - name: stripped-credential rebind behavior proof (SPEC s.18)
+        run: python test_rebind.py
+      - name: DeepEval eval-receipt reporter behavior proof (out-of-core adapter)
+        run: python test_deepeval_reporter.py
+      - name: Flywheel evaluation artifact witness controls (out-of-core adapter)
+        run: python test_reporter_flywheel.py
+      - name: conformance, Python reference (expect 48 of 48)
+        run: python conformance/run.py membrane.py
+      - name: selftest re-derives own identity (emet_self_sha256=)
+        run: python membrane.py selftest
+      - name: proof surface receipt adapter emits closed-lattice receipt
+        run: |
+          python membrane.py anchor README.md
+          python adapters/proof_surface_receipt.py verify README.md anchors.json > receipt.json
+          python - <<'PY'
+          import json
+          data = json.load(open("receipt.json", encoding="utf-8"))
+          assert data["receipt_id"].startswith("emet-verify-")
+          assert data["verdict"] in {"MATCH", "DRIFT", "UNVERIFIABLE"}
+          assert "TRUSTED" not in json.dumps(data)
+          PY
+      - name: rationale walkthrough transcript is re-derivable
+        run: python test_walkthrough.py
+
+  rust-second-implementation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: build rust impl (rustc is preinstalled on ubuntu-latest)
+        run: rustc -O impl/rust/emet.rs -o impl/rust/emet
+      - name: rust receipt behavior tests (cargo test)
+        run: cargo test --release --manifest-path impl/rust/Cargo.toml
+      # Rust implements receipt but not the experimental rebind (SPEC s.18) or the
+      # out-of-core eval-receipt profile; those 8 capability-tagged vectors are
+      # skipped, leaving the 40 it claims.
+      - name: conformance, Rust second implementation (expect 40 of 40, rebind+eval-receipt skipped)
+        run: python conformance/run.py impl/rust/emet
+        env:
+          EMET_SKIP_CAPABILITIES: rebind,eval-receipt
+
+  js-third-implementation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: node receipt behavior tests
+        run: node --test impl/js/test_receipt.js
+      # Node implements receipt but not the experimental rebind (SPEC s.18) or the
+      # out-of-core eval-receipt profile; those 8 capability-tagged vectors are
+      # skipped, leaving the 40 it claims.
+      - name: conformance, Node.js third implementation (expect 40 of 40, rebind+eval-receipt skipped)
+        run: python conformance/run.py impl/js/emet.js
+        env:
+          EMET_SKIP_CAPABILITIES: rebind,eval-receipt
+
+  go-fourth-implementation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: build go impl (standard library only, no modules)
+        run: CGO_ENABLED=0 go build -o impl/go/emet impl/go/emet.go
+      # The Go impl passes the 35 core vectors; the portable witness receipt
+      # (SPEC s.17, 5 vectors), the experimental rebind (SPEC s.18, 4 vectors), and
+      # the out-of-core eval-receipt profile (4 vectors) are not yet ported to Go,
+      # so all three are skipped by capability here. Drop the relevant token from
+      # EMET_SKIP_CAPABILITIES once Go implements each.
+      - name: conformance, Go fourth implementation (expect 35 of 35, receipt+rebind+eval-receipt skipped)
+        run: python conformance/run.py impl/go/emet
+        env:
+          EMET_SKIP_CAPABILITIES: receipt,rebind,eval-receipt
+
+  cross-lang-receipt-parity:
+    # The load-bearing proof of this wave: the portable witness receipt
+    # (SPEC s.17) emits a BYTE-IDENTICAL receipt_id across Python, Rust and
+    # Node, they verify each other's HMAC signatures, and every can-it-FAIL
+    # negative (tampered id, mutated governed field, malformed input, subject
+    # drift, wrong/absent key) actually FAILS in all three. This gate exists so
+    # a future cross-language divergence (canonical-JSON escaping, a type
+    # mismatch, a path-join difference) breaks CI instead of silently breaking
+    # the guarantee. EMET_REQUIRE_CROSS_LANG=1 makes a missing impl a hard
+    # failure, never a vacuous single-impl pass.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+      - name: build rust impl into the path the parity test discovers first
+        run: |
+          mkdir -p impl/rust/target/release
+          rustc -O impl/rust/emet.rs -o impl/rust/target/release/emet
+      - name: cross-language receipt parity + can-it-FAIL negatives (Py/Rust/Node)
+        run: python test_witness_receipt_cross_lang.py
+        env:
+          EMET_REQUIRE_CROSS_LANG: "1"
+
+  packaging:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - name: install the emet package (zero runtime deps)
+        run: python -m pip install .
+      - name: the installed emet console script re-derives its own identity
+        run: emet selftest
+      - name: conformance against the INSTALLED emet console script (expect 48 of 48)
+        run: python conformance/run.py "$(python -c 'import shutil; print(shutil.which("emet"))')"
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py

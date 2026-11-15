@@ -21,3 +21,7 @@ packages/relay/tests/fixtures/flaky_failure_labels.json
 # canon's capture test feeds a hook payload whose cwd is a made-up worktree path and
 # asserts on the locator it records; the literal is test input, not a real folder.
 packages/canon/tests/test_client_capture.py
+# emet's paper, the reference render behind DOI 10.5281/zenodo.21230267. Its Creator
+# field names the typesetting tool (LaTeX with hyperref), no person; a rebuild would
+# change the bytes of a published paper.
+packages/emet/papers/emet-integrity-witness.pdf

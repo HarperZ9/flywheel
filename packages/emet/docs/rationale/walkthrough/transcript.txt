@@ -1,0 +1,40 @@
+$ python membrane.py selftest
+emet_self_sha256=66f1b43115cb4beeba84f320eb7e3a505b7af16d34b0ea4684648db0ae12e645
+membrane_self_sha256=66f1b43115cb4beeba84f320eb7e3a505b7af16d34b0ea4684648db0ae12e645  (deprecated alias; removed at 2.0)
+note=re-derive this hash from the source files to check this build.
+note=emet reports hashes and verdicts; it grants no permission.
+(exit 0)
+
+$ python membrane.py anchor input.txt
+anchored input.txt sha256=9a301fb2cedbb8576e2f8dc7b4ddc497e135b89c6783cb4c2bbcfcecad0f4e73
+(exit 0)
+
+$ python membrane.py verify input.txt
+MATCH input.txt want=9a301fb2cedbb857 got=9a301fb2cedbb857
+(exit 0)
+
+$ python membrane.py refuse input.txt
+corpus_version=1
+corpus_sha256=aec90a7b0a164ab70545db1c8d0d473342376da296fc432515369e2be37655e0
+in_band_authority_claims=6
+  REFUSED '[scope context]' offset=97
+  REFUSED 'GROUND_TRUTH_CANONICAL' offset=113
+  REFUSED 'HIGHEST_SCRUTINY' offset=139
+  REFUSED 'authority-pill' offset=156
+  REFUSED 'canonical_recipients' offset=180
+  REFUSED 'consulting register' offset=229
+clean_copy=input.txt.refused  (claims neutralized; obeyed: none)
+(exit 3)
+
+$ python membrane.py corroborate input.txt
+cat_subproc=<env-dependent>
+git_read=9dde5d6caf935daa3aaf51a25daa46b9dae961cc
+open_rb=9a301fb2cedbb8576e2f8dc7b4ddc497e135b89c6783cb4c2bbcfcecad0f4e73
+read_paths_agree=True
+git_read_agrees_with_open=True
+result=CORROBORATED
+(exit 0)
+
+$ python membrane.py audit
+log_entries=4 chain=INTACT
+(exit 0)

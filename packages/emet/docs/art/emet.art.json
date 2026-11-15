@@ -1,0 +1,90 @@
+{
+  "$comment": "Source of truth for the artwork on this repository's front page. Edit a sentence here and re-run tools/render_repo_art.py; tools/check_repo_art.py fails if the committed SVG stops matching.",
+  "header": {
+    "name": "emet",
+    "role": "byte-level integrity witness",
+    "tagline": "A witness that reports what it found, and decides nothing.",
+    "words": ["anchor", "verify", "coherence", "refuse", "receipt"]
+  },
+  "flows": [
+    {
+      "file": "witness-lane.svg",
+      "kicker": "one file, end to end",
+      "title": "How bytes become a verdict that claims no authority",
+      "alt": "Eight stages of a witness run: subject, anchor, read paths, recompute, compare, markers, lattice, chain. The raw-byte hash is pinned out of band, so it does not travel inside the file it describes. The same bytes are hashed through channels that share no code, and one channel alone is an inability rather than agreement. Embedded authority claims are reported by offset and never obeyed. Every verdict token is checked against a closed set before it is emitted, and the set excludes TRUSTED by construction. Three outcomes: match, drift, and unverifiable.",
+      "footnote": "Nothing here loops back. The lane reports what it found, and decides nothing.",
+      "stages": [
+        {"title": "Subject", "note": "The bytes as they are, before anything presents them."},
+        {"title": "Anchor", "note": "The raw-byte hash is pinned outside the file it describes."},
+        {"title": "Read paths", "note": "One file, hashed through channels that share no code."},
+        {"title": "Recompute", "note": "The digest is derived again from the bytes on disk now."},
+        {"title": "Compare", "note": "Recorded against re-derived, and a view against its source."},
+        {"title": "Markers", "note": "Embedded claims are reported by offset, and never obeyed."},
+        {"title": "Lattice", "note": "A token outside the closed set raises before it is printed."},
+        {"title": "Chain", "note": "The run appends a row that hashes the row before it."}
+      ],
+      "returns": [],
+      "outcomes": [
+        {"label": "MATCH", "note": "the recorded digest and the bytes agree", "tone": "verified"},
+        {"label": "DRIFT", "note": "a confirmed difference, and it outranks doubt", "tone": "drift"},
+        {"label": "UNVERIFIABLE", "note": "an inability to check, never a silent pass", "tone": "none"}
+      ]
+    },
+    {
+      "file": "receipt-lane.svg",
+      "kicker": "one verdict, handed to a stranger",
+      "title": "How a verdict travels to someone who shares no state with you",
+      "alt": "Eight stages of a receipt: envelope, subjects, identity, canonical form, address, signature, re-derive, verdict. The receipt's identifier is a hash of the receipt with its own identifier, signature, and per-implementation block removed, so a doctored field changes the address it is stored under. An optional signature covers that same body, so the two never disagree about what they cover. A reader on another machine recomputes the address and compares, with no anchor store, no log, and no network. Three outcomes: valid, tampered, and unverifiable, and tampered outranks unverifiable.",
+      "footnote": "A signed receipt with no key to check it reads unverifiable. It never reads valid.",
+      "stages": [
+        {"title": "Envelope", "note": "One completed verdict, in the canonical JSON form."},
+        {"title": "Subjects", "note": "Each path, with the digest that was actually recorded."},
+        {"title": "Identity", "note": "The tool's own artifact hash, naming what produced this."},
+        {"title": "Canonical", "note": "One byte form, so two machines compose the same bytes."},
+        {"title": "Address", "note": "A hash of the receipt with its own id and signature cut."},
+        {"title": "Signature", "note": "Optional, over that same body, so the two agree on scope."},
+        {"title": "Re-derive", "note": "The reader recomputes it. No store, no log, no network."},
+        {"title": "Verdict", "note": "Tampered outranks unverifiable, as it does upstream."}
+      ],
+      "returns": [
+        {"from": 6, "to": 4, "label": "THE STORED ID IS NEVER TRUSTED, ONLY RECOMPUTED"}
+      ],
+      "outcomes": [
+        {"label": "RECEIPT VALID", "note": "the address re-derives from the bytes present", "tone": "verified"},
+        {"label": "RECEIPT TAMPERED", "note": "a doctored field or a changed subject", "tone": "drift"},
+        {"label": "RECEIPT UNVERIFIABLE", "note": "malformed, or a subject that cannot be read", "tone": "none"}
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "verdict-lattice.svg",
+      "kicker": "the closed verdict set",
+      "title": "Every word emet may say, and nothing else",
+      "source": "emet <command> --json",
+      "heads": ["channel", "what it judges", "the tokens it may emit"],
+      "alt": "The nine channels of emet's closed verdict lattice, one to a row, with what each channel judges and the exact tokens it may emit. The primary lattice judges an anchored path re-read now and emits MATCH, DRIFT, or UNVERIFIABLE. Coherence judges a rendered view against the source bytes and emits COHERENT, VIEW_DIFFERS_FROM_SOURCE, or UNVERIFIABLE. Corroboration judges two read paths for one file and emits CORROBORATED, QUARANTINE_READ_PATH_DIVERGENCE, or UNVERIFIABLE. Audit judges the append-only chain of records and emits INTACT or BROKEN. The receipt channel judges a portable receipt offline and emits RECEIPT_VALID, RECEIPT_TAMPERED, or RECEIPT_UNVERIFIABLE. The monitor judges one watched file as MATCH, DRIFT, or MISSING, and the baseline it read from as INTACT or CHANGED. Perception judges a path between two observations as UNCHANGED, DRIFTED, NEW, or GONE. The revert channel judges whether a clean revert path exists and emits REVERTIBLE or NOT_REVERTIBLE. No channel admits a word that asserts authority.",
+      "footnote": "No count and no digest is drawn here. What is drawn is the shape of the set: nine channels, each one closed, and a union that contains no word asserting authority. The repository's own test holds every row against the frozen set in emet/verdict.py, so a token added to the code and not to the drawing fails the build, and so does a token drawn here that no channel will emit.",
+      "fields": [
+        {"key": "LATTICE", "value": "an anchored path, re-read now", "tone": "verified",
+         "note": "MATCH / DRIFT / UNVERIFIABLE. Absence of drift is a match or an inability to check, and never trust."},
+        {"key": "COHERENCE", "value": "a view against the source bytes", "tone": "none",
+         "note": "COHERENT / VIEW_DIFFERS_FROM_SOURCE / UNVERIFIABLE. What you are shown, held against what is on disk."},
+        {"key": "CORROBORATE", "value": "two read paths for one file", "tone": "none",
+         "note": "CORROBORATED / QUARANTINE_READ_PATH_DIVERGENCE / UNVERIFIABLE. Paths that disagree are quarantined, not resolved."},
+        {"key": "AUDIT", "value": "the append-only chain of records", "tone": "none",
+         "note": "INTACT / BROKEN. The chain re-links end to end, or it names the record it broke at."},
+        {"key": "RECEIPT", "value": "a portable receipt, offline", "tone": "none",
+         "note": "RECEIPT_VALID / RECEIPT_TAMPERED / RECEIPT_UNVERIFIABLE. Valid is a re-derivation, and not a release."},
+        {"key": "MONITOR_FILE", "value": "one watched file, per sweep", "tone": "none",
+         "note": "MATCH / DRIFT / MISSING. A file gone from the sweep is reported, never quietly skipped."},
+        {"key": "MONITOR_BASELINE", "value": "the baseline the sweep read", "tone": "none",
+         "note": "INTACT / CHANGED. The baseline is checked before anything is checked against it."},
+        {"key": "PERCEPTION", "value": "a path across two observations", "tone": "none",
+         "note": "UNCHANGED / DRIFTED / NEW / GONE. A path that appeared is news, and so is one that left."},
+        {"key": "REVERT", "value": "whether a clean revert exists", "tone": "none",
+         "note": "REVERTIBLE / NOT_REVERTIBLE. A fact about the version history, and not permission to act."}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "emet"
+version = "1.3.1"
+description = "Checks that the bytes a model, a reviewer or a pipeline reads still match their source, and answers MATCH, DRIFT or UNVERIFIABLE."
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "AGPL-3.0-only" }
+authors = [{ name = "Zain Dana Harper", email = "17142659+HarperZ9@users.noreply.github.com" }]
+keywords = ["integrity", "witness", "provenance", "ai-oversight", "attestation", "re-derivability", "supply-chain"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Topic :: Security",
+    "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = []
+
+# The installed byte-hash core stays ZERO-dependency. `deepeval` is an OPTIONAL
+# extra used ONLY by the out-of-core reporter emet/reporters/deepeval.py, which
+# imports it lazily; `pip install emet[deepeval]` pulls it for anyone running the
+# eval-receipt wedge. Nothing here changes the core `dependencies` list above.
+[project.optional-dependencies]
+deepeval = ["deepeval"]
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/emet"
+Repository = "https://github.com/HarperZ9/emet"
+Issues = "https://github.com/HarperZ9/emet/issues"
+Specification = "https://github.com/HarperZ9/emet/blob/main/SPEC.md"
+
+[project.scripts]
+emet = "emet.cli:main"
+
+# The marker corpus is a separately-distributed versioned DATA artifact (SPEC s.8);
+# it is NOT bundled in the wheel. The installed byte-hash core (anchor/verify/
+# coherence/corroborate/audit/selftest) needs no corpus; refuse/monitor require
+# EMET_CORPUS (or a source checkout) and otherwise report UNVERIFIABLE E_NO_CORPUS.
+#
+# `emet.reporters` ships the out-of-core reporters (SPEC s.10: optional adapters
+# live in a separate package from the named core). It is enumerated explicitly, not
+# auto-discovered, so a new sibling never lands in the wheel unreviewed. It adds NO
+# runtime dependency to the core (deepeval stays an optional extra, imported lazily)
+# and is excluded from the selftest artifact-of-record (membrane.CORE_SRC), so the
+# minimal-TCB and self-hash guarantees are unchanged by its presence.
+[tool.setuptools]
+packages = ["emet", "emet.reporters"]

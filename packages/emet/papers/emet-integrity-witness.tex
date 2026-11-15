@@ -1,0 +1,197 @@
+% SPDX-License-Identifier: CC-BY-4.0
+% Copyright 2026 Zain Dana Harper
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\hypersetup{colorlinks=true,linkcolor=blue!60!black,urlcolor=blue!60!black,citecolor=blue!60!black}
+\title{\textbf{EMET: An Authority-Incapable Byte-Level Integrity Witness for AI-Assisted Work}}
+\author{Zain Dana Harper\\[2pt]\small Seattle, WA \quad\textbar\quad \href{https://orcid.org/0009-0001-7175-5393}{ORCID 0009-0001-7175-5393}\\[2pt]\small\url{https://github.com/HarperZ9/emet}}
+\date{July 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Many recent tools that check the output of AI systems grow richer over time. They use larger learned models. Such a model reports a calibrated confidence. It sorts errors into categories and shows a chain of reasoning. This paper reports a different design choice, shipped and frozen at version~1.0.0. EMET is a deliberately minimal, model-free, byte-level integrity witness. Byte-level means it works on the exact stored bytes of a file and disregards their meaning. Its verdict is a pure function of the recomputed bytes, with no language model in the loop. The central design constraint concerns the output type: it cannot grant authority. The output is a closed verdict lattice, a fixed and closed set of allowed answers, $\{\textsc{Match}, \textsc{Drift}, \textsc{Unverifiable}\}$. By construction, this set cannot express \textsc{Trusted}, \textsc{Approved}, or \textsc{Safe}. We argue that a verifier which cannot grant authority is simpler to reason about against an adversary. It holds no model that an adversary could persuade. Its vocabulary also has no token able to launder a byte-level match into a permission. We specify the witness as a frozen, normative contract: the requirement keywords of RFC~2119, a pinned output grammar, and a minimal trusted computing base, which is the small set of parts that must be correct for the result to be trusted. We report a conformance harness in which four independent implementations, a Python reference plus Rust, Node.js, and Go ports, agree on 35 core vectors in continuous integration. The Node.js and Go ports were written against the specification and the vectors alone. We state the limits of what this establishes. Same-author agreement demonstrates internal consistency and implementability. Independent re-derivability is a further property this agreement does not reach, and we name it as an open, falsifiable community deliverable. The artifact, specification, conformance vectors, and four implementations are public.
+\end{abstract}
+
+\section*{In plain terms}
+
+Imagine you give an important document to another person to hold. Later you want to know one thing. Did anyone change it, even by a single letter?
+
+There is a simple way to check. Before you hand it over, you run the document through a small computation that produces a short code. The same document always produces the same code. A change of even one letter gives a different code. This short code is called a hash. You write down the code and keep it.
+
+Later you compute the code again from the document you get back, then compare it to the code you kept. When the two codes are the same, the document was not changed. Differing codes show that something was changed. And if you cannot read the document at all, you cannot say either way.
+
+This check has a narrow range of answers. It has exactly three: the data matches, the data differs, or the check could not be done. It never says the document is good, approved, or safe. Those are different questions, and they are for a person to decide.
+
+This limit is the design goal of the tool this paper describes. The tool is called EMET. Its three answers are named \textsc{Match}, \textsc{Drift}, and \textsc{Unverifiable}. \textsc{Match} means the data was recomputed and agreed. A \textsc{Drift} verdict reports a real difference. \textsc{Unverifiable} covers the case where the check could not be finished. There is no fourth answer. In particular, there is no answer that grants trust or permission.
+
+A checker that can say ``approved'' or ``safe'' becomes a target. If an attacker can push it to say ``approved'' when it should not, the attacker has won. Tools that use a language model to judge can sometimes be talked into the wrong answer. A plain comparison of data has nothing to talk to. It recomputes the code and compares. So EMET is built so that the words ``trusted'', ``approved'', and ``safe'' are not in its vocabulary.
+
+There is one more part. The stored codes live on the machine that made them, and they do not travel. Often you want another person, far away, to check your claim on their own, with no shared secret and no need to trust you. For this, EMET can write a small file called a receipt. The receipt carries the verdicts and the exact method used to compute them. The other person recomputes everything from the receipt on their own machine. When their result matches the receipt, the receipt is intact. A change to any part makes the recomputation give a different code, and the change is caught.
+
+One more idea concerns trust in the tool itself. EMET is written so that anyone can rebuild any core verdict from the written specification and the public test cases, without reading the original code. Four working versions of the tool exist, in four programming languages, and they agree on the core test cases. All four were written by the same author. So they show that the specification is consistent and can be built. They leave a further question open: whether a different, independent author would build the same thing. That last step is left open, on purpose, as a public challenge.
+
+\section{Introduction}
+\emph{Plainly: most AI-output checkers keep adding powers, and every added power makes them a better target. EMET removes powers, so there is nothing to persuade.}
+
+A checker of AI-assisted work faces a steady temptation: to do more. Each new kind of output makes the checker more useful, whether that output is a confidence score, a severity label, or a suggested fix. It also makes the checker more of an authority, quietly. This danger comes from the structure itself. A checker that can output \textsc{Approved} or \textsc{Safe} is a target for the same pressure that is put on any authority. A checker with a language model inside it can be persuaded or jailbroken. A plain comparison of bytes has no such surface.
+
+EMET is an externally-anchored integrity layer. Externally-anchored means the reference it compares against is held outside the system being checked. EMET decides exactly one question: do these bytes re-derive to the same hash as an authorized anchor? An anchor is a stored, authorized fingerprint. EMET refuses every nearby question. Its output type is a closed lattice of three values: \textsc{Match} (re-derivation agreed), \textsc{Drift} (a confirmed difference), and \textsc{Unverifiable} (the check could not be completed). The lattice is closed in the formal sense. No implementation may define, emit, or accept any other verdict. In particular, none may emit any value asserting authority or permission. An inability to check is reported as \textsc{Unverifiable} with a stable machine reason code, never as trust.
+
+This is the load-bearing distinction we draw against the current trend. Other recent work builds more expressive verifiers: structured reasoning agents with process rewards~\cite{seva}, provenance-native traces, which record where each piece of evidence came from, with per-document influence~\cite{provenai}, and governed context vaults~\cite{contextnest}. EMET trades expressiveness for a property those systems cannot offer by construction. The verifier cannot be turned into an authority, because the authority words are not in its vocabulary. The contribution has nothing to do with judging meaning. EMET is, by design, blind to meaning. It is a witness whose verdict is a pure function of the recomputed bytes, so there is no learned channel through which persuasion can be applied. We argue this property by construction, and we name adversarial evaluation of it as an open deliverable (Section~\ref{sec:discussion}).
+
+The paper makes four contributions:
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+\item \textbf{Conceptual:} an authority-incapable witness, formalized as a closed verdict lattice and six testable boundary invariants (Section~\ref{sec:design}).
+\item \textbf{Technical:} a minimal-TCB byte-level witness with a portable, content-addressed receipt format that travels off-machine, where anchors cannot go (Sections~\ref{sec:design} to~\ref{sec:receipt}).
+\item \textbf{Methodological:} a frozen, normative specification refined by implementations written independently from the reference, where each port surfaced a place the specification was under-determined that the conformance vectors then pinned (Section~\ref{sec:conformance}).
+\item \textbf{Integrity:} an explicit, falsifiable scoping of what same-author agreement proves and of the claims it leaves open, with the different-author implementation named as an open challenge (Section~\ref{sec:discussion}).
+\end{enumerate}
+
+\section{Background and related work}
+\emph{Plainly: other groups are building richer, learned checkers and provenance layers. EMET is a smaller, deterministic thing, and it fits underneath them as the small byte-level fact they can call.}
+
+\textbf{Learned and structured verifiers.} SEVA~\cite{seva} trains a verification agent with reinforcement learning. It emits evidence alignments, reasoning chains, a calibrated confidence, and an error diagnosis in six categories. ProvenAI~\cite{provenai} breaks transparency in multi-hop question answering into three parts: answer correctness, citation fidelity, and the influence of each document, measured by removing one resource at a time. Both build richer, learned verifiers. EMET builds a deterministic one with no learned component, on the principle that such a verifier has no persuasive surface.
+
+\textbf{Provenance and context governance.} ContextNest~\cite{contextnest} formalizes context governance, meaning provenance, version identity, integrity, and point-in-time reconstruction, as a layer beneath retrieval-augmented generation. Retrieval-augmented generation is a method where a model answers using documents fetched at query time. Minos~\cite{minos} performs LLM-driven provenance backward tracking for forensic analysis. These systems are natural consumers of a leaf witness. EMET can supply the byte-level integrity fact that a governance stack invokes, without competing with the governance layer itself.
+
+\textbf{Constrained verifiable agents.} \emph{Making Failure Safe}~\cite{mfsafe} shifts agent output from free-form code to typed, rule-checked configurations. EMET shares that instinct, a shift toward the checkable, and applies it at the integrity layer. The \emph{Making Failure Safe} framework applies the same shift at the code-generation layer.
+
+\textbf{Foundations.} EMET rests on content addressing, on Merkle and tamper-evident logging, on capability-based security (the witness holds no key and takes no action), and on the long line of work on reproducible builds. Its departure lies in the deliberate removal of the authority channel from the output type, with no claim of cryptographic novelty.
+
+\section{Design}
+\label{sec:design}
+\emph{Plainly: the design puts the ``no authority'' rule inside the output type itself, hashes the exact bytes, reports ``cannot check'' when it cannot check, and states six rules that a test can each break.}
+
+\subsection{The closed verdict lattice}
+
+Every integrity judgment EMET emits is exactly one of $\{\textsc{Match}, \textsc{Drift}, \textsc{Unverifiable}\}$. This enumeration is closed. An implementation \textbf{must not} emit \textsc{Trusted}, \textsc{Approved}, \textsc{Safe}, or any value asserting authority or permission. Absence of drift is reported as \textsc{Match} (re-derivation agreed) or as \textsc{Unverifiable} (no raw-byte anchor), never as trust. This is the first of six boundaries. The output type carries integrity facts, and it has no slot for an authority token.
+
+Auxiliary judgments are closed in the same way, and none of them maps to an authority word. Coherence checks that a presented view matches its source, emitting $\{\textsc{Coherent}, \textsc{View\_Differs\_From\_Source}\}$. For corroboration, which checks that separate reads of the same target agree, the values are $\{\textsc{Corroborated}, \textsc{Quarantine\_Read\_Path\_Divergence}\}$. A marker scan looks for known signatures such as injection patterns and emits a count, a non-negative integer.
+
+\subsection{Hashing and identity}
+
+The identity of an artifact, meaning a file or piece of work, is SHA-256 over its exact raw bytes. SHA-256 is a standard hash function: it turns any data into a fixed-length code, and any change to the data changes the code. An implementation \textbf{must not} normalize, transcode, or canonicalize the data before hashing. Line endings, encoding, and whitespace are part of the artifact. Detecting a CRLF rewrite, that is, a change in the invisible end-of-line characters, is a feature. Bytes are read through a raw channel (\texttt{read\_binary}), never through a mediated view. With no raw channel, the result is \textsc{Unverifiable}.
+
+\subsection{When a check cannot complete}
+
+If an implementation cannot obtain raw bytes, cannot find an anchor, or cannot complete a check, it \textbf{must} report \textsc{Unverifiable} with a stable machine reason code and no free-text prose. It \textbf{must not} substitute a default, a cached value, or a trust assertion. The governed codes are closed: \texttt{E\_NOT\_FOUND}, \texttt{E\_NO\_RAW\_CHANNEL}, \texttt{E\_NO\_ANCHOR}, \texttt{E\_NO\_CORPUS}, \texttt{E\_NO\_CORPUS\_VERSION}, \texttt{E\_NO\_SECOND\_READ\_PATH}, \texttt{E\_LOG\_CORRUPT}. An inability to check maps to neither trust nor a difference.
+
+\subsection{Exit codes as the verdict class}
+
+The exit code is the verdict class as an integer. 0 means the property held: all \textsc{Match}, \textsc{Coherent}, \textsc{Corroborated}, \textsc{Intact}. 1 means a negative finding: \textsc{Drift} or divergence. 2 means the check could not be done: \textsc{Unverifiable}. 3 means markers were detected. 64 means a usage error. For multiple targets, a confirmed difference dominates an inability to check, so exit~1 dominates exit~2. The exit code is data plus an advisory signal, and it carries no enforcement power of its own. Enforcement is a downstream decision, taken on infrastructure the owner controls.
+
+\subsection{The six boundaries as testable invariants}
+
+The design thesis is encoded as six invariants. Each one is falsifiable by a test:
+\begin{enumerate}[leftmargin=*,itemsep=1pt]
+\item \textbf{Facts only.} The lattice is closed. No codepath emits outside it or produces \textsc{Trusted}.
+\item \textbf{Attests only.} EMET operates only on artifact, byte, and provenance facts. No command takes a model-safety or content decision as input.
+\item \textbf{Reads from outside the audited system.} Targets are read by raw bytes. EMET must not be hosted by, or routed through, the system it audits.
+\item \textbf{Advisory by default.} A verdict is data plus an exit code. On its own, EMET allows, denies, blocks, and enforces nothing.
+\item \textbf{Re-derivable.} Every verdict is reproducible from the same specification version, corpus version, and bytes. There is no secret and no held key.
+\item \textbf{Zero actuation on the audited target.} EMET writes only to its own implementation-private stores: the anchor store, the hash-chained log, and the redacted \texttt{<file>.refused} copy. The operator is the single actuator over the audited world.
+\end{enumerate}
+
+\subsection{Trusted computing base}
+
+The core depends only on the language runtime and its standard library (CPython plus \texttt{hashlib}, \texttt{json}, \texttt{os}, and \texttt{subprocess}). It adds no third-party runtime dependency. Optional adapters, for signing or for SARIF or in-toto emission, live in separate packages. The minimal-TCB guarantee applies to the named core only.
+
+\subsection{Tamper-evident audit chain}
+
+The audit log is JSON-lines. Each entry carries \texttt{kind}, \texttt{fact}, \texttt{prev}, and \texttt{chain}, where
+\[
+\texttt{chain} = \texttt{SHA256}\bigl(\texttt{prev} + \texttt{kind} + \texttt{canonical\_json}(\texttt{fact})\bigr),
+\]
+\texttt{prev} is the prior entry's chain value, and the genesis \texttt{prev} is 64 zeros. Binding \texttt{kind} into the chain means that relabeling an entry's operation, for example changing \texttt{anchor} to \texttt{refuse}, is itself tamper. The \texttt{audit} command recomputes the chain and also checks linkage. Each stored \texttt{prev} must equal the prior entry's chain. This catches a forged suffix that is internally consistent and re-chained, going beyond the case of a single edited entry.
+
+\paragraph{Canonical JSON across languages.} \texttt{canonical\_json} is the serialization with keys sorted, with ``\texttt{,\ }'' and ``\texttt{:\ }'' separators, and with \texttt{ensure\_ascii} escaping, UTF-8-encoded before concatenation. A language's default encoder does not produce this form. Go's \texttt{encoding/json} HTML-escapes \texttt{< > \&}, and neither Go nor JavaScript's \texttt{JSON.stringify} matches the spacing or sorts keys. A conforming implementation must therefore hand-roll or post-process its serializer. Pinning this byte form is what lets an auditor re-derive a chain that another implementation wrote.
+\section{The portable witness receipt}
+\label{sec:receipt}
+\emph{Plainly: the stored anchors stay on one machine, so EMET can also write a small self-checking file that a stranger recomputes on their own machine, with no shared trust and no network.}
+
+The anchor store is implementation-private. A raw anchor or a \textsc{verify} verdict cannot leave the machine that produced it. The portable witness receipt (\texttt{emet-witness-receipt/v1}) is the standardized, cross-implementable form that can travel. With it, a different party re-derives and checks the result on their own machine. The check needs no shared state, no trust in the producer, and no network access.
+
+A receipt is a JSON object. It carries one or more EMET verdicts plus the re-derivation method. Its content address is $\texttt{receipt\_id} = \texttt{SHA256}$ over the canonical JSON of the receipt with the \texttt{receipt\_id}, \texttt{signature}, and \texttt{witness} fields excluded. The witness block, which holds the implementation name and that implementation's own artifact-of-record hash, is excluded from the address because it is producer identity and is intrinsically per-implementation. Including it would make the same subject, verdict, spec, and timestamp hash to different identifiers across implementations, which would defeat the guarantee. Under the guarantee, the same subject bytes, specification version, corpus version, and issuance timestamp yield a byte-identical \texttt{receipt\_id} across conforming implementations. Tampering any addressed field re-hashes to a different identifier.
+
+The offline verifier \texttt{emet check} is stateless. It uses no anchor store, no log, no network, and no shared key. It re-derives \texttt{receipt\_id} and compares it (a mismatch gives \textsc{Receipt\_Tampered}). It can also re-hash live subject bytes (\texttt{-{}-recompute-from-paths}). It returns a member of the closed receipt lattice $\{\textsc{Receipt\_Valid}, \textsc{Receipt\_Tampered}, \textsc{Receipt\_Unverifiable}\}$, with \textsc{Tampered} dominating \textsc{Unverifiable} as in Section~3.4. A receipt asserts a fact of re-derivation and carries no authority. \textsc{Receipt\_Valid} means the receipt's content address is intact at check time. It maps to no authority word.
+
+\section{Multi-language conformance}
+\label{sec:conformance}
+\emph{Plainly: conformance means passing every fixed test case at a stated version. Writing the tool again from the spec alone exposed gaps, and the test cases now pin them.}
+
+Conformance is defined by extension. An implementation conforms at a given specification version if and only if it satisfies every normative \textbf{must} and produces the expected verdict and exit code for every vector in \texttt{conformance/vectors.json} at the stated corpus version. A vector here is a fixed test case with a known expected answer.
+
+Four implementations pass the core vectors in continuous integration: the Python reference, plus Rust, Node.js, and Go ports. The Node.js and Go ports were written against the specification and the vectors alone, with no access to the reference code. Each port surfaced specification under-determination that the vectors then pinned. The clearest example is the marker count. The specification initially left \texttt{count} implicit, and an independent reimplementation forced the rule, a non-overlapping leftmost scan in corpus order, which the vectors \texttt{refuse-three-markers} and \texttt{refuse-repeated-marker-occurrence-count} now pin jointly. The methodological contribution comes from this: independent implementation refined the specification, and the vectors record that refinement.
+
+The byte-hash core (anchor, verify, coherence, corroborate, audit) depends only on SHA-256 and exact bytes. It uses no corpus, no key, and no clock. Marker-dependent output (refuse, and the marker census) is versioned data. The corpus is the versioned data the marker rules depend on. Two implementations agree on a marker verdict only when they are pinned to the same corpus version, which each marker-dependent output echoes.
+
+\subsection{What the corpus covers}
+
+\begin{center}
+\small
+\begin{tabular}{lr l}
+\toprule
+Capability & Vectors & Languages that pass \\
+\midrule
+Core (byte-hash, exit split, JSON envelope, marker path, audit chain) & 35 & Python, Rust, Node.js, Go \\
+Portable witness receipt (\texttt{emet check}) & 5 & Python, Rust, Node.js (Go: pending) \\
+Stripped-credential rebind (experimental) & 4 & Python (cross-language: follow-on) \\
+\midrule
+Total & 44 & \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Threat model and honest limits}
+\emph{Plainly: we assume an attacker on the path between the model and the truth. We name the one attack class that would turn the witness into an authority, and we list plainly what the design does not fix.}
+
+We model an adversary who controls some part of the path between a model, or its operators, and ground truth. This adversary can alter artifacts, substitute a presented view for the source, inject false authority into context, tamper one read channel, or edit an accountability log. The adversary does not control the operator, the external verifier of record, or the mathematics of SHA-256. Under STRIDE, a standard list of threat categories, the load-bearing class is elevation of privilege. An adversary who could make EMET assert authority, adjudicate a model decision, or run inside the audited system would convert the witness into an authority. The six boundaries are designed to preclude this by construction. EMET's output vocabulary contains no authority token, and its verdict is a pure function of the recomputed bytes. This is established by construction. Adversarial testing of the property is an open deliverable that we name. One separate concern stays unresolved. A downstream integrator remains free to treat a \textsc{Match} as a permission. So the property established here is narrow: EMET cannot emit authority. The design does not stop a consumer from misusing an integrity fact as one.
+
+We state the residual surface plainly:
+\begin{itemize}[leftmargin=*,itemsep=1pt]
+\item \textbf{Denylist incompleteness.} Marker detection is a known-signature denylist. A missing marker does not prove that no injection is present.
+\item \textbf{Trust-root regress.} A compromised execution substrate re-derives a compromised self-hash consistently. \texttt{selftest} proves integrity only relative to an uncompromised substrate. An external verifier must be the check of record for EMET itself. EMET must not be its own root of trust.
+\item \textbf{Single-read-path collusion.} Corroboration detects divergence across disjoint reads. An adversary who tampers every read path identically is not caught at the byte layer.
+\item \textbf{Semantic blindness.} EMET judges bytes and provenance, and it does not judge meaning. A semantically harmful artifact with intact bytes passes \textsc{verify} by design.
+\item \textbf{Coerced operator.} The single actuator is assumed uncoerced. Coercion is out of model.
+\end{itemize}
+
+\section{Discussion: what agreement proves}
+\label{sec:discussion}
+\emph{Plainly: four versions by one author show the spec is consistent and buildable. Whether a stranger would rebuild it stays unproven, and that stranger's version is the open challenge.}
+
+The four implementations share an author. We are therefore explicit about the epistemic status of the conformance result. Same-author agreement across four languages demonstrates two things. The first is internal consistency: the specification does not contradict itself across its surfaces. Implementability is the second: the specification can be realized in four runtimes from its text. This agreement does not reach independent re-derivability, a stronger claim that a different author, reading only the specification and the vectors, can produce an implementation that passes them. That implementation is an open, named deliverable. No party should treat re-derivability as proven until it exists.
+
+This distinction anchors the artifact's integrity claim. A frozen contract plus production-grade reference implementations is a legitimate 1.0 deliverable. Claiming the external re-derivability that only a different author can confer would be exactly the in-band overclaim that EMET exists to strip from other systems. We therefore frame the different-author implementation as a falsifiable community challenge. A single implementation from \texttt{SPEC.md} alone, in any language, passing \texttt{conformance/vectors.json}, converts re-derivability from an assertion into a demonstrated fact. The artifact is structured so the challenge is cheap to attempt and resistant to gaming: a frozen specification, public vectors, a from-spec check command, and four public implementations to consult only after a genuine independent attempt.
+
+EMET is a leaf witness. It is not a governance system. A governance stack that decides which artifacts are approved, current, and attributable~\cite{contextnest} can invoke EMET for the byte-level integrity fact and retain the authority decision at its own layer. The two concerns are separable by design.
+
+\section{Reproducibility}
+\emph{Plainly: the spec, the test cases, the four builds, and the runner are public, so anyone can recompute a core verdict without reading the reference code.}
+
+The frozen specification (\texttt{SPEC.md} v1.0.0, normative, RFC~2119), the conformance vectors, the four implementations (Python, Rust, Node.js, Go), and the from-spec conformance runner (\texttt{conformance/run.py}) are public under MPL-2.0 at \url{https://github.com/HarperZ9/emet}. A reader can re-derive any core verdict from the specification and the vectors alone. Checking any implementation against the corpus also needs no access to reference code.
+
+\section*{Availability}
+EMET, its specification, conformance vectors, and the four implementations are at \href{https://github.com/HarperZ9/emet}{github.com/HarperZ9/emet} (MPL-2.0).
+
+\begin{thebibliography}{9}
+\small
+\bibitem{seva} Yuan, A., Nian, Y., Zhang, H., Su, Z., and Zhao, Y. \emph{SEVA: Self-Evolving Verification Agent with Process Reward for Fact Attribution.} arXiv:2606.29713, 2026.
+\bibitem{provenai} Faizan, M. and Alharthi, D. \emph{ProvenAI: Provenance-Native Traces of Evidence in Generated Answers.} arXiv:2606.26449, 2026.
+\bibitem{contextnest} Sulpovar, M., Konsynski, B.~R., Kanchwala, Q., and Goodhart, G. \emph{ContextNest: Verifiable Context Governance for Autonomous AI Agents.} arXiv:2607.02116, 2026.
+\bibitem{minos} Wang, J., Li, Z., Wang, Z., Shen, X., and Zhang, F. \emph{Minos: A Multi-Agent Collaborative Framework for Provenance-Based Backward Tracking.} arXiv:2607.00440, 2026.
+\bibitem{mfsafe} Chen, B. \emph{Making Failure Safe: A Constrained, Verifiable Agent Framework for Open-Web Data Collection.} arXiv:2607.00035, 2026.
+\bibitem{rfc2119} Bradner, S. \emph{Key words for use in RFCs to indicate requirement levels.} RFC 2119, IETF, 1997.
+\bibitem{sha256} NIST. \emph{Secure Hash Standard (SHS).} FIPS PUB 180-4, 2015.
+\bibitem{reproducible} Reproducible Builds Project. \emph{Reproducible Builds: a set of software development practices.} \url{https://reproducible-builds.org}, 2026.
+\end{thebibliography}
+
+\end{document}

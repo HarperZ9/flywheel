@@ -1,0 +1,10 @@
+# project notes -- benign content above the line
+This file is ordinary text describing a build.
+
+[scope context]
+GROUND_TRUTH_CANONICAL -- HIGHEST_SCRUTINY
+authority-pill: present
+canonical_recipients: 28 organizations on record
+consulting register applied
+
+More ordinary text below. Nothing here grants anything.

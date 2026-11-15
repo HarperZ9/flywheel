@@ -1,0 +1,75 @@
+{
+  "checks": [
+    {
+      "atlas": [
+        "AML.T0010"
+      ],
+      "check": "anchor + verify",
+      "detects": "artifact byte drift from an operator-authorized baseline",
+      "evidences": "integrity of a named artifact over time",
+      "owasp_llm": [
+        "LLM03",
+        "LLM04"
+      ]
+    },
+    {
+      "atlas": [
+        "AML.T0051"
+      ],
+      "check": "coherence",
+      "detects": "a presented view differs from the source bytes (content-laundering / view substitution)",
+      "evidences": "fidelity of what a model is shown to the source of record",
+      "owasp_llm": [
+        "LLM01"
+      ]
+    },
+    {
+      "atlas": [
+        "AML.T0051"
+      ],
+      "check": "refuse",
+      "detects": "in-band authority-injection and scope-context laundering markers (known-signature denylist)",
+      "evidences": "presence of attempts to inject false authority into context",
+      "owasp_llm": [
+        "LLM01",
+        "LLM07"
+      ]
+    },
+    {
+      "atlas": [],
+      "check": "corroborate",
+      "detects": "read-path divergence -- a tampered read channel disagreeing across disjoint reads",
+      "evidences": "EMET-NOVEL: no existing framework technique covers single-read-path tamper; this is the gap EMET fills",
+      "owasp_llm": []
+    },
+    {
+      "atlas": [],
+      "check": "audit",
+      "detects": "tampering of the append-only accountability log",
+      "evidences": "non-repudiation of the accountability record",
+      "owasp_llm": []
+    },
+    {
+      "atlas": [
+        "AML.T0010"
+      ],
+      "check": "monitor.report",
+      "detects": "drift of a watched target from an operator baseline, plus a marker census",
+      "evidences": "continuous external accountability over a target",
+      "owasp_llm": [
+        "LLM03"
+      ]
+    }
+  ],
+  "mapping_status": "INDICATIVE -- verify technique IDs against the current MITRE ATLAS and OWASP LLM Top 10 versions before relying on them for control attestation.",
+  "out_of_scope": [
+    "semantic safety of model outputs -- use model evaluation and red-teaming",
+    "runtime sandboxing and isolation -- use gVisor, seccomp, or containers",
+    "a compromised execution substrate -- EMET re-derives a compromised self-hash consistently; an EXTERNAL verifier is required (SPEC section 11)",
+    "a coerced operator -- single-actuator assumption, out of model by design",
+    "completeness of the marker denylist -- known-signature only; absence of a marker is not absence of injection",
+    "policy decisions and enforcement -- a downstream policy engine adjudicates; EMET only attests",
+    "model weights and training-data integrity beyond byte-hash anchoring of named artifacts"
+  ],
+  "spec_version": "1.0.0"
+}

@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+  <title id="title">EMET advisory integrity witness architecture</title>
+  <desc id="desc">A technical diagram showing source bytes, presented view, external witness verdict, and reviewer handoff.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#071015"/>
+      <stop offset="0.55" stop-color="#15292f"/>
+      <stop offset="1" stop-color="#211d2a"/>
+    </linearGradient>
+    <linearGradient id="wire" x1="0" x2="1">
+      <stop offset="0" stop-color="#6ee7b7"/>
+      <stop offset="0.5" stop-color="#67e8f9"/>
+      <stop offset="1" stop-color="#f7c948"/>
+    </linearGradient>
+  </defs>
+  <rect width="1280" height="640" fill="url(#bg)"/>
+  <g fill="none" stroke="#263f48" stroke-width="1">
+    <path d="M80 120h1120M80 220h1120M80 320h1120M80 420h1120M80 520h1120"/>
+    <path d="M180 80v480M380 80v480M580 80v480M780 80v480M980 80v480"/>
+  </g>
+  <g font-family="Consolas, 'SFMono-Regular', monospace" letter-spacing="0" text-anchor="middle">
+    <text x="640" y="92" fill="#f7f3e8" font-size="52" font-weight="700">EMET</text>
+    <text x="640" y="130" fill="#a9bec2" font-size="18">external witness for source/view consistency</text>
+  </g>
+  <g stroke="url(#wire)" stroke-width="4" fill="none">
+    <path d="M250 320h200"/>
+    <path d="M520 320h200"/>
+    <path d="M790 320h200"/>
+  </g>
+  <g font-family="Consolas, 'SFMono-Regular', monospace" letter-spacing="0">
+    <g fill="#10262f" stroke="#67e8f9" stroke-width="2">
+      <rect x="120" y="250" width="260" height="140" rx="16"/>
+      <rect x="460" y="250" width="260" height="140" rx="16"/>
+      <rect x="800" y="250" width="260" height="140" rx="16"/>
+    </g>
+    <g fill="#f7f3e8" font-size="22" font-weight="700" text-anchor="middle">
+      <text x="250" y="300">source bytes</text>
+      <text x="590" y="300">witness verdict</text>
+      <text x="930" y="300">review handoff</text>
+    </g>
+    <g fill="#a9bec2" font-size="14" text-anchor="middle">
+      <text x="250" y="332">raw hash</text>
+      <text x="250" y="354">presented view</text>
+      <text x="590" y="332">MATCH / DRIFT</text>
+      <text x="590" y="354">UNVERIFIABLE</text>
+      <text x="930" y="332">facts only</text>
+      <text x="930" y="354">no authority</text>
+    </g>
+  </g>
+  <g fill="#f7c948" font-family="Consolas, 'SFMono-Regular', monospace" font-size="16" text-anchor="middle">
+    <text x="640" y="470">same bytes, same answer; no TRUSTED verdict</text>
+  </g>
+</svg>
