@@ -214,6 +214,11 @@ def test_the_terminal_prints_the_notice(capsys):
     ("Unsupported parameter: 'tools' is not supported with this model.", True),
     ("'tools' is not supported with this model.", True),
     ("The functions parameter is not available for this model", True),
+    # Review 3, R12: "upstream" and "downstream" are not the word "stream".
+    ("The upstream model does not support tools", True),
+    ("upstream error: function calling is not enabled for this model", True),
+    ("tools are not supported with stream_options", False),
+    ("tools are not supported while streaming", False),
     # Documented Claude API errors that are about something else (errors page, same day).
     ("tool_choice: type \"tool\" and \"any\" are not supported for this model.", False),
     ("This model does not support assistant message prefill.", False),

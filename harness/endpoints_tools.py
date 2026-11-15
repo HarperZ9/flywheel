@@ -270,6 +270,13 @@ def absorb(dialect: str, backend, prose: str, calls: list, raw, claimed: bool,
         prose, marked = inert(prose)
         box.stray = 0 if calls else marked
     text = canonical(prose, calls)
+    try:
+        text.encode("utf-8")            # the session's ledger and receipt hash this text
+    except UnicodeEncodeError as exc:
+        raise MalformedBackendOutput(
+            f"{backend.name} reply holds text that is not valid UTF-8 (a lone surrogate) in "
+            "its prose or in a tool call's arguments; the reply was refused and nothing "
+            "from it ran") from exc
     if native:
         from .native_turn import settle
         text = settle(box, text, calls)
