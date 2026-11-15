@@ -99,6 +99,11 @@ jobs:
               python tools/check_repo_facts.py
               python tools/check_repo_art.py
               python tools/behavior_flagship.py doctor --json
+          - package: chorus
+            install: python -m pip install -e . pytest
+            test: |
+              python -m pytest -q
+              python tools/check_repo_art.py
     defaults:
       run:
         shell: bash
