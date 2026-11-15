@@ -37,6 +37,8 @@ ALLOWED = (
     "tests/fixtures/*",
     "desktop/test/fixtures/*",
     "docs/art/receipts.json",
+    # the same record in each package imported from its own repository
+    "packages/*/docs/art/receipts.json",
     "docs/features/pysyft-result-receipt.md",   # wire-format reference for v1 receipts
     "harness/ollama-manifest-digest-provenance-v1.json",   # self-hashed v1 record, beside v2
     "packaging/bundled-lanes/relay.json",   # v1 descriptor, hash-pinned in bundled_lane_expectations

@@ -155,6 +155,14 @@ Reports and documents
 - `project-docs/STATE.md` has a 2026-11-14 entry that says where current state is written and marks the older entries as history. `docs/RELEASE-NEXT.md` is retired with a pointer to this file. (#456)
 - The README opens with what Flywheel does and links the verification pilot; each lane page says what the lane does with its proof beside it. (#424 to #427)
 
+### Moved into this repository
+
+Tools under `packages/`
+- Sixteen single-purpose tools now live under `packages/`, each as the final tree of its own repository: `proof-surface`, `proof-surface-report`, `repo-proof-index`, `model-provenance-validator`, `context-curator-lite`, `workflow-harness-lite`, `secret-redact-io`, `agent-hook-pack`, `agent-routing-kit`, `public-surface-sweeper`, `discover`, `accountable-engine`, `coherence-membrane`, `behavior-transform.io`, `terminal-state-fixtures`, `seal-watch`. `packages/README.md` lists what each does, its entry points and the source commit.
+- Each keeps its own `pyproject.toml` or `package.json` and installs from its folder, for example `python -m pip install ./packages/proof-surface`. The `flywheel-verify` wheel and sdist do not contain them.
+- Their tests run in `.github/workflows/packages.yml` when a change touches `packages/`. The daily seal-watch check runs from `.github/workflows/seal-watch.yml`.
+- Not run from the new location before the merge: publishing any of these to PyPI or npm.
+
 ### What broke
 
 Breaking changes, each with a section in `docs/MIGRATING-2.0.md`. 2.0.0 ships them
