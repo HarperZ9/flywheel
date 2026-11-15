@@ -1,0 +1,7 @@
+.git
+.github
+.warden-safe-cache
+coverage
+node_modules
+*.log
+*.tgz
