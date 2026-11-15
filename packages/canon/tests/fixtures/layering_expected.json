@@ -1,0 +1,12 @@
+{
+  "_note": "Effective block set per render scope, in emit order. Each entry is [id, winning_scope]. See project-docs/F0-LAYERING.md for the derivation.",
+  "global": [
+    ["voice", "global"],
+    ["testing", "global"]
+  ],
+  "workspace": [
+    ["voice", "workspace"],
+    ["shipping", "workspace"],
+    ["testing", "global"]
+  ]
+}

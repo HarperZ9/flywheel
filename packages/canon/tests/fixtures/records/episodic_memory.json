@@ -1,0 +1,26 @@
+{
+  "canon_schema": "canon.record/v1",
+  "kind": "episodic-memory",
+  "id": "mem-000123",
+  "scope": "global",
+  "data": {
+    "layer": "L1",
+    "text": "Operator prefers targeted regression slices over full-suite runs.",
+    "source_ids": ["turn-0007", "turn-0009"],
+    "extractor": "fact-v2",
+    "criterion": "stated-preference"
+  },
+  "provenance": {
+    "harness": "mneme",
+    "source_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "native_id": "mneme:mem-000123",
+    "session_id": "sess-42",
+    "create_ord": 123,
+    "create_time": null,
+    "model_slug": null
+  },
+  "temporal": {
+    "valid_until": null,
+    "supersedes": null
+  }
+}

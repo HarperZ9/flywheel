@@ -1,0 +1,52 @@
+{
+  "author": {
+    "name": "Zain Dana Harper"
+  },
+  "description": "Search and read project context from a local database you choose, scoped to one project.",
+  "displayName": "Canon",
+  "documentationUrl": "https://github.com/HarperZ9/canon/blob/main/docs/client-packages.md",
+  "homepage": "https://harperz9.github.io/canon.html",
+  "icon": "./client-plugin/.claude-plugin/icon.png",
+  "keywords": [
+    "context",
+    "project-memory",
+    "sqlite",
+    "search",
+    "local-first",
+    "retrieval"
+  ],
+  "license": "AGPL-3.0-only",
+  "name": "canon-local",
+  "privacyPolicyUrl": "https://harperz9.github.io/plugins/canon/privacy.html",
+  "repository": "https://github.com/HarperZ9/canon",
+  "skills": "./client-plugin/skills/",
+  "supportUrl": "https://harperz9.github.io/plugins/canon/support.html",
+  "termsOfServiceUrl": "https://harperz9.github.io/plugins/canon/terms.html",
+  "userConfig": {
+    "context_db": {
+      "description": "Absolute path of the SQLite context database. Its parent folder must exist.",
+      "required": true,
+      "title": "Canon context database",
+      "type": "string"
+    },
+    "context_write": {
+      "default": false,
+      "description": "Allow storing context in the selected database and scope. Turn on for the first launch to create a new database.",
+      "title": "Allow context writes",
+      "type": "boolean"
+    },
+    "project_id": {
+      "description": "Every request stays bound to this project ID.",
+      "required": true,
+      "title": "Project ID",
+      "type": "string"
+    },
+    "workspace_id": {
+      "description": "Every request stays bound to this workspace ID.",
+      "required": true,
+      "title": "Workspace ID",
+      "type": "string"
+    }
+  },
+  "version": "0.7.0"
+}

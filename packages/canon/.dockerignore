@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+.git/
+node_modules/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+build/
+dist/

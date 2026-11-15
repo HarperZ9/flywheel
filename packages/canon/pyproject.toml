@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "flywheel-canon"
+version = "0.7.0"
+description = "One local record of your agent instructions and project state, written into each coding agent's own file."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-only"
+license-files = ["LICENSE", "NOTICE"]
+authors = [{ name = "Zain Dana Harper", email = "17142659+HarperZ9@users.noreply.github.com" }]
+keywords = ["memory", "llm", "mcp", "portability", "cli"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Utilities",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/canon"
+Source = "https://github.com/HarperZ9/canon"
+Changelog = "https://github.com/HarperZ9/canon/blob/main/CHANGELOG.md"
+Issues = "https://github.com/HarperZ9/canon/issues"
+
+[project.scripts]
+canon = "canon.cli:main"
+canon-client = "canon.client_mcp:main"
+
+[project.optional-dependencies]
+# setuptools builds the sdist that tests/test_packaging.py inspects.
+dev = ["pytest>=8", "setuptools>=77"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"

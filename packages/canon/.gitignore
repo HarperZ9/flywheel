@@ -1,0 +1,25 @@
+# Secrets and environment — never commit real values.
+.env
+.env.*
+!.env.example
+.envrc
+.envrc.local
+
+# Node (present for parity with the workspace standard; unused in F0).
+node_modules/
+dist/
+
+# Local model-facing overrides.
+CLAUDE.local.md
+
+# Python.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/

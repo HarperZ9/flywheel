@@ -1,0 +1,22 @@
+{
+  "canon_schema": "canon.record/v1",
+  "kind": "research-artifact-ref",
+  "id": "artref-0007",
+  "scope": "workspace",
+  "data": {
+    "artifact_hash": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "locator": "gather://corpus/2026-08/substrate-survey.md",
+    "title": "Memory-bank substrate survey",
+    "media_type": "text/markdown"
+  },
+  "provenance": {
+    "harness": "gather",
+    "source_hash": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "native_id": "gather:artref-0007",
+    "session_id": null,
+    "create_ord": 300,
+    "create_time": null,
+    "model_slug": null
+  },
+  "temporal": null
+}

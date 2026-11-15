@@ -1,0 +1,22 @@
+{
+  "schema": "canon.readiness-response/v1",
+  "active_goal_ids": [],
+  "permission_ids": ["perm-plan-only"],
+  "prohibition_ids": ["prohibit-product-code"],
+  "constraint_ids": [],
+  "frontier_state_ids": ["frontier-foundation-next"],
+  "unresolved_conflict_ids": [],
+  "unknown_ids": [],
+  "statuses": {
+    "frontier-foundation-next": "active",
+    "goal-foundation": "active",
+    "perm-plan-only": "active",
+    "prohibit-product-code": "active"
+  },
+  "expected_statuses": {
+    "frontier-foundation-next": "active",
+    "goal-foundation": "active",
+    "perm-plan-only": "active",
+    "prohibit-product-code": "active"
+  }
+}
