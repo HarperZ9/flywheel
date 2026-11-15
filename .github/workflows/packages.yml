@@ -266,7 +266,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [plexus, mneme]
+        package: [plexus, mneme, relay]
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ["3.11", "3.12", "3.13"]
         exclude:
@@ -277,6 +277,8 @@ jobs:
             extra: python examples/tour.py
           - package: mneme
             extra: python examples/tour.py
+          - package: relay
+            extra: python tools/check_release_metadata.py
     defaults:
       run:
         shell: bash
@@ -314,6 +316,9 @@ jobs:
           - package: mneme
             smoke: |
               C:/Users/Zain/AppData/Local/Temp/vc/bin/mneme --versionn              /tmp/vc/bin/mneme bench > /dev/null
+          - package: relay
+            smoke: |
+              C:/Users/Zain/AppData/Local/Temp/vc/bin/relay --help > /dev/null
     defaults:
       run:
         shell: bash
