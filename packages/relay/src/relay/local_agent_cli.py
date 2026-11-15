@@ -355,8 +355,16 @@ def _serve_mcp(args) -> int:
     return serve(grants=grants)
 
 
+def _version() -> str:
+    # Read at call time, so the flag reports the package that is running.
+    from . import __version__
+
+    return __version__
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="relay", description=__doc__)
+    ap.add_argument("--version", action="version", version=f"relay {_version()}")
     ap.add_argument("prompt", nargs="?", help="one-shot prompt; omit for a REPL")
     ap.add_argument("--health", action="store_true", help="report live local tiers and exit")
     ap.add_argument("--backend", default="auto",
