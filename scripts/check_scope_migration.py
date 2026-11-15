@@ -60,6 +60,12 @@ ALLOWED = (
     "packages/index/scripts/check_native_client.py",
     "packages/crucible/scripts/build_client_package.py",
     "packages/crucible/scripts/check_native_client.py",
+    # emet's Flywheel reporter reads evaluation artifacts under either name, and its
+    # changelog, its guide and its test say so
+    "packages/emet/CHANGELOG.md",
+    "packages/emet/docs/FLYWHEEL-EVALUATION-RECEIPTS.md",
+    "packages/emet/emet/reporters/flywheel.py",
+    "packages/emet/test_reporter_flywheel.py",
     # canon writes the field in every capsule, receipt and report of its released
     # format (74 files: source, the vendored client server, tests, docs); the tool
     # migrates as one release, so the whole package is listed until then
