@@ -244,7 +244,7 @@ class GatewayLedger(SessionLedger):
                           Entry.compute_hash(seq, kind, content, meta, prev))
             _health.write(self, entry)
             self.entries.append(entry)
-            _health.head(self)
+            _health.head(self, entry)
             return entry
 
     def verify(self) -> bool:
