@@ -1,0 +1,7 @@
+- id: articulate
+  name: Articulate writing check
+  description: Flag named writing devices in prose and fail the commit on a blocked file.
+  entry: python -m articulate.cli check --gate
+  language: python
+  types_or: [markdown, plain-text]
+  require_serial: false

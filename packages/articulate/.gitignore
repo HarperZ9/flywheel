@@ -1,0 +1,34 @@
+# Secrets / env (standard workspace rule; the negation must follow .env.*)
+.env
+.env.*
+!.env.example
+.envrc
+.envrc.local
+CLAUDE.local.md
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# Editor extension deps and build output (package.json/-lock.json stay tracked)
+node_modules/
+out/
+*.vsix
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Internal-only: strategy/scope with local paths and pricing, and the migration
+# checklist that references local tooling. Kept out of the public repo.
+project-docs/
+MIGRATION.md

@@ -134,6 +134,40 @@ ALLOWED = (
     "packages/bulletin/scripts/smoke.mjs",
     "packages/bulletin/src/reports.ts",
     "packages/bulletin/test/reports.test.ts",
+    # articulate 0.19.1 reads version 1 receipts, which name a finding's scope
+    # with the older field (scope.py LEGACY_KEY, in the package and in the
+    # plugin's vendored copy); its changelog, a ruleset baseline, a recorded
+    # receipt set and a test carry the name for that reason
+    "packages/articulate/CHANGELOG.md",
+    "packages/articulate/claude-plugin/src/articulate/corpus_receipt.py",
+    "packages/articulate/claude-plugin/src/articulate/scope.py",
+    "packages/articulate/scripts/release_ruleset_baseline.json",
+    "packages/articulate/src/articulate/corpus_receipt.py",
+    "packages/articulate/src/articulate/scope.py",
+    "packages/articulate/tests/house1_receipts.json",
+    "packages/articulate/tests/test_corpus_receipt.py",
+    # gather 2.6.0 writes the field in its released pilot report, context
+    # envelope, filter ledger and citation records, and its client package and
+    # two evidence roots sealed by 2.6.0 carry those records as written
+    "packages/gather/client-plugin/server/src/gather/context.py",
+    "packages/gather/docs/PILOT.md",
+    "packages/gather/docs/READABLE-CONTEXT-SELECTION.md",
+    "packages/gather/docs/superpowers/plans/2026-07-30-gather-pilot-engine.md",
+    "packages/gather/docs/superpowers/specs/2026-07-30-gather-pilot-engine-design.md",
+    "packages/gather/docs/superpowers/specs/2026-07-30-gather-saas-master-design.md",
+    "packages/gather/examples/pilot/sample/report.json",
+    "packages/gather/scripts/build_client_package.py",
+    "packages/gather/scripts/check_native_client.py",
+    "packages/gather/src/gather/citecheck.py",
+    "packages/gather/src/gather/context.py",
+    "packages/gather/src/gather/filter_ledger.py",
+    "packages/gather/src/gather/pilot.py",
+    "packages/gather/src/gather/pilot_report.py",
+    "packages/gather/src/gather/video_cmd.py",
+    "packages/gather/tests/fixtures/pilot-root-format1-plain/report.json",
+    "packages/gather/tests/fixtures/pilot-root-format1-retired/report.json",
+    "packages/gather/tests/test_context.py",
+    "packages/gather/tests/test_pilot_report.py",
     # emet's Flywheel reporter reads evaluation artifacts under either name, and its
     # changelog, its guide and its test say so
     "packages/emet/CHANGELOG.md",

@@ -1,0 +1,37 @@
+{
+ "schema": "flywheel.publish-metadata-baseline/1",
+ "patterns": "generic only (check_publish_metadata GENERIC)",
+ "total": 11,
+ "files": {
+  "CHANGELOG.md": {
+   "personal-email": 1
+  },
+  "docs/COMPLETION.md": {
+   "local-path": 1
+  },
+  "pyproject.toml": {
+   "personal-email": 1
+  },
+  "scripts/core_device_readouts.py": {
+   "local-path": 1
+  },
+  "scripts/device_readers_eval.py": {
+   "local-path": 1
+  },
+  "scripts/fairness_calibration_check.py": {
+   "local-path": 1
+  },
+  "scripts/fairness_filler_options.py": {
+   "local-path": 1
+  },
+  "scripts/provenance_common.py": {
+   "local-path": 1
+  },
+  "scripts/provenance_detectors.py": {
+   "local-path": 1
+  },
+  "tests/test_pack_privacy.py": {
+   "local-path": 2
+  }
+ }
+}

@@ -1,0 +1,7 @@
+# Normalize line endings to LF in the repository, so a CRLF/LF checkout never
+# rewrites a file and never reads as a spurious change (the receipt text hash is
+# byte-exact). Matches the CLI's own line-ending canonicalization.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.gif binary

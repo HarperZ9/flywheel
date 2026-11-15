@@ -119,7 +119,13 @@ twice. A sixth round (#513) fixed each of these in the tool, and then sent
 every gateway route over HTTP against a counting stub, which found two more
 faults: fourteen routes behind the grant step answered 403 to every request,
 and `/v1/embeddings` waited for a body it had already read. Both are fixed.
-#513 was tested by its author and has not had an independent review.
+A fifth independent review, by a reviewer who wrote none of the code, then
+read #513 and found nothing that blocks the release. Two of its nine
+findings were missing tests, which #532 added with no change to the product
+code. The other seven are left as they are in this release, each with an
+issue (#524 to #530) and a row on the limits page. The review called no
+hosted provider, and the limits page states the three checks it did not run
+(#531).
 You will notice these:
 
 - **The gateway ledger is a file.** It lives in `gateway-ledger/` under the
@@ -316,7 +322,7 @@ says how to report a vulnerability privately.
 Read these before you upgrade. The full list, with the reason each limit was
 left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md). Each
 row there says what would close it: an issue with a design note (#489 to
-#510), or the reason software cannot.
+#510, #516 to #519, #524 to #531), or the reason software cannot.
 
 ### Not measured and not run
 

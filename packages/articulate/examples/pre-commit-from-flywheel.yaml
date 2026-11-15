@@ -1,0 +1,18 @@
+# Articulate as a pre-commit hook, installed from its folder in HarperZ9/flywheel.
+#
+# pre-commit reads .pre-commit-hooks.yaml only at the root of a repository, and
+# Articulate lives in a subfolder here, so the hook is declared as a local hook
+# that installs the package from that subfolder. Copy this into your
+# .pre-commit-config.yaml and set REF to a flywheel tag or commit.
+repos:
+  - repo: local
+    hooks:
+      - id: articulate
+        name: Articulate writing check
+        description: Flag named writing devices in prose and fail the commit on a blocked file.
+        entry: python -m articulate.cli check --gate
+        language: python
+        types_or: [markdown, plain-text]
+        require_serial: false
+        additional_dependencies:
+          - "articulate-writing @ git+https://github.com/HarperZ9/flywheel@REF#subdirectory=packages/articulate"

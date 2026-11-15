@@ -1,0 +1,192 @@
+{
+ "sets": {
+  "TOEFL_real_91": {
+   "n": 91,
+   "blocked_before": 38,
+   "blocked_after": 14,
+   "rate_before": [
+    0.418,
+    0.322,
+    0.52
+   ],
+   "rate_after": [
+    0.154,
+    0.094,
+    0.242
+   ]
+  },
+  "CollegeEssay_real_70.win0": {
+   "n": 70,
+   "blocked_before": 21,
+   "blocked_after": 20,
+   "rate_before": [
+    0.3,
+    0.205,
+    0.415
+   ],
+   "rate_after": [
+    0.286,
+    0.193,
+    0.401
+   ]
+  },
+  "CS224N_real_145.win0": {
+   "n": 145,
+   "blocked_before": 31,
+   "blocked_after": 27,
+   "rate_before": [
+    0.214,
+    0.155,
+    0.287
+   ],
+   "rate_after": [
+    0.186,
+    0.131,
+    0.257
+   ]
+  },
+  "TOEFL_gpt4polished_91": {
+   "n": 91,
+   "blocked_before": 25,
+   "blocked_after": 15,
+   "rate_before": [
+    0.275,
+    0.194,
+    0.374
+   ],
+   "rate_after": [
+    0.165,
+    0.103,
+    0.254
+   ]
+  },
+  "CS224N_gpt3_145.win0": {
+   "n": 145,
+   "blocked_before": 19,
+   "blocked_after": 19,
+   "rate_before": [
+    0.131,
+    0.086,
+    0.196
+   ],
+   "rate_after": [
+    0.131,
+    0.086,
+    0.196
+   ]
+  },
+  "CollegeEssay_gpt3_31.win0": {
+   "n": 31,
+   "blocked_before": 9,
+   "blocked_after": 4,
+   "rate_before": [
+    0.29,
+    0.161,
+    0.466
+   ],
+   "rate_after": [
+    0.129,
+    0.051,
+    0.289
+   ]
+  },
+  "provenance_ai": {
+   "n": 84,
+   "blocked_before": 71,
+   "blocked_after": 71,
+   "rate_before": [
+    0.845,
+    0.753,
+    0.907
+   ],
+   "rate_after": [
+    0.845,
+    0.753,
+    0.907
+   ]
+  },
+  "provenance_human": {
+   "n": 75,
+   "blocked_before": 40,
+   "blocked_after": 25,
+   "rate_before": [
+    0.533,
+    0.422,
+    0.642
+   ],
+   "rate_after": [
+    0.333,
+    0.237,
+    0.446
+   ]
+  },
+  "persuade_ell": {
+   "n": 18,
+   "blocked_before": 8,
+   "blocked_after": 5,
+   "rate_before": [
+    0.444,
+    0.246,
+    0.663
+   ],
+   "rate_after": [
+    0.278,
+    0.125,
+    0.509
+   ]
+  },
+  "persuade_other": {
+   "n": 36,
+   "blocked_before": 20,
+   "blocked_after": 11,
+   "rate_before": [
+    0.556,
+    0.396,
+    0.705
+   ],
+   "rate_after": [
+    0.306,
+    0.18,
+    0.469
+   ]
+  }
+ },
+ "differences": {
+  "TOEFL_real_91 - CollegeEssay_real_70.win0": {
+   "before": [
+    0.118,
+    -0.032,
+    0.257
+   ],
+   "after": [
+    -0.132,
+    -0.262,
+    -0.004
+   ]
+  },
+  "TOEFL_real_91 - CS224N_real_145.win0": {
+   "before": [
+    0.204,
+    0.083,
+    0.322
+   ],
+   "after": [
+    -0.032,
+    -0.125,
+    0.072
+   ]
+  },
+  "persuade_ell - persuade_other": {
+   "before": [
+    -0.112,
+    -0.36,
+    0.159
+   ],
+   "after": [
+    -0.028,
+    -0.252,
+    0.235
+   ]
+  }
+ }
+}

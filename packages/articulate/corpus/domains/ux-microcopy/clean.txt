@@ -1,0 +1,5 @@
+button: Save changes
+label: Work email
+error: The file is over 10 MB. Choose a smaller file.
+title: Account settings
+tooltip: Read the [billing guide](https://example.com/billing) before you upgrade.

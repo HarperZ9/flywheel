@@ -1,0 +1,53 @@
+{
+  "name": "articulate",
+  "displayName": "Articulate",
+  "description": "Writing-quality and writing-device checks. Inline diagnostics from the Articulate language server, which runs on your machine.",
+  "version": "0.1.0",
+  "publisher": "harperz9",
+  "license": "SEE LICENSE IN ../../LICENSE",
+  "repository": { "type": "git", "url": "https://github.com/HarperZ9/articulate" },
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Linters"],
+  "keywords": ["writing", "prose", "linter", "ai-detection", "markdown"],
+  "activationEvents": [
+    "onLanguage:markdown",
+    "onLanguage:plaintext",
+    "onLanguage:latex"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "Articulate",
+      "properties": {
+        "articulate.enable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable the Articulate language server."
+        },
+        "articulate.pythonPath": {
+          "type": "string",
+          "default": "python",
+          "description": "Python interpreter that has the `articulate` package installed (pip install articulate-writing)."
+        },
+        "articulate.profile": {
+          "type": "string",
+          "default": "",
+          "description": "Force a register profile (e.g. essay, research, procedure). Empty means auto-detect from the file path or a writing-profile: tag."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.4.0"
+  }
+}

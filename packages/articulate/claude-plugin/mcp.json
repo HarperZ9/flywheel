@@ -1,0 +1,21 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "articulate": {
+      "command": "python3",
+      "args": [
+        "-I",
+        "-S",
+        "-B",
+        "-X",
+        "utf8",
+        "${PLUGIN_ROOT}/server/serve.py"
+      ],
+      "env": {
+        "ARTICULATE_MCP_TOOLS": "local",
+        "ARTICULATE_LOCAL_ONLY": "1"
+      },
+      "type": "stdio"
+    }
+  }
+}
