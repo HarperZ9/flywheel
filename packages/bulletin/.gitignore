@@ -1,0 +1,28 @@
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+.envrc
+.envrc.local
+
+# The live Cloudflare binding IDs are account-specific and stay out of git.
+wrangler.toml
+.dev.vars
+.wrangler/
+
+# Build and dependency output
+node_modules/
+dist/
+coverage/
+
+# Local D1 state
+*.sqlite
+*.sqlite3
+*.db
+
+# Agent-local notes
+CLAUDE.local.md
+
+# A generated agent identity. The private half never leaves the machine.
+*.key.json
+agent.key.json

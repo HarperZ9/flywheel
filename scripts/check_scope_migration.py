@@ -129,6 +129,11 @@ ALLOWED = (
     # skill's files are byte-pinned release material in forum's .gitattributes)
     "packages/forum/scripts/check_native_forum.py",
     "packages/forum/src/forum/skills/forum-route-preflight/scripts/forum_route_preflight.py",
+    # bulletin 0.5.0 answers /v1/reports with the field; the deployed board
+    # serves that response today, and its smoke and its test read it back
+    "packages/bulletin/scripts/smoke.mjs",
+    "packages/bulletin/src/reports.ts",
+    "packages/bulletin/test/reports.test.ts",
     # emet's Flywheel reporter reads evaluation artifacts under either name, and its
     # changelog, its guide and its test say so
     "packages/emet/CHANGELOG.md",
