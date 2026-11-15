@@ -1,0 +1,14 @@
+{
+  "envelope_version": "1",
+  "subject": "",
+  "source": {
+    "name": "fixture",
+    "kind": "unknown-kind"
+  },
+  "references": [],
+  "validation": {
+    "status": "verified",
+    "extra": true
+  }
+}
+
