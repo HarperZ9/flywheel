@@ -130,8 +130,13 @@ class HttpJudge:
             headers["Authorization"] = "Bearer " + os.environ[self.config.api_key_env]
         req = urllib.request.Request(self.config.endpoint.rstrip("/") + "/chat/completions",
                                      data=body, headers=headers, method="POST")
-        with urllib.request.urlopen(req, timeout=self.config.timeout_s) as resp:
-            return resp.read(1_000_000)
+        from ..endpoint_ledgered import recorded
+        from ..endpoints_http import send as open_request   # no redirect; checked in a gateway
+
+        def send():
+            with open_request(req, self.config.timeout_s) as resp:
+                return resp.read(1_000_000)
+        return recorded("preaction-judge", body, send)  # in a gateway: a ledger call
 
     def judge(self, payload: dict) -> JudgeResult:
         user = canonical_json(payload)

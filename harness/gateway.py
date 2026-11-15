@@ -781,7 +781,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
     def _authorized(self) -> bool:
         """Refuse before dispatch; public auth-off compatibility stays available,
         while private custody always requires a configured bearer token."""
-        path = self.path.split("?", 1)[0]; from harness.gateway_key_gate import admits
+        path = self.path.split("?", 1)[0]; from harness.gateway_key_gate import admits; from harness.gateway_reach import at; at(path)  # the route a ledger entry names
         if is_signed(path) or admits(self, path): return True  # signed capture channel (trace_routes verifies before any body is read), or a live virtual key on a model interface path
         private = is_private(path)
         if not self.auth_token and not private: return True
@@ -1416,7 +1416,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
                 authorize_gateway_operation, gateway_error_response)
             try:
                 authorized = authorize_gateway_operation(
-                    action, self.rfile.read(length), owner_ref=self.owner_ref,
+                    action, self.rfile.read(length), owner_ref=self.owner_ref or (self.auth_token and _auth_owner(self.headers, "POST", self.auth_token, self.flywheel_home, allowed_hosts=self.allowed_hosts)[0]) or None,  # a granted route outside private custody has its owner too
                     state_root=self.flywheel_home / "state", clock=self.clock)
                 from harness.bulletin_access import authorized_bulletin_access_denial as _bad
                 if (denied := _bad(authorized)) is not None: self._gateway_guarded = True; return self._json(denied, 403)
@@ -1478,14 +1478,9 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
                                           clock=self.clock)
             return self._json(body, code)
         if p == "/v1/embeddings":                    # OpenAI-compatible, routed to a provider
-            length = self._content_length()
-            if length is None:
-                return self._json({"error": {"message": "invalid or oversized Content-Length",
-                                             "type": "invalid_request_error"}}, 400)
-            try:
-                req = json.loads(self.rfile.read(length) or b"{}") if length else {}
-            except Exception:
-                req = {}
+            req, bad = self._req_json()             # the operation the grant step admitted: its body is read once
+            if bad:
+                return bad
             return self._json(*openai_embeddings(req))
         if p in ("/v1/messages", "/v1/messages/count_tokens", "/v1/responses"): from harness.gateway_interfaces import serve; return serve(self, p, _router_ledger())  # Messages and Responses, answered here
         if p.startswith("/v1/") or p == "/generate":  # OpenAI-compatible and raw generate, proxied to the endpoint

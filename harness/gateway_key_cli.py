@@ -181,8 +181,8 @@ def main(argv: "list[str] | None" = None, *, store=None, environ=None) -> int:
             print(f"gateway key '{args.name}' is revoked; its stored key was deleted and "
                   "its totals are kept")
         elif args.verb == "clear":
-            import time
-            keys.mark(args.name, suspended=None, cleared=time.time())
+            from harness.gateway_key_policy import clear
+            clear(keys, args.name)
             print(f"gateway key '{args.name}' is no longer suspended")
         else:
             keys.reset(args.name)

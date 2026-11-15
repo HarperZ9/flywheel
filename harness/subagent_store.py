@@ -119,8 +119,15 @@ def child_env() -> dict:
 
 
 class _PopenHandle:
-    def __init__(self, proc: "subprocess.Popen") -> None:
-        self._proc = proc
+    def __init__(self, proc: "subprocess.Popen", relay: str = "") -> None:
+        self._proc, self._relay = proc, relay
+
+    def _ended(self) -> None:
+        """The child is gone: a model call it started and never ended is named unsettled."""
+        if self._relay:
+            from .gateway_ledger_relay import closed
+            closed(self._relay)
+            self._relay = ""
 
     @property
     def pid(self) -> "int | None":
@@ -132,6 +139,7 @@ class _PopenHandle:
         except subprocess.TimeoutExpired:
             raise TimeoutError from None
         raw = (out or b"") + (err or b"")
+        self._ended()
         return int(self._proc.returncode or 0), raw.decode("utf-8", "replace")
 
     def stop(self) -> bool:
@@ -140,13 +148,17 @@ class _PopenHandle:
             self._proc.communicate(timeout=5)
         except Exception:
             pass
+        self._ended()
         return True
 
 
 def popen_handle(spec_path: Path, workspace: Path) -> _PopenHandle:
     """The production child launcher: argv only, no shell, own cwd."""
     workspace.mkdir(parents=True, exist_ok=True)
+    from .gateway_ledger_relay import issue
+    env = child_env()
+    relay = issue(env)                  # in a gateway: the child's model calls go in its ledger
     proc = subprocess.Popen(
         worker_command(Path(spec_path)), cwd=str(workspace),
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=child_env())
-    return _PopenHandle(proc)
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, env=env)
+    return _PopenHandle(proc, relay)

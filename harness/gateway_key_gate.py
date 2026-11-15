@@ -289,12 +289,12 @@ class Bill:
         from .gateway_key_policy import suspend
         return suspend(self.caller, reason)
 
-    def settle(self) -> None:
-        """Debit the key. A call that cannot be charged is not served."""
-        if self.counts is None:
-            return
+    def settle(self, call: str = "") -> None:
+        """Debit the key, once for `call`. A call that cannot be charged is not served."""
+        named = (call,) if call else ()
         try:
-            self.caller.keys.debit(self.caller.name, self.counts, self.estimated)
+            if self.counts is not None:
+                self.caller.keys.debit(self.caller.name, self.counts, self.estimated, *named)
         except gateway_keys.KeysError as exc:
             raise RuntimeError(f"the call could not be charged to gateway key "
                                f"'{self.caller.name}'; the reply was not served") from exc

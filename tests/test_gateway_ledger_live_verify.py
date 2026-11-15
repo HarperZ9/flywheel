@@ -36,7 +36,7 @@ def test_a_name_with_digits_that_are_not_ascii_is_not_a_segment(home, capsys):
     sorted last and was taken for the newest segment."""
     from harness.gateway_ledger_health import strays
     ledger = gateway_ledger.for_home(home)
-    ledger.append("endpoint_call", "x", {})
+    ledger.append("note", "x", {})
     gateway_ledger.close_all()
     folder = home / "gateway-ledger"
     name = "segment-\u0660\u0660\u0660\u0660\u0660\u0669.jsonl"
@@ -51,7 +51,7 @@ def test_a_name_with_digits_that_are_not_ascii_is_not_a_segment(home, capsys):
                                   "segment-0000001.jsonl", "segment-000002.jsonl.bak"])
 def test_a_stray_file_in_the_ledger_folder_is_ignored_and_named(home, name, capsys):
     ledger = gateway_ledger.for_home(home)
-    ledger.append("endpoint_call", "x", {})
+    ledger.append("note", "x", {})
     gateway_ledger.close_all()
     folder = home / "gateway-ledger"
     (folder / name).write_bytes((folder / "segment-000001.jsonl").read_bytes())
@@ -62,7 +62,7 @@ def test_a_stray_file_in_the_ledger_folder_is_ignored_and_named(home, name, caps
     lines = []
     assert gateway_ledger_gate.startup(lambda: gateway_ledger.for_home(home), out=lines.append)
     assert any("ignored" in line and name in line for line in lines), lines
-    gateway_ledger.for_home(home).append("endpoint_call", "y", {})     # and the chain goes on
+    gateway_ledger.for_home(home).append("note", "y", {})     # and the chain goes on
     gateway_ledger.close_all()
     assert [s["entries"] for s in gateway_ledger.check(home)] == [2]
 
@@ -72,12 +72,12 @@ def test_verify_holds_when_an_entry_is_appended_between_its_two_reads(home, monk
     monkeypatch.setenv(gateway_ledger.SYNC_ENV, "0")
     ledger = gateway_ledger.GatewayLedger(home)
     for index in range(5):
-        ledger.append("endpoint_call", "x" * 64, {"n": index})
+        ledger.append("note", "x" * 64, {"n": index})
     real = gateway_ledger.read_segment
 
     def read_then_append(path):
         found = real(path)
-        ledger.append("endpoint_call", "y" * 64, {})
+        ledger.append("note", "y" * 64, {})
         return found
     monkeypatch.setattr(gateway_ledger, "read_segment", read_then_append)
     try:
@@ -91,12 +91,12 @@ def test_verify_holds_on_a_ledger_that_a_writer_thread_appends_to(home, monkeypa
     monkeypatch.setenv(gateway_ledger.SYNC_ENV, "0")
     ledger = gateway_ledger.GatewayLedger(home)
     for index in range(4000):
-        ledger.append("endpoint_call", "x" * 64, {"endpoint": "openai", "n": index})
+        ledger.append("note", "x" * 64, {"endpoint": "openai", "n": index})
     stop = threading.Event()
 
     def writer():
         while not stop.is_set():
-            ledger.append("endpoint_call", "y" * 64, {"endpoint": "openai"})
+            ledger.append("note", "y" * 64, {"endpoint": "openai"})
             time.sleep(0.002)
     thread = threading.Thread(target=writer)
     thread.start()
@@ -120,7 +120,7 @@ def test_a_cut_line_is_named_and_the_entries_before_it_still_count(home):
     """`verify` named the line before the cut one and did not count that entry."""
     ledger = gateway_ledger.GatewayLedger(home)
     for index in range(3):
-        ledger.append("endpoint_call", f"sha{index}", {})
+        ledger.append("note", f"sha{index}", {})
     ledger.close()
     path = home / "gateway-ledger" / "segment-000001.jsonl"
     path.write_bytes(path.read_bytes()[:-40])                   # the third entry is cut

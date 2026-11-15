@@ -22,10 +22,12 @@ Longer values are cut into 16-byte windows; any run of at least
 occurrences that rows the purge kept still account for are not residue.
 
 Counting those occurrences is where a kept record that quotes the purged text
-costs time: every window it quotes is found. A few found windows are counted
-one at a time at C speed; past `_DIRECT_WINDOWS` of them, one pass over every
-offset of the files and of the kept text counts them all, so the work stays
-linear in the bytes read.
+costs time: every window it quotes is found. A few found windows are searched
+for one at a time at C speed; past `_DIRECT_WINDOWS` of them, one pass over
+every offset of the files and of the kept text counts them all, so the work
+stays linear in the bytes read. Both ways count an occurrence at every offset,
+including occurrences that overlap each other, as a window that repeats within
+itself does (`aaaa...`, or the escapes of one accented letter in a row).
 """
 from __future__ import annotations
 
@@ -165,11 +167,11 @@ def live_values(conn, codec: str = "utf-8") -> list[bytes]:
 
 
 def _counts(blobs: list[bytes], windows: set[bytes]) -> dict[bytes, int]:
-    """How often each window occurs in the blobs. The branch depends only on
-    how many windows there are, so the files and the kept text, which share
-    one window set, are always counted the same way."""
+    """At how many offsets each window occurs in the blobs, overlapping
+    occurrences included. Both branches count the same thing; they differ only
+    in cost, and the branch depends only on how many windows there are."""
     if len(windows) <= _DIRECT_WINDOWS:
-        return {window: sum(blob.count(window) for blob in blobs) for window in windows}
+        return {window: sum(_occurrences(blob, window) for blob in blobs) for window in windows}
     counts = dict.fromkeys(windows, 0)
     for blob in blobs:
         for i in range(len(blob) - WINDOW + 1):
@@ -177,6 +179,16 @@ def _counts(blobs: list[bytes], windows: set[bytes]) -> dict[bytes, int]:
             if window in counts:
                 counts[window] += 1
     return counts
+
+
+def _occurrences(blob: bytes, window: bytes) -> int:
+    """The number of offsets at which `window` starts in `blob`. `bytes.count`
+    skips an occurrence that overlaps the one before it, so it is not used."""
+    count, at = 0, blob.find(window)
+    while at != -1:
+        count += 1
+        at = blob.find(window, at + 1)
+    return count
 
 
 def _leaves(value):
