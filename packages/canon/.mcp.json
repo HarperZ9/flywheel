@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "canon": {
+      "args": [
+        "-I",
+        "-S",
+        "-B",
+        "${CLAUDE_PLUGIN_ROOT}/client-plugin/server/serve.py",
+        "--context-db",
+        "${user_config.context_db}",
+        "--workspace-id",
+        "${user_config.workspace_id}",
+        "--project-id",
+        "${user_config.project_id}",
+        "--context-write=${user_config.context_write}"
+      ],
+      "command": "python3",
+      "type": "stdio"
+    }
+  }
+}

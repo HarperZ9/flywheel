@@ -1,0 +1,5 @@
+# The art gate compares rendered bytes, so these must not be translated.
+docs/art/*.svg  text eol=lf
+docs/art/*.json text eol=lf
+# Transcript fixtures are parsed line by line; keep their bytes identical everywhere.
+tests/fixtures/transcripts/*.jsonl text eol=lf

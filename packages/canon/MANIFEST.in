@@ -1,0 +1,25 @@
+include CHANGELOG.md
+include NOTICE
+# The user docs the README and CHANGELOG send a reader to. docs/superpowers
+# holds build plans, which stay in the repository.
+include docs/*.md
+recursive-include docs/art *.json *.svg
+# Ship format specifications and implementation decisions, not historical audits.
+include project-docs/F*.md
+include project-docs/R*.md
+include project-docs/V*.md
+include project-docs/M*.md
+include project-docs/W*.md
+# The C1 decisions and the context store identity spec the 0.4.0 docs name.
+include project-docs/C1-*.md
+include project-docs/CONTEXT-*.md
+# The whole suite runs from an extracted sdist: the package marker and the
+# helpers the test files import, and the art tools test_repo_art.py loads.
+include tests/*.py
+recursive-include tests/fixtures *
+include tools/*.py tools/*.json
+# The checkout block set, which tests/test_blocks.py validates and renders.
+recursive-include blocks *.json *.md
+recursive-include examples *.json
+recursive-include client-plugin *.py *.md *.json
+include scripts/*.py

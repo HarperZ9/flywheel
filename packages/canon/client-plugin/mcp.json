@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "canon": {
+      "args": [
+        "-I",
+        "-S",
+        "-B",
+        "${PLUGIN_ROOT}/server/serve.py",
+        "--context-db",
+        "${CANON_CONTEXT_DB}",
+        "--workspace-id",
+        "${CANON_WORKSPACE_ID}",
+        "--project-id",
+        "${CANON_PROJECT_ID}"
+      ],
+      "command": "python3",
+      "type": "stdio"
+    }
+  }
+}

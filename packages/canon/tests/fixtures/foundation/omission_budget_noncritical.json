@@ -1,0 +1,1 @@
+{"affected_ids":["fact-noncritical-1"],"affected_source_refs":["record:workspace/fact-noncritical-1"],"count":1,"critical":false,"decision":"omitted","does_not_prove":["This does not prove omitted facts were irrelevant."],"reason":"budget","schema":"canon.omission/v1"}

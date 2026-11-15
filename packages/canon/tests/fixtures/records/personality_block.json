@@ -1,0 +1,23 @@
+{
+  "canon_schema": "canon.record/v1",
+  "kind": "personality-block",
+  "id": "voice-canon",
+  "scope": "workspace",
+  "data": {
+    "title": "Voice",
+    "body": "Feature-first. Words with weight. No em-dashes. Honest nulls kept."
+  },
+  "provenance": {
+    "harness": "claude-code",
+    "source_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "native_id": "block:voice-canon",
+    "session_id": null,
+    "create_ord": 12,
+    "create_time": null,
+    "model_slug": "claude-opus-4-8"
+  },
+  "temporal": {
+    "valid_until": null,
+    "supersedes": null
+  }
+}
