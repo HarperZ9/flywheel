@@ -1,0 +1,22 @@
+{
+  "authorization_version": "0.1",
+  "receipt_id": "ar-minimal-valid",
+  "kind": "authorization-grant",
+  "principal": {
+    "id": "user:alice@example.com",
+    "role": "project-owner"
+  },
+  "agent": {
+    "id": "agent:proof-surface-keystone"
+  },
+  "intent": "Read and validate proof-surface conformance vectors in the local repository.",
+  "scope": {
+    "allowed_actions": ["read_file", "list_directory"],
+    "allowed_targets": ["C:/dev/public/proof-surface/conformance/"],
+    "max_actions": 20
+  },
+  "granted_at": "2026-06-17T00:00:00Z",
+  "expires_at": "2026-06-17T23:59:59Z",
+  "revoked": false,
+  "notes": "Minimal valid authorization receipt. Verifier input only -- never re-injected as model context."
+}

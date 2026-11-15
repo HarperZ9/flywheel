@@ -1,0 +1,74 @@
+{
+  "contract": "authorization-receipt",
+  "version": "0.2",
+  "schema": "../../../schemas/authorization-receipt-v0.2.schema.json",
+  "fixtures": [
+    {
+      "path": "valid/minimal.receipt.json",
+      "expected": "valid",
+      "reason": "All closed v0.2 fields are present with an exact scope, a 128-bit nonce, an expiry, and a positive action budget."
+    },
+    {
+      "path": "invalid/short-nonce.receipt.json",
+      "expected": "invalid",
+      "reason": "The nonce carries fewer than 128 bits."
+    },
+    {
+      "path": "invalid/unknown-root-field.receipt.json",
+      "expected": "invalid",
+      "reason": "Unknown root fields fail closed."
+    },
+    {
+      "path": "invalid/duplicate-revoked.receipt.json",
+      "expected": "invalid",
+      "reason": "Duplicate decoded keys make revocation state ambiguous."
+    },
+    {
+      "path": "invalid/duplicate-action.receipt.json",
+      "expected": "invalid",
+      "reason": "Duplicate action keys make exact scope ambiguous."
+    },
+    {
+      "path": "invalid/duplicate-target.receipt.json",
+      "expected": "invalid",
+      "reason": "Duplicate target keys make exact scope ambiguous."
+    },
+    {
+      "path": "invalid/duplicate-max-actions.receipt.json",
+      "expected": "invalid",
+      "reason": "Duplicate max_actions keys make the action budget ambiguous."
+    },
+    {
+      "path": "invalid/duplicate-escaped-action.receipt.json",
+      "expected": "invalid",
+      "reason": "Escaped-equivalent decoded keys are duplicates."
+    },
+    {
+      "path": "invalid/nan-max-actions.receipt.json",
+      "expected": "invalid",
+      "reason": "NaN is not a JSON number and cannot be an action budget."
+    },
+    {
+      "path": "invalid/infinity-max-actions.receipt.json",
+      "expected": "invalid",
+      "reason": "Infinity is not a JSON number and cannot be an action budget."
+    },
+    {
+      "path": "invalid/negative-infinity-max-actions.receipt.json",
+      "expected": "invalid",
+      "reason": "Negative Infinity is not a JSON number and cannot be an action budget."
+    }
+  ],
+  "schema_parity_corpus": "schema-parity.corpus.json",
+  "migration": {
+    "legacy_path": "../v0.1/valid/minimal.receipt.json",
+    "legacy_sha256": "3c6f18656a128fbcf2f081278f600c3394832e9149a418dccfe7db2f9e18c641",
+    "migrated_path": "migration/migrated-v0.2.receipt.json",
+    "operator_supplied_fields": [
+      "nonce",
+      "action",
+      "target"
+    ],
+    "reason": "A v0.1 allowlist can contain several actions or targets. Migration cannot safely guess one exact v0.2 scope."
+  }
+}

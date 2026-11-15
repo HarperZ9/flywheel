@@ -1,0 +1,50 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "behavior-transform"
+version = "1.0.0"
+description = "Consolidated pre/post inference governance surface"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+behavior-transform = "tools.behavior_flagship:main"
+behavior-transform-io = "tools.behavior_flagship:main"
+bt = "tools.bt_cli:main"
+bt-validate = "tools.validate:main"
+bt-doctor = "tools.subsystem_doctor:main"
+bt-transform = "tools.transform:main"
+bt-adaptive = "tools.adaptive_modulator:main"
+bt-infer = "tools.inference_loop:main"
+bt-analyze = "tools.response_analyzer:main"
+bt-recover = "tools.refusal_recovery:main"
+bt-intel = "tools.provider_intelligence:main"
+bt-trends = "tools.intel_trends:main"
+bt-enforce = "tools.output_enforcer:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["tools"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+[tool.coverage.run]
+source = ["tools"]
+omit = ["tools/classifier/_cli.py"]
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+fail_under = 0
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]

@@ -1,0 +1,13 @@
+{
+  "proof_surface_version": "0.1",
+  "packet_id": "bad-check-status",
+  "surface": "packet with an invalid check status",
+  "status": "ready",
+  "claims": [
+    { "claim": "Has a claim.", "evidence": "Has evidence." }
+  ],
+  "checks": [
+    { "tool": "fixture", "status": "approved", "summary": "status must be pass/warn/fail/unknown" }
+  ],
+  "action_items": []
+}

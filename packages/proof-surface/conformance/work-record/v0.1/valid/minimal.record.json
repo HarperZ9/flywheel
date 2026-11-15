@@ -1,0 +1,26 @@
+{
+  "work_record_version": "0.1",
+  "record_id": "wr-minimal-valid",
+  "direction": "output-only",
+  "intent": "Consolidate the proof-surface validators into one shared package.",
+  "inputs": [
+    {
+      "name": "src/proof_surface/packet.py",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "actions": [
+    "Created the shared proof-surface package",
+    "Added conformance vectors"
+  ],
+  "evidence": [
+    {
+      "source": "src/proof_surface/work_record.py",
+      "verdict": "MATCH",
+      "detail": "byte-witnessed against the committed source"
+    }
+  ],
+  "outcome": "completed",
+  "cost": { "tokens": 1200, "wall_ms": 45000 },
+  "notes": "Reviewer-facing record; not model input."
+}

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "proof-surface-report"
+version = "0.1.0"
+description = "Render proof-surface packets and receipts as reviewer Markdown with guarded language checks."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+keywords = ["proof-surface", "evidence", "markdown", "report", "handoff"]
+dependencies = ["proof-surface>=0.1"]
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+proof-surface-report = "proof_surface_report.cli:run"
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/proof-surface-report"
+Repository = "https://github.com/HarperZ9/proof-surface-report"
+Issues = "https://github.com/HarperZ9/proof-surface-report/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

@@ -1,0 +1,19 @@
+{
+  "envelope_version": "1",
+  "subject": "public-surface-sweeper README release-readiness claim",
+  "source": {
+    "name": "public-surface-sweeper README",
+    "kind": "release-note"
+  },
+  "references": [
+    {
+      "name": "Repository README",
+      "locator": "https://github.com/HarperZ9/public-surface-sweeper",
+      "retrieved_at": "2026-06-13"
+    }
+  ],
+  "validation": {
+    "status": "partial",
+    "notes": "Example envelope for README and CLI demonstration; human review still required."
+  }
+}

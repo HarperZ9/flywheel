@@ -1,0 +1,47 @@
+{
+  "contract": "pre-execution-gate",
+  "version": "0.1",
+  "schema": "../../../schemas/gate-request.schema.json",
+  "fixtures": [
+    {
+      "path": "valid/minimal.request.json",
+      "expected": "valid",
+      "reason": "all required fields, structurally valid authorization receipt, positive budget, MATCH state -- shape is valid"
+    },
+    {
+      "path": "invalid/forbidden-prefire-root.request.json",
+      "expected": "invalid",
+      "reason": "prefire suppression key 'prefire' at root must be rejected by the recursive forbidden-field guard"
+    },
+    {
+      "path": "invalid/forbidden-field-nested-in-authorization.request.json",
+      "expected": "invalid",
+      "reason": "prefire suppression key 'authorization_context_mode' nested inside authorization.scope must be rejected by the recursive forbidden-field guard"
+    },
+    {
+      "path": "invalid/unknown-root-field.request.json",
+      "expected": "invalid",
+      "reason": "unknown root field must fail closed (additionalProperties:false)"
+    },
+    {
+      "path": "invalid/negative-estimated-cost.request.json",
+      "expected": "invalid",
+      "reason": "estimated_cost.tokens must be a non-negative number; negative value is rejected"
+    },
+    {
+      "path": "invalid/invalid-state-verdict.request.json",
+      "expected": "invalid",
+      "reason": "state.witness_verdict must be one of MATCH, DRIFT, UNVERIFIABLE; 'TRUSTED' is rejected"
+    },
+    {
+      "path": "invalid/missing-planned-action.request.json",
+      "expected": "invalid",
+      "reason": "planned_action is required; missing field must be rejected"
+    },
+    {
+      "path": "invalid/bad-digest-format.request.json",
+      "expected": "invalid",
+      "reason": "state.target_digest must be 64-char lowercase hex; malformed value is rejected"
+    }
+  ]
+}

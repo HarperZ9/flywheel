@@ -1,0 +1,111 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/proof-surface/authorization-receipt.schema.json",
+  "title": "Authorization Receipt v0.1",
+  "description": "A verifiable record of a REAL, explicit, least-privilege, expiring, revocable grant of authority from a human principal to an agent. The structural INWARD complement to the work-record receipt (outward). This is verifier INPUT -- a checker validates an action against the receipt -- it is NEVER read back into a model context as pre-authorized state. additionalProperties is false at every level. Authority MUST expire (expires_at required). Scope is an explicit ALLOWLIST (default-deny: empty allowed_actions = nothing permitted). The authoritative recursive forbidden-field-name guard lives in proof_surface.authorization_receipt.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorization_version",
+    "receipt_id",
+    "kind",
+    "principal",
+    "agent",
+    "intent",
+    "scope",
+    "granted_at",
+    "expires_at",
+    "revoked"
+  ],
+  "properties": {
+    "authorization_version": {
+      "const": "0.1",
+      "description": "Schema version pin. Must be exactly '0.1'."
+    },
+    "receipt_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique, non-empty identifier for this specific grant."
+    },
+    "kind": {
+      "const": "authorization-grant",
+      "description": "Document kind discriminator. Fixed to 'authorization-grant'."
+    },
+    "principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "description": "The REAL human or account that grants authority. Never a fabricated appointment.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the granting human/account (e.g. username, user UUID)."
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Optional role label for the principal (e.g. 'project-owner', 'team-lead')."
+        }
+      }
+    },
+    "agent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id"],
+      "description": "The agent that receives the grant.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Identifier of the agent (e.g. agent name, session ID)."
+        }
+      }
+    },
+    "intent": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plain-language description of what is authorized. Non-empty."
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["allowed_actions", "allowed_targets"],
+      "description": "Explicit ALLOWLIST scope. Default-deny: an empty allowed_actions list authorizes NOTHING.",
+      "properties": {
+        "allowed_actions": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Exhaustive list of permitted action kinds. Empty array = nothing permitted (default-deny)."
+        },
+        "allowed_targets": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "description": "Exhaustive list of permitted targets. Empty array = any target is permitted for allowed actions."
+        },
+        "max_actions": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Optional upper bound on total actions under this grant."
+        }
+      }
+    },
+    "granted_at": {
+      "type": "string",
+      "description": "ISO-8601 datetime (with timezone) at which the grant takes effect."
+    },
+    "expires_at": {
+      "type": "string",
+      "description": "ISO-8601 datetime (with timezone) at which the grant expires. Authority MUST expire; this field is required."
+    },
+    "revoked": {
+      "type": "boolean",
+      "description": "True if this grant has been explicitly revoked before its natural expiry."
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional human-readable annotation for reviewers."
+    }
+  },
+  "$comment": "Forbidden field names (rejected by name at every object level by the reference validator -- the identical set as work-record-receipt): federal_appointment, oversight_principals, operator_role, judgment_owner, proof_policy, policy_boundary, authorization_context_mode, model_authorization_behavior, guardrail_posture, consume_verified_native_state, lossy_neutral_embedded_state, sovereignty_capsule, self_applicable, recursion_depth, prefire, run_state."
+}

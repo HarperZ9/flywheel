@@ -1,0 +1,10 @@
+conformance/**/*.receipt.json binary
+conformance/**/*.json binary
+# The demo bundle is sealed by bundle.json over the exact committed bytes. -text keeps
+# a core.autocrlf=true checkout from rewriting LF to CRLF and breaking every digest.
+examples/agent_action/demo-otel-out/** -text
+
+# Repo art receipts (docs/art/receipts.json) record the SHA-256 of each output's
+# stored bytes, so Git must not rewrite line endings on checkout. Without this, a
+# Windows clone with core.autocrlf=true fails the SVG digests.
+docs/art/** -text

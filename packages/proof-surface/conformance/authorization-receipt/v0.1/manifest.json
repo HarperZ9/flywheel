@@ -1,0 +1,37 @@
+{
+  "contract": "authorization-receipt",
+  "version": "0.1",
+  "schema": "../../../schemas/authorization-receipt.schema.json",
+  "fixtures": [
+    {
+      "path": "valid/minimal.receipt.json",
+      "expected": "valid",
+      "reason": "all required fields, real principal, allowlist scope, required expiry, not revoked, no forbidden keys"
+    },
+    {
+      "path": "invalid/forbidden-federal-appointment-root.receipt.json",
+      "expected": "invalid",
+      "reason": "prefire suppression key 'federal_appointment' at root must be rejected by the forbidden-field guard"
+    },
+    {
+      "path": "invalid/forbidden-prefire-key-nested.receipt.json",
+      "expected": "invalid",
+      "reason": "prefire suppression key 'authorization_context_mode' nested inside scope must be rejected by the recursive forbidden-field guard"
+    },
+    {
+      "path": "invalid/missing-expires-at.receipt.json",
+      "expected": "invalid",
+      "reason": "expires_at is required -- authority must always expire"
+    },
+    {
+      "path": "invalid/unknown-root-field.receipt.json",
+      "expected": "invalid",
+      "reason": "unknown root field must fail closed (additionalProperties:false)"
+    },
+    {
+      "path": "invalid/non-allowlist-scope.receipt.json",
+      "expected": "invalid",
+      "reason": "scope.allowed_actions and allowed_targets must be arrays, not strings"
+    }
+  ]
+}

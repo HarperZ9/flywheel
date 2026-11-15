@@ -1,0 +1,42 @@
+{
+  "proof_surface_version": "0.1",
+  "packet_id": "proof-surface-public-release-demo",
+  "surface": "public release readiness",
+  "status": "needs-polish",
+  "claims": [
+    {
+      "claim": "The repository has a bounded public release surface.",
+      "evidence": "public-surface-sweeper summary reports no secret-shaped values and identifies remaining presentation gaps."
+    },
+    {
+      "claim": "The AI/accountability claim is source-linked.",
+      "evidence": "model-provenance-validator envelope records source, retrieval date, and validation status."
+    },
+    {
+      "claim": "Witness output is factual rather than authoritative.",
+      "evidence": "EMET receipt uses MATCH, DRIFT, or UNVERIFIABLE and carries no TRUSTED verdict."
+    }
+  ],
+  "checks": [
+    {
+      "tool": "public-surface-sweeper",
+      "status": "warn",
+      "summary": "release surface is useful but still has action items"
+    },
+    {
+      "tool": "model-provenance-validator",
+      "status": "pass",
+      "summary": "provenance envelope shape is valid"
+    },
+    {
+      "tool": "emet-proof-surface-receipt",
+      "status": "pass",
+      "summary": "witness receipt carries a closed-lattice verdict"
+    }
+  ],
+  "action_items": [
+    "Add expected-output fixture for the first reviewer command.",
+    "Attach one provenance envelope to each public technical claim.",
+    "Index witness receipts beside release-readiness summaries."
+  ]
+}

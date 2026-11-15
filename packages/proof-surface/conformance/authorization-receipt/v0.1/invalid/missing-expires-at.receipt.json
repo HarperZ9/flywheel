@@ -1,0 +1,19 @@
+{
+  "authorization_version": "0.1",
+  "receipt_id": "ar-missing-expires-at",
+  "kind": "authorization-grant",
+  "principal": {
+    "id": "user:alice@example.com"
+  },
+  "agent": {
+    "id": "agent:proof-surface-keystone"
+  },
+  "intent": "Attempt to create a grant with no expiry -- authority must always expire.",
+  "scope": {
+    "allowed_actions": ["read_file"],
+    "allowed_targets": []
+  },
+  "granted_at": "2026-06-17T00:00:00Z",
+  "revoked": false,
+  "notes": "Missing expires_at -- must be rejected because authority must expire."
+}

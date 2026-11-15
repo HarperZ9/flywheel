@@ -1,0 +1,15 @@
+{
+  "eval_version": "0.1",
+  "contract_id": "ec-invalid-forbidden-nested",
+  "objective": "Forbidden key nested inside a criterion object.",
+  "criteria": [
+    {
+      "name": "accuracy",
+      "metric": "accuracy_pct",
+      "threshold": 90.0,
+      "direction": ">=",
+      "required": true,
+      "federal_appointment": {"role": "eval-authority"}
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "receipt_id": "receipt-demo",
+  "verdict": "accepted",
+  "witness": {
+    "implementation": "local"
+  },
+  "notes": "signed fixture"
+}
+

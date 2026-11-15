@@ -1,0 +1,63 @@
+{
+  "version": "visual-measurement-proof-packet/v0",
+  "packet_id": "demo-visual",
+  "claim": "The sRGB swatch measured within tolerance of its color and luminance targets.",
+  "scope": "One image artifact; sensorless display estimate; strictly read-only.",
+  "artifact": {
+    "name": "srgb-swatch.png",
+    "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    "kind": "image",
+    "width": 1024,
+    "height": 1024
+  },
+  "color": {
+    "color_space": "sRGB",
+    "transfer": "sRGB",
+    "white_point": "D65"
+  },
+  "read_only": true,
+  "measurements": [
+    {
+      "metric": "delta_e_2000_mean",
+      "value": 1.42,
+      "unit": "dE",
+      "target": 0.0,
+      "tolerance": 2.0,
+      "deviation": 1.42,
+      "method": "build-color deltaE2000",
+      "evidence": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ]
+    },
+    {
+      "metric": "white_luminance",
+      "value": 118.0,
+      "unit": "cd/m2",
+      "target": 120.0,
+      "tolerance": 5.0,
+      "deviation": 2.0,
+      "method": "calibrate-pro sensorless estimate",
+      "evidence": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ]
+    }
+  ],
+  "display_caveats": [
+    "sensorless estimate, not sensor-measured (~3.7 dE typical on the i1Display3 path)",
+    "no ICC/LUT/DDC applied; read-only packet"
+  ],
+  "verdicts": {
+    "overall": "MATCH",
+    "per_metric": [
+      {
+        "metric": "delta_e_2000_mean",
+        "status": "MATCH"
+      },
+      {
+        "metric": "white_luminance",
+        "status": "MATCH"
+      }
+    ]
+  },
+  "uncertainty": []
+}

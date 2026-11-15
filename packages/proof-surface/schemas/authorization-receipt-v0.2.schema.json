@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/proof-surface/authorization-receipt-v0.2.schema.json",
+  "title": "Authorization Receipt v0.2",
+  "description": "An exactly scoped inner authorization receipt. Proof Surface validates structure and one proposed action. External signature trust, nonce uniqueness, revocation state, and atomic action consumption are separate obligations.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "authorization_version",
+    "receipt_id",
+    "kind",
+    "nonce",
+    "agent_id",
+    "action",
+    "target",
+    "issued_at",
+    "expires_at",
+    "max_actions",
+    "revoked"
+  ],
+  "properties": {
+    "authorization_version": {"const": "0.2"},
+    "receipt_id": {"type": "string", "pattern": "\\S"},
+    "kind": {"const": "authorization-grant"},
+    "nonce": {
+      "type": "string",
+      "pattern": "^(?!0+$)[0-9a-f]{32,}$",
+      "description": "Lowercase hexadecimal representation of at least 128 bits. Randomness and uniqueness are enforced by the producer and consuming store."
+    },
+    "agent_id": {"type": "string", "pattern": "\\S"},
+    "action": {"type": "string", "pattern": "\\S"},
+    "target": {"type": "string", "pattern": "\\S"},
+    "issued_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8])))|(?:(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29))T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+    },
+    "expires_at": {
+      "type": "string",
+      "format": "date-time",
+      "pattern": "^(?:(?:(?!0000)\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|02-(?:0[1-9]|1\\d|2[0-8])))|(?:(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29))T(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|[+-](?:[01]\\d|2[0-3]):[0-5]\\d)$"
+    },
+    "max_actions": {"type": "integer", "minimum": 1},
+    "revoked": {"type": "boolean"},
+    "policy_ref": {"type": "string", "pattern": "\\S"},
+    "notes": {"type": "string", "pattern": "\\S"}
+  },
+  "$comment": "The reference raw-input loader rejects duplicate decoded object keys and non-finite numeric constants before schema validation. Dict-only validators cannot recover duplicate-key evidence after permissive parsing. The reference validator also rejects forbidden authorization-suppression field names recursively and requires expires_at to be after issued_at."
+}

@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/proof-surface/work-record-receipt.schema.json",
+  "title": "Work-Record Receipt v0.1",
+  "description": "A verifiable record of agent work that flows OUTWARD for review. The structural inverse of an authorization-suppression prefire capsule. additionalProperties is false at every level; the authoritative recursive forbidden-field-name guard lives in proof_surface.work_record (the prefire capsule/meta keys are blocked by name). decision-bearing fields are closed enums; direction is fixed to output-only.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "work_record_version",
+    "record_id",
+    "direction",
+    "intent",
+    "inputs",
+    "actions",
+    "evidence",
+    "outcome",
+    "cost"
+  ],
+  "properties": {
+    "work_record_version": { "const": "0.1" },
+    "record_id": { "type": "string", "minLength": 1 },
+    "direction": {
+      "const": "output-only",
+      "description": "A work record is emitted outward; it is never read back as inbound model/session state."
+    },
+    "intent": { "type": "string", "minLength": 1 },
+    "inputs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "sha256"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+        }
+      }
+    },
+    "actions": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "evidence": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source", "verdict"],
+        "properties": {
+          "source": { "type": "string", "minLength": 1 },
+          "verdict": { "enum": ["MATCH", "DRIFT", "UNVERIFIABLE"] },
+          "detail": { "type": "string" }
+        }
+      }
+    },
+    "outcome": { "enum": ["completed", "partial", "abandoned", "blocked"] },
+    "cost": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tokens": { "type": "number", "minimum": 0 },
+        "wall_ms": { "type": "number", "minimum": 0 }
+      }
+    },
+    "notes": { "type": "string" }
+  },
+  "$comment": "Forbidden field names (rejected by name at every object level by the reference validator): federal_appointment, oversight_principals, operator_role, judgment_owner, proof_policy, policy_boundary, authorization_context_mode, model_authorization_behavior, guardrail_posture, consume_verified_native_state, lossy_neutral_embedded_state, sovereignty_capsule, self_applicable, recursion_depth, prefire, run_state."
+}

@@ -1,0 +1,14 @@
+{
+  "eval_version": "0.1",
+  "contract_id": "ec-invalid-direction",
+  "objective": "Direction must be one of '>=' or '<='.",
+  "criteria": [
+    {
+      "name": "accuracy",
+      "metric": "accuracy_pct",
+      "threshold": 90.0,
+      "direction": ">",
+      "required": true
+    }
+  ]
+}

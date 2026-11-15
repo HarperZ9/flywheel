@@ -1,0 +1,14 @@
+{
+  "statement": "The Collatz map reaches 1 from every positive integer.",
+  "sources": [
+    { "ref": "Collatz conjecture (open problem)", "url": "https://en.wikipedia.org/wiki/Collatz_conjecture" }
+  ],
+  "attempts": [
+    { "attempt_id": "a1", "method": "numeric-probe", "result": "bounded", "notes": "reached 1 for all n <= 1e6" },
+    { "attempt_id": "a2", "method": "lean", "result": "incomplete", "notes": "no total termination proof" }
+  ],
+  "checks": [
+    { "checker": "lean-total-termination", "status": "unverifiable", "evidence": ["no general proof; only a bounded probe exists"] }
+  ],
+  "uncertainty": ["a bounded probe cannot establish the general claim; this remains open"]
+}

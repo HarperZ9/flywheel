@@ -1,0 +1,21 @@
+{
+  "schema": "seal-watch.targets/1",
+  "targets": [
+    {
+      "repo": "HarperZ9/crewai-kickoff-replay-receipt",
+      "verifier": ["python", "verify_public.py"],
+      "manifest": "SHA256SUMS",
+      "tamper": "AUDIT.md",
+      "known_failures": {
+        "windows-autocrlf-true": "No .gitattributes pin in the sealed repo, so Git rewrites LF to CRLF on checkout and 33 of 38 sealed digests no longer match (5 still match). Line endings only; the stored blobs match."
+      }
+    },
+    {
+      "repo": "HarperZ9/vllm-ci-forum-receipt",
+      "verifier": ["python", "verify_publication.py"],
+      "manifest": "SHA256SUMS.txt",
+      "tamper": "analyzer.py",
+      "known_failures": {}
+    }
+  ]
+}

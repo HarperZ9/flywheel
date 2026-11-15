@@ -1,0 +1,221 @@
+{
+  "wire_version": "0.1",
+  "description": "Frozen conformance corpus for the coherence-membrane read-gate wire contract. A second implementation passing these demonstrates re-derivability.",
+  "cases": [
+    {
+      "id": "sha256-utf8",
+      "fn": "sha256_hex",
+      "input": {
+        "utf8": "coherence-membrane"
+      },
+      "expected": "746c78777bd504f507635e8d3af5f7db02942fd0ac1f4ee7f18568f44a13396b"
+    },
+    {
+      "id": "sha256-empty",
+      "fn": "sha256_hex",
+      "input": {
+        "hex": ""
+      },
+      "expected": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "id": "phash-gradient-16x16",
+      "fn": "perceptual_hash",
+      "input": {
+        "png_hex": "89504e470d0a1a0a0000000d4948445200000010000000100802000000909168360000004349444154789c63606060101414545252323636767171090d0d4d4b4b2b2f2fefe8e8983973e6aa55ab76efde7de6cc99bb77efbe7bf7eeffffff0ca31a46350c5f0d0025637e90230dbd160000000049454e44ae426082"
+      },
+      "expected": "0000000000000000"
+    },
+    {
+      "id": "phash-inverted-gradient-16x16",
+      "fn": "perceptual_hash",
+      "input": {
+        "png_hex": "89504e470d0a1a0a0000000d4948445200000010000000100802000000909168360000004249444154789c63f8ffffffbb77efeedebd7be6cc99ddbb77af5ab56ae6cc991d1d1de5e5e5696969a1a1a12e2e2ec6c6c64a4a4a8282820c4030aa6154c3f0d500008d5a7e9059ca250f0000000049454e44ae426082"
+      },
+      "expected": "ffffffffffffffff"
+    },
+    {
+      "id": "drift-match",
+      "fn": "compare_drift",
+      "input": {
+        "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "current_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "baseline_phash": "1",
+        "current_phash": "2"
+      },
+      "expected": {
+        "verdict": "MATCH",
+        "distance": 0
+      }
+    },
+    {
+      "id": "drift-diff-dist4",
+      "fn": "compare_drift",
+      "input": {
+        "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "current_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "baseline_phash": "0f",
+        "current_phash": "00"
+      },
+      "expected": {
+        "verdict": "DRIFT",
+        "distance": 4
+      }
+    },
+    {
+      "id": "drift-unverifiable",
+      "fn": "compare_drift",
+      "input": {
+        "baseline_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "current_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+        "baseline_phash": null,
+        "current_phash": "00"
+      },
+      "expected": {
+        "verdict": "UNVERIFIABLE",
+        "distance": null
+      }
+    },
+    {
+      "id": "canonical-sorted",
+      "fn": "canonical_sha256",
+      "input": {
+        "json": {
+          "b": 2,
+          "a": 1
+        }
+      },
+      "expected": "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+    },
+    {
+      "id": "canonical-reordered-equal",
+      "fn": "canonical_sha256",
+      "input": {
+        "json": {
+          "a": 1,
+          "b": 2
+        }
+      },
+      "expected": "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+    },
+    {
+      "id": "hamming-4",
+      "fn": "hamming",
+      "input": {
+        "a": "0f00",
+        "b": "0000"
+      },
+      "expected": 4
+    },
+    {
+      "id": "region-drift-tile1",
+      "fn": "region_drift",
+      "input": {
+        "baseline": [
+          "0000000000000000",
+          "0000000000000000"
+        ],
+        "current": [
+          "0000000000000000",
+          "000000000000000f"
+        ],
+        "rows": 1,
+        "cols": 2
+      },
+      "expected": {
+        "verdict": "DRIFT",
+        "changed_regions": [
+          1
+        ],
+        "max_distance": 4
+      }
+    },
+    {
+      "id": "receipt-anchor",
+      "fn": "receipt_anchor",
+      "input": {
+        "receipt": {
+          "receipt_version": "0.1",
+          "organ": "visual-artifact",
+          "subject": "frame.png",
+          "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "timestamp": "2026-01-01T00:00:00+00:00",
+          "confidence": "high",
+          "facts": {
+            "identity_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "perceptual_hash": "00ff00ff00ff00ff",
+            "width": 16,
+            "height": 16,
+            "format": "png"
+          }
+        }
+      },
+      "expected": "7d1fe8477dfea422fa0e8cc6bbdbc60d501b3be719cbba24c5450e48619ea8bf"
+    },
+    {
+      "id": "region-drift-empty-grid",
+      "fn": "region_drift",
+      "input": {
+        "baseline": [],
+        "current": [],
+        "rows": 0,
+        "cols": 0
+      },
+      "expected": {
+        "verdict": "UNVERIFIABLE",
+        "changed_regions": [],
+        "max_distance": null
+      }
+    },
+    {
+      "id": "region-drift-invalid-hash",
+      "fn": "region_drift",
+      "input": {
+        "baseline": [
+          "zz"
+        ],
+        "current": [
+          "00"
+        ],
+        "rows": 1,
+        "cols": 1
+      },
+      "expected": {
+        "verdict": "UNVERIFIABLE",
+        "changed_regions": [],
+        "max_distance": null
+      }
+    },
+    {
+      "id": "receipt-anchor-no-facts",
+      "fn": "receipt_anchor",
+      "input": {
+        "receipt": {
+          "receipt_version": "0.1",
+          "organ": "visual-artifact",
+          "subject": "frame.png",
+          "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "timestamp": "2026-01-01T00:00:00+00:00",
+          "confidence": "high"
+        }
+      },
+      "expected": "9c3d33b385055d24890488604935e03d77b13d194759a070fb7f465fe7737c42"
+    },
+    {
+      "id": "receipt-anchor-null-facts",
+      "fn": "receipt_anchor",
+      "input": {
+        "receipt": {
+          "receipt_version": "0.1",
+          "organ": "visual-artifact",
+          "subject": "frame.png",
+          "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "timestamp": "2026-01-01T00:00:00+00:00",
+          "confidence": "high",
+          "facts": null
+        }
+      },
+      "expected": "d4ad2d31e23e15b277339d90bcdfc510918bbf56a71769f0afdcb373309412c7"
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "title": "Research-claim proof packet demo-triangular",
+  "disposition": "publishable",
+  "claims": [
+    {
+      "text": "The statement holds under the numeric-probe check.",
+      "falsification": "the check status is not 'pass'."
+    }
+  ]
+}

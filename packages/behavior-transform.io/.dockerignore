@@ -1,0 +1,9 @@
+.env
+.env.*
+.git
+secrets/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+Codex.local.md

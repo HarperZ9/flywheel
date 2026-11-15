@@ -1,0 +1,28 @@
+{
+  "proof_surface_version": "0.1",
+  "packet_id": "model-provenance-validator-example",
+  "surface": "model provenance validation",
+  "status": "ready",
+  "claims": [
+    {
+      "claim": "Model/reference claims carry provenance envelopes.",
+      "evidence": "total envelopes=2"
+    },
+    {
+      "claim": "Envelope structure is validated before publication.",
+      "evidence": "valid=2, invalid=0"
+    },
+    {
+      "claim": "Invalid provenance is converted into action items.",
+      "evidence": "validation errors=0"
+    }
+  ],
+  "checks": [
+    {
+      "tool": "model-provenance-validator",
+      "status": "pass",
+      "summary": "valid=2, invalid=0, errors=0"
+    }
+  ],
+  "action_items": []
+}

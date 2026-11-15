@@ -1,0 +1,23 @@
+{
+  "ledger_version": "0.1",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "statement": "First claim under id c1.",
+      "source": "agent:a",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "depends_on": [],
+      "conflicts_with": []
+    },
+    {
+      "claim_id": "c1",
+      "statement": "Second claim reusing id c1.",
+      "source": "agent:b",
+      "confidence": 0.7,
+      "evidence_refs": [],
+      "depends_on": [],
+      "conflicts_with": []
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "work_record_version": "0.1",
+  "record_id": "wr-forbidden-nested-authz-mode",
+  "direction": "output-only",
+  "intent": "Attempt to smuggle authorization_context_mode nested inside cost.",
+  "inputs": [],
+  "actions": [],
+  "evidence": [],
+  "outcome": "completed",
+  "cost": {
+    "tokens": 1,
+    "wall_ms": 1,
+    "authorization_context_mode": "lossy_neutral_embedded_state"
+  }
+}

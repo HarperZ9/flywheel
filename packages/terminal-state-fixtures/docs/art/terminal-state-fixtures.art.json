@@ -1,0 +1,89 @@
+{
+  "header": {
+    "name": "terminal-state-fixtures",
+    "role": "evaluation environments that score an agent by the state it left behind",
+    "tagline": "Score the state, not the story.",
+    "words": ["enumerate", "score", "generate", "pin", "exclude"]
+  },
+  "flows": [
+    {
+      "file": "record-to-verdict.svg",
+      "kicker": "a transcript says what a model believes happened, and the record says what happened",
+      "title": "How a run record becomes a verdict, or leaves the denominator",
+      "footnote": "The order is the whole design. Every state that must not read as a quality failure is settled before the oracle is consulted, so a blocked launch, a timeout and a provider refusal leave the denominator instead of lowering the score. Integrity is checked before the oracle too, which is why a tampered record is refuted even when the oracle passed.",
+      "alt": "Eight stages taking one run record to a verdict: run record, launched, timeout, provider, integrity, oracle, verdict, denominator. A record carries five fields: execution with four values, provider with three, oracle with three, receipt with three and artifact with three. Every combination is enumerated, so the dataset is 324 rows with no sampling. Scoring applies eight rules in a fixed order. A blocked or never launched execution is not a run at all and leaves the denominator. A timeout reached no terminal answer and leaves it. A structured provider refusal is not a task failure and leaves it. Output that never parsed into a claim leaves it. A receipt mismatch or an artifact mismatch refutes the run even when the oracle passed, because integrity outranks the oracle, and that verdict counts. An absent oracle is an honest null rather than a pass and leaves the denominator. An oracle pass verifies and an oracle fail refutes, and both count. Seven terminal verdicts exist and only two of them, verified and refuted, belong in the quality denominator, which is 23 of the 324 rows. Three outcomes: a verdict that counts, a verdict that counts against the run, and a record excluded from the denominator entirely.",
+      "stages": [
+        { "title": "Run record", "note": "Five fields, every combination." },
+        { "title": "Launched", "note": "Blocked or never started at all." },
+        { "title": "Timeout", "note": "No terminal answer was reached." },
+        { "title": "Provider", "note": "A refusal is not a task failure." },
+        { "title": "Integrity", "note": "Receipt and artifact, compared." },
+        { "title": "Oracle", "note": "Pass, fail, or none to ask." },
+        { "title": "Verdict", "note": "One of seven terminal states." },
+        { "title": "Denominator", "note": "Two verdicts of the seven count." }
+      ],
+      "returns": [
+        { "from": 3, "to": 0, "label": "EXCLUSIONS ARE SETTLED FIRST" },
+        { "from": 5, "to": 4, "label": "INTEGRITY OUTRANKS THE ORACLE" }
+      ],
+      "outcomes": [
+        { "label": "VERIFIED", "note": "the oracle passed and it counts", "tone": "verified" },
+        { "label": "REFUTED", "note": "it counts, and it counts against", "tone": "drift" },
+        { "label": "EXCLUDED", "note": "not a run the score is about", "tone": "none" }
+      ]
+    },
+    {
+      "file": "contract-to-reward.svg",
+      "kicker": "credit for a component has to come from what it does, not from what the answer looks like",
+      "title": "How a written component earns credit, or scores the no-op share",
+      "footnote": "The fixtures a model can see and the probes it cannot are generated from the same reference implementation, so the hidden set is not a harder variant of the visible one. Credit concentrates on the probes that separate broken behaviour from repaired behaviour, which is why handing back the mutated module unchanged still scores its frozen regression share and nothing above it.",
+      "alt": "Eight stages taking a contract to a reward: family, contract, model writes, structural gate, child process, visible fixtures, hidden probes, terminal reward. Five families are shipped: parser contract, rubric contract, rubric repair, referee protocol and a synthetic redaction contract, carrying 337 cases in total. Each case shows the model a normative contract and, for the repair family, one mutated environment module alongside it. The model writes a component. A structural gate checks that the answer parsed into code and has the declared shape. The code is executed in a child process rather than in the harness, so a crash is a score and not an outage. Visible fixtures are the ones quoted in the prompt. Hidden probes are frozen ahead of time and never shown, and there are 5,058 frozen expectations across the five families, counting 1,720 parser probes, 1,288 rubric contract fixtures, 1,518 repair fixtures, 20 redaction fixtures and 512 referee scripts. The referee family replays its canned player scripts through the real multi-turn rollout loop and compares transcripts, rewards and stop reasons, with an independent pure fold of each state machine cross-checking every frozen expectation. Reward comes from the terminal output of the child process. Three outcomes: full credit when the hidden probes agree, the frozen no-op share when the broken module comes back unchanged, and zero when nothing runs.",
+      "stages": [
+        { "title": "Family", "note": "Five of them, 337 cases." },
+        { "title": "Contract", "note": "The normative text, quoted." },
+        { "title": "Model writes", "note": "One component, in one turn." },
+        { "title": "Structural gate", "note": "Parsed, and the right shape." },
+        { "title": "Child process", "note": "A crash is a score, not an outage." },
+        { "title": "Visible fixtures", "note": "The ones the prompt showed." },
+        { "title": "Hidden probes", "note": "Frozen, and never shown." },
+        { "title": "Terminal reward", "note": "From the output, not the turn." }
+      ],
+      "returns": [
+        { "from": 3, "to": 0, "label": "CODE THAT WILL NOT LOAD SCORES ZERO" },
+        { "from": 6, "to": 4, "label": "A NO-OP KEEPS ONLY ITS FROZEN SHARE" }
+      ],
+      "outcomes": [
+        { "label": "FULL CREDIT", "note": "the hidden probes agree", "tone": "verified" },
+        { "label": "NO-OP SHARE", "note": "the broken module, returned", "tone": "drift" },
+        { "label": "ZERO", "note": "nothing ran to be scored", "tone": "none" }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "fixture-table.svg",
+      "kicker": "counts, not adjectives",
+      "title": "What the fixtures declare, and where each number is read from",
+      "source": "environments, data, tests and outputs, on this checkout",
+      "heads": ["the fixtures declare", "how many", "where the number comes from"],
+      "alt": "A table of fourteen rows: what the fixtures declare, how many of it there are, and where each number is read from. Three environments are shipped. A run record has five fields, and enumerating every combination gives 324 rows with no sampling. Seven terminal verdicts exist, and only 23 of the 324 rows belong in the quality denominator. The component forge ships five families holding 337 cases and 5,058 frozen expectations, of which 512 are referee scripts replayed through the real rollout loop and 77 are repair cases. Eighty-four test functions pin the claims. Ten evaluation runs are recorded in the tree across 144 rollouts, all of them for the component forge. No scored run is recorded for the first environment, so nothing here is evidence about how a model performs on it.",
+      "footnote": "Every count here was read from the module, the frozen data file, the test file or the recorded run that declares it rather than typed in, and tools/check_repo_facts.py reads those same files. The marked row is the honest null: the dataset and the scorer are pinned by tests, and no model has a recorded score against the first environment in this repository.",
+      "fields": [
+        { "key": "environments", "value": "three of them", "note": "Two score agent-run records into terminal states, one through verifiers and one as a METR Task Standard family. The third has a model write and repair verifiers components." },
+        { "key": "record fields", "value": "five of them", "note": "Execution, provider, oracle, receipt and artifact, with four, three, three, three and three values. The dataset is their full product rather than a sample of it." },
+        { "key": "dataset records", "value": "324 rows", "note": "Built by taking every combination of the five fields and scoring each one with the reference scorer, so ground truth is re-derived rather than stored." },
+        { "key": "terminal verdicts", "value": "seven of them", "note": "Verified, refuted, unverifiable, rejected, malformed, timeout and not launched. The last five are reasons a run leaves the denominator rather than reasons it failed." },
+        { "key": "in the denominator", "value": "23 of 324", "note": "Only verified and refuted count. The other 301 rows are excluded, which is what stops an outage or a blocked launch from reading as a quality regression." },
+        { "key": "forge families", "value": "five of them", "note": "Parser contract, rubric contract, rubric repair, referee protocol and a synthetic redaction contract that uses fake markers only and never a real secret." },
+        { "key": "forge cases", "value": "337 in all", "note": "96 parser, 96 rubric contract, 77 repair, 64 referee and 4 redaction, each frozen as a data file so a run today and a run next year draw the same cases." },
+        { "key": "frozen expectations", "value": "5,058 pinned", "note": "Probes, fixtures and scripts written ahead of the model rather than after it. A component is scored against these, not against the shape of its answer." },
+        { "key": "referee scripts", "value": "512 replayed", "note": "Canned player scripts pushed through the real multi-turn rollout loop. Transcript, reward and stop reason are all compared against a frozen expectation." },
+        { "key": "repair cases", "value": "77 of them", "note": "Each shows one mutated module and its contract. Credit sits on the probes that separate broken from repaired, so returning the mutation scores its frozen share." },
+        { "key": "pinned tests", "value": "84 declared", "note": "Thirteen on the record scorer, eight on the METR task family and sixty-three on the forge. They pin exhaustiveness, deterministic rebuilds and reward discrimination." },
+        { "key": "recorded eval runs", "value": "ten of them", "note": "Five forge families against two models, each carrying its own metadata with the reward, the metrics, the sampling arguments and the commit that produced it." },
+        { "key": "recorded rollouts", "value": "144 in all", "note": "Counted from the result lines of those ten runs rather than from the requested example count, because a run that ended early records fewer than it asked for." },
+        { "key": "scored runs on mlflow", "value": "none in the tree", "note": "The record-scoring environment has no outputs directory and no recorded evaluation. Its dataset and scorer are pinned by tests; no model score is published here.", "tone": "drift" }
+      ]
+    }
+  ]
+}

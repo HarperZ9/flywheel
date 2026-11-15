@@ -1,0 +1,32 @@
+# secrets -- never commit
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.pfx
+*.p12
+id_rsa*
+*_key
+*_key.pub
+*.auth_private
+*.cookie
+secrets/
+
+# build / editor noise
+node_modules/
+__pycache__/
+*.pyc
+dist/
+build/
+.venv/
+.vscode/
+.idea/
+.DS_Store
+
+# Local-only Claude instructions (global standard: never commit)
+CLAUDE.local.md
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

@@ -1,0 +1,29 @@
+.env
+.env.*
+!.env.example
+secrets/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+.bt-cache/
+.warden-safe-cache/
+*.safe
+*.raw
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+*.log
+*.jsonl
+
+# Local-only Claude instructions (global standard: never commit)
+CLAUDE.local.md
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

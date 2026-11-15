@@ -1,0 +1,6 @@
+{
+  "eval_version": "0.1",
+  "contract_id": "ec-invalid-empty-criteria",
+  "objective": "At least one criterion is required.",
+  "criteria": []
+}

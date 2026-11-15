@@ -1,0 +1,188 @@
+name: packages
+
+# Each folder under packages/ is a tool that keeps its own pyproject or
+# package.json and its own tests. This file runs those tests, and only when a
+# pull request or a push to main touches packages/ or this file, so the main
+# suite's time does not grow. The commands are the ones each tool's CI ran in
+# the repository it came from.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "packages/**"
+      - ".github/workflows/packages.yml"
+  pull_request:
+    paths:
+      - "packages/**"
+      - ".github/workflows/packages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+jobs:
+  python:
+    # The install step below adds pytest-timeout before any test command in
+    # this matrix runs: the repository's pytest.ini passes --timeout, and a
+    # package with no pytest settings of its own inherits it.
+    name: ${{ matrix.package }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: proof-surface
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest -q
+              python scripts/check_public_surface.py
+              python verify_bundle.py examples/agent_action/demo-otel-out
+          - package: proof-surface-report
+            install: |
+              python -m pip install ../proof-surface
+              python -m pip install -e ".[test]"
+            test: python -m pytest -q
+          - package: repo-proof-index
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest
+              python scripts/check_proof_surface_conformance.py
+              python scripts/score_proof_surface_research.py
+          - package: model-provenance-validator
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest
+              model-provenance-validator examples/envelopes/release.provenance.json --proof-packet
+          - package: context-curator-lite
+            install: python -m pip install -e ".[test]"
+            test: python -m pytest
+          - package: secret-redact-io
+            install: python -m pip install -e ".[dev]"
+            test: |
+              python -m pytest
+              python scripts/check_public_surface.py
+          - package: agent-hook-pack
+            install: python -m pip install -e ".[test]"
+            test: python -m pytest
+          - package: agent-routing-kit
+            install: python -m pip install -e . pytest
+            test: python -m pytest -q
+          - package: public-surface-sweeper
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest
+              public-surface-sweeper examples/clean-repo --proof-packet
+          - package: discover
+            install: python -m pip install -e .
+            test: |
+              python -m unittest discover -s tests -t . -v
+              python -m discover video examples/video-manifest.json --gate
+          - package: coherence-membrane
+            install: |
+              sudo apt-get update && sudo apt-get install -y xvfb
+              python -m pip install -e ".[test]"
+            test: |
+              xvfb-run -a python -m pytest -q
+              python -m coherence_membrane selftest
+              python conformance/run.py
+              node impl/js/run.js
+          - package: behavior-transform.io
+            install: python -m pip install pytest
+            test: |
+              python -m pytest -q
+              python tools/check_repo_facts.py
+              python tools/check_repo_art.py
+              python tools/behavior_flagship.py doctor --json
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Install from packages/${{ matrix.package }}
+        run: |
+          python -m pip install --upgrade pip pytest-timeout
+          ${{ matrix.install }}
+      - name: The package's own tests
+        run: ${{ matrix.test }}
+      - name: Art receipt digests
+        if: ${{ hashFiles(format('packages/{0}/scripts/check_art_receipts.py', matrix.package)) != '' }}
+        run: python scripts/check_art_receipts.py
+
+  workflow-harness-lite:
+    name: workflow-harness-lite
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/workflow-harness-lite
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: "24"
+      - run: npm test
+      - run: npm pack --dry-run
+      - run: python3 scripts/check_art_receipts.py
+
+  accountable-engine:
+    name: accountable-engine
+    runs-on: windows-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: packages/accountable-engine
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: The critic script runs
+        shell: pwsh
+        run: powershell -NoProfile -ExecutionPolicy Bypass -File .\critic.ps1
+      - run: python scripts/check_art_receipts.py
+
+  terminal-state-fixtures:
+    name: terminal-state-fixtures
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/terminal-state-fixtures
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install datasets pytest pytest-timeout uv
+          python -m pip install -e environments/mlflow_terminal_state
+      - name: Test mlflow-terminal-state
+        working-directory: packages/terminal-state-fixtures/environments/mlflow_terminal_state
+        run: python -m pytest tests/ -q
+      - name: Test the METR terminal-state TaskFamily
+        # uv builds its own environment from the project's lock, with no
+        # pytest-timeout in it, so the repository's addopts are cleared here.
+        run: uv run --project environments/metr_terminal_state_runs python -m pytest -o addopts= environments/metr_terminal_state_runs/tests -q --task-standard-task-family-name metr_terminal_state_runs --task-standard-task-name run_000
+      - name: The card and the artwork still match the code
+        run: |
+          python tools/check_repo_facts.py
+          python tools/check_repo_art.py
+          python scripts/check_art_receipts.py

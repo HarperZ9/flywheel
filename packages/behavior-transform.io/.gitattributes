@@ -1,0 +1,7 @@
+﻿* text=auto eol=lf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# The art gate compares rendered bytes, so these must not be translated.
+docs/art/*.svg  text eol=lf
+docs/art/*.json text eol=lf

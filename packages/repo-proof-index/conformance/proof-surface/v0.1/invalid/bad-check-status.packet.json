@@ -1,0 +1,22 @@
+{
+  "proof_surface_version": "0.1",
+  "packet_id": "bad-check-status",
+  "surface": "invalid public release surface",
+  "status": "needs-polish",
+  "claims": [
+    {
+      "claim": "The packet has one claim.",
+      "evidence": "The claim object includes claim and evidence fields."
+    }
+  ],
+  "checks": [
+    {
+      "tool": "fixture",
+      "status": "trusted",
+      "summary": "trusted is not a valid check status"
+    }
+  ],
+  "action_items": [
+    "Use pass, warn, fail, or unknown."
+  ]
+}

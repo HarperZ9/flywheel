@@ -1,0 +1,32 @@
+{
+  "delegation_version": "0.1",
+  "chain_id": "chain-demo",
+  "hops": [
+    {
+      "from": {
+        "id": "alice@example.com",
+        "kind": "human",
+        "key_id": "key-alice-1"
+      },
+      "to": {
+        "id": "agent:planner",
+        "kind": "agent",
+        "key_id": "key-planner-1"
+      },
+      "scope": {
+        "allowed_actions": [
+          "read",
+          "summarize"
+        ],
+        "allowed_targets": [
+          "repo:proof-surface"
+        ]
+      },
+      "granted_at": "2024-01-01T00:00:00Z",
+      "expires_at": "2999-01-01T00:00:00Z",
+      "revoked": false,
+      "binding": "cb4a674b3577672a269a1d4ed6099d29d3752170f371f8b97a7fb4751af979d7"
+    }
+  ],
+  "chain_binding": "5107124ee1a1b0ca433ce89cd476d65bfe23fe33a9787f13b167d4b699fef813"
+}

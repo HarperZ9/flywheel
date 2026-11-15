@@ -1,0 +1,14 @@
+{
+  "measurements": [
+    {
+      "claim": "Action span-write-passwd (fs.write on /etc/passwd) was admitted under its grant and its effect was verified.",
+      "deviation": 1.0,
+      "tolerance": 0.5,
+      "method": "admission-check",
+      "evidence": [
+        "decision=deny",
+        "target '/etc/passwd' is outside the grant scope"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "work_record_version": "0.1",
+  "record_id": "wr-bad-outcome",
+  "direction": "output-only",
+  "intent": "Outcome must be one of the closed enum values.",
+  "inputs": [],
+  "actions": [],
+  "evidence": [],
+  "outcome": "authorized",
+  "cost": { "tokens": 0, "wall_ms": 0 }
+}

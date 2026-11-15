@@ -1,0 +1,15 @@
+{
+  "descriptor_id": "backend-python",
+  "language": "python",
+  "backends": [
+    {
+      "name": "cpython",
+      "status": "pass"
+    },
+    {
+      "name": "pypy",
+      "status": "partial"
+    }
+  ]
+}
+

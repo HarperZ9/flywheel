@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "discover-gate"
+version = "0.1.2"
+description = "A pre-release check that your repo, package, site and videos can be found by the people they serve: README opening, topics, package keywords, CITATION.cff, JSON-LD, sitemap, llms.txt and video chapters."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "AGPL-3.0-only"
+authors = [{ name = "Zain Dana Harper" }]
+keywords = ["seo", "discoverability", "llms-txt", "json-ld", "schema-org", "sitemap", "citation-cff", "release-gate", "github-topics", "youtube"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Internet :: WWW/HTTP :: Indexing/Search",
+  "Topic :: Software Development :: Quality Assurance",
+  "Topic :: Software Development :: Build Tools",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/discover"
+Repository = "https://github.com/HarperZ9/discover"
+Issues = "https://github.com/HarperZ9/discover/issues"
+Changelog = "https://github.com/HarperZ9/discover/blob/main/CHANGELOG.md"
+
+[project.scripts]
+discover = "discover.cli:main"
+
+[tool.setuptools]
+packages = ["discover"]

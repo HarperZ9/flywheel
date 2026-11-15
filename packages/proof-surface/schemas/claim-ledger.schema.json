@@ -1,0 +1,71 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/proof-surface/claim-ledger.schema.json",
+  "title": "Claim Ledger v0.1",
+  "description": "A traceable, calibrated-uncertainty record of claims made by agents or principals in a multi-agent system. Confidence is SOURCE-PROVIDED; the ledger surfaces it for human review -- it does NOT adjudicate truth. Advisory-only: claim_ledger functions REPORT findings (low confidence, conflicts, transitive dependents); they never grant authority and are never injected into a model as trusted state. additionalProperties is false at every level. Referential integrity: depends_on and conflicts_with entries must reference existing claim_ids. The authoritative recursive forbidden-field-name guard lives in proof_surface.claim_ledger.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ledger_version", "claims"],
+  "properties": {
+    "ledger_version": {
+      "const": "0.1",
+      "description": "Schema version pin. Must be exactly '0.1'."
+    },
+    "claims": {
+      "type": "array",
+      "description": "Ordered list of claims. claim_id values must be unique within the ledger.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "statement",
+          "source",
+          "confidence",
+          "evidence_refs",
+          "depends_on",
+          "conflicts_with"
+        ],
+        "properties": {
+          "claim_id": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Unique identifier for this claim within the ledger."
+          },
+          "statement": {
+            "type": "string",
+            "minLength": 1,
+            "description": "The claim being asserted. Non-empty."
+          },
+          "source": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Identifier of the agent or principal that asserted this claim."
+          },
+          "confidence": {
+            "type": "number",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Source-provided confidence in [0.0, 1.0]. The ledger surfaces this; it does not adjudicate truth."
+          },
+          "evidence_refs": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "References to supporting evidence (URIs, file paths, hashes, etc.)."
+          },
+          "depends_on": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "claim_ids this claim depends on. Must reference existing claim_ids (referential integrity)."
+          },
+          "conflicts_with": {
+            "type": "array",
+            "items": { "type": "string" },
+            "description": "claim_ids that contradict this claim. Must reference existing claim_ids (referential integrity)."
+          }
+        }
+      }
+    }
+  },
+  "$comment": "Forbidden field names (rejected by name at every object level by the reference validator): federal_appointment, oversight_principals, operator_role, judgment_owner, proof_policy, policy_boundary, authorization_context_mode, model_authorization_behavior, guardrail_posture, consume_verified_native_state, lossy_neutral_embedded_state, sovereignty_capsule, self_applicable, recursion_depth, prefire, run_state."
+}

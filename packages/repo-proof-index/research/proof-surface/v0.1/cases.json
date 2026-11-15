@@ -1,0 +1,158 @@
+[
+  {
+    "case_id": "valid-release-evidence",
+    "description": "A shaped packet with evidence, action items, and provenance support.",
+    "packet": {
+      "proof_surface_version": "0.1",
+      "packet_id": "valid-release-evidence",
+      "surface": "example release surface",
+      "status": "needs-polish",
+      "claims": [
+        {
+          "claim": "The release has a bounded public evidence surface.",
+          "evidence": "public-surface-sweeper score=90 with one documented action item"
+        }
+      ],
+      "checks": [
+        {
+          "tool": "model-provenance-validator",
+          "status": "pass",
+          "summary": "provenance envelope valid"
+        },
+        {
+          "tool": "emet-proof-surface-receipt",
+          "status": "pass",
+          "summary": "witness receipt carries MATCH"
+        }
+      ],
+      "action_items": [
+        "Replace one public-facing punctuation issue."
+      ]
+    },
+    "expected": {
+      "schema_valid": true,
+      "evidence_coverage": true,
+      "actionability": true,
+      "non_authority_language": true,
+      "witness_or_provenance_presence": true
+    }
+  },
+  {
+    "case_id": "malformed-unknown-field",
+    "description": "Unknown root fields must fail closed.",
+    "packet": {
+      "proof_surface_version": "0.1",
+      "packet_id": "malformed-unknown-field",
+      "surface": "example release surface",
+      "status": "ready",
+      "claims": [],
+      "checks": [],
+      "action_items": [],
+      "trust_score": 100
+    },
+    "expected": {
+      "schema_valid": false,
+      "evidence_coverage": false,
+      "actionability": true,
+      "non_authority_language": true,
+      "witness_or_provenance_presence": false
+    }
+  },
+  {
+    "case_id": "missing-evidence",
+    "description": "A claim without evidence is not reviewable.",
+    "packet": {
+      "proof_surface_version": "0.1",
+      "packet_id": "missing-evidence",
+      "surface": "example release surface",
+      "status": "blocked",
+      "claims": [
+        {
+          "claim": "The release is ready.",
+          "evidence": ""
+        }
+      ],
+      "checks": [
+        {
+          "tool": "fixture",
+          "status": "fail",
+          "summary": "missing evidence string"
+        }
+      ],
+      "action_items": [
+        "Attach an evidence pointer."
+      ]
+    },
+    "expected": {
+      "schema_valid": false,
+      "evidence_coverage": false,
+      "actionability": true,
+      "non_authority_language": true,
+      "witness_or_provenance_presence": false
+    }
+  },
+  {
+    "case_id": "overclaiming-language",
+    "description": "Evidence packets must not become authority claims.",
+    "packet": {
+      "proof_surface_version": "0.1",
+      "packet_id": "overclaiming-language",
+      "surface": "example release surface",
+      "status": "ready",
+      "claims": [
+        {
+          "claim": "The system is trusted and safe.",
+          "evidence": "operator assertion"
+        }
+      ],
+      "checks": [
+        {
+          "tool": "fixture",
+          "status": "pass",
+          "summary": "claim text uses authority language"
+        }
+      ],
+      "action_items": []
+    },
+    "expected": {
+      "schema_valid": true,
+      "evidence_coverage": true,
+      "actionability": true,
+      "non_authority_language": false,
+      "witness_or_provenance_presence": false
+    }
+  },
+  {
+    "case_id": "missing-witness-or-provenance",
+    "description": "Schema-valid packets can still lack independent support.",
+    "packet": {
+      "proof_surface_version": "0.1",
+      "packet_id": "missing-witness-or-provenance",
+      "surface": "example release surface",
+      "status": "needs-polish",
+      "claims": [
+        {
+          "claim": "The release has been checked.",
+          "evidence": "local checklist says complete"
+        }
+      ],
+      "checks": [
+        {
+          "tool": "local-checklist",
+          "status": "warn",
+          "summary": "no provenance envelope or witness receipt attached"
+        }
+      ],
+      "action_items": [
+        "Attach provenance envelope or witness receipt."
+      ]
+    },
+    "expected": {
+      "schema_valid": true,
+      "evidence_coverage": true,
+      "actionability": true,
+      "non_authority_language": true,
+      "witness_or_provenance_presence": false
+    }
+  }
+]

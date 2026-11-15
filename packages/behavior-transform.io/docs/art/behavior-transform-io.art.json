@@ -1,0 +1,89 @@
+{
+  "header": {
+    "name": "behavior-transform.io",
+    "role": "a compliance boundary between an authorized operator and a model provider",
+    "tagline": "One compliance boundary for every provider.",
+    "words": ["detect", "substitute", "modulate", "frame", "enforce"]
+  },
+  "flows": [
+    {
+      "file": "request-to-model.svg",
+      "kicker": "a provider reads register, not authorization, so the register is what the boundary changes",
+      "title": "How an operator request reaches a model, or is sent unchanged",
+      "footnote": "The stack rewrites the register and never the meaning, and it never asks the model for anything the operator was not already authorized to request. Research mode exists so a caller who does not want the rewrite can send the source text through untouched, which is why the passthrough path returns to the input rather than skipping a layer.",
+      "alt": "Eight stages carrying an operator request to a model: input, obfuscation, categories, vocabulary, semantic, cyber, prose, framed request. The raw text is first checked for obfuscation, so leetspeak and homoglyph spacing are normalized before anything reads it. Category detection sorts the text across fourteen content categories. Vocabulary substitution applies a table of rules that swap operational terminology for a consulting register. Semantic modulation runs a five-layer pass with one framing template per category. Cyber modulation maps terminology for twelve assessment phases onto their published equivalents. Prose calibration normalizes register across the whole text against a large multilingual table. The authorization frame is built during the semantic and cyber passes and prepended once at the very top, so it rides on top of the request rather than being woven through it. Research mode is a separate path: a caller who wants no rewrite sends the source text through unchanged, which is why the native path returns to the input. Three outcomes: a request rewritten, framed and sent; a request the caller chose to send natively; and a request the authority gate refused before any layer ran.",
+      "stages": [
+        { "title": "Input", "note": "The operator's raw request." },
+        { "title": "Obfuscation", "note": "Leetspeak and spacing, normalized." },
+        { "title": "Categories", "note": "Sorted across fourteen." },
+        { "title": "Vocabulary", "note": "Operational terms, swapped." },
+        { "title": "Semantic", "note": "Five layers, one frame per category." },
+        { "title": "Cyber", "note": "Twelve phases, mapped by name." },
+        { "title": "Prose", "note": "Register, evened across the text." },
+        { "title": "Framed request", "note": "The frame prepended, then sent." }
+      ],
+      "returns": [
+        { "from": 3, "to": 0, "label": "RESEARCH MODE SENDS IT UNCHANGED" },
+        { "from": 5, "to": 4, "label": "ONE FRAME FROM SEMANTIC AND CYBER" }
+      ],
+      "outcomes": [
+        { "label": "CALIBRATED", "note": "rewritten, framed and sent", "tone": "verified" },
+        { "label": "NATIVE", "note": "research mode, unchanged", "tone": "drift" },
+        { "label": "REFUSED", "note": "the authority gate said no", "tone": "none" }
+      ]
+    },
+    {
+      "file": "grant-to-verdict.svg",
+      "kicker": "the boundary answers to the machine it runs on, not to a token pasted in from somewhere else",
+      "title": "How a deployment earns authorization, or is denied",
+      "footnote": "Authorization is derived from the environment rather than fetched from a server, so a copied capsule on the wrong machine derives a different fingerprint and no grant. The policy layer is checked on every call because rate and cooldown limits are about how often a gate is used, not about whether the grant exists, so a valid grant can still be held back.",
+      "alt": "Eight stages taking a deployment to a verdict: environment, capsule, seal, activation, grant, surface, policy, verdict. The environment yields a machine fingerprint. A capsule is loaded and its integrity checked, a seal is verified, and an activation state is read. From those four signals a grant is derived with a one-hour lifetime, and if any signal is missing the derivation returns no grant rather than a partial one. The grant is matched to one of five deployment surfaces, each of which lists the entitlements it is allowed to ask for. The policy layer then evaluates four rules through four evaluators covering compound entitlements, rate limits, cooldowns and session requirements. A gate returns its verdict. Seven named gates sit on the entitlements the surfaces expose. Three outcomes: a call authorized because the grant covers the gate, a call held back by a rate limit or cooldown even though the grant is valid, and a call denied because there is no grant or the surface never carried that entitlement.",
+      "stages": [
+        { "title": "Environment", "note": "A machine fingerprint." },
+        { "title": "Capsule", "note": "Loaded, and its integrity checked." },
+        { "title": "Seal", "note": "Verified, or it is absent." },
+        { "title": "Activation", "note": "The state, read." },
+        { "title": "Grant", "note": "Derived, with a one-hour life." },
+        { "title": "Surface", "note": "One of five, each with its list." },
+        { "title": "Policy", "note": "Four rules, four evaluators." },
+        { "title": "Verdict", "note": "One of seven gates answers." }
+      ],
+      "returns": [
+        { "from": 3, "to": 0, "label": "A MISSING SIGNAL DERIVES NO GRANT" },
+        { "from": 6, "to": 4, "label": "POLICY RE-CHECKS EVERY CALL" }
+      ],
+      "outcomes": [
+        { "label": "AUTHORIZED", "note": "the grant covers this gate", "tone": "verified" },
+        { "label": "POLICY-HELD", "note": "a rate limit or a cooldown", "tone": "drift" },
+        { "label": "DENIED", "note": "no grant, or no entitlement", "tone": "none" }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "layers-table.svg",
+      "kicker": "counts, not adjectives",
+      "title": "What the boundary declares, and where each number is read from",
+      "source": "tools and tests, on this checkout",
+      "heads": ["the layer declares", "how many", "where the number comes from"],
+      "alt": "A table of fourteen rows: what the boundary declares, how many of it there are, and where each number is read from. Category detection sorts text across fourteen content categories. The transform stack applies seven passes in order. Vocabulary substitution loads 198 rules across four tiers from a backend of 559 terms. Semantic modulation carries fourteen category frames, cyber modulation twelve assessment phases and 71 technique mappings, and prose calibration 305 pairs across fourteen languages. Seven authority gates sit over five deployment surfaces, and refusal recovery escalates through five levels. Nine hundred and six test functions across seventy-seven files pin the behavior. No before-and-after refusal rate is recorded anywhere in the tree, so nothing here measures how much a provider's response to a request actually changes.",
+      "footnote": "Every count here was read from the module or the test file that declares it rather than typed in, and tools/check_repo_facts.py imports those same modules and rebuilds each number. The marked row is the honest null: the stack and its gates are pinned by tests, and no measurement of how a provider responds before and after the rewrite is published in this repository.",
+      "fields": [
+        { "key": "content categories", "value": "14 of them", "note": "The HarmCategory enum. Detection sorts an input across all of them, and the count is checked against the enum rather than against the prose that describes it." },
+        { "key": "transform layers", "value": "seven of them", "note": "Obfuscation normalization, category detection, vocabulary substitution, semantic modulation, cyber modulation, prose calibration and token optimization, applied in that order." },
+        { "key": "substitution rules", "value": "198 of them", "note": "Loaded across four tiers by the vocabulary substitutor. Each swaps one operational term for a consulting-register equivalent while preserving the case of the match." },
+        { "key": "vocabulary terms", "value": "559 loaded", "note": "The backend the substitutor and the pressure scan share. The subsystem doctor loads it and reports the same figure, so a dropped term shows up as a failing count." },
+        { "key": "semantic frames", "value": "fourteen", "note": "One framing template per content category. The five-layer semantic pass selects a frame from the categories it detected rather than applying a single generic preface." },
+        { "key": "ATT&CK phases", "value": "twelve", "note": "The assessment phases the cyber modulator recognizes, from reconnaissance through impact. Terminology for each is mapped onto its published assessment equivalent." },
+        { "key": "technique mappings", "value": "71 of them", "note": "Named technique-to-assessment pairs in the cyber modulator's table, applied alongside twenty-two compound patterns that rewrite multi-clause constructions." },
+        { "key": "prose calibrations", "value": "305 pairs", "note": "The calibration table the prose layer applies last. It evens register across the whole text after the category-specific layers have done their work." },
+        { "key": "calibration languages", "value": "fourteen", "note": "Non-English maps carrying their own pairs, alongside the English core and expansion tables, so the prose layer calibrates multilingual input rather than English alone." },
+        { "key": "authority gates", "value": "seven of them", "note": "Launch, infer, inoculate, seal, condition, scan and classify. Each checks one entitlement against the derived grant before the operation it guards runs." },
+        { "key": "deployment surfaces", "value": "five of them", "note": "Claude Code, the Codex app, the Codex CLI, a generic CLI and the warden CLI, each declaring the entitlements it is allowed to ask its gates for." },
+        { "key": "recovery levels", "value": "five of them", "note": "Vocabulary only, semantic, adaptive deep framing, structural decomposition and domain recontextualization, escalated in order when a response reads as a refusal." },
+        { "key": "pinned tests", "value": "906 declared", "note": "Test functions across seventy-seven files. They pin the layer counts, the gate logic, the round-trip of a transform and the native-passthrough guarantee." },
+        { "key": "measured refusal drop", "value": "none in the tree", "note": "The repository ships the stack and its tests. It records no before-and-after refusal rate against any provider, so nothing here measures how much a request's reception changes.", "tone": "drift" }
+      ]
+    }
+  ]
+}

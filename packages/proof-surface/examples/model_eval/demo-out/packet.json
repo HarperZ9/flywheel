@@ -1,0 +1,69 @@
+{
+  "version": "model-eval-proof-packet/v0",
+  "packet_id": "demo-model-eval",
+  "claim": "claude-opus-4-8 met the accuracy and latency objectives on arithmetic-bench.",
+  "scope": "One offline eval suite; default-deny promotion.",
+  "model": {
+    "id": "claude-opus-4-8",
+    "provider": "hosted",
+    "config_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  "eval_set": {
+    "name": "arithmetic-bench",
+    "ref": "datasets/arith@v1",
+    "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+    "size": 500
+  },
+  "objective": {
+    "name": "promotion-gate",
+    "summary": "promote iff accuracy >= 0.90 and p95 latency <= 100ms"
+  },
+  "metrics": [
+    {
+      "metric": "accuracy",
+      "value": 0.94,
+      "target": 0.9,
+      "direction": "maximize",
+      "tolerance": 0.01,
+      "deviation": 0.0,
+      "method": "exact-match",
+      "evidence": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ],
+      "unit": "ratio"
+    },
+    {
+      "metric": "p95_latency_ms",
+      "value": 88,
+      "target": 100,
+      "direction": "minimize",
+      "tolerance": 5.0,
+      "deviation": 0.0,
+      "method": "timer",
+      "evidence": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ],
+      "unit": "ms"
+    }
+  ],
+  "decision": {
+    "outcome": "promote",
+    "reason": "all gated metrics met their objective within tolerance"
+  },
+  "verdicts": {
+    "overall": "MATCH",
+    "per_metric": [
+      {
+        "metric": "accuracy",
+        "status": "MATCH"
+      },
+      {
+        "metric": "p95_latency_ms",
+        "status": "MATCH"
+      }
+    ]
+  },
+  "uncertainty": [
+    "single offline eval suite; distribution shift not tested"
+  ]
+}

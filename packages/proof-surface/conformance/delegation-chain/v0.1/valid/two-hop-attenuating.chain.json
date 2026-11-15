@@ -1,0 +1,56 @@
+{
+  "delegation_version": "0.1",
+  "chain_id": "chain-demo",
+  "hops": [
+    {
+      "from": {
+        "id": "alice@example.com",
+        "kind": "human",
+        "key_id": "key-alice-1"
+      },
+      "to": {
+        "id": "agent:planner",
+        "kind": "agent",
+        "key_id": "key-planner-1"
+      },
+      "scope": {
+        "allowed_actions": [
+          "read",
+          "summarize",
+          "write"
+        ],
+        "allowed_targets": []
+      },
+      "granted_at": "2024-01-01T00:00:00Z",
+      "expires_at": "2999-01-01T00:00:00Z",
+      "revoked": false,
+      "binding": "46f2f4f0db181e0179fee5b76363e415b780aa03586deb5dbb9725f5a01b5032"
+    },
+    {
+      "from": {
+        "id": "agent:planner",
+        "kind": "agent",
+        "key_id": "key-planner-1"
+      },
+      "to": {
+        "id": "agent:executor",
+        "kind": "agent",
+        "key_id": "key-executor-1"
+      },
+      "scope": {
+        "allowed_actions": [
+          "read",
+          "summarize"
+        ],
+        "allowed_targets": [
+          "repo:proof-surface"
+        ]
+      },
+      "granted_at": "2024-01-01T00:00:00Z",
+      "expires_at": "2999-01-01T00:00:00Z",
+      "revoked": false,
+      "binding": "ef089e31fd7a4d31d08ff7792ce91f0356e6a775abdd2c68b653bba29363a4a1"
+    }
+  ],
+  "chain_binding": "0df5daed7d5408c265896c39e9a3238263007d6a019f8e1e28587be2c902abd0"
+}

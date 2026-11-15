@@ -1,0 +1,1108 @@
+{
+ "redact-00-headers": {
+  "fixtures": [
+   {
+    "cell": "header-value",
+    "expect": {
+     "case_id": "header-value",
+     "config": {
+      "endpoint": "https://example.invalid/eval",
+      "headers": {
+       "Authorization": "Bearer <redacted:AUTH_TOKEN>",
+       "X-Trace": "trace-public-001"
+      }
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "<redacted:AUTH_TOKEN>"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "<redacted:API_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "header-value",
+     "config": {
+      "endpoint": "https://example.invalid/eval",
+      "headers": {
+       "Authorization": "Bearer FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH",
+       "X-Trace": "trace-public-001"
+      }
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_API"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "stdout-stderr",
+    "expect": {
+     "case_id": "stdout-stderr",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "<redacted:AUTH_TOKEN>"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "<redacted:API_KEY>"
+      }
+     ],
+     "stderr": "retry with API key <redacted:API_KEY>",
+     "stdout": "AUTH=<redacted:AUTH_TOKEN>\nfinished"
+    },
+    "record": {
+     "case_id": "stdout-stderr",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_API"
+      }
+     ],
+     "stderr": "retry with API key FAKE_SECRET_DO_NOT_USE_LOOP29_API",
+     "stdout": "AUTH=FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH\nfinished"
+    }
+   },
+   {
+    "cell": "log-list",
+    "expect": {
+     "case_id": "log-list",
+     "log": [
+      "request accepted",
+      "debug token=<redacted:AUTH_TOKEN>",
+      {
+       "level": "debug",
+       "line": "api=<redacted:API_KEY>"
+      }
+     ],
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "<redacted:AUTH_TOKEN>"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "<redacted:API_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "log-list",
+     "log": [
+      "request accepted",
+      "debug token=FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH",
+      {
+       "level": "debug",
+       "line": "api=FAKE_SECRET_DO_NOT_USE_LOOP29_API"
+      }
+     ],
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_API"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "secret-table",
+    "expect": {
+     "case_id": "secret-table",
+     "config": {
+      "api_key": "<redacted:API_KEY>",
+      "mode": "dry-run"
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "<redacted:AUTH_TOKEN>"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "<redacted:API_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "secret-table",
+     "config": {
+      "api_key": "FAKE_SECRET_DO_NOT_USE_LOOP29_API",
+      "mode": "dry-run"
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_API"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "public-values",
+    "expect": {
+     "case_id": "public-values",
+     "manifest": {
+      "path_label": "artifact:stdout",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "note": "public metadata stays readable",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "<redacted:AUTH_TOKEN>"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "<redacted:API_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "public-values",
+     "manifest": {
+      "path_label": "artifact:stdout",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+     },
+     "note": "public metadata stays readable",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH"
+      },
+      {
+       "name": "API_KEY",
+       "source": "env:API_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_API"
+      }
+     ]
+    }
+   }
+  ],
+  "variant": {
+   "purpose": "raw header values leak through config, stdout, stderr, and logs",
+   "title": "header and CLI output redaction"
+  },
+  "worked": [
+   {
+    "cell": "worked-redact-00-headers-stdout",
+    "expect": {
+     "case_id": "worked-redact-00-headers-stdout",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
+      }
+     ],
+     "stdout": "rerun with WORKED_TOKEN=<redacted:WORKED_TOKEN>",
+     "trace_id": "trace-worked-redact-00-headers-001"
+    },
+    "record": {
+     "case_id": "worked-redact-00-headers-stdout",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_00_HEADERS_TOKEN"
+      }
+     ],
+     "stdout": "rerun with WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_00_HEADERS_TOKEN",
+     "trace_id": "trace-worked-redact-00-headers-001"
+    }
+   },
+   {
+    "cell": "worked-redact-00-headers-manifest",
+    "expect": {
+     "case_id": "worked-redact-00-headers-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=<redacted:WORKED_TOKEN> run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "worked-redact-00-headers-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_00_HEADERS_TOKEN run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_00_HEADERS_TOKEN"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "redact-01-overlap": {
+  "fixtures": [
+   {
+    "cell": "long-first",
+    "expect": {
+     "case_id": "long-first",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "<redacted:SHORT>"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "<redacted:LONG>"
+      }
+     ],
+     "stdout": "winner <redacted:LONG>"
+    },
+    "record": {
+     "case_id": "long-first",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+      }
+     ],
+     "stdout": "winner FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+    }
+   },
+   {
+    "cell": "both-values",
+    "expect": {
+     "case_id": "both-values",
+     "log": [
+      "short=<redacted:SHORT>",
+      "long=<redacted:LONG>"
+     ],
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "<redacted:SHORT>"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "<redacted:LONG>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "both-values",
+     "log": [
+      "short=FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN",
+      "long=FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+     ],
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "adjacent",
+    "expect": {
+     "case_id": "adjacent",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "<redacted:SHORT>"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "<redacted:LONG>"
+      }
+     ],
+     "stderr": "<redacted:LONG>:<redacted:SHORT>"
+    },
+    "record": {
+     "case_id": "adjacent",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+      }
+     ],
+     "stderr": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA:FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
+    }
+   },
+   {
+    "cell": "nested",
+    "expect": {
+     "case_id": "nested",
+     "config": {
+      "tokens": [
+       {
+        "raw": "<redacted:LONG>"
+       },
+       {
+        "raw": "<redacted:SHORT>"
+       }
+      ]
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "<redacted:SHORT>"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "<redacted:LONG>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "nested",
+     "config": {
+      "tokens": [
+       {
+        "raw": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+       },
+       {
+        "raw": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
+       }
+      ]
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "non-secret-prefix",
+    "expect": {
+     "case_id": "non-secret-prefix",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "<redacted:SHORT>"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "<redacted:LONG>"
+      }
+     ],
+     "stdout": "TOKEN is a public word when the raw value is absent"
+    },
+    "record": {
+     "case_id": "non-secret-prefix",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SHORT",
+       "source": "env:SHORT",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
+      },
+      {
+       "name": "LONG",
+       "source": "env:LONG",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+      }
+     ],
+     "stdout": "TOKEN is a public word when the raw value is absent"
+    }
+   }
+  ],
+  "variant": {
+   "purpose": "longer secret values must be replaced before shorter prefixes",
+   "title": "overlapping secret values"
+  },
+  "worked": [
+   {
+    "cell": "worked-redact-01-overlap-stdout",
+    "expect": {
+     "case_id": "worked-redact-01-overlap-stdout",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
+      }
+     ],
+     "stdout": "rerun with WORKED_TOKEN=<redacted:WORKED_TOKEN>",
+     "trace_id": "trace-worked-redact-01-overlap-001"
+    },
+    "record": {
+     "case_id": "worked-redact-01-overlap-stdout",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_01_OVERLAP_TOKEN"
+      }
+     ],
+     "stdout": "rerun with WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_01_OVERLAP_TOKEN",
+     "trace_id": "trace-worked-redact-01-overlap-001"
+    }
+   },
+   {
+    "cell": "worked-redact-01-overlap-manifest",
+    "expect": {
+     "case_id": "worked-redact-01-overlap-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=<redacted:WORKED_TOKEN> run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "worked-redact-01-overlap-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_01_OVERLAP_TOKEN run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_01_OVERLAP_TOKEN"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "redact-02-refs": {
+  "fixtures": [
+   {
+    "cell": "secret-ref-object",
+    "expect": {
+     "case_id": "secret-ref-object",
+     "config": {
+      "authorization": {
+       "secret_ref": "AUTH_TOKEN"
+      }
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "<redacted:AUTH_TOKEN>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "secret-ref-object",
+     "config": {
+      "authorization": {
+       "secret_ref": "AUTH_TOKEN"
+      }
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_REF_AUTH"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "ref-plus-raw",
+    "expect": {
+     "case_id": "ref-plus-raw",
+     "config": {
+      "authorization": {
+       "secret_ref": "AUTH_TOKEN"
+      }
+     },
+     "log": [
+      "debug raw <redacted:AUTH_TOKEN>",
+      "rerun with secret_ref AUTH_TOKEN"
+     ],
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "<redacted:AUTH_TOKEN>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "ref-plus-raw",
+     "config": {
+      "authorization": {
+       "secret_ref": "AUTH_TOKEN"
+      }
+     },
+     "log": [
+      "debug raw FAKE_SECRET_DO_NOT_USE_LOOP29_REF_AUTH",
+      "rerun with secret_ref AUTH_TOKEN"
+     ],
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_REF_AUTH"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "missing-secret-list",
+    "expect": {
+     "case_id": "missing-secret-list",
+     "config": {
+      "authorization": {
+       "secret_ref": "AUTH_TOKEN"
+      }
+     },
+     "log": [
+      "no raw value supplied"
+     ],
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1"
+    },
+    "record": {
+     "case_id": "missing-secret-list",
+     "config": {
+      "authorization": {
+       "secret_ref": "AUTH_TOKEN"
+      }
+     },
+     "log": [
+      "no raw value supplied"
+     ],
+     "schema": "redaction.fixture.input/1"
+    }
+   },
+   {
+    "cell": "empty-value-ignored",
+    "expect": {
+     "case_id": "empty-value-ignored",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "EMPTY",
+       "source": "env:EMPTY",
+       "value": ""
+      }
+     ],
+     "stdout": "nothing to redact"
+    },
+    "record": {
+     "case_id": "empty-value-ignored",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "EMPTY",
+       "source": "env:EMPTY",
+       "value": ""
+      }
+     ],
+     "stdout": "nothing to redact"
+    }
+   },
+   {
+    "cell": "numbers-and-bools",
+    "expect": {
+     "case_id": "numbers-and-bools",
+     "metrics": {
+      "accepted": false,
+      "attempts": 3,
+      "cost": null
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "<redacted:AUTH_TOKEN>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "numbers-and-bools",
+     "metrics": {
+      "accepted": false,
+      "attempts": 3,
+      "cost": null
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "AUTH_TOKEN",
+       "source": "env:AUTH_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_REF_AUTH"
+      }
+     ]
+    }
+   }
+  ],
+  "variant": {
+   "purpose": "safe references survive while raw values are removed",
+   "title": "secret references without raw values"
+  },
+  "worked": [
+   {
+    "cell": "worked-redact-02-refs-stdout",
+    "expect": {
+     "case_id": "worked-redact-02-refs-stdout",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
+      }
+     ],
+     "stdout": "rerun with WORKED_TOKEN=<redacted:WORKED_TOKEN>",
+     "trace_id": "trace-worked-redact-02-refs-001"
+    },
+    "record": {
+     "case_id": "worked-redact-02-refs-stdout",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_02_REFS_TOKEN"
+      }
+     ],
+     "stdout": "rerun with WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_02_REFS_TOKEN",
+     "trace_id": "trace-worked-redact-02-refs-001"
+    }
+   },
+   {
+    "cell": "worked-redact-02-refs-manifest",
+    "expect": {
+     "case_id": "worked-redact-02-refs-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=<redacted:WORKED_TOKEN> run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "worked-redact-02-refs-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_02_REFS_TOKEN run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_02_REFS_TOKEN"
+      }
+     ]
+    }
+   }
+  ]
+ },
+ "redact-03-manifest": {
+  "fixtures": [
+   {
+    "cell": "manifest-public",
+    "expect": {
+     "case_id": "manifest-public",
+     "manifest": {
+      "bytes": 128,
+      "collection_status": "collected",
+      "path_label": "artifact:manifest",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "<redacted:SESSION_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "manifest-public",
+     "manifest": {
+      "bytes": 128,
+      "collection_status": "collected",
+      "path_label": "artifact:manifest",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "manifest-command",
+    "expect": {
+     "case_id": "manifest-command",
+     "manifest": {
+      "rerun": "SESSION_KEY=<redacted:SESSION_KEY> run-eval"
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "<redacted:SESSION_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "manifest-command",
+     "manifest": {
+      "rerun": "SESSION_KEY=FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION run-eval"
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "multi-artifact",
+    "expect": {
+     "artifacts": [
+      {
+       "path_label": "artifact:stdout",
+       "preview": "session=<redacted:SESSION_KEY>"
+      },
+      {
+       "path_label": "artifact:stderr",
+       "preview": "no secret"
+      }
+     ],
+     "case_id": "multi-artifact",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "<redacted:SESSION_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "artifacts": [
+      {
+       "path_label": "artifact:stdout",
+       "preview": "session=FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+      },
+      {
+       "path_label": "artifact:stderr",
+       "preview": "no secret"
+      }
+     ],
+     "case_id": "multi-artifact",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "audit-note",
+    "expect": {
+     "audit": {
+      "decision": "not_executed",
+      "reason": "missing <redacted:SESSION_KEY>"
+     },
+     "case_id": "audit-note",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "<redacted:SESSION_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "audit": {
+      "decision": "not_executed",
+      "reason": "missing FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+     },
+     "case_id": "audit-note",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+      }
+     ]
+    }
+   },
+   {
+    "cell": "stable-hash",
+    "expect": {
+     "case_id": "stable-hash",
+     "manifest": {
+      "path_label": "artifact:input",
+      "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "<redacted:SESSION_KEY>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "stable-hash",
+     "manifest": {
+      "path_label": "artifact:input",
+      "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "SESSION_KEY",
+       "source": "env:SESSION_KEY",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+      }
+     ]
+    }
+   }
+  ],
+  "variant": {
+   "purpose": "hashes, labels, and public metadata survive redaction",
+   "title": "artifact manifest provenance"
+  },
+  "worked": [
+   {
+    "cell": "worked-redact-03-manifest-stdout",
+    "expect": {
+     "case_id": "worked-redact-03-manifest-stdout",
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
+      }
+     ],
+     "stdout": "rerun with WORKED_TOKEN=<redacted:WORKED_TOKEN>",
+     "trace_id": "trace-worked-redact-03-manifest-001"
+    },
+    "record": {
+     "case_id": "worked-redact-03-manifest-stdout",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_03_MANIFEST_TOKEN"
+      }
+     ],
+     "stdout": "rerun with WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_03_MANIFEST_TOKEN",
+     "trace_id": "trace-worked-redact-03-manifest-001"
+    }
+   },
+   {
+    "cell": "worked-redact-03-manifest-manifest",
+    "expect": {
+     "case_id": "worked-redact-03-manifest-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=<redacted:WORKED_TOKEN> run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
+     "redaction_policy": "redaction-contract/1",
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
+      }
+     ]
+    },
+    "record": {
+     "case_id": "worked-redact-03-manifest-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_03_MANIFEST_TOKEN run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
+     "schema": "redaction.fixture.input/1",
+     "secrets": [
+      {
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_03_MANIFEST_TOKEN"
+      }
+     ]
+    }
+   }
+  ]
+ }
+}

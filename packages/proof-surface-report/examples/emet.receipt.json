@@ -1,0 +1,23 @@
+{
+  "receipt_id": "emet-verify-example-7d26e03c2a4f13b0",
+  "verdict": "MATCH",
+  "witness": {
+    "implementation": "emet-python-reference",
+    "spec_version": "0.2.0-draft",
+    "self_sha256": "example-only",
+    "check": "verify"
+  },
+  "subject": [
+    {
+      "name": "README.md",
+      "digest": {
+        "sha256": "2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae"
+      }
+    }
+  ],
+  "evidence": {
+    "exit_code": 0,
+    "stdout_verdict_line": "MATCH README.md"
+  },
+  "notes": "Synthetic example receipt. EMET emits witness facts only and carries no authority, permission, or release decision."
+}

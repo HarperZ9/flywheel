@@ -1,0 +1,10 @@
+{
+  "title": "Agent-action proof packet demo-denied",
+  "disposition": "publishable",
+  "claims": [
+    {
+      "text": "Action span-write-passwd (fs.write on /etc/passwd) was admitted under its grant and its effect was verified.",
+      "falsification": "the admission decision was not 'allow', or the after-state digest is absent (the effect could not be observed)."
+    }
+  ]
+}

@@ -1,0 +1,90 @@
+name: seal-watch
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check (${{ matrix.leg }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { leg: ubuntu, os: ubuntu-latest, autocrlf: "false" }
+          - { leg: windows-autocrlf-false, os: windows-latest, autocrlf: "false" }
+          - { leg: windows-autocrlf-true, os: windows-latest, autocrlf: "true" }
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Put the Git for Windows coreutils on PATH
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo "C:\Program Files\Git\usr\bin" >> "$GITHUB_PATH"
+      # Each repo is cloned fresh with the leg's core.autocrlf, then checked by its own
+      # verifier and by sha256sum -c. A known finding passes the leg only while it still
+      # reproduces; the moment it stops, the leg goes red so targets.json gets updated.
+      - name: Clone and verify each sealed repo
+        run: python watch.py check --leg ${{ matrix.leg }} --autocrlf ${{ matrix.autocrlf }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: results-${{ matrix.leg }}
+          path: results/
+
+  self-test:
+    name: self-test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Put the Git for Windows coreutils on PATH
+        if: runner.os == 'Windows'
+        shell: bash
+        run: echo "C:\Program Files\Git\usr\bin" >> "$GITHUB_PATH"
+      # Same code path as the check job, on a temp clone with one bit flipped. The
+      # untouched clone must pass first, then both checks must fail on the tampered copy.
+      - name: Tampered copy must fail
+        run: python watch.py tamper --leg self-test-${{ runner.os }}
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        if: ${{ !cancelled() }}
+        with:
+          name: results-self-test-${{ runner.os }}
+          path: results/
+
+  report:
+    needs: [check, self-test]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: all-results
+      - name: One table for every repo and leg
+        run: python3 watch.py report all-results

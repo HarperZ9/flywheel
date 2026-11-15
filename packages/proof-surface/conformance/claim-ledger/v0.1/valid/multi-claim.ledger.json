@@ -1,0 +1,32 @@
+{
+  "ledger_version": "0.1",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "statement": "The model accuracy on the held-out test set is 92.3%.",
+      "source": "agent:evaluator-v1",
+      "confidence": 0.95,
+      "evidence_refs": ["runs/eval-2026-06-17/metrics.json"],
+      "depends_on": [],
+      "conflicts_with": []
+    },
+    {
+      "claim_id": "c2",
+      "statement": "The model accuracy on the held-out test set is 87.1%.",
+      "source": "agent:evaluator-v2",
+      "confidence": 0.80,
+      "evidence_refs": ["runs/eval-2026-06-17-v2/metrics.json"],
+      "depends_on": [],
+      "conflicts_with": ["c1"]
+    },
+    {
+      "claim_id": "c3",
+      "statement": "The p99 latency at accuracy=92.3% is below 500ms.",
+      "source": "agent:perf-probe",
+      "confidence": 0.90,
+      "evidence_refs": ["runs/perf-2026-06-17/latency.json"],
+      "depends_on": ["c1"],
+      "conflicts_with": []
+    }
+  ]
+}

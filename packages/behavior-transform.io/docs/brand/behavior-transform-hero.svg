@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 520" role="img" aria-label="behavior-transform.io README hero for Project Telos. Route every crossing. Keep the payload local.">
+  <title>behavior-transform.io Project Telos hero</title>
+  <desc>behavior-transform.io README hero for Project Telos. Route every crossing. Keep the payload local.</desc>
+  <rect width="1280" height="520" rx="34" fill="#f4f3ef"/>
+  <path d="M80 96 H1200 M80 424 H1200" stroke="#0b0c0e" stroke-opacity=".14"/>
+  <text x="80" y="86" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="20" letter-spacing="6" fill="#585c64">PROJECT TELOS / IO BOUNDARY</text>
+  <text x="76" y="334" font-family="Arial Black, Impact, system-ui, sans-serif" font-size="160" letter-spacing="0" fill="#0b0c0e" fill-opacity=".08">BEHAVIOR</text>
+  <text font-family="Arial, Helvetica, sans-serif" font-size="40" font-weight="700" fill="#0b0c0e">
+    <tspan x="84" y="188">Route every crossing.</tspan>
+    <tspan x="84" dy="48">Keep the payload local.</tspan>
+  </text>
+  <text x="86" y="290" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace" font-size="22" fill="#2f3238">READ / WRITE / EXEC / FETCH / RECEIPT</text>
+  <g transform="translate(884 88) scale(.76)">
+    <path d="M232 52 V360" stroke="#0b0c0e" stroke-width="12" stroke-linecap="round"/>
+    <circle cx="116" cy="118" r="32" fill="none" stroke="#0b0c0e" stroke-width="10"/>
+    <circle cx="116" cy="282" r="32" fill="none" stroke="#0b0c0e" stroke-width="10"/>
+    <circle cx="348" cy="118" r="32" fill="none" stroke="#0b0c0e" stroke-width="10"/>
+    <circle cx="348" cy="282" r="32" fill="none" stroke="#4636e8" stroke-width="12"/>
+    <path d="M148 118 H218 M148 282 H218 M246 118 H316 M246 282 H316" stroke="#0b0c0e" stroke-width="10" stroke-linecap="round"/>
+  </g>
+</svg>

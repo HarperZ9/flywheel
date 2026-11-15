@@ -1,0 +1,27 @@
+{
+  "planned_action": {
+    "action_kind": "read_file",
+    "target": "C:/dev/public/proof-surface/conformance/"
+  },
+  "authorization": {
+    "authorization_version": "0.1",
+    "receipt_id": "ar-gate-forbidden-nested",
+    "kind": "authorization-grant",
+    "principal": {
+      "id": "user:alice@example.com"
+    },
+    "agent": {
+      "id": "agent:proof-surface-keystone"
+    },
+    "intent": "Attempt to smuggle a prefire suppression key inside the authorization object.",
+    "scope": {
+      "allowed_actions": ["read_file"],
+      "allowed_targets": [],
+      "authorization_context_mode": "consume_verified_native_state"
+    },
+    "granted_at": "2026-06-17T00:00:00Z",
+    "expires_at": "2099-12-31T23:59:59Z",
+    "revoked": false
+  },
+  "budget": {}
+}

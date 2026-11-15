@@ -1,0 +1,33 @@
+{
+  "name": "workflow-harness-lite",
+  "version": "0.2.0",
+  "description": "Run bounded local command workflows in parallel and emit compact reports or Telos receipts.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Zain Dana Harper",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/HarperZ9/workflow-harness-lite.git"
+  },
+  "bugs": {
+    "url": "https://github.com/HarperZ9/workflow-harness-lite/issues"
+  },
+  "homepage": "https://github.com/HarperZ9/workflow-harness-lite#readme",
+  "keywords": [
+    "workflow",
+    "automation",
+    "cli",
+    "developer-tools",
+    "telos",
+    "receipt"
+  ],
+  "bin": {
+    "workflow-harness-lite": "bin/workflow-harness-lite.js"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
