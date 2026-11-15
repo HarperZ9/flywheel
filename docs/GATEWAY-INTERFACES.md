@@ -948,11 +948,13 @@ gateway that is shut down during the failure still records the gap if the
 disk allows it by then.
 
 Every model interface writes its entry after the provider has answered,
-because the entry holds the hash of the reply. So the one call that meets
-the failure has already reached the provider. A plain reply is then held
-back and answered 500, and the key is charged. A stream's text has already
-left; it ends with an error event and the key is suspended, as for any reply
-that was delivered and could not be recorded.
+because the entry holds the hash of the reply. So every call already in
+flight when the first append fails has reached the provider: at most a
+key's in-flight limit for each key, and not bounded for the gateway token.
+A plain reply is then held back and answered 500, and the key is charged.
+A stream's text has already left; it ends with an error event and the key
+is suspended, as for any reply that was delivered and could not be
+recorded. A write that fails for any reason marks the ledger failed.
 
 When writes work again the gateway reads the segment back. If it verifies
 and begins with the entries the gateway holds, the gateway appends to it,
