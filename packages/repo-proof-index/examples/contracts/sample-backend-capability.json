@@ -1,0 +1,14 @@
+{
+  "descriptor_id": "sample-backend-capability",
+  "language": "rust",
+  "backends": [
+    {
+      "name": "rust",
+      "status": "pass"
+    },
+    {
+      "name": "quantalang",
+      "status": "planned"
+    }
+  ]
+}

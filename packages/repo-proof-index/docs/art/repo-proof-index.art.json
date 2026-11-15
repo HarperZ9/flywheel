@@ -1,0 +1,234 @@
+{
+  "header": {
+    "name": "repo-proof-index",
+    "role": "proof artifacts, indexed for review",
+    "tagline": "What each proof claims, and where its evidence lives.",
+    "words": [
+      "contract",
+      "status",
+      "producer",
+      "verification",
+      "path"
+    ]
+  },
+  "flows": [
+    {
+      "file": "index-lane.svg",
+      "kicker": "one file, one row",
+      "title": "How a proof artifact becomes a row a reviewer can scan",
+      "footnote": "The index does not judge whether a proof is sufficient. It reads what each artifact says about itself, puts that in one row, and leaves the judgment with the reviewer holding the list.",
+      "alt": "Eight stages of indexing one proof artifact: paths, read, match, row, evidence, relative, table, and exit. Paths are either the files you name on the command line, sorted, or every JSON file in a directory that is scanned when you name none. Each file must hold one JSON object; a list or a string raises before any shape is tried. Known shapes are recognized in a fixed order and the first match wins, with a fallback that catches everything else, so an unrecognized shape still gets a row. Every row carries contract, kind, surface, status, evidence, path, producer status, and verification state. The evidence line prefers checks that passed, falling back to the first claim, then to a free note, then to a line saying there is no summary. Paths are shown relative to the base you chose, and stay absolute when they sit outside it. The table prints four fields, clipped to fixed widths with a trailing ellipsis, and the contract identifier, path, producer status, and verification state reach JSON output. The exit code is zero once the rows print. Three outcomes: indexed, refused, and not found.",
+      "stages": [
+        {
+          "title": "Paths",
+          "note": "Files you name, or a directory scanned."
+        },
+        {
+          "title": "Read",
+          "note": "One JSON object per file. A list is refused."
+        },
+        {
+          "title": "Match",
+          "note": "Known shapes tried in order, first one wins."
+        },
+        {
+          "title": "Row",
+          "note": "Contract, kind, status, evidence, producer state."
+        },
+        {
+          "title": "Evidence",
+          "note": "Passing checks first, then claims, then notes."
+        },
+        {
+          "title": "Relative",
+          "note": "Paths shown against the base you chose."
+        },
+        {
+          "title": "Table",
+          "note": "Four columns, clipped, the rest in JSON."
+        },
+        {
+          "title": "Exit",
+          "note": "Zero once the rows print."
+        }
+      ],
+      "returns": [
+        {
+          "from": 2,
+          "to": 0,
+          "label": "AN UNKNOWN SHAPE STILL GETS A ROW"
+        },
+        {
+          "from": 6,
+          "to": 4,
+          "label": "PRODUCER STATE REACHES JSON"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "INDEXED",
+          "note": "every file read, one row apiece",
+          "tone": "verified"
+        },
+        {
+          "label": "REFUSED",
+          "note": "a file that is not a JSON object",
+          "tone": "drift"
+        },
+        {
+          "label": "NOT FOUND",
+          "note": "the directory to scan does not exist",
+          "tone": "none"
+        }
+      ]
+    },
+    {
+      "file": "review-lane.svg",
+      "kicker": "what still needs work",
+      "title": "How a stack of rows turns into a short list of things to fix",
+      "footnote": "A short list gets acted on and a long one gets ignored, so the action list stops at eight. The gap count above it is not capped, which is how you tell whether the list you are reading is the whole list.",
+      "alt": "Eight stages of a review summary: rows, kinds, statuses, verification states, gaps, green-report guard, reason, eight, and summary. The rows are every artifact already indexed, in path order. Kinds, statuses, and verification states are counted and sorted by name. An evidence gap is decided by a string test on the evidence line: empty, the word unknown, or any text beginning with the word no. Rows also land on the action list when their status is blocked, draft, drift, fail, planned, unknown, unverifiable, unverified, or when a producer-declared green status remains not verified. Each item names a reason, either to add evidence, resolve the status it carries, or verify a producer-declared green row, alongside the path that holds it. The list stops at eight items and does not say how many were left out. The summary carries six fields and prints as text or as JSON. Three outcomes: clear, action, and truncated.",
+      "stages": [
+        {
+          "title": "Rows",
+          "note": "Every artifact indexed, in path order."
+        },
+        {
+          "title": "Kinds",
+          "note": "Counted and sorted, so the mix is visible."
+        },
+        {
+          "title": "Statuses",
+          "note": "Producer-reported statuses, sorted by name."
+        },
+        {
+          "title": "States",
+          "note": "Verification states counted separately."
+        },
+        {
+          "title": "Gaps",
+          "note": "Evidence missing, unknown, or starting with no."
+        },
+        {
+          "title": "Green",
+          "note": "Producer green but not verified needs action."
+        },
+        {
+          "title": "Eight",
+          "note": "The list stops at eight and says nothing more."
+        },
+        {
+          "title": "Summary",
+          "note": "Six fields, printed as text or as JSON."
+        }
+      ],
+      "returns": [
+        {
+          "from": 4,
+          "to": 5,
+          "label": "GAPS AND GREEN CLAIMS NEED ACTION"
+        },
+        {
+          "from": 6,
+          "to": 5,
+          "label": "A GREEN CLAIM STILL NEEDS VERIFICATION"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "CLEAR",
+          "note": "no gaps, and no status on the list",
+          "tone": "verified"
+        },
+        {
+          "label": "ACTION",
+          "note": "a status to resolve, or evidence to add",
+          "tone": "drift"
+        },
+        {
+          "label": "TRUNCATED",
+          "note": "more than eight rows want attention",
+          "tone": "none"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "shape-table.svg",
+      "kicker": "what the index recognizes",
+      "title": "Every shape a proof file can arrive in, and how it is read",
+      "source": "repo_proof_index.indexer.summarize_contract",
+      "heads": [
+        "what the file carries",
+        "indexed as",
+        "why it lands there"
+      ],
+      "fields": [
+        {
+          "key": "a manifest and product",
+          "value": "product-use-case",
+          "note": "The first shape tried. Maturity becomes the status, and the product name becomes the surface the row describes."
+        },
+        {
+          "key": "a backend descriptor",
+          "value": "backend-capability",
+          "note": "The status is a constant, and the evidence counts backends by status rather than naming any one of them."
+        },
+        {
+          "key": "a receipt verdict",
+          "value": "witness-receipt",
+          "note": "The verdict becomes the status, and the surface names the witness implementation that produced the receipt."
+        },
+        {
+          "key": "a packet version",
+          "value": "proof-surface-packet",
+          "note": "The evidence line counts claims, checks and action items, and the verification state says the producer report was not re-run."
+        },
+        {
+          "key": "a research claim packet",
+          "value": "research-claim-packet",
+          "note": "The reported overall verdict becomes the status, while the row remains not verified by the indexer."
+        },
+        {
+          "key": "the organ module id",
+          "value": "organ-exchange",
+          "note": "Recognized by an exact module identifier and a summary object, then reduced to counts of entries, organs and receipt kinds."
+        },
+        {
+          "key": "a bundle of entries",
+          "value": "organ-receipt-bundle",
+          "note": "The bundle status is the worst entry status, in a fixed order: block, then warn, then needs-human, then unverified."
+        },
+        {
+          "key": "none of the known shapes",
+          "value": "contract",
+          "note": "The fallback. Identifier, surface and status are each taken from the first field present out of several candidates."
+        },
+        {
+          "key": "two shapes at once",
+          "value": "the first match",
+          "note": "Order decides. A file carrying a product manifest and a receipt verdict is read as a product use case, and the verdict is never seen."
+        },
+        {
+          "key": "no identifier field",
+          "value": "the file name",
+          "note": "The stem of the path stands in, so a file with nothing to name it still appears in the index rather than dropping out of it."
+        },
+        {
+          "key": "a note starting with no",
+          "value": "an evidence gap",
+          "tone": "drift",
+          "note": "The gap test is a string test. A note reading no regressions found is counted as a missing summary, the same as no summary at all."
+        },
+        {
+          "key": "not a JSON object",
+          "value": "REFUSED",
+          "note": "The file raises before any shape is tried, the command prints one error line, and the exit code is one."
+        }
+      ],
+      "alt": "Twelve shapes a proof file can arrive in, one to a row, with what the index reports and why it lands there. A manifest with a product is read as a product use case, taking maturity as the status. A descriptor with backends is read as a backend capability, carrying a constant status and an evidence line that counts backends by status. A receipt with a verdict is read as a witness receipt, taking the verdict as the status and naming the witness implementation as the surface. A packet version and identifier is read as a proof-surface packet, whose evidence counts claims, checks and action items while marking the producer report not verified. A research-claim packet is read as a research-claim packet, taking its reported overall verdict as status without running a verifier. An exact module identifier with a summary object is read as an organ exchange. A bundle version with entries is read as an organ receipt bundle, whose status is the worst entry status in a fixed order of block, warn, needs-human and unverified. Anything matching none of the known shapes falls back to a plain contract, with identifier, surface and status each taken from the first candidate field present. Recognition stops at the first match, so a file carrying two shapes is read as the earlier one and the later fields are never seen. A file with no identifier borrows the stem of its own path. The accented row is the evidence gap: the test is a string test, so a note reading no regressions found is counted as a missing summary. A root that is not a JSON object is refused before any shape is tried, and the command exits one.",
+      "footnote": "Recognition runs in a fixed order and stops at the first match, so a file carrying two shapes is indexed as the earlier one. The fallback keeps every file in the index. The indexer reports producer status and verification state separately; it does not run packet-supplied verifier commands."
+    }
+  ]
+}

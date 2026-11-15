@@ -1,0 +1,11 @@
+{
+  "manifest_id": "sample-product-usecase",
+  "product": "sample-tool",
+  "maturity": "release-candidate",
+  "verification": [
+    {
+      "status": "pass",
+      "evidence": "example tests passed"
+    }
+  ]
+}
