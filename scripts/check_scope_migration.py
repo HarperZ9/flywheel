@@ -56,6 +56,10 @@ ALLOWED = (
     "packages/relay/scripts/build_client_package.py",
     "packages/relay/scripts/check_native_client.py",
     "packages/relay/scripts/check_native_workflow.py",
+    # canon writes the field in every capsule, receipt and report of its released
+    # format (74 files: source, the vendored client server, tests, docs); the tool
+    # migrates as one release, so the whole package is listed until then
+    "packages/canon/*",
     # and in each research artifact imported from its own repository
     "docs/research/*/docs/art/receipts.json",
     # describes the receipt fields of the engine version the demo pins (1.0.0)

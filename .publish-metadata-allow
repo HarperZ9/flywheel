@@ -18,3 +18,6 @@ packages/proof-surface/tests/test_public_surface_gate.py
 # reproduced from these bytes. One synthetic jest log holds an address made by a
 # test-data generator.
 packages/relay/tests/fixtures/flaky_failure_labels.json
+# canon's capture test feeds a hook payload whose cwd is a made-up worktree path and
+# asserts on the locator it records; the literal is test input, not a real folder.
+packages/canon/tests/test_client_capture.py

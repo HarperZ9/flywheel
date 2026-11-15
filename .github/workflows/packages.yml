@@ -125,6 +125,15 @@ jobs:
             test: |
               python -m pytest -q
               python tools/check_release_metadata.py
+          # canon's own repo-art job: the drawings match their spec, and a fresh
+          # render leaves the committed files unchanged.
+          - package: canon
+            install: python -m pip install -e ".[dev]"
+            test: |
+              python -m pytest
+              python tools/check_repo_art.py
+              python tools/render_repo_art.py
+              git diff --exit-code -- .
     defaults:
       run:
         shell: bash
@@ -266,12 +275,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [plexus, mneme, relay]
+        package: [plexus, mneme, relay, canon]
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ["3.11", "3.12", "3.13"]
         exclude:
           - os: ubuntu-latest
             python: "3.12"
+          # canon's CI ran Linux and Windows only.
+          - package: canon
+            os: macos-latest
         include:
           - package: plexus
             extra: python examples/tour.py
@@ -279,6 +291,9 @@ jobs:
             extra: python examples/tour.py
           - package: relay
             extra: python tools/check_release_metadata.py
+          # canon names its test extra `dev` and ran nothing after pytest.
+          - package: canon
+            extras: dev
     defaults:
       run:
         shell: bash
@@ -293,10 +308,11 @@ jobs:
       - name: Install from packages/${{ matrix.package }}
         run: |
           python -m pip install --upgrade pip pytest-timeout
-          python -m pip install -e ".[test]"
+          python -m pip install -e ".[${{ matrix.extras || 'test' }}]"
       - name: The package's own tests
         run: python -m pytest -q
       - name: The command its CI ran after the tests
+        if: ${{ matrix.extra }}
         run: ${{ matrix.extra }}
 
   python-wheel:
@@ -320,6 +336,10 @@ jobs:
           - package: relay
             smoke: |
               /tmp/vc/bin/relay --help > /dev/null
+          - package: canon
+            smoke: |
+              /tmp/vc/bin/canon --help > /dev/null
+              /tmp/vc/bin/canon-client --help > /dev/null
     defaults:
       run:
         shell: bash
@@ -340,3 +360,30 @@ jobs:
           python -m venv /tmp/vc
           /tmp/vc/bin/pip install dist/*.whl
           ${{ matrix.smoke }}
+
+  canon-client-package:
+    # canon's own client-package job: build the source and the native client
+    # package on Windows and run the acceptance checks the build script carries.
+    name: canon (client package, windows)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: packages/canon
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: python -m pip install -e ".[dev]" pyinstaller==6.21.0
+      - name: source and native package acceptance
+        shell: pwsh
+        run: |
+          $env:TEMP = (Get-Item -LiteralPath $env:RUNNER_TEMP).FullName
+          $env:TMP = $env:TEMP
+          python scripts/build_client_package.py "$env:RUNNER_TEMP/canon-source"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          python scripts/build_client_package.py "$env:RUNNER_TEMP/canon-native" --native
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
