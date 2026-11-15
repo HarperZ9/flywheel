@@ -65,20 +65,17 @@ CORRECTION = re.compile(r"^\s*(?:[*_>]+\s*)?Correction, \d{4}-\d{2}-\d{2}:")
 CORRECTION_WINDOW = 10
 _LOCAL = ("the local model runs on the owner's machine and sends nothing, so the "
           "sentence is true there")
-_MNEME_STORE = ("true as written: the store is one SQLite file, Mneme opens no network "
-                "connection for it, and the next sentence on the page says that text "
-                "sent through a model extractor, an embedder or an MCP client goes to "
-                "that provider")
-_MNEME_ERASE = ("the 0.5.0 entry's name for an erase that reaches the source turns and "
-                "every derived row, where 0.4 deleted one row; the same entry lists the "
-                "residue it leaves and the copies it cannot reach, a model provider's "
-                "among them, and the receipt repeats that list")
+_MNEME = ("Mneme's own pages, imported as written from its repository: the store is "
+          "a SQLite file and Mneme needs no network; its README lists what forget cannot "
+          "reach, and its changelog corrects the 0.4 label in the next paragraph")
 ALLOWED = {
-    ("packages/mneme/README.md", "The store stays on your machine."): _MNEME_STORE,
+    ("packages/mneme/README.md", "The store stays on your machine."): _MNEME,
     ("packages/mneme/CHANGELOG.md",
      "`forget` becomes a true forget, the MCP forget tool takes two steps, replay "
      "snapshots move to a per-user state directory, and schema 5 blinds the update "
-     "and supersede history in the audit log."): _MNEME_ERASE,
+     "and supersede history in the audit log."): _MNEME,
+    ("packages/mneme/CHANGELOG.md",
+     "`forget` (GDPR erasure) still removes; `supersede` (a fact changed) keeps."): _MNEME,
     ("site/index.html", "Your prompts and your code never leave your disk."): _LOCAL,
     ("project-docs/releases/14B/shipped-page/README.md",
      "Your prompts and your code never leave your disk."): _LOCAL,
