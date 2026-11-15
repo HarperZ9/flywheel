@@ -500,10 +500,10 @@ def openai_embeddings(req: dict):
     the request with the provider's key (present-only, from the env, never stored or
     logged), so any OpenAI embeddings client works through the same surface. Flywheel
     is zero-dep and computes no embeddings itself; it routes. Returns (body, code)."""
-    from harness import providers
-    return _openai_route.openai_embeddings(
+    from harness import gateway_embeddings, providers  # recorded in the gateway ledger
+    return gateway_embeddings.openai_embeddings(
         req, providers_registry=providers.REGISTRY, urllib_module=urllib,
-        resolve_credential=_resolve_credential)
+        resolve_credential=_resolve_credential, ledger_of=_router_ledger)
 
 
 _ROUTER_STATS = None
@@ -757,10 +757,10 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
         from harness.gateway_static import serve_static
         return serve_static(self, path)
     def _safe_500(self, e):
-        """Return one non-echoing response for an uncaught handler error."""
+        """Return one non-echoing response for an uncaught handler error (408 for a late body)."""
         try:
-            self._json({"error": {"message": f"internal error: {type(e).__name__}",
-                                  "type": "api_error"}}, 500)
+            from harness.gateway_read_timeout import uncaught
+            self._json(*uncaught(self, e))
         except Exception:
             pass                                   # headers already partly sent; nothing safe to do
     def _req_json(self):
@@ -807,7 +807,7 @@ class _Handler(BodyDrainMixin, BaseHTTPRequestHandler):  # a refused body is dra
         if not self._authorized(): return
         try:
             if not self._route_operation(method): (fallback or (lambda: self.send_error(501)))()
-        except Exception as e:
+        except BaseException as e:  # noqa: BLE001 - BodyTimeout is not an Exception; others re-raise
             self._safe_500(e)
     def do_GET(self): self._gateway_method("GET", self._get)
     def do_POST(self): self._gateway_method("POST", self._post)

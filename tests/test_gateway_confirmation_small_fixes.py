@@ -119,7 +119,7 @@ def _cut_stream(keyed, served, body: bytes):
     url, _upstream, ledger = served([support.stream_answer(body)], provider="anthropic")
     status, _headers, _body = post(url, "/v1/messages", raw, {**MESSAGES, "stream": True})
     assert status == 200
-    entry, = ledger.entries
+    entry, = support.recorded(ledger)
     assert entry.meta["reason"] == "stream_incomplete" and entry.meta["estimated"] is True
     return keys.row("ci-bot")["totals"], entry
 

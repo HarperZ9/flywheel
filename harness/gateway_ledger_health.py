@@ -6,7 +6,7 @@ refused. Before this module such a failure was seen only after the upstream
 had answered, on every call, for as long as it lasted.
 
   write    puts one entry's line in the segment. When the write, or the
-           commit to the disk, fails, the ledger is marked failed and the
+           commit to the disk, fails for any reason, the ledger is marked failed and the
            segment's file is closed, so nothing half written is sent later.
   usable   is asked by `gateway_ledger.for_home` before every model call. A
            failed ledger comes back as None, which every model interface
@@ -17,18 +17,26 @@ had answered, on every call, for as long as it lasted.
   resume   reads the segment back from the disk. When it verifies and still
            begins with the entries this process holds, the gateway appends to
            it again, and its first entry is a `ledger_gap` that says what
-           failed, when, and how many appends were refused. When the file's
+           failed, when, how many appends were refused, and which entries
+           are on disk although their append reported a failure
+           (`unconfirmed`: a reply recorded there was held back). When the file's
            tail is cut short or differs, the segment is left as it is and a
            new segment records the break, as at a start (gateway_ledger).
+  commits  `ledger.commits` is [count, seconds, seconds for started entries]:
+           how many entries were committed to the disk and how long the
+           operating system took inside `os.fsync`. The overhead gate reads
+           it to tell the gateway's own time from the disk's
+           (tests/test_gateway_overhead_timing.py).
   strays   names the files in the ledger folder that look like segments and
            are not (`segment-backup.jsonl`, `segment-000001 - Copy.jsonl`).
            They are never read as part of the ledger.
 
 What this cannot do. Every model interface writes its entry after the
-upstream has answered, because the entry holds the hash of the reply. So the
-one call during which the failure is first seen has already reached the
+upstream has answered, because the entry holds the hash of the reply. So
+every call already in flight when the failure is first seen has reached its
 provider: a plain reply is then held back and answered 500, and a stream's
-text has already left. Calls after it are refused before the upstream.
+text has already left. Calls that start after it are refused before the
+upstream.
 """
 from __future__ import annotations
 
@@ -78,18 +86,28 @@ def write(ledger, entry) -> None:
     try:
         _put(ledger._file, line)
         if ledger._sync:
+            began = time.perf_counter()
             os.fsync(ledger._file.fileno())
-    except (OSError, ValueError) as exc:
+            took, spent = time.perf_counter() - began, ledger.__dict__.setdefault(
+                "commits", [0, 0.0, 0.0])
+            spent[0], spent[1] = spent[0] + 1, spent[1] + took
+            spent[2] += took if entry.kind == "endpoint_call_started" else 0.0
+    except Exception as exc:            # noqa: BLE001 - whatever stopped the write, calls stop
         _fail(ledger, exc)
         raise
 
 
-def head(ledger) -> None:
-    """Rewrite the head record. A failure marks the ledger failed, as a failed append does."""
+def head(ledger, entry=None) -> None:
+    """Rewrite the head record. A failure marks the ledger failed, as a failed append does.
+
+    `entry` is then already in the segment while its caller is told the append
+    failed, so the resumed ledger names it as unconfirmed (`resume`)."""
     try:
         ledger._write_head()
-    except (OSError, ValueError) as exc:
+    except Exception as exc:            # noqa: BLE001
         _fail(ledger, exc)
+        if entry is not None:
+            ledger.failed["unconfirmed"] = [entry.seq]
         raise
 
 
@@ -98,17 +116,20 @@ def _fail(ledger, exc) -> None:
                      "since": int(ledger.clock()), "retry_at": time.monotonic() + RETRY_SECONDS}
     try:
         ledger._file.close()            # nothing held in a buffer may reach the file later
-    except (OSError, ValueError):
+    except Exception:                   # noqa: BLE001 - the file is given up either way
         _LOG.info("gateway ledger segment closed with its last write unfinished")
     _LOG.error("GATEWAY LEDGER WRITE FAILED (%s). Model calls answer 503 and reach no "
-               "provider until the ledger can be written again. The call that met the "
-               "failure had already reached its provider.", ledger.failed["error"])
+               "provider until the ledger can be written again. Calls already in flight "
+               "had reached their provider.", ledger.failed["error"])
 
 
 def usable(ledger):
     """`ledger` when it takes writes, else None. A failed ledger is tried again here."""
     failed = ledger.failed
     if failed is None:
+        if ledger.calls.orphans:        # an operator may have left a request to settle one
+            from .gateway_ledger_settle import sweep
+            sweep(ledger)
         return ledger
     with ledger._lock:
         if ledger.failed is None:
@@ -118,7 +139,7 @@ def usable(ledger):
         failed["retry_at"] = time.monotonic() + RETRY_SECONDS
         try:
             resume(ledger)
-        except (OSError, ValueError) as exc:
+        except Exception as exc:        # noqa: BLE001 - still failed, whatever the reason
             _LOG.error("gateway ledger still unavailable (%s: %s); model calls are refused",
                        type(exc).__name__, exc)
             return None
@@ -131,7 +152,7 @@ def settle(ledger) -> None:
         return
     try:
         resume(ledger)
-    except (OSError, ValueError) as exc:
+    except Exception as exc:            # noqa: BLE001
         _LOG.error("gateway ledger closed while its writes still failed (%s: %s); %d append(s) "
                    "were refused and the ledger does not record them", type(exc).__name__, exc,
                    ledger.failed["refused"])
@@ -145,6 +166,15 @@ def resume(ledger) -> None:
     header, entries, start, problem = base.read_segment(ledger.path)
     held = [entry.entry_hash for entry in ledger.entries]
     same = problem is None and [e.entry_hash for e in entries[:len(held)]] == held
+    # Entries on disk whose append reported a failure: the head record could not be
+    # rewritten, or the line reached the disk although its write raised. The caller of
+    # each was told the append failed, so a reply recorded there was held back.
+    known = {entry.seq: entry for entry in (entries if same else ledger.entries)}
+    late = entries[len(held):] if same else []
+    seqs = set(failed.get("unconfirmed", ())) | {entry.seq for entry in late}
+    shaky = [known[seq] for seq in sorted(seqs) if seq in known]
+    unconfirmed = [{"segment": ledger.path.name, "seq": entry.seq, "kind": entry.kind,
+                    "entry_hash": entry.entry_hash} for entry in shaky]
     try:
         if same:
             ledger.entries = entries    # a line that reached the disk although its write failed
@@ -160,7 +190,9 @@ def resume(ledger) -> None:
         ledger.failed = None
         ledger.append(GAP, "append_failed", {
             "reason": "append_failed", "error": failed["error"], "since": failed["since"],
-            "until": int(ledger.clock()), "appends_refused": failed["refused"]})
+            "until": int(ledger.clock()), "appends_refused": failed["refused"],
+            **({"unconfirmed": unconfirmed} if unconfirmed else {})})
+        ledger.calls.flush(ledger, shaky)   # the ends of the calls that were in flight
     except BaseException:
         if ledger.path != kept[0]:      # a new segment that could not be started
             try:
