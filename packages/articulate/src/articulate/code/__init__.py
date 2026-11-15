@@ -6,6 +6,6 @@ tests it adds or edits can fail at all (`assert True`, self-comparison, mock-onl
 checks). Report-only, standard library only, and it imports nothing from the
 frozen prose-detector closure.
 """
-from .report import DOES_NOT_PROVE, SCHEMA, FileChange, analyze, render_text
+from .report import SCOPE, SCHEMA, FileChange, analyze, render_text
 
-__all__ = ["analyze", "FileChange", "render_text", "SCHEMA", "DOES_NOT_PROVE"]
+__all__ = ["analyze", "FileChange", "render_text", "SCHEMA", "SCOPE"]

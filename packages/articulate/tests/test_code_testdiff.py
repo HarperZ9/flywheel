@@ -38,7 +38,7 @@ def test_an_unchanged_file_is_clean():
     rules, report = _rules(BASE, BASE, same=True)
     assert rules == []
     assert report["status"] == "clean"
-    assert report["does_not_prove"], "the limits list is never empty"
+    assert report["scope"], "the scope list is never empty"
 
 
 def test_deleting_an_assertion_is_reported():

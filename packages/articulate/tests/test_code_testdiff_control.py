@@ -69,11 +69,11 @@ def _repo(tmp_path, second):
     (repo / "tests").mkdir(parents=True)
     _git(repo, "init", "-q")
     target = repo / "tests" / "test_sum.py"
-    target.write_text(HONEST, encoding="utf-8", newline="\n")
+    target.write_bytes(HONEST.encode("utf-8"))
     _git(repo, "add", ".")
     _git(repo, "commit", "-q", "-m", "honest tests")
     base = _git(repo, "rev-parse", "HEAD")
-    target.write_text(second, encoding="utf-8", newline="\n")
+    target.write_bytes(second.encode("utf-8"))
     _git(repo, "commit", "-q", "-a", "-m", "second")
     return repo, base, _git(repo, "rev-parse", "HEAD")
 

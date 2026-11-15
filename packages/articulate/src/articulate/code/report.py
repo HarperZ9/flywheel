@@ -1,7 +1,7 @@
 """articulate.code.report -- one report for a test diff, with its limits attached.
 
 `analyze(changes)` takes the changed files of one change set and returns a JSON-able
-report: findings, counts, two digests and a `does_not_prove` list that is never
+report: findings, counts, two digests and a `scope` list that is never
 empty. The subject digest covers only the inputs (paths and content hashes), so two
 runs on the same change can be compared; the claim digest covers the findings.
 Standard library only.
@@ -16,19 +16,22 @@ from dataclasses import asdict, dataclass
 from .context import build_world, is_test_path
 from .testdiff import compare_file
 
-SCHEMA = "articulate.code.test-diff/v2"
-DOES_NOT_PROVE = (
-    "A clean report does not show the tests are good. It shows this change did not "
-    "weaken them in the forms this analyzer reads.",
-    "Static only: no test ran. A check moved more than one helper call deep, into a "
-    "fixture, or into another file reads as deleted.",
-    "A declared finding carries a reason written by the change's author. The reason "
-    "is shown, not verified.",
-    "Splitting one test into several, each with fewer checks, is not detected.",
+SCHEMA = "articulate.code.test-diff/v3"
+SCOPE = (
+    "Covers the Python test files this change touches, compared before and after, "
+    "in the forms this analyzer reads: deleted or weakened checks, new skips, "
+    "widened tolerances and exceptions, deleted tests, and checks that cannot fail.",
+    "Static: the test files are read as text and no test is run. A check is "
+    "followed one helper call deep inside its own file; one moved further, into "
+    "a fixture or into another file, reads as deleted.",
+    "A declared finding carries a reason written by the change's author. The "
+    "reason is shown as written.",
+    "Tests are compared by name and by body. One test split into several smaller "
+    "ones is read as the separate tests it became.",
     "An advisory row is a weakening the change may explain (it also edits source, "
-    "or a deleted test has a replacement). It is not counted as a finding and not "
-    "cleared either.",
-    "Python only. Other languages are listed as unverifiable, never as clean.",
+    "or a deleted test has a replacement). It is listed for review and is counted "
+    "apart from findings.",
+    "Python only. A test file in another language is listed as unverifiable.",
 )
 
 
@@ -108,7 +111,7 @@ def analyze(changes, declared=()) -> dict:
             "advisory": sum(1 for r in rows if r["tier"] == "advisory"),
             "by_rule": dict(sorted(Counter(r["rule"] for r in open_rows).items())),
         },
-        "does_not_prove": list(DOES_NOT_PROVE),
+        "scope": list(SCOPE),
     }
 
 
@@ -130,5 +133,5 @@ def render_text(report) -> str:
     for item in report["files"]:
         if item["status"] == "unverifiable":
             lines.append(f"{item['path']}: unverifiable: {item['reason']}")
-    lines.append("Report-only. Does not prove: " + " ".join(report["does_not_prove"]))
+    lines.append("Report-only. scope: " + " ".join(report["scope"]))
     return "\n".join(lines)

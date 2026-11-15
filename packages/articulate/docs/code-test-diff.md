@@ -37,7 +37,7 @@ are counted.
 The text report lists one line per row with the file and line. `--json` gives
 the same rows with `status` (`clean`, `findings` or `unverifiable`), counts by
 rule, a digest of the inputs and a digest of the rows, so two runs on one
-change can be compared.
+change can be compared. A `scope` list states what the report covers.
 
 The command reports and does not gate. It exits 0 whatever it finds and 2 on a
 usage or git error. A caller that wants a gate reads `status` from the JSON.
