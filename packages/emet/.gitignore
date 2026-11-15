@@ -1,0 +1,31 @@
+anchors.json
+receipt.json
+*_log.jsonl
+*.refused
+__pycache__/
+*.pyc
+.venv/
+.env
+.env.*
+!.env.example
+perception*.json
+*.tmp
+*.pdb
+docs/PROPOSAL.md
+.warden-safe-cache/
+# built implementation binaries (the source is the artifact; binaries are rebuilt)
+impl/rust/emet
+impl/rust/emet.exe
+impl/rust/target/
+impl/rust/Cargo.lock
+impl/go/emet
+impl/go/emet.exe
+# python packaging build artifacts
+dist/
+build/
+*.egg-info/
+# Local-only agent instructions
+CLAUDE.local.md
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

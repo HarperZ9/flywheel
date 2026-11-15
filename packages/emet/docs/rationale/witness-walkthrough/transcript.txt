@@ -1,0 +1,28 @@
+# (1) THE STRUCTURAL GATE  -  Boundary 1 fails inside the TCB
+$ python -c 'import verdict; verdict.governed(verdict.LATTICE, "TRUSTED")'
+raised VerdictError: Boundary 1 (SPEC s.2): refused to emit authority verdict 'TRUSTED'
+governed(REVERT, 'REVERTIBLE') -> 'REVERTIBLE'  (verbatim: True)
+(exit 0)
+
+# (2) THE INDEPENDENT WITNESS  -  the run, not a review
+$ python test_organs.py
+test_gate_absent_path_is_revertible_exit_0 (__main__.OrgansBehavior.test_gate_absent_path_is_revertible_exit_0) ... ok
+test_gate_json_envelope (__main__.OrgansBehavior.test_gate_json_envelope) ... ok
+test_gate_present_untracked_is_not_revertible_exit_1 (__main__.OrgansBehavior.test_gate_present_untracked_is_not_revertible_exit_1) ... ok
+test_observe_emits_new_unchanged_drifted_and_gone (__main__.OrgansBehavior.test_observe_emits_new_unchanged_drifted_and_gone) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in <dur>s
+
+OK
+(exit 0)
+
+# (3) ONE WITNESS THRICE  -  same vectors, membrane.py
+$ python conformance/run.py membrane.py
+CONFORMANCE 35/35 vectors pass
+(exit 0)
+
+# (3) ONE WITNESS THRICE  -  same vectors, impl/js/emet.js
+$ python conformance/run.py impl/js/emet.js
+CONFORMANCE 35/35 vectors pass
+(exit 0)

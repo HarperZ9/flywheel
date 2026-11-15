@@ -1,0 +1,13 @@
+[package]
+name = "emet"
+version = "1.1.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+description = "EMET reference second implementation (Rust, no external crates)"
+
+# Builds impl/rust/emet.rs directly -- no src/ rearrangement, no dependencies.
+[[bin]]
+name = "emet"
+path = "emet.rs"
+
+[dependencies]
