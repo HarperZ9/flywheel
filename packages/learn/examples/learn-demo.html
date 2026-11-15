@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>learn Project Telos demo</title>
+<style>
+@font-face{font-family:"Hanken Grotesk";src:url("https://harperz9.github.io/system/fonts/hanken-grotesk.woff2") format("woff2");font-weight:100 900;font-display:swap}
+@font-face{font-family:Conso;src:url("https://harperz9.github.io/system/fonts/conso-regular.woff2") format("woff2");font-display:swap}
+:root{--paper:#f4f3ef;--ink:#0b0c0e;--soft:#2f3238;--muted:#585c64;--iris:#4636e8;--line:rgba(11,12,14,.14)}
+*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font-family:Conso,Arial,sans-serif;line-height:1.6}a{color:var(--ink)}a:focus-visible,button:focus-visible{outline:2px solid var(--iris);outline-offset:4px}.skip{position:absolute;left:1rem;top:1rem;transform:translateY(-140%);background:var(--paper);border:1px solid var(--line);padding:.6rem 1rem}.skip:focus{transform:none}main{min-height:100vh;padding:clamp(1.2rem,4vw,4rem)}.rail,.label{font-family:ui-monospace,Consolas,monospace;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);font-size:.72rem}h1{font-family:"Hanken Grotesk",system-ui,sans-serif;font-weight:700;font-size:9rem;line-height:.82;letter-spacing:0;margin:4rem 0 1rem}h2.label{margin:0;padding:1rem 0 0}.promise{font-size:1.8rem;max-width:34ch;color:var(--soft)}.market{max-width:62ch;color:var(--muted);margin-top:1.1rem}.specimen,.proof,.loop{margin-top:clamp(2rem,5vw,4rem);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.row{display:grid;grid-template-columns:minmax(8rem,14rem) 1fr;gap:1rem;padding:1rem 0;border-top:1px solid var(--line)}.row:first-child{border-top:0}.row span{font-family:ui-monospace,Consolas,monospace;text-transform:uppercase;letter-spacing:.16em;color:var(--iris);font-size:.76rem}.row p{margin:0;max-width:58ch}.proof{padding:1rem 0}.loop{padding:1rem 0}pre{margin:.8rem 0 0;white-space:pre-wrap;overflow-wrap:anywhere;font-family:ui-monospace,Consolas,monospace;font-size:.92rem}.note{max-width:58ch;color:var(--muted)}.actions{display:flex;flex-wrap:wrap;gap:.8rem;margin-top:2rem}.pill{border:1px solid var(--ink);border-radius:999px;padding:.72rem 1rem;text-decoration:none}.pill.primary{background:var(--ink);color:var(--paper)}.chain{list-style:none;margin:.8rem 0 0;padding:0;display:flex;flex-wrap:wrap;gap:.6rem}.chain li{border:1px solid var(--line);border-radius:999px;padding:.5rem .9rem;font-family:ui-monospace,Consolas,monospace;font-size:.8rem;color:var(--soft)}.chain li.halt{border-color:var(--iris);color:var(--iris);font-weight:600}.boundary{margin-top:1rem;border-left:3px solid var(--iris);padding:.2rem 0 .2rem 1rem;color:var(--soft)}@media(max-width:620px){.row{grid-template-columns:1fr}h1{font-size:4.5rem}.promise{font-size:1.25rem}}@media(prefers-reduced-motion:reduce){*{scroll-behavior:auto;transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<main id="main">
+  <p class="rail">Project Telos / accountable credential and coursework engine</p>
+  <h1>learn</h1>
+  <p class="promise">Study smarter, prove it honestly, and never let the machine take the test for you.</p>
+  <p class="market">Course platforms automate the logistics but never tell you whether you actually learned anything, and a generic AI tutor will hand you the answer if you ask twice. learn automates the logistics, runs a real learning loop against your own practice, and halts hard at every step that is supposed to prove you know it.</p>
+  <section class="specimen" aria-labelledby="proof-sequence">
+    <h2 class="label" id="proof-sequence">Accountability spine</h2>
+    <div class="row"><span>witness</span><p>every step is content-addressed (sha256 digest of exactly what happened)</p></div>
+<div class="row"><span>ledger</span><p>hash-chained, tamper-evident log of the run</p></div>
+<div class="row"><span>gate</span><p>default-deny; an undeclared step kind is refused, nothing actuated</p></div>
+<div class="row"><span>receipt</span><p>separates automated logistics from the operator's own graded work</p></div>
+  </section>
+  <section class="loop" aria-labelledby="run-halt">
+    <h2 class="label" id="run-halt">A run of examples/course.json</h2>
+    <p class="note">Every step actuates against the offline FakeDriver, in order, until it reaches the graded step. There it halts. The engine does not open the quiz, does not guess an answer, and does not advance past it on its own.</p>
+    <ol class="chain" aria-label="workflow steps">
+      <li>navigate</li>
+      <li>waitFor</li>
+      <li>click</li>
+      <li>capture</li>
+      <li class="halt">assess &mdash; HALT (Quiz 1)</li>
+      <li>complete</li>
+    </ol>
+    <p class="boundary">The operator does the quiz. Only then does resume with an attestation carry the run to complete, and the receipt keeps the split: what the engine automated, and what the operator did themselves.</p>
+  </section>
+  <section class="loop" aria-labelledby="learning-loop">
+    <h2 class="label" id="learning-loop">The learning loop, over examples/study.json</h2>
+    <div class="row"><span>plan</span><p>objectives, some with prerequisites (a concept map, not a flat list)</p></div>
+<div class="row"><span>due</span><p>spaced-repetition scheduler flags what needs review, most-overdue first</p></div>
+<div class="row"><span>practice</span><p>the operator answers; only their own attempts are ever recorded</p></div>
+<div class="row"><span>misconceptions</span><p>wrong attempts and feedback are aggregated, ranked by count</p></div>
+<div class="row"><span>mastery-gate</span><p>ready only once every objective clears threshold accuracy over enough attempts</p></div>
+<div class="row"><span>readiness</span><p>an objective unlocks only once every objective it requires is itself mastered</p></div>
+    <p class="boundary">mastery() is a function of the operator's own scored practice attempts only. It never reads a render, a visualization, or a pending prediction as if it were a graded answer.</p>
+  </section>
+  <section class="proof" aria-labelledby="run-proof">
+    <h2 class="label" id="run-proof">Run the proof</h2>
+    <pre><code>node --test
+node examples/demo.mjs</code></pre>
+    <p class="note">Inspect the artifact, try it against a real course workflow, then bring the evidence into a study session of your own.</p>
+  </section>
+  <nav class="actions" aria-label="Demo actions">
+    <a class="pill primary" href="../README.md">Read the README</a>
+    <a class="pill" href="https://harperz9.github.io">Project Telos</a>
+  </nav>
+</main>
+</body>
+</html>

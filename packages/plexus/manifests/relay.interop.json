@@ -1,0 +1,79 @@
+{
+  "organ": "relay",
+  "invoke": {
+    "cli": "relay",
+    "mcp_server": "relay.local_mcp:serve",
+    "python_import": "relay"
+  },
+  "emits": [
+    {
+      "capability": "relay.endpoint-ladder/1",
+      "title": "local and online endpoint ladder",
+      "module": "src/relay/endpoints.py:build_endpoints",
+      "summary": "configured provider/API/gateway/cloud rungs are built only from caller-supplied environment",
+      "consumable_as": []
+    },
+    {
+      "capability": "relay.agent-run-result/1",
+      "title": "gated agent run result",
+      "module": "src/relay/local_loop.py:run_agent",
+      "summary": "final answer, checkpoint, verification fields, acceptance check, reviewability, and observed route",
+      "consumable_as": []
+    },
+    {
+      "capability": "relay.session-ledger/1",
+      "title": "hash-chained session ledger",
+      "module": "src/relay/local_session.py:SessionLedger.to_jsonl",
+      "summary": "append-only run/session trajectory that re-verifies on load",
+      "consumable_as": []
+    },
+    {
+      "capability": "relay.rvc/v1",
+      "title": "Relay-Verified-Correctness certificate",
+      "module": "src/relay/cert.py:emit_cert",
+      "summary": "self-contained certificate embedding a witnessed ledger and typed acceptance contract",
+      "consumable_as": []
+    },
+    {
+      "capability": "relay.remote-mcp/1",
+      "title": "remote MCP endpoint",
+      "module": "src/relay/remote_mcp.py:process",
+      "summary": "Streamable HTTP MCP endpoint with bearer/OAuth authorization and remote exec forced off unless opted in",
+      "consumable_as": []
+    }
+  ],
+  "consumes": [
+    {
+      "capability": "relay.mcp-run-request/v1",
+      "title": "bounded MCP run request",
+      "module": "src/relay/local_mcp.py:_request_binding",
+      "summary": "binds goal, root, backend/model hints, write/exec gates, checks, and compaction budget",
+      "consumable_as": []
+    },
+    {
+      "capability": "relay.rvc/v1",
+      "title": "offline certificate verification",
+      "module": "src/relay/cert.py:verify_cert",
+      "summary": "re-derives ALLOW, UNVERIFIABLE, or REFUTED from the embedded ledger and contract",
+      "consumable_as": []
+    },
+    {
+      "capability": "relay.session-ledger/1",
+      "title": "saved session listing and reopening",
+      "module": "src/relay/session_store.py:get_session",
+      "summary": "saved ledgers are listed, reloaded, and re-verified from RELAY_SESSION_DIR",
+      "consumable_as": []
+    }
+  ],
+  "evidence": [
+    "README.md",
+    "pyproject.toml",
+    "src/relay/endpoints.py",
+    "src/relay/local_mcp.py",
+    "src/relay/local_loop.py",
+    "src/relay/local_session.py",
+    "src/relay/session_store.py",
+    "src/relay/cert.py",
+    "src/relay/remote_mcp.py"
+  ]
+}

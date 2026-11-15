@@ -1,0 +1,16 @@
+{
+  "name": "learn-study",
+  "description": "Plan study sessions, record your practice answers and see what to review next.",
+  "version_file": "package.json",
+  "roots": [
+    "src"
+  ],
+  "files": [
+    "LICENSE",
+    "package.json"
+  ],
+  "entry": "server/src/mcp.mjs",
+  "runtime": "node",
+  "skill": "learn-study",
+  "tool": "learn"
+}

@@ -110,6 +110,11 @@ jobs:
             test: |
               python -m pytest -q
               python tools/check_repo_art.py
+          - package: plexus
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest -q
+              python examples/tour.py
     defaults:
       run:
         shell: bash
@@ -197,3 +202,120 @@ jobs:
           python tools/check_repo_facts.py
           python tools/check_repo_art.py
           python scripts/check_art_receipts.py
+
+  learn:
+    # The same legs learn's CI ran in its own repository: three systems, Node 20 and 22.
+    name: learn (${{ matrix.os }}, node ${{ matrix.node-version }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: ["20", "22"]
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/learn
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node-version }}
+      # The runtime needs only Node. Python is here because the artwork gates in
+      # tools/ are Python, and the planted-package test needs 3.11 or later.
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.11"
+      - name: Test
+        run: node --test
+      - name: Doctor (self-test)
+        run: node src/cli.mjs doctor
+      - name: Status
+        run: node src/cli.mjs status
+      # Pack the tarball, install it into an empty folder and run its commands from there.
+      - name: Pack the tarball and run it through npx
+        run: |
+          mkdir -p packed
+          npm pack --pack-destination packed
+          node scripts/smoke-tarball.mjs packed/harperz9-learn-"$(node -p "require('./package.json').version")".tgz
+      - name: Art receipt digests
+        if: runner.os == 'Linux' && matrix.node-version == '22'
+        run: python scripts/check_art_receipts.py
+
+  python-legs:
+    # The other legs each tool's CI ran in its own repository. The python job
+    # above already runs every package on Linux with Python 3.12, so that one
+    # combination is left out here. A package joins by its name in `package`
+    # and one `include` row with the extra command its CI ran after pytest.
+    name: ${{ matrix.package }} (${{ matrix.os }}, python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: [plexus]
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python: ["3.11", "3.12", "3.13"]
+        exclude:
+          - os: ubuntu-latest
+            python: "3.12"
+        include:
+          - package: plexus
+            extra: python examples/tour.py
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Install from packages/${{ matrix.package }}
+        run: |
+          python -m pip install --upgrade pip pytest-timeout
+          python -m pip install -e ".[test]"
+      - name: The package's own tests
+        run: python -m pytest -q
+      - name: The command its CI ran after the tests
+        run: ${{ matrix.extra }}
+
+  python-wheel:
+    # Build the wheel, install it in a clean venv and run the packaged
+    # command, as each tool's CI did in its own repository.
+    name: ${{ matrix.package }} (wheel)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - package: plexus
+            smoke: |
+              /tmp/vc/bin/plexus --version
+              /tmp/vc/bin/plexus discover --builtin > /dev/null
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/${{ matrix.package }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - name: Build the wheel
+        run: |
+          python -m pip install build
+          python -m build
+      - name: Install the wheel in a clean venv and run the packaged command
+        run: |
+          python -m venv /tmp/vc
+          /tmp/vc/bin/pip install dist/*.whl
+          ${{ matrix.smoke }}

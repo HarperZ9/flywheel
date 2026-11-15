@@ -1,0 +1,6 @@
+{"adapter":"fake","course":"resume-probe","steps":[
+ {"kind":"navigate","target":"https://example.invalid/course"},
+ {"kind":"assess","label":"Quiz 1"},
+ {"kind":"submit","target":"#final-submit","label":"submit final project"},
+ {"kind":"click","target":"#pay","cost":true,"label":"pay certificate fee"},
+ {"kind":"complete"}]}

@@ -1,0 +1,144 @@
+{
+  "schema": "flywheel.mcp-stdio-error-vectors/v1",
+  "basis": "MCP 2026-07-28 stdio requires newline-delimited JSON-RPC messages on stdout; JSON-RPC invalid request and parse errors use error responses while notifications receive no response. These vectors harden legacy stdio servers without changing their declared protocol versions.",
+  "cases": [
+    {
+      "name": "malformed_json_returns_parse_error_without_echo",
+      "line": "{\"token\":\"SECRET_SHOULD_NOT_APPEAR\"",
+      "expect_code": -32700,
+      "expect_id": null,
+      "secret": "SECRET_SHOULD_NOT_APPEAR"
+    },
+    {
+      "name": "valid_json_array_is_invalid_request",
+      "message": [],
+      "expect_code": -32600,
+      "expect_id": null
+    },
+    {
+      "name": "missing_method_preserves_request_id",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": "bad-1"
+      },
+      "expect_code": -32600,
+      "expect_id": "bad-1"
+    },
+    {
+      "name": "non_string_method_preserves_request_id",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 9,
+        "method": 9
+      },
+      "expect_code": -32600,
+      "expect_id": 9
+    },
+    {
+      "name": "object_request_id_uses_null_without_echo",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": {
+          "token": "SYNTHETIC_SECRET"
+        },
+        "method": "missing"
+      },
+      "expect_code": -32600,
+      "expect_id": null,
+      "secret": "SYNTHETIC_SECRET"
+    },
+    {
+      "name": "array_request_id_uses_null",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": [
+          "bad"
+        ],
+        "method": "missing"
+      },
+      "expect_code": -32600,
+      "expect_id": null
+    },
+    {
+      "name": "boolean_request_id_uses_null",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": true,
+        "method": "missing"
+      },
+      "expect_code": -32600,
+      "expect_id": null
+    },
+    {
+      "name": "null_request_id_uses_null",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": null,
+        "method": "missing"
+      },
+      "expect_code": -32600,
+      "expect_id": null
+    },
+    {
+      "name": "float_request_id_uses_null",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 1.5,
+        "method": "missing"
+      },
+      "expect_code": -32600,
+      "expect_id": null
+    },
+    {
+      "name": "wrong_jsonrpc_version_is_invalid_request",
+      "message": {
+        "jsonrpc": "1.0",
+        "id": 1,
+        "method": "initialize"
+      },
+      "expect_code": -32600,
+      "expect_id": 1
+    },
+    {
+      "name": "known_method_notification_emits_no_response",
+      "message": {
+        "jsonrpc": "2.0",
+        "method": "tools/list"
+      },
+      "expect_response": false
+    },
+    {
+      "name": "tools_call_array_params_is_invalid_params",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "tools/call",
+        "params": []
+      },
+      "expect_code": -32602,
+      "expect_id": 1
+    },
+    {
+      "name": "tools_call_null_params_is_invalid_params",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 2,
+        "method": "tools/call",
+        "params": null
+      },
+      "expect_code": -32602,
+      "expect_id": 2
+    },
+    {
+      "name": "tools_call_scalar_params_is_invalid_params",
+      "message": {
+        "jsonrpc": "2.0",
+        "id": 3,
+        "method": "tools/call",
+        "params": "bad"
+      },
+      "expect_code": -32602,
+      "expect_id": 3
+    }
+  ]
+}

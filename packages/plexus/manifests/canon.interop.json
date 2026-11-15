@@ -1,0 +1,86 @@
+{
+  "organ": "canon",
+  "invoke": {
+    "cli": "canon",
+    "mcp_server": "canon.local_mcp:serve",
+    "python_import": "canon"
+  },
+  "emits": [
+    {
+      "capability": "canon.record/v1",
+      "title": "provider-neutral context record",
+      "module": "src/canon/schema.py:Record.to_dict",
+      "summary": "one typed envelope for personality blocks, memories, personas, decisions, and research references",
+      "consumable_as": []
+    },
+    {
+      "capability": "canon.capsule/v1",
+      "title": "continuity capsule",
+      "module": "src/canon/capsule_build.py:compile_capsule",
+      "summary": "explicit records.jsonl and atoms.jsonl compile into capsule JSON, Canon Markdown, and readiness artifacts",
+      "consumable_as": []
+    },
+    {
+      "capability": "canon.readiness-probe/1",
+      "title": "capsule readiness probe",
+      "module": "src/canon/readiness.py:ReadinessProbe.to_dict",
+      "summary": "target acknowledgement challenge bound to one compiled capsule",
+      "consumable_as": []
+    },
+    {
+      "capability": "canon.bootstrap-witness/1",
+      "title": "context bootstrap witness",
+      "module": "src/canon/witness.py:BootstrapWitness.to_dict",
+      "summary": "records source state, capsule identity, readiness outcome, and does-not-prove limits",
+      "consumable_as": []
+    },
+    {
+      "capability": "canon.local-mcp-readonly/1",
+      "title": "read-only Canon MCP surface",
+      "module": "src/canon/local_mcp.py:TOOLS",
+      "summary": "status, doctor, blocks, render, validate, and check; this server writes no files",
+      "consumable_as": []
+    }
+  ],
+  "consumes": [
+    {
+      "capability": "canon.record/v1",
+      "title": "validated records from explicit source files",
+      "module": "src/canon/bootstrap_runtime_inputs.py:_records_from_source",
+      "summary": "JSONL records are parsed and validated before capsule compile or bootstrap",
+      "consumable_as": []
+    },
+    {
+      "capability": "canon.atom/v1",
+      "title": "validated bootstrap atoms from explicit source files",
+      "module": "src/canon/bootstrap_runtime_inputs.py:_atoms_from_source",
+      "summary": "JSONL atoms are parsed and validated before capsule compile or bootstrap",
+      "consumable_as": []
+    },
+    {
+      "capability": "canon.readiness-response/1",
+      "title": "host readiness response",
+      "module": "src/canon/readiness.py:evaluate_readiness_response",
+      "summary": "an optional host response is evaluated against the probe; absent response is reported as unknown",
+      "consumable_as": []
+    },
+    {
+      "capability": "canon.capsule/v1",
+      "title": "capsule Markdown carrier verification",
+      "module": "src/canon/canonmd.py:verify_canon_md",
+      "summary": "re-renders the embedded carrier capsule and reports drift or mismatch",
+      "consumable_as": []
+    }
+  ],
+  "evidence": [
+    "README.md",
+    "pyproject.toml",
+    "src/canon/schema.py",
+    "src/canon/local_mcp.py",
+    "src/canon/capsule_build.py",
+    "src/canon/bootstrap_runtime_inputs.py",
+    "src/canon/readiness.py",
+    "src/canon/witness.py",
+    "src/canon/canonmd.py"
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "organ": "learn",
+  "invoke": {
+    "cli": "learn",
+    "mcp_server": "src/mcp.mjs",
+    "node_entry": "src/mcp.mjs"
+  },
+  "emits": [
+    {
+      "capability": "learn-receipt",
+      "title": "tutor credential/mastery ledger entries",
+      "module": "src/interop.mjs:receiptEntry",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "learn.tutor-mastery/1",
+      "title": "mastery gate verdict",
+      "module": "src/tutor/tutor.mjs:mastery",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "learn.tutor-prooflesson/1",
+      "title": "proof packet to lesson scaffold",
+      "module": "src/tutor/prooflesson.mjs:proofLesson",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "learn.tutor-misconceptions/1",
+      "title": "ranked misconception aggregation",
+      "module": "src/tutor/misconception.mjs:misconceptions",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "project-telos.flagship-action/v1",
+      "title": "flagship-action envelope",
+      "module": "src/interop.mjs:receiptEntry",
+      "summary": "",
+      "consumable_as": []
+    }
+  ],
+  "consumes": [
+    {
+      "capability": "crucible.thesis/1",
+      "title": "crucible thesis for proof lesson",
+      "module": "src/tutor/prooflesson.mjs:proofLesson",
+      "summary": "",
+      "consumable_as": []
+    }
+  ],
+  "evidence": [
+    "src/interop.mjs",
+    "src/tutor/tutor.mjs",
+    "src/tutor/prooflesson.mjs",
+    "src/tutor/misconception.mjs"
+  ]
+}

@@ -1,0 +1,43 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "plexus-mesh"
+version = "0.4.0"
+description = "Declarative capability discovery + auto-wiring for agent toolchains: point it at tool manifests and it wires producer to consumer into an executable pipeline, every discovery edge tagged declared and citing the module its producer names. Discovery does not import or run cited tools; optional explicit probe helpers can launch owned MCP servers. Zero runtime dependencies."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "LicenseRef-FSL-1.1-MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Zain Dana Harper" }]
+keywords = ["agent-tools", "interop", "mcp", "discovery", "pipeline", "orchestration", "capability-graph"]
+classifiers = [
+    "Programming Language :: Python :: 3.11",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+plexus = "plexus.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/plexus"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+# Without this, pytest imports whatever copy of the package happens to be
+# installed in the environment instead of this repo's src/. That is not a
+# style preference: chorus was resolving to a stale editable install pointing
+# at an old worktree, and plexus to a copy in site-packages, so both suites
+# were green while testing source that was not this checkout.
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
