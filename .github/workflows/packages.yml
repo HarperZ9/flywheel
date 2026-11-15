@@ -308,7 +308,8 @@ jobs:
               /tmp/vc/bin/plexus discover --builtin > /dev/null
           - package: mneme
             smoke: |
-              C:/Users/Zain/AppData/Local/Temp/vc/bin/mneme --versionn              /tmp/vc/bin/mneme bench > /dev/null
+              /tmp/vc/bin/mneme --version
+              /tmp/vc/bin/mneme bench > /dev/null
     defaults:
       run:
         shell: bash
