@@ -1,90 +1,81 @@
-"""Irreversible actuation needs the operator's grant, not only a caller argument.
+"""An approval cannot widen the grant (R7.grant).
 
-`allow_irreversible=True` used to be enough on its own: any code holding a valid
-grant for `web.submit` could pass the flag and submit. The authority now lives in the
-grant (`scope.allowed_irreversible_actions`, a list of exact action kinds). The caller
-flag stays as a second, narrowing opt-in: both must hold.
+The surface refuses an irreversible act unless the grant lists its action kind in
+``scope.allowed_irreversible_actions``. The pipeline's approval is a second key,
+never a replacement for the first. These tests hold that an irreversible step the
+grant does not name is refused at the policy check, before any person is asked
+to approve it, and that a recorded approval does not lift the refusal.
 """
+
 from __future__ import annotations
 
 import pytest
+from actuation_site import Site
+from actuation_world import World, grant, rules
 
-from accountable_surface.surface import AccountableSurface, Step
-from accountable_surface.web_effector import FakePageDriver, WebAction, WebEffector
+from accountable_surface import plan, policy
+from accountable_surface.detectors import secrets
+from accountable_surface.page_evidence import parse_page
 
-
-def _grant(actions, irreversible=None):
-    scope = {"allowed_actions": list(actions), "allowed_targets": []}
-    if irreversible is not None:
-        scope["allowed_irreversible_actions"] = irreversible
-    return {
-        "authorization_version": "0.1", "receipt_id": "rcpt-irrev-1",
-        "kind": "authorization-grant", "principal": {"id": "operator", "role": "operator"},
-        "agent": {"id": "agent"}, "intent": "irreversibility tests", "scope": scope,
-        "granted_at": "2026-06-19T00:00:00+00:00", "expires_at": "2030-01-01T00:00:00+00:00",
-        "revoked": False,
-    }
+ORIGIN = "http://127.0.0.1:8765"
+NOW = "2026-09-27T12:00:00+00:00"
 
 
-def _submit(grant, allow_irreversible):
-    pages = {"https://app.test/form": {"title": "Form", "fields": {"q": "data"}},
-             "https://app.test/result": {"title": "ok", "fields": {}}}
-    driver = FakePageDriver(pages, start="https://app.test/form")
-    eff = WebEffector(driver, allowed_origins=["https://app.test"])
-    out = AccountableSurface().actuate(
-        eff, target="https://app.test/result",
-        content=WebAction("submit", url="https://app.test/result", value="ok"),
-        authorization=grant, allow_irreversible=allow_irreversible)
-    return out, driver
+@pytest.fixture
+def site():
+    s = Site().start()
+    yield s
+    s.stop()
 
 
-def test_caller_flag_alone_no_longer_authorizes_an_irreversible_act():
-    out, driver = _submit(_grant(["web.submit"]), allow_irreversible=True)
-    assert out.acted is False
-    assert out.decision == "needs-human"
-    assert out.verdict == "irreversible-needs-human"
-    assert any("allowed_irreversible_actions" in r for r in out.reasons)
-    assert driver.current_url() == "https://app.test/form"
+def _unlisted(origin):
+    g = grant(origin)
+    g["scope"].pop("allowed_irreversible_actions")
+    return g
 
 
-def test_grant_plus_caller_flag_acts():
-    out, driver = _submit(_grant(["web.submit"], irreversible=["web.submit"]), allow_irreversible=True)
-    assert out.acted is True and out.decision == "allow"
-    assert driver.current_url() == "https://app.test/result"
+def test_a_submit_the_grant_does_not_name_is_refused_and_no_approval_is_asked(tmp_path, site):
+    w = World(tmp_path, site, the_grant=_unlisted(site.origin))
+    w.nav("/order")
+    result = w.submit_order()
+    assert (result.status, result.verdict) == ("refused", "not-acted")
+    assert {"R7.irreversible", "R7.grant"} <= rules(result)
+    assert not result.approval_id and w.store.pending() == []
+    assert site.orders == []
 
 
-def test_grant_alone_without_caller_flag_still_escalates():
-    """The caller can narrow: a grant permits, it does not force."""
-    out, _ = _submit(_grant(["web.submit"], irreversible=["web.submit"]), allow_irreversible=False)
-    assert out.acted is False and out.verdict == "irreversible-needs-human"
+def test_the_same_submit_is_held_for_a_person_when_the_grant_names_it(tmp_path, site):
+    w = World(tmp_path, site)
+    w.nav("/order")
+    held = w.submit_order()
+    assert held.status == "needs-human" and held.approval_id
+    assert "R7.grant" not in rules(held)
+    assert site.orders == []
 
 
-def test_grant_for_a_different_kind_does_not_cover_this_one():
-    out, _ = _submit(_grant(["web.submit"], irreversible=["os.run"]), allow_irreversible=True)
-    assert out.acted is False and out.verdict == "irreversible-needs-human"
+@pytest.mark.parametrize("listed", [None, [], "browser.click", ["*"], ["web.submit"], True])
+def test_only_an_exact_kind_in_a_list_counts(listed):
+    page = parse_page(ORIGIN + "/notes", "<title>Notes</title><button type='button'>Send</button>",
+                      redactor=secrets.redact)
+    step = plan.step_from_dict({"step_id": "s1", "action_kind": "browser.click",
+                                "target": {"origin": ORIGIN, "path": "/notes", "control": {"name": "Send"}},
+                                "args": {}, "post_condition": {"kind": "text_present", "value": "Sent"}})
+    scope = {"allowed_actions": ["browser.click"], "target_tiers": [{"origin": ORIGIN, "tier": "full"}]}
+    if listed is not None:
+        scope["allowed_irreversible_actions"] = listed
+    approval = {"approval_id": "ap_1", "status": "approved", "step_digest": plan.step_digest(step),
+                "before_digest": page.digest, "expires_at": "2026-09-27T12:10:00+00:00",
+                "record": "sha256:r", "channel": "cli-tty", "approver": "operator"}
+    for offered in (None, approval):
+        decision = policy.decide(step, page, grant={"scope": scope}, approval=offered,
+                                 paused=frozenset(), now=NOW)
+        assert decision.outcome == "refuse", (listed, offered)
+        assert {"R7.irreversible", "R7.grant"} <= {h["rule"] for h in decision.rule_hits}
+        assert decision.approval is None
 
 
-@pytest.mark.parametrize("value", ["*", ["*"], True, "web.submit", "web.submit,os.run", {"web.submit": 1}])
-def test_only_an_explicit_list_of_kinds_counts(value):
-    """No wildcard, no boolean, and no string (a substring test would match `web.submit`)."""
-    out, _ = _submit(_grant(["web.submit"], irreversible=value), allow_irreversible=True)
-    assert out.acted is False and out.decision == "needs-human"
-
-
-def test_pursue_with_flag_but_no_grant_halts_before_acting():
-    pages = {"https://app.test/form": {"title": "Form", "fields": {}},
-             "https://app.test/result": {"title": "ok", "fields": {}}}
-    driver = FakePageDriver(pages, start="https://app.test/form")
-    eff = WebEffector(driver, allowed_origins=["https://app.test"])
-    steps = [Step(eff, "https://app.test/result", WebAction("submit", url="https://app.test/result"))]
-    out = AccountableSurface().pursue("submit", steps, authorization=_grant(["web.submit"]),
-                                      allow_irreversible=True)
-    assert out.achieved is False
-    assert driver.current_url() == "https://app.test/form"
-
-
-def test_the_new_scope_field_is_stripped_before_the_closed_gate_schema():
-    from accountable_surface.grant import LOCAL_SCOPE_FIELDS, action_authorization
-    assert "allowed_irreversible_actions" in LOCAL_SCOPE_FIELDS
-    stripped = action_authorization(_grant(["web.submit"], irreversible=["web.submit"]))
-    assert "allowed_irreversible_actions" not in stripped["scope"]
+def test_a_reversible_step_is_not_touched_by_the_rule(tmp_path, site):
+    w = World(tmp_path, site, the_grant=_unlisted(site.origin))
+    result = w.nav("/notes")
+    assert (result.status, result.verdict) == ("acted", "verified")
+    assert "R7.grant" not in rules(result)
