@@ -114,6 +114,11 @@ jobs:
             test: |
               python -m pytest -q
               python examples/tour.py
+          - package: relay
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest -q
+              python tools/check_release_metadata.py
     defaults:
       run:
         shell: bash

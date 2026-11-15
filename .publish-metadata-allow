@@ -14,3 +14,7 @@ packages/proof-surface/conformance/pre-execution-gate/v0.1/valid/minimal.request
 packages/proof-surface/tests/test_authorization_receipt.py
 packages/proof-surface/tests/test_pre_execution_gate.py
 packages/proof-surface/tests/test_public_surface_gate.py
+# relay's labelled failure tails: the numbers in packages/relay/docs/CASCADE.md are
+# reproduced from these bytes. One synthetic jest log holds an address made by a
+# test-data generator.
+packages/relay/tests/fixtures/flaky_failure_labels.json
