@@ -120,6 +120,11 @@ jobs:
             test: |
               python -m pytest -q
               python examples/tour.py
+          - package: relay
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest -q
+              python tools/check_release_metadata.py
     defaults:
       run:
         shell: bash
@@ -261,7 +266,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        package: [plexus, mneme]
+        package: [plexus, mneme, relay]
         os: [ubuntu-latest, windows-latest, macos-latest]
         python: ["3.11", "3.12", "3.13"]
         exclude:
@@ -272,6 +277,8 @@ jobs:
             extra: python examples/tour.py
           - package: mneme
             extra: python examples/tour.py
+          - package: relay
+            extra: python tools/check_release_metadata.py
     defaults:
       run:
         shell: bash
@@ -310,6 +317,9 @@ jobs:
             smoke: |
               /tmp/vc/bin/mneme --version
               /tmp/vc/bin/mneme bench > /dev/null
+          - package: relay
+            smoke: |
+              /tmp/vc/bin/relay --help > /dev/null
     defaults:
       run:
         shell: bash

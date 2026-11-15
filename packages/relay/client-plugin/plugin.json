@@ -1,0 +1,9 @@
+{
+  "author": {
+    "name": "Zain Dana Harper"
+  },
+  "description": "Run a local coding agent in a project folder you choose, using a model server on your computer or a hosted model API you configure.",
+  "license": "FSL-1.1-MIT",
+  "name": "relay-local",
+  "version": "0.7.0"
+}

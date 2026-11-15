@@ -165,6 +165,7 @@ Tools under `packages/`
 - `learn` (npm `@harperz9/learn` 2.3.0) now also lives under `packages/learn`. npm releases still publish from `HarperZ9/learn`, which stays open.
 - `plexus` (distribution `plexus-mesh` 0.4.0) now also lives under `packages/plexus`. PyPI releases still publish from `HarperZ9/plexus`, which stays open.
 - `mneme` (distribution `flywheel-mneme` 0.7.0) now also lives under `packages/mneme`. PyPI releases still publish from `HarperZ9/mneme`, which stays open.
+- `relay` (distribution `flywheel-relay` 0.7.0) now also lives under `packages/relay`. PyPI releases still publish from `HarperZ9/relay`, which stays open.
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
 
 Evidence demos under `demos/`

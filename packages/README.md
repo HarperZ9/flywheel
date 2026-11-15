@@ -35,6 +35,7 @@ Tests run in `.github/workflows/packages.yml` when a change touches `packages/`.
 | [learn](learn/) | A tutor that plans study, checks proof lessons, tracks mastery and misconceptions, and writes a receipt for each step. Node, npm name `@harperz9/learn`. | `learn`, `learn-mcp` (npm bins) | `HarperZ9/learn` at `ab5a7657` | `node --test` (419 tests), doctor, status, tarball smoke test |
 | [plexus](plexus/) | Discovers the tools installed on a machine, plans a route across them and checks the wiring. Distribution name `plexus-mesh`. | `plexus` (`discover`, `wiring`, `validate`, `plan`, `route`, `pick`, `verify`, `graph`, `run`, `export`, `mcp`) | `HarperZ9/plexus` at `60e10120` | pytest, example tour |
 | [mneme](mneme/) | Agent memory with provenance: remember, recall, forget and audit, each with a receipt that re-checks. Distribution name `flywheel-mneme`. | `mneme` (`remember`, `recall`, `drift`, `provenance`, `forget`, `scrub`, `status`, `doctor`, `mcp` and more) | `HarperZ9/mneme` at `fc7970cc` | pytest, example tour |
+| [relay](relay/) | A coding agent that runs on local and hosted model endpoints with failover and a receipt for each turn. Distribution name `flywheel-relay`. | `relay` | `HarperZ9/relay` at `945d4241` | pytest, release metadata check |
 
 Each import is the final tree of the source repository in one commit. The commit message names
 the source commit. Releases published before the move stay on PyPI and on the source repository's
