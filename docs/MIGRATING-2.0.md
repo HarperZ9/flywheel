@@ -618,6 +618,44 @@ A fourth review led to these:
   the segment although their append reported a failure, so a reply recorded
   there was held back.
 
+A fifth round built what the fourth review had left stated:
+
+- **The gateway ledger has two entries per call.** `endpoint_call_started`
+  is written, and committed to the disk, before the provider is contacted;
+  the end entry (`endpoint_call` or `endpoint_call_failed`) follows and
+  carries the same `call` id. What to do: a script that counted ledger
+  entries to count calls should count the kind `endpoint_call`, or pair
+  entries by `call`.
+- **`flywheel gateway-ledger verify` and `show` can exit 3.** That means the
+  chain holds and a call has a started entry with no end entry: the gateway
+  was killed in between. The call's reservation counts against its key
+  until you settle it. What to do: `flywheel gateway-ledger show
+  --unsettled`, read what the provider billed for it, then `flywheel
+  gateway-ledger settle CALL --input N --output N` (or `--no-charge`). Exit
+  1 still means the ledger does not verify.
+- **A key is suspended whenever one of its calls reached the provider and
+  was not fully accounted.** That now includes a plain reply that was held
+  back because its debit or its ledger entry failed; before, only a
+  delivered stream and an unplanned fault did. A failed debit is recorded
+  as `"charged_tokens": 0` with the amount under `uncharged_tokens`; it
+  used to carry the amount as `charged_tokens`. What to do: read the entry,
+  then `flywheel gateway-key clear NAME`.
+- **The first call to meet a ledger that stopped taking writes gets 503.**
+  Its started entry cannot be written, so it is not sent. It used to reach
+  the provider and get 500. Calls that were already in flight still end
+  with 500 or a stream error; when the ledger resumes, their end entries
+  are appended, marked `late`.
+- **A request body that arrives too late gets 408 on every route.**
+  `/v1/chat/completions`, `/api/route`, `/v1/embeddings`, `/api/agent` and
+  the other routes that read a body answered 500 for it (the grant step
+  said `STORE_COMMIT_FAILED`), and a few read it as an empty body.
+- **`/v1/chat/completions` and `/api/route` record a failed provider
+  call.** A provider error there used to leave no ledger entry.
+- **`/v1/embeddings` is in the gateway ledger.** Each call leaves a started
+  entry and an end entry with `"interface": "openai-embeddings"`, and the
+  route answers 503 when the ledger is unavailable, like the other provider
+  routes. It used to be forwarded with no record.
+
 ### After the security review: smaller changes
 
 - The gateway follows no redirect from an upstream. If a provider base URL
