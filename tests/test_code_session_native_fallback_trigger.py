@@ -164,12 +164,39 @@ def test_an_error_that_says_tools_are_unsupported_starts_it_and_the_session_says
     kinds = [e.kind for e in session.ledger.entries]
     assert kinds.index(KIND) < kinds.index("assistant")         # said before the reply is used
     assert session.ledger.verify()
-    # Once for a model in a process: a second session on the same model is not told again.
+    # A second session on the same model starts in the text protocol and says so itself.
+    # (Until review 3, finding R3, this block asserted that it was not told.)
     again, made2, _ = _session(tmp_path, "openai", [_reply("openai", "Hello.")], events)
     assert again.turn("say hello").final == "Hello."
-    assert [e for e in again.ledger.entries if e.kind == KIND] == []
+    assert len([e for e in again.ledger.entries if e.kind == KIND]) == 1
     assert "tools" not in made2.transport.requests[0]["body"]
-    assert len([e for e in events if e.get("type") == "notice"]) == 1
+    assert len([e for e in events if e.get("type") == "notice"]) == 2
+
+
+def test_r3_another_session_on_a_model_that_moved_is_told_and_records_it(tmp_path):
+    """Review 3, R3. The list of models that moved is shared by the process. A session
+    that did not meet the error also changes protocol, so a `TOOL` line in a reply now
+    runs there. It shows and records the notice at its first request that goes out in
+    the text protocol, before the reply is used, and once only."""
+    first, _made, _ = _session(tmp_path, "openai", [
+        A_REFUSAL["ollama"], _reply("openai", "Done.")])
+    assert first.turn("say done").final == "Done."
+    events = []
+    other, made, commands = _session(tmp_path, "openai", [
+        _reply("openai", QUOTED), _reply("openai", "Done."), _reply("openai", "Hello.")], events)
+    assert other.turn("summarize the page").final == "Done."
+    assert commands == ["echo owned > owned.txt"]               # the text protocol ran the line
+    assert "tools" not in made.transport.requests[0]["body"]
+    notices = [e for e in other.ledger.entries if e.kind == KIND]
+    assert len(notices) == 1, "the session whose protocol changed has it in its ledger"
+    assert "text protocol" in notices[0].content and "gpt-5.3-codex-spark" in notices[0].content
+    assert notices[0].meta == {"protocol": "text"}
+    kinds = [e.kind for e in other.ledger.entries]
+    assert kinds.index(KIND) < kinds.index("assistant") < kinds.index("tool_call")
+    assert [e["text"] for e in events if e.get("type") == "notice"] == [notices[0].content]
+    assert other.turn("say hello").final == "Hello."            # a later turn: not told again
+    assert len([e for e in other.ledger.entries if e.kind == KIND]) == 1
+    assert other.ledger.verify()
 
 
 def test_the_terminal_prints_the_notice(capsys):

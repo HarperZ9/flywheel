@@ -79,3 +79,15 @@ def notice(backend, status: int) -> str:
             "schemas. This model now uses the text protocol until the program ends, so "
             "`TOOL name {json}` lines in its replies are calls. Set FLYWHEEL_NATIVE_TOOLS=0 "
             "to choose the text protocol yourself.")
+
+
+def moved_notice(backend) -> str:
+    """The line for a session whose model was moved by another session of the program.
+
+    The list of moved models is shared by the process, so this session's
+    replies are read by the text protocol too. It shows and records this line
+    once, at its first request for the model after the move."""
+    return (f"{backend.name} ({backend.model}) does not take tool schemas: its host said so "
+            "to another session of this program. This model uses the text protocol until "
+            "the program ends, so `TOOL name {json}` lines in its replies are calls. Set "
+            "FLYWHEEL_NATIVE_TOOLS=0 to choose the text protocol yourself.")
