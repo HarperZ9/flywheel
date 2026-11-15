@@ -11,7 +11,8 @@ Both reuse the hosted backends' transports, stream opener, event reader,
 assemblers, reply readers and fault reader (endpoints_*), so a reply read here
 and a reply read by the coding session come from the same code. Both write the
 ledger: `endpoint_call` for a served reply, `endpoint_call_failed` for a call
-that failed after the upstream was contacted.
+that failed after the upstream was contacted. Each turn has one `Account`
+(gateway_account): contact happens only inside `reach`, and every end closes it.
 
 `stream` opens the upstream before it returns, so a refused request raises
 `UpstreamFailed` while the interface can still answer with a plain error. A
@@ -27,6 +28,7 @@ import json
 import uuid
 
 from . import gateway_turn as _turn, gateway_turn_wire as _write
+from .gateway_account import Account, readable, unbilled
 from .local_agent import BackendError, MalformedBackendOutput
 
 _STOPS = {
@@ -91,8 +93,9 @@ def read(upstream, obj, payload: dict):
     calls = [_call(backend, call) for call in found]
     stop = _STOPS[dialect].get(finish) or ("tool" if calls else "end")
     served = (gen.get("usage") or {}).get("served_model") or ""
-    return _turn.Reply(text=gen["text"], calls=calls, stop_reason=stop, usage=_usage(gen),
-                       model_ref=gen["model_ref"], served_model=str(served), raw=obj)
+    return readable(backend, _turn.Reply(
+        text=gen["text"], calls=calls, stop_reason=stop, usage=_usage(gen),
+        model_ref=gen["model_ref"], served_model=str(served), raw=obj))
 
 
 def failure(exc: BaseException) -> "_turn.UpstreamFailed":
@@ -132,7 +135,8 @@ def _prepared(turn, upstream, payload, headers) -> tuple:
     return url, {**base, **(headers or {})}, payload
 
 
-def _post(upstream, url: str, headers: dict, payload: dict) -> tuple:
+def _post(reach, upstream, url: str, headers: dict, payload: dict) -> tuple:
+    """POST one JSON body. `reach` is `Account.reach`, or `unbilled` for token counting."""
     from .endpoints import _drop_temperature
     from .endpoints_http import _guard
     backend = upstream.backend
@@ -140,32 +144,37 @@ def _post(upstream, url: str, headers: dict, payload: dict) -> tuple:
     def send():
         return _guard(backend.transport, "POST", url, headers,
                       json.dumps(payload).encode(), backend.timeout, backend.name)
-    status, obj = send()
+    status, obj = reach(send)
     if upstream.dialect == "anthropic" and _drop_temperature(backend.model, status, obj, payload):
-        status, obj = send()
+        status, obj = reach(send)
     return status, obj
 
 
 def complete(turn, upstream, ledger, payload=None, headers=None):
     """Send one request and return the `Reply`, with its ledger entry written."""
+    account = Account(ledger, upstream, turn)       # refuses here, before any contact
     url, headers, payload = _prepared(turn, upstream, payload, headers)
     try:
-        status, obj = _post(upstream, url, headers, payload)
+        status, obj = _post(account.reach, upstream, url, headers, payload)
         if status != 200:
             raise _refusal(upstream.backend, status, obj, upstream.dialect)
         reply = read(upstream, obj, payload)
     except BackendError as exc:
         failed = failure(exc)
-        _turn.record_failed(ledger, upstream, turn, failed.reason, exc)
+        account.failed(failed.reason, exc)
         raise failed from exc
-    _turn.record(ledger, upstream, turn, reply)
+    except Exception as exc:                # noqa: BLE001 - not a backend error: still one entry
+        if account.state != "contacted":
+            raise
+        raise account.lost(exc, False) from exc
+    account.served(reply)
     return reply
 
 
 def forward(upstream, url: str, headers: dict, payload: dict) -> dict:
     """POST one JSON body upstream outside a turn (token counting). No ledger entry."""
     try:
-        status, obj = _post(upstream, url, headers, payload)
+        status, obj = _post(unbilled, upstream, url, headers, payload)
         if status != 200:
             raise _refusal(upstream.backend, status, obj, upstream.dialect)
     except BackendError as exc:
@@ -179,8 +188,9 @@ class Stream:
     `unread` runs when the stream is closed before anything was read from it:
     the upstream was opened, so the call still gets its ledger entry."""
 
-    def __init__(self, events, unread=None):
+    def __init__(self, events, unread=None, account=None):
         self._events, self._unread, self.reply = events, unread, None
+        self._account = account
 
     def __iter__(self):
         self._unread = None
@@ -188,19 +198,26 @@ class Stream:
 
     def close(self) -> None:
         unread, self._unread = self._unread, None
-        if unread is not None:
-            unread()
-        self._events.close()
+        try:
+            if unread is not None:
+                unread()
+            self._events.close()
+        finally:                            # whatever ended it, the call has its entry
+            if self._account is not None:
+                self._account.settle(True)
 
 
-def _open(upstream, url: str, headers: dict, payload: dict) -> tuple:
+def _open(account, upstream, url: str, headers: dict, payload: dict) -> tuple:
     from . import endpoints_stream as _stream
     spec, backend = _stream.DIALECTS[upstream.dialect], upstream.backend
     url, body = spec.prepare(backend, url, payload)
     headers = {**headers, "Accept": "text/event-stream"}
-    status, lines = _stream._open(backend, url, headers, body)
+
+    def send():
+        return _stream._open(backend, url, headers, body)
+    status, lines = account.reach(send)
     if status != 200 and spec.retry(backend, status, lines, body):
-        status, lines = _stream._open(backend, url, headers, body)
+        status, lines = account.reach(send)
     if status != 200:
         raise _refusal(backend, status, lines, spec.kind or backend.name)
     return lines, body
@@ -232,7 +249,7 @@ def _events(backend, assembler, lines):
             close()
 
 
-def _relay(turn, upstream, ledger, lines, body):
+def _relay(account, upstream, lines, body):
     from . import endpoints_stream as _stream
     spec, backend = _stream.DIALECTS[upstream.dialect], upstream.backend
     assembler, got = spec.assembler(), []   # `got`: the text that reached the client
@@ -243,33 +260,40 @@ def _relay(turn, upstream, ledger, lines, body):
         reply = read(upstream, _stream._finished(backend, spec, assembler), body)
     except BackendError as exc:
         failed = failure(exc)
-        _turn.record_failed(ledger, upstream, turn, failed.reason, exc,
-                            partial=(assembler, got))
+        account.failed(failed.reason, exc, partial=(assembler, got))
         raise failed from exc
     except GeneratorExit:                   # charged for what was received, not free
-        _turn.record_failed(ledger, upstream, turn, "client_disconnected",
-                            "the client closed the stream before the reply was complete",
-                            partial=(assembler, got))
+        account.failed("client_disconnected",
+                       "the client closed the stream before the reply was complete",
+                       partial=(assembler, got))
         raise
-    _turn.record(ledger, upstream, turn, reply, delivered=True)
+    except Exception as exc:                # noqa: BLE001 - not a backend error: still one entry
+        raise account.lost(exc, True) from exc
+    account.served(reply, delivered=True)
     return reply
 
 
 def stream(turn, upstream, ledger, payload=None, headers=None) -> Stream:
     """Open the upstream stream now; return a `Stream` to iterate."""
+    account = Account(ledger, upstream, turn)       # refuses here, before any contact
     url, headers, payload = _prepared(turn, upstream, payload, headers)
     try:
-        lines, body = _open(upstream, url, headers, payload)
+        lines, body = _open(account, upstream, url, headers, payload)
     except BackendError as exc:
         failed = failure(exc)
-        _turn.record_failed(ledger, upstream, turn, failed.reason, exc)
+        account.failed(failed.reason, exc)
         raise failed from exc
+    except Exception as exc:                # noqa: BLE001 - not a backend error: still one entry
+        if account.state != "contacted":
+            raise
+        raise account.lost(exc, False) from exc
+
     def unread():
         close = getattr(lines, "close", None)
         if callable(close):
             close()
         from . import endpoints_stream as _stream
-        _turn.record_failed(ledger, upstream, turn, "client_disconnected",
-                            "the client closed the stream before its first event",
-                            partial=(_stream.DIALECTS[upstream.dialect].assembler(), []))
-    return Stream(_relay(turn, upstream, ledger, lines, body), unread)
+        account.failed("client_disconnected",
+                       "the client closed the stream before its first event",
+                       partial=(_stream.DIALECTS[upstream.dialect].assembler(), []))
+    return Stream(_relay(account, upstream, lines, body), unread, account)
