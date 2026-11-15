@@ -256,6 +256,25 @@ def test_a_retried_request_contacts_the_upstream_twice_inside_one_account(
     assert keys.row("ci-bot")["totals"]["calls"] == 1
 
 
+def test_a_retried_plain_request_is_one_account_too(keyed, served, monkeypatch):
+    """An Anthropic upstream that refuses `temperature` is asked once more without it."""
+    from harness import endpoints
+    monkeypatch.setattr(endpoints, "_NO_TEMPERATURE", set())
+    keys, _store = keyed
+    raw, _ = keys.create("ci-bot")
+    refusal = {"type": "error", "error": {"type": "invalid_request_error",
+                                          "message": "`temperature` is deprecated for this model."}}
+    url, upstream, ledger = served([support.json_answer(refusal, 400),
+                                    support.json_answer(plain_object("anthropic", "turn2"))],
+                                   "anthropic")
+    seen = _watch_contacts(monkeypatch)
+    status, _headers, _body = post(url, "/v1/messages", raw,
+                                   {**BODIES["/v1/messages"], "temperature": 0.2})
+    assert status == 200 and len(upstream.requests) == 2
+    assert seen == [("Account", "contacted")] * 2 and support.kinds(ledger) == ["endpoint_call"]
+    assert keys.row("ci-bot")["totals"]["calls"] == 1
+
+
 def test_token_counting_is_the_one_contact_made_outside_an_account_and_it_says_so(
         served, monkeypatch):
     url, upstream, ledger = served([support.json_answer({"input_tokens": 12})], "anthropic")
