@@ -134,6 +134,12 @@ jobs:
               python tools/check_repo_art.py
               python tools/render_repo_art.py
               git diff --exit-code -- .
+          # index's CI ran Linux on Python 3.12: its suite, then the compat suite.
+          - package: index
+            install: python -m pip install -e ".[test]"
+            test: |
+              python -m pytest
+              python -m pytest compat/workspace-repo-map/tests -q
     defaults:
       run:
         shell: bash
@@ -340,6 +346,10 @@ jobs:
             smoke: |
               /tmp/vc/bin/canon --help > /dev/null
               /tmp/vc/bin/canon-client --help > /dev/null
+          - package: index
+            smoke: |
+              /tmp/vc/bin/index --version
+              /tmp/vc/bin/index --help > /dev/null
     defaults:
       run:
         shell: bash

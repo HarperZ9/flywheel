@@ -167,6 +167,7 @@ Tools under `packages/`
 - `mneme` (distribution `flywheel-mneme` 0.7.0) now also lives under `packages/mneme`. PyPI releases still publish from `HarperZ9/mneme`, which stays open.
 - `relay` (distribution `flywheel-relay` 0.7.0) now also lives under `packages/relay`. PyPI releases still publish from `HarperZ9/relay`, which stays open.
 - `canon` (distribution `flywheel-canon` 0.7.0) now also lives under `packages/canon`. PyPI releases still publish from `HarperZ9/canon`, which stays open.
+- `index` (distribution `index-graph` 2.16.0) now also lives under `packages/index`. PyPI releases still publish from `HarperZ9/index`, which stays open.
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
 
 Evidence demos under `demos/`
