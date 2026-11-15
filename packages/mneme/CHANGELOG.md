@@ -299,8 +299,7 @@ benchmark, and accountable forgetting.
   Correction, 2026-09-26: this `forget` deleted the memory row only. The raw
   turn and the rows derived from it stayed, so the label above overstated it.
   From 0.5.0, `forget` erases the source turns and every derived form, and its
-  receipt names what stays (see the 0.5.0 entry). No version of `forget`
-  reaches text already sent to a model provider.
+  receipt names what stays (see the 0.5.0 entry).
 - **Provenance receipt** on every memory (sources, extractor, criterion, hash).
 - **Re-derivable recall receipt** - ranked hits with bm25/vector/fused scores
   and the fusion rule; re-run the scorer, reproduce the ranking.
