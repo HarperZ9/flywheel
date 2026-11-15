@@ -31,7 +31,8 @@ import pytest
 from harness import gateway, gateway_ledger, gateway_ledger_cli
 from tests import gateway_messages_support as support
 from tests.gateway_disk_support import (  # noqa: F401  (fixtures and helpers)
-    gateway_on_disk as _gateway, home, kinds as _kinds, late as _late, rows as _rows, rows_call)
+    cleared, gateway_on_disk as _gateway, home, kinds as _kinds, late as _late, rows as _rows,
+    rows_call)
 from tests.gateway_keys_support import (  # noqa: F401  (fixtures)
     BODIES, MESSAGES, keyed, post, served, stream_bytes, turn2)
 
@@ -125,6 +126,7 @@ def test_an_entry_that_reached_the_disk_before_its_commit_failed_is_kept_once(
     assert post(url, "/v1/messages", raw)[0] == 500
     assert post(url, "/v1/messages", raw)[0] == 503 and len(upstream.requests) == 2
     failing.on = False
+    cleared(url, keys, raw, post)       # suspended by the one rule; the operator clears
     assert post(url, "/v1/messages", raw)[0] == 200
     gateway_ledger.close_all()
     rows = _rows(home)
@@ -135,8 +137,9 @@ def test_an_entry_that_reached_the_disk_before_its_commit_failed_is_kept_once(
     # comes the late entry that says the reply on that line was held back.
     assert kinds[:4] == ["endpoint_call_started", "endpoint_call",
                          "endpoint_call_started", "endpoint_call"]
-    assert kinds[-3:] == ["endpoint_call_failed", "endpoint_call_started", "endpoint_call"]
-    assert set(kinds[4:-3]) == {"ledger_gap"}
+    assert kinds[-4:] == ["endpoint_call_failed", "endpoint_call_refused",     # the key's 403
+                          "endpoint_call_started", "endpoint_call"]
+    assert set(kinds[4:-4]) == {"ledger_gap"}
     late, = _late(home)
     assert late.meta["reason"] == "ledger_failed" and late.meta["call"] == rows_call(home, 2)
     assert gateway_ledger_cli.main(["verify"]) == 0
@@ -152,6 +155,7 @@ def test_a_line_cut_short_by_the_failure_is_recorded_as_a_break(keyed, served, m
     assert post(url, "/v1/messages", raw)[0] == 500
     assert post(url, "/v1/messages", raw)[0] == 503 and len(upstream.requests) == 2
     disk.full = False
+    cleared(url, keys, raw, post)       # suspended by the one rule; the operator clears
     assert post(url, "/v1/messages", raw)[0] == 200
     gateway_ledger.close_all()
     found = gateway_ledger.check(home)
@@ -165,7 +169,8 @@ def test_a_line_cut_short_by_the_failure_is_recorded_as_a_break(keyed, served, m
     in_flight = found[0]["rows"][2]
     assert list(found[1]["header"]["open_calls"]) == [in_flight.content]
     assert [entry.kind for entry in found[1]["rows"]] == [
-        "ledger_gap", "endpoint_call_failed", "endpoint_call_started", "endpoint_call"]
+        "ledger_gap", "endpoint_call_failed", "endpoint_call_refused",     # the key's 403
+        "endpoint_call_started", "endpoint_call"]
     assert found[1]["rows"][1].meta["call"] == in_flight.content
     assert gateway_ledger_cli.main(["verify"]) == 1             # the gap is a recorded break
     assert "records a break" in capsys.readouterr().out
@@ -192,6 +197,7 @@ def test_a_head_record_that_cannot_be_written_stops_later_calls_too(
     assert post(url, "/v1/messages", raw)[0] == 500
     assert post(url, "/v1/messages", raw)[0] == 503 and len(upstream.requests) == 2
     broken.on = False
+    cleared(url, keys, raw, post)       # suspended by the one rule; the operator clears
     assert post(url, "/v1/messages", raw)[0] == 200
     gateway_ledger.close_all()
     rows = _rows(home)
@@ -199,8 +205,9 @@ def test_a_head_record_that_cannot_be_written_stops_later_calls_too(
     assert [seq for _name, seq, _kind in rows] == list(range(len(rows)))
     assert kinds[:4] == ["endpoint_call_started", "endpoint_call",
                          "endpoint_call_started", "endpoint_call"]
-    assert kinds[-3:] == ["endpoint_call_failed", "endpoint_call_started", "endpoint_call"]
-    assert set(kinds[4:-3]) == {"ledger_gap"}
+    assert kinds[-4:] == ["endpoint_call_failed", "endpoint_call_refused",     # the key's 403
+                          "endpoint_call_started", "endpoint_call"]
+    assert set(kinds[4:-4]) == {"ledger_gap"}
     late, = _late(home)
     assert late.meta["reason"] == "ledger_failed" and late.meta["call"] == rows_call(home, 2)
     assert gateway_ledger_cli.main(["verify"]) == 0

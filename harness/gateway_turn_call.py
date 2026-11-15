@@ -174,7 +174,7 @@ def complete(turn, upstream, ledger, payload=None, headers=None):
 def forward(upstream, url: str, headers: dict, payload: dict) -> dict:
     """POST one JSON body upstream outside a turn (token counting). No ledger entry."""
     try:
-        status, obj = _post(unbilled, upstream, url, headers, payload)
+        status, obj = _post(lambda send: unbilled(send, url), upstream, url, headers, payload)
         if status != 200:
             raise _refusal(upstream.backend, status, obj, upstream.dialect)
     except BackendError as exc:

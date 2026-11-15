@@ -3,8 +3,10 @@
 The upstream has answered. If the key cannot be charged or the entry cannot be
 appended, the gateway still leaves an `endpoint_call_failed` entry that says
 so, and tells the client. A plain reply is not served. A stream's text has
-already left, so its entry says `delivered_unrecorded_charge` and the key is
-suspended until an operator clears it with `flywheel gateway-key clear NAME`.
+already left, so its entry says `delivered_unrecorded_charge`. Either way the
+key is suspended until an operator clears it with `flywheel gateway-key clear
+NAME` (one rule since the fifth review round;
+tests/test_gateway_suspension_rule.py).
 
 A real gateway on a loopback port, a stub upstream replaying recorded replies,
 keys in the in-memory store. No provider is called.
@@ -48,7 +50,11 @@ def test_a_plain_reply_that_cannot_be_charged_is_not_served_and_is_recorded(
     assert (entry.kind, entry.meta["reason"]) == ("endpoint_call_failed", "charge_failed")
     assert entry.meta["key"] == "ci-bot" and entry.meta["delivered"] is False
     assert len(entry.meta["response_sha"]) == 16, "the hash the served entry would carry"
-    assert "suspended" not in keys.row("ci-bot")
+    # Until the fifth review round this asserted the key was NOT suspended. The provider
+    # billed a call the key's totals do not show, so the key now stops like every other
+    # call that was not fully accounted.
+    assert keys.row("ci-bot")["suspended"]["reason"] == "charge_failed"
+    assert "gateway-key clear ci-bot" in body["error"]["message"]
 
 
 @pytest.mark.parametrize("path", PATHS)
@@ -68,7 +74,9 @@ def test_a_delivered_stream_that_cannot_be_charged_is_recorded_and_suspends_the_
     assert entry.kind == "endpoint_call_failed"
     assert entry.meta["reason"] == "delivered_unrecorded_charge"
     assert entry.meta["cause"] == "charge_failed" and entry.meta["delivered"] is True
-    assert entry.meta["key"] == "ci-bot" and entry.meta["charged_tokens"] == 460
+    # The debit failed, so nothing was charged: the entry says 0 and names the amount.
+    assert entry.meta["key"] == "ci-bot"
+    assert (entry.meta["charged_tokens"], entry.meta["uncharged_tokens"]) == (0, 460)
 
     switch["fail"] = False                  # the debit works again; the key stays stopped
     refused, _headers, body = post(url, path, raw)

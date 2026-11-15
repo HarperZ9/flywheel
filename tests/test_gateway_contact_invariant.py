@@ -4,11 +4,10 @@ One failure is planted at one step of a model call, for every step this file
 names. Whatever the step:
 
   no upstream request    then no reply was served and the key was not charged;
-  an upstream request    then the ledger has exactly one entry for it, and the key
-                         was charged or is suspended (or, for a plain reply whose
-                         debit failed, the reply was held back and the entry says
-                         `charge_failed`). A reply is served only when that entry
-                         is `endpoint_call`.
+  an upstream request    then the ledger has its started entry and exactly one end
+                         entry for it, and the key was charged in full and served,
+                         or it is suspended. A reply is served only when that
+                         entry is `endpoint_call`.
 
 The last group checks that each transport call is made inside an `Account`
 (harness/gateway_account.py): a path added later that contacts an upstream
@@ -155,18 +154,17 @@ def test_a_fault_after_contact_leaves_one_entry_and_a_charge_or_a_stopped_key(
     assert len(entries) == 1, f"a fault at {step!r} left {[e.kind for e in entries]}"
     entry, row = entries[0], keys.row("ci-bot")
     assert entry.meta["key"] == "ci-bot" and len(entry.meta["prompt_sha"]) == 16
-    # One case is neither: the debit itself failed on a plain call. The key list could not
-    # be written, the reply was held back, and the entry says `charge_failed`
-    # (test_gateway_accounting_failures.py). Nothing was served for it.
-    held_back = (entry.meta.get("reason") == "charge_failed" and status == 500
-                 and entry.meta["delivered"] is False)
-    assert row["totals"]["tokens"] > 0 or "suspended" in row or held_back, (
-        f"a fault at {step!r}: the provider was called, the key was not charged and is "
-        "not suspended")
+    # One rule (tests/test_gateway_suspension_rule.py): a call that reached the provider
+    # was served and charged, or its key is suspended. Round 4 allowed a third outcome
+    # here, a held-back reply whose debit failed with the key left running; it is gone.
     if _delivered(status, body, stream):
-        assert entry.kind == "endpoint_call"
+        assert entry.kind == "endpoint_call" and row["totals"]["tokens"] > 0
+        assert "suspended" not in row
     else:
         assert entry.kind == "endpoint_call_failed" and entry.meta.get("reason")
+        assert "suspended" in row, (
+            f"a fault at {step!r}: the provider was called, the call was not fully "
+            "accounted and the key is not suspended")
     assert ledger.verify()
 
 

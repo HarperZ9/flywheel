@@ -154,8 +154,8 @@ def _check(caller: Caller, model) -> "tuple | None":
     stopped = suspended(caller)
     if stopped is not None:
         return "key_suspended", 403, (
-            f"gateway key '{name}' is suspended ({stopped}): an earlier reply was delivered "
-            "and could not be charged or recorded. Read the gateway ledger, then run "
+            f"gateway key '{name}' is suspended ({stopped}): an earlier call reached the "
+            "provider and could not be charged or recorded. Read the gateway ledger, then run "
             f"`flywheel gateway-key clear {name}`"), None
     allowed = row.get("models") or []
     if allowed and isinstance(model, str) and model not in allowed:

@@ -10,6 +10,7 @@ test_gateway_write_ahead.py. No provider is called.
 """
 import io
 import sys
+import time
 import types
 
 import pytest
@@ -72,6 +73,16 @@ def gateway_on_disk(monkeypatch, served, answers, home):
         monkeypatch.setattr(health, "_put", put)
         monkeypatch.setattr(health, "RETRY_SECONDS", 0.0)   # try to resume on every call
     return url, upstream, ledger, disk
+
+
+def cleared(url, keys, raw, post, name: str = "ci-bot") -> None:
+    """After the ledger resumed: the key whose call was in flight is suspended, because the
+    call's end entry could not be written when it ended (the one suspension rule). Check
+    that, then lift it as `flywheel gateway-key clear` does."""
+    status, _headers, body = post(url, "/v1/messages", raw)
+    assert status == 403, body
+    assert "suspended" in body["error"]["message"] and "ledger" in body["error"]["message"]
+    keys.mark(name, suspended=None, cleared=time.time())
 
 
 def rows(home) -> list:

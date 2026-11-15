@@ -500,10 +500,10 @@ def openai_embeddings(req: dict):
     the request with the provider's key (present-only, from the env, never stored or
     logged), so any OpenAI embeddings client works through the same surface. Flywheel
     is zero-dep and computes no embeddings itself; it routes. Returns (body, code)."""
-    from harness import providers
-    return _openai_route.openai_embeddings(
+    from harness import gateway_embeddings, providers  # recorded in the gateway ledger
+    return gateway_embeddings.openai_embeddings(
         req, providers_registry=providers.REGISTRY, urllib_module=urllib,
-        resolve_credential=_resolve_credential)
+        resolve_credential=_resolve_credential, ledger_of=_router_ledger)
 
 
 _ROUTER_STATS = None

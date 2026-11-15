@@ -25,7 +25,7 @@ import pytest
 from harness import gateway_ledger, gateway_ledger_cli
 from tests.gateway_keys_support import keyed, post, served, turn2  # noqa: F401  (fixtures)
 from tests.gateway_disk_support import (  # noqa: F401  (fixtures and helpers)
-    Disk as _Disk, gateway_on_disk as _gateway, home)
+    Disk as _Disk, cleared, gateway_on_disk as _gateway, home)
 
 pytestmark = pytest.mark.release_gate   # run against the built wheel before a release
 
@@ -56,12 +56,14 @@ def test_r5_a_write_that_fails_with_any_error_stops_later_calls_before_the_upstr
     assert statuses == [503, 503, 503]
     assert len(upstream.requests) == 2, "only the call in flight had reached the provider"
     disk.odd, disk.full = None, False
+    cleared(url, keys, raw, post)       # suspended by the one rule; the operator clears
     assert post(url, "/v1/messages", raw)[0] == 200
     gateway_ledger.close_all()
     rows = [entry for segment in gateway_ledger.check(home) for entry in segment["rows"]]
     assert [entry.kind for entry in rows] == [
         "endpoint_call_started", "endpoint_call", "endpoint_call_started", "ledger_gap",
-        "endpoint_call_failed", "endpoint_call_started", "endpoint_call"]
+        "endpoint_call_failed", "endpoint_call_refused",    # the suspended key's 403
+        "endpoint_call_started", "endpoint_call"]
     assert rows[4].meta["late"] is True and rows[4].meta["call"] == rows[2].content
     assert gateway_ledger_cli.main(["verify"]) == 0
 
@@ -100,6 +102,7 @@ def test_r6_the_gap_entry_names_the_entry_that_was_written_and_not_served(
     broken.on, broken.skip = True, 1                        # after the started entry
     assert post(url, "/v1/messages", raw)[0] == 500        # held back; its entry is on disk
     broken.on = False
+    cleared(url, keys, raw, post)       # suspended by the one rule; the operator clears
     assert post(url, "/v1/messages", raw)[0] == 200
     gateway_ledger.close_all()
     rows = [entry for segment in gateway_ledger.check(home) for entry in segment["rows"]]
@@ -107,6 +110,7 @@ def test_r6_the_gap_entry_names_the_entry_that_was_written_and_not_served(
         "endpoint_call_started", "endpoint_call",
         "endpoint_call_started", "endpoint_call",           # the line that was not served
         "ledger_gap", "endpoint_call_failed",               # the gap names it; the call's last word
+        "endpoint_call_refused",                            # the suspended key's 403
         "endpoint_call_started", "endpoint_call"]
     gap, unserved, last_word = rows[4], rows[3], rows[5]
     assert gap.meta["unconfirmed"] == [
@@ -128,6 +132,7 @@ def test_r6_a_gap_after_an_ordinary_failed_write_names_no_entry(
     disk.full, disk.skip = True, 1
     assert post(url, "/v1/messages", raw)[0] == 500
     disk.full = False
+    cleared(url, keys, raw, post)       # suspended by the one rule; the operator clears
     assert post(url, "/v1/messages", raw)[0] == 200
     gateway_ledger.close_all()
     rows = [entry for segment in gateway_ledger.check(home) for entry in segment["rows"]]

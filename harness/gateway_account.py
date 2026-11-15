@@ -30,9 +30,10 @@ delivered with no entry and no charge.
       The backstop: a contacted account that reached none of the three ends
       is closed with `lost`.
 
-`unbilled(send)` marks the one contact that is made with no account on
+`unbilled(send, url)` marks the one contact that is made with no account on
 purpose: token counting, which the provider does not bill and the ledger
-does not record (docs/KNOWN-LIMITS-2.0.0.md).
+does not record (docs/KNOWN-LIMITS-2.0.0.md). It refuses any URL that is not
+a token-count URL, so the exception cannot carry another request.
 
 `encodable(value)` and `unencodable(path)` are the intake check: a request
 body with a string that is not valid Unicode (a lone surrogate, sent as the
@@ -62,6 +63,7 @@ from . import gateway_calls as _calls, gateway_turn as _turn
 _LOG = logging.getLogger(__name__)
 _CONTACT = contextvars.ContextVar("flywheel_gateway_contact", default=None)
 UNBILLED = "unbilled"                   # what `contacting()` returns inside `unbilled`
+COUNT_PATH = "/v1/messages/count_tokens"    # the only path `unbilled` will contact
 REASON = "accounting_error"
 TEXT = ("the request holds text that is not valid UTF-8 (a lone surrogate escape such as "
         "\\ud800), so the call cannot be hashed for the gateway ledger. Nothing was sent "
@@ -117,8 +119,18 @@ def readable(backend, reply):
         "the reply was refused")
 
 
-def unbilled(send):
-    """Contact an upstream for a request that is not billed and not recorded."""
+def unbilled(send, url: str):
+    """Contact an upstream for a request that is not billed and not recorded.
+
+    Only token counting is: `url` must end in `/v1/messages/count_tokens`, the
+    Claude API route its documentation calls free to use
+    (https://platform.claude.com/docs/en/build-with-claude/token-counting,
+    "Pricing and rate limits", read 2026-11-14). It creates no message and
+    rejects server tools and the MCP connector. Any other URL is refused here,
+    before `send` is called."""
+    if not str(url).split("?", 1)[0].endswith(COUNT_PATH):
+        raise RuntimeError("only a token-count request may contact an upstream outside an "
+                           "account; nothing was sent")
     token = _CONTACT.set(UNBILLED)
     try:
         return send()
