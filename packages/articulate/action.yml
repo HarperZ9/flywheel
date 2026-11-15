@@ -28,6 +28,10 @@ inputs:
     description: "Set to false to skip the code scanning upload, for example on a fork pull request or a second run in one job."
     required: false
     default: "true"
+  working-directory:
+    description: "Folder to run in. File globs, the SARIF file and the paths inside receipts are read relative to it."
+    required: false
+    default: "."
 runs:
   using: "composite"
   steps:
@@ -42,6 +46,7 @@ runs:
     # so a crafted input cannot inject a command. globstar makes the default
     # "**/*.md" match at every depth, including the repository root.
     - run: |
+        cd "$INPUT_WORKING_DIRECTORY"
         shopt -s globstar nullglob
         read -r -a PATTERNS <<< "$INPUT_FILES"
         FILES=()
@@ -64,17 +69,20 @@ runs:
         INPUT_FILES: ${{ inputs.files }}
         INPUT_PROFILE: ${{ inputs.profile }}
         INPUT_GATE: ${{ inputs.gate }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}
     - if: ${{ inputs.upload-sarif == 'true' }}
       uses: github/codeql-action/upload-sarif@v3
       with:
-        sarif_file: articulate.sarif
+        sarif_file: ${{ inputs.working-directory }}/articulate.sarif
         category: articulate
     # Optional: re-verify committed receipts still hold against their source, and
     # fail the build on any drift. Wire a receipts directory via the audit-path input.
     - run: |
+        cd "$INPUT_WORKING_DIRECTORY"
         if [ -n "$INPUT_AUDIT_PATH" ]; then
           python -m articulate.cli audit "$INPUT_AUDIT_PATH" --reverify --gate
         fi
       shell: bash
       env:
         INPUT_AUDIT_PATH: ${{ inputs.audit-path }}
+        INPUT_WORKING_DIRECTORY: ${{ inputs.working-directory }}

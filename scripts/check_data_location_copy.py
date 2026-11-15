@@ -72,7 +72,15 @@ _LOCAL = ("the local model runs on the owner's machine and sends nothing, so the
 _MNEME = ("Mneme's own pages, imported as written from its repository: the store is "
           "a SQLite file and Mneme needs no network; its README lists what forget cannot "
           "reach, and its changelog corrects the 0.4 label in the next paragraph")
+_ARTICULATE = ("Articulate's README, imported as written. The profile file stays in the local "
+               "voice store, but `voice apply` puts the profile's aggregate sentences into the "
+               "host conversation (voice_apply.py says so). The sentence stays until the tool "
+               "meets it or says so beside it: the gap is recorded in the 2026-11-15 claim-gap "
+               "list for a build task")
 ALLOWED = {
+    ("packages/articulate/README.md",
+     "A voice profile holds aggregate statistics and stays on your computer until "
+     "`articulate voice delete --all`."): _ARTICULATE,
     ("packages/mneme/README.md", "The store stays on your machine."): _MNEME,
     ("packages/mneme/CHANGELOG.md",
      "`forget` becomes a true forget, the MCP forget tool takes two steps, replay "

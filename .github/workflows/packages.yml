@@ -381,6 +381,11 @@ jobs:
             smoke: |
               /tmp/vc/bin/forum --version
               /tmp/vc/bin/forum --help > /dev/null
+          - package: articulate
+            smoke: |
+              /tmp/vc/bin/articulate --version
+              /tmp/vc/bin/articulate --help > /dev/null
+              printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"ci","version":"0"}}}' | /tmp/vc/bin/articulate-mcp | grep -q '"serverInfo"'
           - package: accountable-surface
             smoke: |
               /tmp/vc/bin/accountable-surface-authority --help > /dev/null
@@ -776,5 +781,212 @@ jobs:
           test -n "$CHROME_PATH"
           BULLETIN_CHROME_NO_SANDBOX=1 node scripts/smoke/media-cross-surface.mjs             --base http://127.0.0.1:8787             --backend-face             --log-dir "$RUNNER_TEMP/bulletin-media-cross-backend"
           BULLETIN_CHROME_NO_SANDBOX=1 node scripts/smoke/media-cross-surface.mjs             --base http://127.0.0.1:8787             --face-root "$PWD/.ci-portfolio"             --log-dir "$RUNNER_TEMP/bulletin-media-cross-website"
+      - name: Art receipt digests
+        run: python3 scripts/check_art_receipts.py
+
+  # articulate's own CI, job for job. Linux on Python 3.9 to 3.12 and Windows
+  # on 3.9 and 3.12 run the whole suite; the macOS job builds and smokes the
+  # Claude plugin; the extras job installs the mcp and hosted extras.
+  articulate:
+    name: articulate (${{ matrix.os }}, python ${{ matrix.python }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python: ["3.9", "3.10", "3.11", "3.12"]
+        include:
+          - os: windows-latest
+            python: "3.9"
+          - os: windows-latest
+            python: "3.12"
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/articulate
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - name: The package's own tests
+        run: python -m pytest -q
+
+  articulate-macos-plugin:
+    name: articulate (macos, plugin)
+    runs-on: macos-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/articulate
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: >-
+          python -m pytest -q tests/test_tool_annotations.py
+          tests/test_claude_plugin_bundle.py tests/test_claude_plugin_launch.py
+          tests/test_local_mcp_plugin_surface.py tests/test_local_tools_stay_local.py
+          tests/test_claude_plugin_claims.py tests/test_claude_plugin_scripts.py
+          tests/test_claude_plugin_audit.py
+      - run: python scripts/build_claude_plugin.py build/claude-plugin --dev
+      - run: /usr/bin/python3 scripts/smoke_claude_plugin.py build/claude-plugin --command /usr/bin/python3
+
+  articulate-extras:
+    name: articulate (extras)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/articulate
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,mcp,hosted]"
+      - run: python -c "import fastmcp; print('fastmcp', fastmcp.__version__)"
+      - run: python -m pytest -q tests/test_tool_annotations.py tests/test_hosted_mcp.py tests/test_house_mcp.py tests/test_local_mcp.py tests/test_mcp_editing.py tests/test_voice_mcp.py
+      - run: python -m pytest -q
+
+  # The pre-commit hook from a scratch repository, installed from the package
+  # path. The configuration is examples/pre-commit-from-flywheel.yaml with its
+  # address pointed at this checkout, so the subdirectory install is the thing
+  # under test: a clean file commits, a file with a prose em-dash is refused.
+  articulate-hook:
+    name: articulate (pre-commit hook from the package path)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install pre-commit
+      - name: The hook passes a clean file and blocks a prose em-dash
+        run: |
+          SRC="$GITHUB_WORKSPACE"
+          REV="$(git -C "$SRC" rev-parse HEAD)"
+          SCRATCH="$RUNNER_TEMP/scratch"
+          mkdir "$SCRATCH" && cd "$SCRATCH"
+          git init -q
+          git config user.email ci@example.invalid
+          git config user.name CI
+          sed "s#git+https://github.com/HarperZ9/flywheel@REF#git+file://$SRC@$REV#" \
+            "$SRC/packages/articulate/examples/pre-commit-from-flywheel.yaml" > .pre-commit-config.yaml
+          grep -q "git+file://$SRC@$REV#subdirectory=packages/articulate" .pre-commit-config.yaml
+          pre-commit install
+          git add .pre-commit-config.yaml
+          git commit -qm "config" --no-verify
+          cp "$SRC/packages/articulate/tests/fixtures/action/clean.md" notes.md
+          git add notes.md
+          git commit -m "clean file" > clean.log 2>&1 || { cat clean.log; exit 1; }
+          cat clean.log
+          grep -q "Articulate writing check" clean.log
+          grep -q "Passed" clean.log
+          printf '# Plan\n\nThe release is ready \xe2\x80\x94 ship it today.\n' > blocked.md
+          git add blocked.md
+          if git commit -m "blocked file" > hook.log 2>&1; then
+            cat hook.log; echo "the hook let a blocked file through"; exit 1
+          fi
+          cat hook.log
+          grep -q "blocked.md" hook.log
+          test "$(git log --format=%s -1)" = "clean file"
+
+  # The GitHub Action from the package path, with its working-directory input:
+  # a clean file with a committed content-free receipt passes and the receipt
+  # is re-verified against its source, a drifted receipt fails, and the gate
+  # input fails a blocked file. The SARIF file is written and checked here and
+  # is not uploaded to this repository's code scanning.
+  articulate-action:
+    name: articulate (action from the package path)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: A clean file and its committed receipt pass
+        uses: ./packages/articulate
+        with:
+          working-directory: packages/articulate
+          files: tests/fixtures/action/*.md
+          gate: "true"
+          audit-path: tests/fixtures/action/receipts
+          upload-sarif: "false"
+      - name: The SARIF file exists and the receipt matched its source
+        working-directory: packages/articulate
+        run: |
+          python -c "import json; d=json.load(open('articulate.sarif')); assert d['version']=='2.1.0' and d['runs'], d.keys()"
+          python -m articulate.cli audit tests/fixtures/action/receipts --reverify > audit-clean.log 2>&1
+          cat audit-clean.log
+          grep -q "'Match': 1" audit-clean.log
+      - name: Change the file after its receipt
+        run: printf '\nA line added after the receipt.\n' >> packages/articulate/tests/fixtures/action/clean.md
+      - name: A drifted receipt fails
+        id: drift
+        continue-on-error: true
+        uses: ./packages/articulate
+        with:
+          working-directory: packages/articulate
+          files: tests/fixtures/action/*.md
+          audit-path: tests/fixtures/action/receipts
+          upload-sarif: "false"
+      - name: Write a blocked file
+        run: |
+          mkdir -p packages/articulate/ci-blocked/deep
+          printf '# Plan\n\nThe release is ready \xe2\x80\x94 ship it today.\n' > packages/articulate/ci-blocked/deep/plan.md
+      - name: A blocked file fails under the gate input
+        id: blocked
+        continue-on-error: true
+        uses: ./packages/articulate
+        with:
+          working-directory: packages/articulate
+          files: ci-blocked/**/*.md
+          gate: "true"
+          upload-sarif: "false"
+      - name: Both negative runs failed, for the expected reasons
+        working-directory: packages/articulate
+        run: |
+          test "${{ steps.drift.outcome }}" = failure
+          test "${{ steps.blocked.outcome }}" = failure
+          python -m articulate.cli audit tests/fixtures/action/receipts --reverify > audit.log 2>&1 || true
+          cat audit.log
+          grep -q "source-changed" audit.log
+          python -m articulate.cli check ci-blocked/deep/plan.md --gate > gate.log 2>&1 || true
+          cat gate.log
+          grep -q "blocked" gate.log
+
+  articulate-self-check:
+    name: articulate (its own documents pass its own gate)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+        working-directory: packages/articulate
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: python -m articulate.cli check README.md CHANGELOG.md docs/*.md --gate
       - name: Art receipt digests
         run: python3 scripts/check_art_receipts.py
