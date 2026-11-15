@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: check (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      # Windows leg: check out the way a default Git for Windows install does, so a
+      # line-ending rewrite of a sealed file fails here instead of on a reader's machine.
+      - name: Use the Git for Windows line-ending default
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf true
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install pytest
+        run: python -m pip install pytest
+      - name: Re-derive the seal from bytes
+        run: python verify_manifest.py
+      - name: Tests
+        if: ${{ !cancelled() }}
+        run: python -m pytest -q tests
+      - name: Sealed files are checked out byte for byte
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          git ls-files -s -- ":(attr:-text)" | while read -r mode sha stage path; do
+            if [ "$(git hash-object --no-filters -- "$path")" != "$sha" ]; then
+              echo "checkout rewrote a sealed file: $path"
+              exit 1
+            fi
+          done
+          echo "every sealed file matches its committed blob"
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py

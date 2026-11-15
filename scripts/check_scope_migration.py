@@ -41,6 +41,8 @@ ALLOWED = (
     "packages/*/docs/art/receipts.json",
     # the same record in each demo imported from its own repository
     "demos/*/docs/art/receipts.json",
+    # and in each research artifact imported from its own repository
+    "docs/research/*/docs/art/receipts.json",
     # describes the receipt fields of the engine version the demo pins (1.0.0)
     "demos/flywheel-receipt-demo/FLYWHEEL-TOOLS-EXPLAINED.md",
     "docs/features/pysyft-result-receipt.md",   # wire-format reference for v1 receipts

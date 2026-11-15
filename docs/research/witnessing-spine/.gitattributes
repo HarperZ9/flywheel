@@ -1,0 +1,16 @@
+* text=auto eol=lf
+
+# The files below are sealed by SHA-256 in MANIFEST.sha256, and verify_manifest.py
+# re-derives each digest from the bytes on disk. The rule above already writes LF,
+# but it still lets Git convert line endings on commit and checkout. `-text` turns
+# conversion off for the sealed set, so the bytes on disk are always the committed
+# blob, on every platform and under any core.autocrlf setting. Later lines win, so
+# these override `* text=auto eol=lf` for these paths only.
+/MANIFEST.sha256 -text
+/README.md -text
+/SYNTHESIS-the-witnessing-spine.md -text
+/RUN-001-verifiable-provenance-financial-ai.md -text
+/RUN-002-genai-cobol-modernization-equivalence.md -text
+/RUN-003-quant-ml-out-of-sample-steelman.md -text
+/RUN-004-defi-trustlessness-steelman.md -text
+/RUN-005-enterprise-attestation-assurance-steelman.md -text
