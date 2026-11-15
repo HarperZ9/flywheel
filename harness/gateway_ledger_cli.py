@@ -92,6 +92,15 @@ def _plain(value) -> str:
     return str(value).encode("ascii", "backslashreplace").decode("ascii").translate(_CONTROL)
 
 
+def _json(row: dict) -> str:
+    """A row as `show --json` prints it: one JSON object in ASCII.
+
+    Every character outside printable ASCII is a `\\uXXXX` escape, so the C1
+    controls (U+0080 to U+009F), the bidi controls and DEL in a recorded string
+    cannot write to the operator's terminal. A JSON parser reads the same row."""
+    return json.dumps(row, ensure_ascii=True, sort_keys=True).replace("\x7f", "\\u007f")
+
+
 def _short(value, full: bool) -> str:
     """`_plain(value)`, cut to WIDTH characters with what was left out, unless `full`."""
     text = _plain(value)
@@ -149,8 +158,7 @@ def main(argv: "list[str] | None" = None, *, environ=None) -> int:
         print(_ignored(home) + text)
         return 0 if ok else 1
     for row in rows(found, args.key, args.kind, args.last):
-        print(json.dumps(row, ensure_ascii=False, sort_keys=True) if args.json
-              else _line(row, args.full))
+        print(_json(row) if args.json else _line(row, args.full))
     if not ok:
         print(text, file=sys.stderr)
     return 0 if ok else 1
