@@ -154,8 +154,8 @@ def _check(caller: Caller, model) -> "tuple | None":
     stopped = suspended(caller)
     if stopped is not None:
         return "key_suspended", 403, (
-            f"gateway key '{name}' is suspended ({stopped}): an earlier reply was delivered "
-            "and could not be charged or recorded. Read the gateway ledger, then run "
+            f"gateway key '{name}' is suspended ({stopped}): an earlier call reached the "
+            "provider and could not be charged or recorded. Read the gateway ledger, then run "
             f"`flywheel gateway-key clear {name}`"), None
     allowed = row.get("models") or []
     if allowed and isinstance(model, str) and model not in allowed:
@@ -196,6 +196,26 @@ def _reread(caller: Caller) -> bool:
     return True
 
 
+def _hold(caller: Caller, ledger) -> str:
+    """Count the reservations of the key's unsettled calls as spent (gateway_calls).
+
+    A call whose gateway stopped after its started entry has no end entry and
+    no charge. Its reservation is added to the totals this request is checked
+    against, until an operator settles it. Returns the words a refusal adds."""
+    from .gateway_calls import held
+    used_in, used_out, count = held(ledger, caller.fingerprint)
+    if not count:
+        return ""
+    totals = dict(caller.row["totals"])
+    totals["input_tokens"] += used_in
+    totals["output_tokens"] += used_out
+    totals["tokens"] += used_in + used_out
+    caller.row = {**caller.row, "totals": totals}
+    return (f" ({used_in + used_out} of those tokens are the reservations of {count} unsettled "
+            "call(s): `flywheel gateway-ledger show --unsettled`, then `flywheel "
+            "gateway-ledger settle CALL`)")
+
+
 def enter(handler, path: str, body, ledger) -> tuple:
     """(caller, None) to go on, or (caller, Response) to refuse before any upstream call."""
     caller = _caller(handler)
@@ -207,6 +227,7 @@ def enter(handler, path: str, body, ledger) -> tuple:
     from . import gateway_key_policy as policy
     with policy.ADMISSION:              # the row is read and the slot taken as one step
         live = _reread(caller)          # False: revoked or gone while the body was on its way
+        unsettled = _hold(caller, ledger) if live else ""
         refused, busy = (_check(caller, body.get("model") if isinstance(body, dict) else None)
                          if live else None), False
         if live and refused is None and not path.endswith("/count_tokens"):
@@ -227,7 +248,7 @@ def enter(handler, path: str, body, ledger) -> tuple:
     interface = _INTERFACES.get(path, "anthropic-messages")
     budget = status == 0
     if budget:
-        status = 429 if path == "/v1/responses" else 400
+        status, text = (429 if path == "/v1/responses" else 400), text + unsettled
     _LOG.info("gateway %s request refused for key %s (%s)", interface, caller.name, reason)
     if ledger is not None:
         from .gateway_turn import _APPEND

@@ -3,17 +3,25 @@
 `gateway_turn.record` debits the caller and appends the ledger entry after the
 upstream has answered. When either step fails, the call still happened and the
 provider still bills it, so the record must say so. `unaccounted` writes that
-entry, suspends the key when the reply's text had already left, and returns
-the error the client is told. `provider_tools` reads what the provider says
-its own tools did, for the served entry. `partial_charge` charges a key for a
-stream that began and did not finish.
+entry, suspends the key and returns the error the client is told.
+`provider_tools` reads what the provider says its own tools did, for the
+served entry. `partial_charge` charges a key for a stream that began and did
+not finish.
+
+The suspension rule, one rule for every path (gateway_key_policy.suspend): a
+call that reached the provider is accounted when its key was charged and its
+end entry was written. When either step fails, for any reason, the key is
+suspended until an operator clears it. The threat is unrecorded spend: a key
+whose totals or whose ledger miss a call must not make the next one until
+someone has read the ledger. A failed debit is recorded as `charged_tokens`
+0 with the amount under `uncharged_tokens`.
 """
 from __future__ import annotations
 
 import json
 import logging
 
-from .gateway_turn import _APPEND, AccountingFailed, prompt_sha
+from .gateway_turn import _APPEND, AccountingFailed, call_meta, prompt_sha
 
 _LOG = logging.getLogger(__name__)
 
@@ -33,7 +41,7 @@ def unaccounted(ledger, upstream, turn, bill, sha, cause, delivered,
     The ledger gets `endpoint_call_failed` with the response hash: reason
     `charge_failed` or `ledger_failed` for a reply that was held back, and
     `delivered_unrecorded_charge` for a stream whose text already left. In
-    that case the key is suspended until an operator clears it. Returns the
+    every case the key is suspended until an operator clears it. Returns the
     error the client is told."""
     from .provider_fault_boundary import redacted_text
     reason = "delivered_unrecorded_charge" if delivered else cause
@@ -43,19 +51,23 @@ def unaccounted(ledger, upstream, turn, bill, sha, cause, delivered,
                redacted_text(str(exc)), delivered)
     meta = {"endpoint": upstream.name, "interface": turn.interface,
             "prompt_sha": prompt_sha(turn), "response_sha": sha, "reason": reason,
-            "cause": cause, "delivered": bool(delivered), **bill.meta}
+            "cause": cause, "delivered": bool(delivered), **bill.meta, **call_meta(turn)}
+    if cause == "charge_failed" and "charged_tokens" in meta:   # the debit failed
+        meta["uncharged_tokens"], meta["charged_tokens"] = meta["charged_tokens"], 0
+    held = bill.suspend(reason)         # not fully accounted: the key stops (the one rule)
     try:
         with _APPEND:
             ledger.append("endpoint_call_failed", reason, meta)
-    except Exception as again:  # noqa: BLE001 - logged; the client is still told below
+    except Exception as again:  # noqa: BLE001 - kept for the resume; the client is told
+        from .gateway_calls import defer
+        defer(ledger, "endpoint_call_failed", reason, meta)
         _LOG.error("gateway ledger refused the accounting-failure entry as well (%s: %s)",
                    type(again).__name__, redacted_text(str(again)))
     what = ("could not be charged to its gateway key" if cause == "charge_failed"
             else "could not be recorded in the gateway ledger")
     if not delivered:
         return AccountingFailed(f"the upstream answered, but the call {what}; the reply "
-                                f"was not served ({cause})", status=500, reason=reason)
-    held = bill.suspend(reason)
+                                f"was not served ({cause}){held}", status=500, reason=reason)
     return AccountingFailed(
         f"the text already sent on this stream was delivered, but the call {what} "
         f"(delivered_unrecorded_charge){held}", status=500, reason=reason)
@@ -120,10 +132,11 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
               everything received: text, tool-call arguments and thinking.
 
     An estimate is the larger of the word count and a quarter of the
-    characters, rounded up. An OpenAI-format stream reports usage in its last
-    chunk, so every such stream that stops early is estimated, hosted OpenAI
-    included. The entry is marked `estimated`. A stream the upstream cut
-    before any event is not charged."""
+    characters, rounded up; the input estimate is also at least a quarter of
+    the request's bytes, which counts tool definitions. An OpenAI-format
+    stream reports usage in its last chunk, so every such stream that stops
+    early is estimated, hosted OpenAI included. The entry is marked
+    `estimated`. A stream the upstream cut before any event is not charged."""
     caller = turn.caller
     if caller is None or caller.row is None:
         return {}
@@ -136,8 +149,12 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
     words = token_usage.estimate(sent, received)
     # A word count is near zero for text with no spaces (CJK, base64, minified
     # code), so each side is at least a quarter of its characters, rounded up:
-    # the rule the reservation uses for a request's bytes.
-    counts = {"input": max(words["prompt_words"], -(-len(sent) // 4)),
+    # the rule the reservation uses for a request's bytes. The text form leaves
+    # out tool definitions, images and documents, so the input is also at least
+    # the input this call reserved: a quarter of the whole request's bytes
+    # (gateway_key_policy.admit), still held while the stream is closed.
+    held = getattr(caller, "ticket", None)
+    counts = {"input": max(words["prompt_words"], -(-len(sent) // 4), held[0] if held else 0),
               "output": max(words["completion_words"], -(-len(received) // 4))}
     reported = _reported(assembler)
     if "input" in reported:
@@ -149,5 +166,8 @@ def partial_charge(turn, reason: str, assembler, pieces) -> dict:
     except Exception as exc:  # noqa: BLE001 - the entry below says the charge is missing
         _LOG.error("gateway key %s could not be charged for an unfinished stream (%s: %s)",
                    caller.name, type(exc).__name__, exc)
-        return {"charged_tokens": 0, "estimated": True, "charge_failed": True}
+        from .gateway_key_policy import suspend
+        suspend(caller, "charge_failed")    # the same rule as a whole reply's failed debit
+        return {"charged_tokens": 0, "uncharged_tokens": sum(counts.values()),
+                "estimated": True, "charge_failed": True}
     return {"charged_tokens": sum(counts.values()), "estimated": True}

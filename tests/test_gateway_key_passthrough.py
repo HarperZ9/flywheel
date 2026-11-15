@@ -64,7 +64,7 @@ def test_a_key_without_the_allowance_is_refused_and_nothing_goes_upstream(
     assert field in answer["error"]["message"]
     assert "gateway-key set ci-bot" in answer["error"]["message"]
     assert upstream.requests == []
-    assert [(e.kind, e.meta["reason"]) for e in ledger.entries] == [
+    assert [(e.kind, e.meta["reason"]) for e in support.recorded(ledger)] == [
         ("endpoint_call_refused", "field_not_allowed")]
 
 

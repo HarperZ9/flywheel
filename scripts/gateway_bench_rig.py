@@ -17,8 +17,15 @@ published figure and the CI budget come from the same code.
   measure() the same request sent straight to the stub and through the
             gateway, in turns, after warm-up calls that are thrown away. Each
             sample has the stub's own wait for that call taken out, so a late
-            timer in the stub's sleep is not counted as gateway time.
-  overhead() median gateway sample minus median stub sample.
+            timer in the stub's sleep is not counted as gateway time. For each
+            gateway call it also notes the ledger's disk commits: how many,
+            and the seconds the operating system spent inside `os.fsync`
+            (gateway_ledger_health) before the first byte and in all.
+  overhead() median gateway sample minus median stub sample. With `own=True`
+            each gateway sample first has its disk commit seconds taken out:
+            what is left is the gateway's own work.
+  commit_cost() what one bare append-and-commit costs in a folder, with no
+            gateway code involved: the disk's share, measured on its own.
 
 No provider is called. The system credential store is never opened: the key
 store here is a dictionary.
@@ -33,12 +40,13 @@ import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from http.server import ThreadingHTTPServer
 from urllib.parse import urlsplit
 
+from scripts.gateway_bench_stub import (  # noqa: F401  (part of this module's surface)
+    _MODELS, DELTAS, PIECE, REPLIES, MemoryStore, Stub)
+
 TOKEN = "bench-gateway-token-not-a-real-credential"
-DELTAS = 20
-PIECE = "word "
 PATHS = ("/v1/messages", "/v1/responses")
 BODIES = {
     "/v1/messages": {"model": "claude-sonnet-5", "max_tokens": 256,
@@ -49,118 +57,6 @@ BODIES = {
 GATEWAY_MARK = {"/v1/messages": b"content_block_delta",
                 "/v1/responses": b"response.output_text.delta"}
 STUB_MARK = {"openai": b'"delta":{"content"', "anthropic": b"content_block_delta"}
-_MODELS = {"openai": "gpt-5.3-codex-spark", "anthropic": "claude-sonnet-5"}
-
-
-def _sse(data: dict, event: str = "") -> bytes:
-    head = f"event: {event}\n" if event else ""
-    return f"{head}data: {json.dumps(data, separators=(',', ':'))}\n\n".encode()
-
-
-def _openai(stream: bool) -> list:
-    base = {"id": "chatcmpl-bench", "created": 1794268190, "model": _MODELS["openai"]}
-    usage = {"prompt_tokens": 12, "completion_tokens": DELTAS,
-             "total_tokens": 12 + DELTAS}
-    if not stream:
-        message = {"role": "assistant", "content": PIECE * DELTAS, "refusal": None}
-        return [json.dumps({**base, "object": "chat.completion", "usage": usage, "choices": [
-            {"index": 0, "message": message, "finish_reason": "stop"}]}).encode()]
-
-    def chunk(delta, finish=None):
-        return _sse({**base, "object": "chat.completion.chunk", "usage": None, "choices": [
-            {"index": 0, "delta": delta, "finish_reason": finish}]})
-    out = [chunk({"role": "assistant", "content": ""})]
-    out += [chunk({"content": PIECE}) for _ in range(DELTAS)]
-    out += [chunk({}, "stop"),
-            _sse({**base, "object": "chat.completion.chunk", "choices": [], "usage": usage}),
-            b"data: [DONE]\n\n"]
-    return out
-
-
-def _anthropic(stream: bool) -> list:
-    base = {"id": "msg_bench", "type": "message", "role": "assistant",
-            "model": _MODELS["anthropic"]}
-    if not stream:
-        return [json.dumps({**base, "content": [{"type": "text", "text": PIECE * DELTAS}],
-                            "stop_reason": "end_turn", "stop_sequence": None,
-                            "usage": {"input_tokens": 12, "output_tokens": DELTAS}}).encode()]
-
-    def event(name, **fields):
-        return _sse({"type": name, **fields}, name)
-    out = [event("message_start", message={
-        **base, "content": [], "stop_reason": None, "stop_sequence": None,
-        "usage": {"input_tokens": 12, "output_tokens": 1}}),
-        event("content_block_start", index=0, content_block={"type": "text", "text": ""})]
-    out += [event("content_block_delta", index=0, delta={"type": "text_delta", "text": PIECE})
-            for _ in range(DELTAS)]
-    out += [event("content_block_stop", index=0),
-            event("message_delta", delta={"stop_reason": "end_turn", "stop_sequence": None},
-                  usage={"output_tokens": DELTAS}),
-            event("message_stop")]
-    return out
-
-
-REPLIES = {"openai": _openai, "anthropic": _anthropic}
-
-
-class Stub:
-    """A loopback provider that holds its first byte for `delay` seconds."""
-
-    def __init__(self, dialect: str, delay: float):
-        stub = self
-        self.dialect, self.delay, self.waits = dialect, delay, []
-
-        class Handler(BaseHTTPRequestHandler):
-            def do_POST(self):
-                arrived = time.perf_counter()
-                body = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)))
-                stream = bool(body.get("stream"))
-                chunks = REPLIES[stub.dialect](stream)
-                time.sleep(stub.delay)
-                self.send_response(200)
-                self.send_header("Content-Type",
-                                 "text/event-stream" if stream else "application/json")
-                if not stream:
-                    self.send_header("Content-Length", str(len(chunks[0])))
-                self.end_headers()
-                stub.waits.append(time.perf_counter() - arrived)
-                for chunk in chunks:
-                    self.wfile.write(chunk)
-                    self.wfile.flush()
-
-            def log_message(self, *args):
-                pass
-        self.server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        self.url = f"http://127.0.0.1:{self.server.server_address[1]}"
-
-    def start(self) -> "Stub":
-        threading.Thread(target=self.server.serve_forever, args=(0.05,), daemon=True).start()
-        return self
-
-    def stop(self) -> None:
-        self.server.shutdown()
-        self.server.server_close()
-
-
-class MemoryStore:
-    """The credential store as a dictionary. Nothing here reaches the system store."""
-
-    def __init__(self):
-        self.saved = {}
-
-    def available(self) -> bool:
-        return True
-
-    def get(self, name):
-        return self.saved.get(name)
-
-    def set(self, name, secret):
-        self.saved[name] = secret
-        return {"stored": name}
-
-    def delete(self, name):
-        self.saved.pop(name, None)
-        return {"deleted": name}
 
 
 @dataclass
@@ -274,23 +170,53 @@ def call(url: str, path: str, body: bytes, credential: str, mark: "bytes | None"
 def measure(made: Rig, path: str, stream: bool, calls: int, warmup: int = 3) -> dict:
     """Seconds for `calls` warm requests, straight to the stub and through the gateway.
 
-    Returns {"direct": [(first, total)], "gateway": [(first, total)]}, each
-    with the stub's wait for that call subtracted. The two are taken in turns
-    so a busy moment on the machine lands on both."""
+    Returns {"direct": [(first, total)], "gateway": [(first, total)],
+    "commit": [(before first byte, total, count)]}. The first two have the
+    stub's wait for that call subtracted, and are taken in turns so a busy
+    moment on the machine lands on both. "commit" is one row per gateway call:
+    the seconds the ledger's disk commits took and how many there were. A
+    plain reply is sent after both of its entries are committed; a stream's
+    first byte comes after the started entry's commit only."""
     body = json.dumps({**BODIES[path], "stream": stream}).encode()
     marks = ((STUB_MARK[made.stub.dialect], GATEWAY_MARK[path]) if stream else (None, None))
-    out = {"direct": [], "gateway": []}
+    out = {"direct": [], "gateway": [], "commit": []}
     for index in range(warmup + calls):
         for name, url, credential, mark in (("direct", made.stub.url, "none", marks[0]),
                                             ("gateway", made.gateway, made.credential, marks[1])):
+            before = list(_commits(made.ledger))
             first, total = call(url, path, body, credential, mark)
-            wait = made.stub.waits[-1]
+            wait, after = made.stub.waits[-1], _commits(made.ledger)
             if index >= warmup:
                 out[name].append((first - wait, total - wait))
+                if name == "gateway":
+                    spent, started = after[1] - before[1], after[2] - before[2]
+                    out["commit"].append((started if stream else spent, spent,
+                                          after[0] - before[0]))
     return out
 
 
-def overhead(samples: dict, which: int = 0) -> float:
-    """Median gateway seconds minus median stub seconds. which: 0 first byte, 1 total."""
-    return (statistics.median(row[which] for row in samples["gateway"])
-            - statistics.median(row[which] for row in samples["direct"]))
+def _commits(ledger) -> list:
+    return getattr(ledger, "commits", None) or [0, 0.0, 0.0]
+
+
+def overhead(samples: dict, which: int = 0, own: bool = False) -> float:
+    """Median gateway seconds minus median stub seconds. which: 0 first byte, 1 total.
+
+    `own` takes each call's disk commit seconds out of its gateway sample first."""
+    rows = [row[which] for row in samples["gateway"]]
+    if own:
+        rows = [row - commit[which] for row, commit in zip(rows, samples["commit"])]
+    return statistics.median(rows) - statistics.median(row[which] for row in samples["direct"])
+
+
+def commit_cost(folder, count: int = 40) -> list:
+    """Seconds for each of `count` bare commits: append 300 bytes to a file in `folder`,
+    then `os.fsync`. No gateway code runs, so this is what the disk alone costs here."""
+    took = []
+    with open(os.path.join(str(folder), "commit-probe.bin"), "ab", buffering=0) as probe:
+        for _ in range(count):
+            probe.write(b"x" * 299 + b"\n")
+            began = time.perf_counter()
+            os.fsync(probe.fileno())
+            took.append(time.perf_counter() - began)
+    return took

@@ -84,7 +84,7 @@ def test_a_streamed_server_tool_reply_is_delivered_recorded_and_charged(keyed, s
     assert events[-1][0] == "message_stop" and events[-1][1]["x_receipt"]["receipt_id"]
     assert upstream.requests[0]["body"]["tools"] == TOOLS
     assert support.kinds(ledger) == ["endpoint_call"]
-    meta = ledger.entries[0].meta
+    meta = support.recorded(ledger)[0].meta
     assert meta["charged_tokens"] == REPORTED and meta["usage_reported"] is True
     assert meta["server_tool_use"] == {"web_search_requests": 1}
     assert keys.row("ci-bot")["totals"]["tokens"] == REPORTED
@@ -98,7 +98,7 @@ def test_a_plain_server_tool_reply_is_delivered_recorded_and_charged(keyed, serv
     assert body["content"] == PLAIN["content"], "the provider's blocks, unchanged"
     assert body["usage"] == PLAIN["usage"] and body["x_receipt"]["receipt_id"]
     assert support.kinds(ledger) == ["endpoint_call"]
-    assert ledger.entries[0].meta["server_tool_use"] == {"web_search_requests": 1}
+    assert support.recorded(ledger)[0].meta["server_tool_use"] == {"web_search_requests": 1}
     assert keys.row("ci-bot")["totals"]["tokens"] == REPORTED
 
 
@@ -108,7 +108,7 @@ def test_the_streamed_and_the_plain_reply_record_the_same_response_hash(keyed, s
     body = {**MESSAGES, "tools": TOOLS}
     assert post(url, "/v1/messages", raw, {**body, "stream": True})[0] == 200
     assert post(url, "/v1/messages", raw, body)[0] == 200
-    first, second = ledger.entries
+    first, second = support.recorded(ledger)
     assert first.meta["response_sha"] == second.meta["response_sha"]
 
 
@@ -142,7 +142,7 @@ def test_control_a_reply_that_claims_a_client_tool_result_is_still_refused(keyed
         keyed, served, [support.json_answer(claimed)])
     status, _headers, body = post(url, "/v1/messages", support.TOKEN)
     assert status == 502 and "tool result" in body["error"]["message"]
-    assert [(e.kind, e.meta["reason"]) for e in ledger.entries] == [
+    assert [(e.kind, e.meta["reason"]) for e in support.recorded(ledger)] == [
         ("endpoint_call_failed", "tool_result_claimed")]
 
 

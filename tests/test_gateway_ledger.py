@@ -50,18 +50,19 @@ def _segment(home, number: int = 1) -> Path:
 def test_entries_survive_a_restart_and_the_chain_verifies_across_it(on_disk, capsys):
     url, _upstream, home = on_disk(turn2(3))
     assert post(url, "/v1/messages", support.TOKEN)[0] == 200
-    first = gateway._router_ledger().entries[0]
+    first = support.recorded(gateway._router_ledger())[0]
     _restart()
     assert post(url, "/v1/responses", support.TOKEN)[0] == 200
     ledger = gateway._router_ledger()
     assert isinstance(ledger, gateway_ledger.GatewayLedger) and ledger.found_broken is None
-    assert [e.kind for e in ledger.entries] == ["endpoint_call", "endpoint_call"]
-    assert ledger.entries[0] == first, "the entry written before the restart was loaded"
-    assert ledger.entries[1].prev_hash == first.entry_hash, "the new entry chains onto it"
+    assert support.kinds(ledger) == ["endpoint_call", "endpoint_call"]
+    assert support.recorded(ledger)[0] == first, "the entry written before the restart was loaded"
+    assert [e.kind for e in ledger.entries][2] == "endpoint_call_started"
+    assert ledger.entries[2].prev_hash == first.entry_hash, "the new call chains onto it"
     assert ledger.verify()
     assert [s["name"] for s in gateway_ledger.check(home)] == ["segment-000001.jsonl"]
     assert _cli(home, "verify") == 0
-    assert "gateway ledger verifies: 2 entries" in capsys.readouterr().out
+    assert "gateway ledger verifies: 4 entries" in capsys.readouterr().out    # two per call
 
 
 def test_an_entry_is_in_the_file_before_the_reply_is_sent(on_disk, monkeypatch):
@@ -70,11 +71,13 @@ def test_an_entry_is_in_the_file_before_the_reply_is_sent(on_disk, monkeypatch):
 
     def send_response(self, code, *args):
         if code == 200 and self.path == "/v1/messages":
-            seen.append(_segment(home).read_text(encoding="utf-8").count("endpoint_call"))
+            text = _segment(home).read_text(encoding="utf-8")
+            seen.append((text.count('"kind": "endpoint_call_started"'),
+                         text.count('"kind": "endpoint_call"')))
         return real(self, code, *args)
     monkeypatch.setattr(gateway._Handler, "send_response", send_response)
     assert post(url, "/v1/messages", support.TOKEN)[0] == 200
-    assert seen == [1], "the entry was on disk when the status line was written"
+    assert seen == [(1, 1)], "both entries were on disk when the status line was written"
 
 
 def test_a_flipped_byte_is_found_by_verify_and_at_start(on_disk, capsys, caplog):
@@ -88,18 +91,24 @@ def test_a_flipped_byte_is_found_by_verify_and_at_start(on_disk, capsys, caplog)
     damaged = path.read_bytes()
 
     assert _cli(home, "verify") == 1
-    assert "BROKEN: line 2 does not verify" in capsys.readouterr().out
+    # Line 1 is the header, line 2 the call's started entry, line 3 its end entry.
+    assert "BROKEN: line 3 does not verify" in capsys.readouterr().out
 
     with caplog.at_level(logging.ERROR, logger="harness.gateway_ledger"):
         assert post(url, "/v1/messages", support.TOKEN)[0] == 200
-    assert "GATEWAY LEDGER BROKEN: segment-000001.jsonl: line 2 does not verify" in caplog.text
+    assert "GATEWAY LEDGER BROKEN: segment-000001.jsonl: line 3 does not verify" in caplog.text
     ledger = gateway._router_ledger()
     assert ledger.found_broken and ledger.path.name == "segment-000002.jsonl"
     assert path.read_bytes() == damaged, "the broken segment was not appended to"
     header = json.loads(_segment(home, 2).read_text(encoding="utf-8").splitlines()[0])
     assert header["previous"] == "segment-000001.jsonl"
-    assert header["previous_state"] == "broken" and "line 2" in header["reason"]
-    assert [e.kind for e in ledger.entries] == ["endpoint_call"] and ledger.verify()
+    assert header["previous_state"] == "broken" and "line 3" in header["reason"]
+    # The damaged line was the first call's end entry. Its started entry still verifies, so
+    # that call is now a start with no end the ledger can vouch for: the new segment carries
+    # it in its header and names it unsettled before it records the new call.
+    lost, = header["open_calls"]
+    assert ledger.entries[0].kind == "calls_unsettled" and ledger.entries[0].meta["calls"] == [lost]
+    assert support.kinds(ledger) == ["calls_unsettled", "endpoint_call"] and ledger.verify()
     _restart()
     assert _cli(home, "verify") == 1
     out = capsys.readouterr().out
@@ -140,19 +149,20 @@ def test_show_by_key_returns_only_that_keys_entries(on_disk, keyed, capsys):
     def shown(*argv) -> list:
         assert _cli(home, "show", "--json", *argv) == 0
         return [json.loads(line) for line in capsys.readouterr().out.splitlines()]
-    assert len(shown()) == 5
-    mine = shown("--key", "ci-bot")
+    assert len(shown()) == 9 and len(support.recorded(shown())) == 5    # four calls, one refusal
+    mine = support.recorded(shown("--key", "ci-bot"))
     assert [row["meta"]["key"] for row in mine] == ["ci-bot", "ci-bot"]
     assert all(row["meta"]["charged_tokens"] == 460 for row in mine)
-    assert [row["kind"] for row in shown("--key", "teammate")] == [
+    assert [row["kind"] for row in support.recorded(shown("--key", "teammate"))] == [
         "endpoint_call", "endpoint_call_refused"]
-    assert [row["meta"]["key"] for row in shown("--key", "owner")] == ["owner"]
+    assert [row["meta"]["key"] for row in support.recorded(shown("--key", "owner"))] == ["owner"]
     assert shown("--key", "nobody") == []
     assert [row["kind"] for row in shown("--key", "teammate", "--kind", "endpoint_call")] == [
         "endpoint_call"]
     assert _cli(home, "show", "--key", "ci-bot") == 0
     text = capsys.readouterr().out
-    assert text.count("key=ci-bot") == 2 and "teammate" not in text and bot not in text
+    assert text.count("key=ci-bot") == 4 and text.count("endpoint_call_started") == 2
+    assert "teammate" not in text and bot not in text      # two calls, a start and an end each
 
 
 def test_a_second_writer_is_refused_and_the_gateway_serves_nothing_unrecorded(
