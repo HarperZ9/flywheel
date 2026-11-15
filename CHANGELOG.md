@@ -168,6 +168,7 @@ Tools under `packages/`
 - `relay` (distribution `flywheel-relay` 0.7.0) now also lives under `packages/relay`. PyPI releases still publish from `HarperZ9/relay`, which stays open.
 - `canon` (distribution `flywheel-canon` 0.7.0) now also lives under `packages/canon`. PyPI releases still publish from `HarperZ9/canon`, which stays open.
 - `index` (distribution `index-graph` 2.16.0) now also lives under `packages/index`. PyPI releases still publish from `HarperZ9/index`, which stays open.
+- `crucible` (distribution `crucible-bench` 1.6.0) now also lives under `packages/crucible`. PyPI releases still publish from `HarperZ9/crucible`, which stays open.
 - Not run from the new location before the merge: publishing any of these to PyPI or npm.
 
 Evidence demos under `demos/`
