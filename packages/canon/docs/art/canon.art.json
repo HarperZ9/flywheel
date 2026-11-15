@@ -219,8 +219,8 @@
         },
         {
           "key": "python tests",
-          "value": "1901 cases",
-          "note": "pytest over 110 files: 1300 test functions plus their parametrized cases, covering records, backends, MCP, context, continuity export and every number here."
+          "value": "1904 cases",
+          "note": "pytest over 111 files: 1303 test functions plus their parametrized cases, covering records, backends, MCP, context, continuity export and every number here."
         },
         {
           "key": "surfaces not rendered",
