@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "articulate-writing"
+version = "0.19.1"
+description = "Local prose checker that names each writing pattern and the line it is on, with register profiles, replayable receipts and an optional editor. Use it to improve writing; in its own evaluation it also flagged 57 of 75 human-written texts, so use other evidence to decide who wrote a text."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "LicenseRef-FSL-1.1-MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Zain Dana Harper", email = "17142659+HarperZ9@users.noreply.github.com" }]
+keywords = ["writing", "linter", "prose", "editor", "quality", "receipt", "audit"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Text Processing :: Linguistic",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+]
+dependencies = []  # the core detector is standard-library only
+
+[project.optional-dependencies]
+mcp = ["fastmcp>=3.2.4,<4"]      # the MCP server surface; fastmcp 4 drops the tool annotation hints
+hosted = ["fastmcp>=3.2.4,<4", "pydantic>=2.12,<3", "uvicorn>=0.30,<1"]  # opt-in authenticated HTTP
+dev = ["pytest>=7", "jsonschema>=4"]
+
+[project.scripts]
+articulate = "articulate.cli:main"
+articulate-lsp = "articulate.lsp_server:serve"
+# The stdlib-only stdio MCP server. It needs nothing beyond the base install, so
+# an MCP host can launch it straight from `pip install articulate-writing`. The
+# fastmcp server stays available under the [mcp] extra as articulate.mcp_server.
+articulate-mcp = "articulate.local_mcp:main"
+# The advisory PostToolUse check for agent harnesses (Claude Code, Codex and any
+# client that runs a command hook with the same event shape). Standard library only.
+articulate-edit-hook = "articulate.edit_hook:main"
+# The house-voice hook: the brief at SessionStart, and the optional revise-mode
+# Stop check. Standard library only.
+articulate-house-hook = "articulate.house_hook:main"
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/articulate"
+Repository = "https://github.com/HarperZ9/articulate"
+Documentation = "https://github.com/HarperZ9/articulate/tree/main/docs"
+Issues = "https://github.com/HarperZ9/articulate/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/articulate"]

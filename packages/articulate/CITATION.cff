@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+type: software
+title: "Articulate"
+abstract: "Checks prose on your computer and names each writing pattern and the line it is on. Profiles for docs, commits, essays and fiction. CLI, LSP, SARIF and MCP."
+version: "0.19.1"
+date-released: 2026-11-15
+authors:
+  - family-names: "Harper"
+    given-names: "Zain Dana"
+    orcid: "https://orcid.org/0009-0001-7175-5393"
+repository-code: "https://github.com/HarperZ9/articulate"
+url: "https://harperz9.github.io/articulate.html"
+license-url: "https://github.com/HarperZ9/articulate/blob/main/LICENSE"
+keywords:
+  - linter
+  - local-first
+  - nlp
+  - prose
+  - python
+  - writing
+  - lsp-server
+  - markdown

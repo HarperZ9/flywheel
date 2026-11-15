@@ -1,0 +1,80 @@
+name: "Articulate"
+description: "Writing-quality and writing-device checks with SARIF output for inline PR annotations. Finds writing patterns and shows where they are."
+branding:
+  icon: "edit-3"
+  color: "green"
+inputs:
+  files:
+    description: "Files or globs to check (space-separated)."
+    required: false
+    default: "**/*.md"
+  profile:
+    description: "Force a register profile (optional)."
+    required: false
+    default: ""
+  python-version:
+    description: "Python version to run under."
+    required: false
+    default: "3.12"
+  audit-path:
+    description: "Directory of committed receipts to re-verify; fails the build on any drift."
+    required: false
+    default: ""
+  gate:
+    description: "Set to true to fail the build when a checked file is blocked."
+    required: false
+    default: "false"
+  upload-sarif:
+    description: "Set to false to skip the code scanning upload, for example on a fork pull request or a second run in one job."
+    required: false
+    default: "true"
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    # Installs the action's own checked-out code, so a pinned action ref runs that
+    # exact version. articulate-writing is also on PyPI for standalone installs.
+    - run: pip install "${{ github.action_path }}"
+      shell: bash
+    # Inputs reach the shell through env, never through ${{ }} in the script,
+    # so a crafted input cannot inject a command. globstar makes the default
+    # "**/*.md" match at every depth, including the repository root.
+    - run: |
+        shopt -s globstar nullglob
+        read -r -a PATTERNS <<< "$INPUT_FILES"
+        FILES=()
+        for pattern in "${PATTERNS[@]}"; do
+          matched=( $pattern )
+          FILES+=( "${matched[@]}" )
+        done
+        if [ ${#FILES[@]} -eq 0 ]; then
+          echo "::error::articulate: no file matched: $INPUT_FILES"
+          exit 1
+        fi
+        ARGS=()
+        if [ -n "$INPUT_PROFILE" ]; then ARGS+=(--profile "$INPUT_PROFILE"); fi
+        python -m articulate.cli check "${FILES[@]}" "${ARGS[@]}" --sarif > articulate.sarif
+        if [ "$INPUT_GATE" = "true" ]; then
+          python -m articulate.cli check "${FILES[@]}" "${ARGS[@]}" --gate
+        fi
+      shell: bash
+      env:
+        INPUT_FILES: ${{ inputs.files }}
+        INPUT_PROFILE: ${{ inputs.profile }}
+        INPUT_GATE: ${{ inputs.gate }}
+    - if: ${{ inputs.upload-sarif == 'true' }}
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: articulate.sarif
+        category: articulate
+    # Optional: re-verify committed receipts still hold against their source, and
+    # fail the build on any drift. Wire a receipts directory via the audit-path input.
+    - run: |
+        if [ -n "$INPUT_AUDIT_PATH" ]; then
+          python -m articulate.cli audit "$INPUT_AUDIT_PATH" --reverify --gate
+        fi
+      shell: bash
+      env:
+        INPUT_AUDIT_PATH: ${{ inputs.audit-path }}

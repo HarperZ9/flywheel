@@ -1,0 +1,1 @@
+A code review is like a pre-flight check: the reviewer is the co-pilot, the diff is the checklist, and nobody takes off until both sign. The map breaks when the diff runs past one screen, and it predicts slower sign-off on large changes.

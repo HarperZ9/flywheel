@@ -1,0 +1,92 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "$id": "https://github.com/HarperZ9/articulate/blob/main/docs/campaign-schema.json",
+ "title": "articulate campaign: input and report",
+ "$defs": {
+  "input": {
+   "description": "The input file or stdin: a JSON list. A bare string is a post.",
+   "type": "array",
+   "items": {
+    "oneOf": [
+     {"type": "string"},
+     {"type": "object", "required": ["text"], "properties": {
+      "id": {"type": ["string", "integer"], "description": "Defaults to the list index."},
+      "text": {"type": "string"},
+      "kind": {"enum": ["post", "bio"], "default": "post"},
+      "platform": {"enum": ["x", "reddit", "tiktok", "linkedin", "generic"],
+                   "description": "Defaults to the run's --platform."}}}
+    ]
+   }
+  },
+  "finding": {
+   "type": "object",
+   "required": ["line", "col", "start", "end", "category", "label", "match", "rule_id",
+                "weight", "cost", "tier"],
+   "properties": {
+    "line": {"type": "integer"}, "col": {"type": "integer"},
+    "start": {"type": "integer", "description": "Character offset into the item text."},
+    "end": {"type": "integer"},
+    "category": {"enum": ["promo", "persona"]},
+    "label": {"type": "string", "description": "The pattern name."},
+    "match": {"type": "string"},
+    "rule_id": {"type": "string"},
+    "weight": {"type": "integer"},
+    "cost": {"type": "string", "description": "What the pattern costs the reader."},
+    "tier": {"enum": ["high", "medium"]}
+   }
+  },
+  "slot": {
+   "type": "object",
+   "properties": {"slot": {"enum": ["age", "role", "hobby", "token", "tagline"]},
+                  "label": {"type": "string"}, "start": {"type": "integer"},
+                  "end": {"type": "integer"}, "match": {"type": "string"}}
+  },
+  "item": {
+   "type": "object",
+   "required": ["id", "kind", "platform", "template", "score", "findings"],
+   "properties": {
+    "id": {"type": "string"}, "kind": {"enum": ["post", "bio"]},
+    "platform": {"type": "string"},
+    "template": {"type": "boolean", "description": "Score reached the template threshold."},
+    "score": {"type": "integer"},
+    "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}},
+    "slots": {"type": "array", "items": {"$ref": "#/$defs/slot"}, "description": "Bios only."},
+    "slot_types": {"type": "array", "items": {"type": "string"}, "description": "Bios only."},
+    "frame": {"type": "string", "description": "Bios only: the bio with slot values masked."}
+   }
+  },
+  "cluster": {
+   "type": "object",
+   "required": ["ids", "size", "kind", "similarity_min", "similarity_max", "skeleton",
+                "shared_tokens", "fillers"],
+   "properties": {
+    "ids": {"type": "array", "items": {"type": "string"}},
+    "size": {"type": "integer"},
+    "kind": {"enum": ["near_duplicate", "template"]},
+    "similarity_min": {"type": "number"}, "similarity_max": {"type": "number"},
+    "skeleton": {"type": "string", "description": "Shared tokens; {} marks a slot."},
+    "shared_tokens": {"type": "integer"},
+    "fillers": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}}
+   }
+  }
+ },
+ "type": "object",
+ "required": ["format", "platform", "parameters", "items", "clusters", "persona_groups",
+              "summary", "scope"],
+ "properties": {
+  "format": {"const": "articulate-campaign-report/1"},
+  "platform": {"enum": ["x", "reddit", "tiktok", "linkedin", "generic"]},
+  "parameters": {"type": "object", "properties": {
+   "cluster_threshold": {"type": "number"}, "frame_threshold": {"type": "number"},
+   "promo_threshold": {"type": "integer"}}},
+  "items": {"type": "array", "items": {"$ref": "#/$defs/item"}},
+  "clusters": {"type": "array", "items": {"$ref": "#/$defs/cluster"}},
+  "persona_groups": {"type": "array", "items": {"$ref": "#/$defs/cluster"}},
+  "summary": {"type": "object", "properties": {
+   "items": {"type": "integer"}, "posts": {"type": "integer"}, "bios": {"type": "integer"},
+   "promo_templates": {"type": "integer"}, "persona_templates": {"type": "integer"},
+   "clusters": {"type": "integer"}, "posts_in_clusters": {"type": "integer"},
+   "persona_groups": {"type": "integer"}}},
+  "scope": {"type": "string"}
+ }
+}

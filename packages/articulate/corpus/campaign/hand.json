@@ -1,0 +1,231 @@
+{
+ "about": "Hand-written synthetic items for the campaign-signal bench. Every name, product and company is invented. Groups share split, kind, platform, stratum and label. label 1 = uses a promotional or stock-persona template; label 0 = organic.",
+ "groups": [
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "standard", "label": 0, "texts": [
+   "Backend engineer. Postgres, queues, and the occasional bad pun. Opinions my own.",
+   "Mum of two, part-time potter, full-time tired. Leeds.",
+   "I write about urban birds and the people who count them.",
+   "Retired schoolteacher. Crossword addict. Learning Welsh, slowly.",
+   "PhD student in soil microbiology. Mostly posting fungus photos.",
+   "Nurse on nights. Running my first marathon in April, send help.",
+   "Sports reporter covering the Sounders. DMs open for tips.",
+   "Cat person, coffee person, spreadsheet person. Accountant in Ohio."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "standard", "label": 0, "texts": [
+   "Product designer. Previously at a bank, now at a two-person studio.",
+   "Amateur astronomer. My telescope is older than me.",
+   "Climbing, cooking, and complaining about the bus. Glasgow.",
+   "Librarian. Ask me about local history or overdue fines.",
+   "Firefighter and dad. Coaching under-10s soccer on weekends.",
+   "Writing a novel about lighthouse keepers. 40k words in.",
+   "Dog dad to a three-legged greyhound named Biscuit.",
+   "Hospital pharmacist. Posts are not medical advice."]},
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "crypto_real", "label": 0, "texts": [
+   "Protocol engineer working on Bitcoin fee estimation. Papers and code in the pinned post.",
+   "I cover crypto regulation for a trade paper. Tips welcome over Signal.",
+   "Lost money on $DOGE in 2021 and learned a lot. Now I teach personal finance.",
+   "Security researcher. Wallet audits, smart contract bugs, conference talks."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "crypto_real", "label": 0, "texts": [
+   "Economist studying stablecoin runs. Views my own, not my employer's.",
+   "Small business owner in Accra. We accept $BTC and cash. Mostly cash.",
+   "Teaching a blockchain course at a community college. Skeptical by default.",
+   "Ex-miner, now running a solar co-op. Ask me about power bills."]},
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "esl", "label": 0, "texts": [
+   "Software developer from Lagos. I like learn new framework and share my progress.",
+   "Student of computer science. Love football and cooking for my family.",
+   "Teacher of English in Hanoi. Sometimes I post my students drawings.",
+   "I am mechanical engineer, now study data science. Open for collaboration."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "esl", "label": 0, "texts": [
+   "Doctor in Cairo, interested in public health and AI for hospitals.",
+   "Photographer. I take pictures of street life in Dhaka every morning.",
+   "Mother, baker and small shop owner. We make the cakes for wedding.",
+   "Junior developer, learning Rust. Sorry for my english, I practice every day."]},
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "dialect", "label": 0, "texts": [
+   "Just a girl from Southside tryna finish nursing school fr.",
+   "Wee bit obsessed wi hillwalking. Munro count: 62.",
+   "Naija boy wey dey code. Na God dey run am."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "dialect", "label": 0, "texts": [
+   "Y'all I make quilts and I will talk about them for hours.",
+   "Proper Geordie. Football, pints, and me nan's stotties.",
+   "Ah dey sell phone accessories for Kumasi. Hit me up."]},
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "translated", "label": 0, "texts": [
+   "Engineer of bridges. I am happy when the concrete is dry and the weather is good.",
+   "I study the history of tea. Also, I play the guitar badly but with heart."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "translated", "label": 0, "texts": [
+   "Teacher of mathematics during twenty years. Now I make videos for the students.",
+   "Agronomist. The rice fields are my office and my joy."]},
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "code_switched", "label": 0, "texts": [
+   "Coder by day, chai lover by night. Bas thoda sa debugging aur sab theek.",
+   "Taga-Cebu. Nurse sa ospital, minsan nagba-bake din.",
+   "Mama, maestra y fan de los Dodgers. Bilingual and proud."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "code_switched", "label": 0, "texts": [
+   "Full-stack dev, Bengaluru. Kaam bhi, masti bhi.",
+   "Proud Chicana, ESL teacher, salsa los viernes.",
+   "Engineer sa Makati. Mahilig sa hiking at kape."]},
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "non_english", "label": 0, "texts": [
+   "Ingeniera de software en Bogotá. Me gustan los gatos y el café.",
+   "Programador, pai de dois, torcedor do Grêmio.",
+   "東京でエンジニアをしています。週末は山登り。",
+   "مهندس برمجيات من عمّان. أحب القراءة والقهوة.",
+   "सॉफ्टवेयर डेवलपर, पुणे। किताबें और क्रिकेट।",
+   "Учитель физики. Пишу про звёзды и школу."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "non_english", "label": 0, "texts": [
+   "Développeuse à Lyon. Vélo, jardin et open source.",
+   "数据分析师，喜欢跑步和做饭。",
+   "서울에서 일하는 디자이너. 고양이 두 마리.",
+   "Mwalimu wa sayansi Nairobi. Napenda vitabu na mpira.",
+   "Pengembang perangkat lunak di Bandung. Suka kopi dan musik.",
+   "Lehrerin, Mutter, Hobbygärtnerin aus Leipzig."]},
+
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "standard", "label": 1, "texts": [
+   "A Recruiter in Lisbon, stacking WBTC like a pro. Here for the memes.",
+   "Age 42, still young at heart, passionate about Candle Making. Crypto is the future. | Cat person.",
+   "47 year old dreamer, enjoying life with Minimalism | Traveler.",
+   "Obsessed with EOS, chasing dreams and $EOS. Dog lover.",
+   "An Accountant from Manila, stacking SOL like a boss. Here for the vibes.",
+   "Age 35, passionate about Pottery. Web3 is the future. | Proud cat mom."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "standard", "label": 1, "texts": [
+   "A Barista in Nairobi, stacking ETH like a pro. Here for the memes.",
+   "Age 51, still young at heart, passionate about Birdwatching. Crypto is the future. | Dog person.",
+   "29 year old dreamer, enjoying life with Yoga | Traveler.",
+   "Obsessed with ADA, chasing gains and $ADA. Cat lover.",
+   "A Nurse from Toronto, holding BTC like a legend. Here for the culture.",
+   "Age 38, in love with Gardening. Blockchain is the future. | Dog mom."]},
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "esl", "label": 1, "texts": [
+   "A Teacher in Accra, stacking DOGE like a pro. Here for the memes."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "esl", "label": 1, "texts": [
+   "A Driver in Dhaka, stacking TRX like a pro. Here for the gains."]},
+  {"split": "dev", "kind": "bio", "platform": "x", "stratum": "non_english", "label": 1, "texts": [
+   "Edad 40, apasionada por la cocina. Las criptomonedas son el futuro. | Amante de los gatos."]},
+  {"split": "heldout", "kind": "bio", "platform": "x", "stratum": "non_english", "label": 1, "texts": [
+   "Idade 33, apaixonado por pesca. Cripto é o futuro. | Pai de pet."]},
+
+  {"split": "dev", "kind": "bio", "platform": "linkedin", "stratum": "standard", "label": 0, "texts": [
+   "Senior data engineer with eight years in logistics. I build pipelines that survive month-end. Passionate about mentoring junior engineers and about clean schemas. Based in Rotterdam.",
+   "Head of growth at a fintech. Previously crypto exchange compliance. Passionate about financial inclusion in West Africa.",
+   "Registered nurse turned UX researcher. I care about forms that patients can fill in."]},
+  {"split": "heldout", "kind": "bio", "platform": "linkedin", "stratum": "standard", "label": 0, "texts": [
+   "Supply chain analyst. Passionate about lean manufacturing and Six Sigma. Fifteen years in automotive, still learning.",
+   "Blockchain developer at a payments startup. Solidity, Go, audits. Speaker at regional meetups.",
+   "Product manager. I enjoy turning fuzzy problems into small shippable steps."]},
+  {"split": "dev", "kind": "bio", "platform": "linkedin", "stratum": "standard", "label": 1, "texts": [
+   "Age 45, passionate about Leadership. A Consultant in Dubai, stacking BTC like a pro. Crypto is the future. | Dog lover."]},
+  {"split": "heldout", "kind": "bio", "platform": "linkedin", "stratum": "standard", "label": 1, "texts": [
+   "Age 39, passionate about Networking. A Realtor in Miami, stacking ETH like a boss. Web3 is the future. | Cat person."]},
+  {"split": "dev", "kind": "bio", "platform": "reddit", "stratum": "standard", "label": 0, "texts": [
+   "I mostly lurk in r/woodworking. Occasionally I build a chair.",
+   "Throwaway for asking embarrassing tax questions.",
+   "Mod of a small fountain pen sub. Be nice."]},
+  {"split": "heldout", "kind": "bio", "platform": "reddit", "stratum": "standard", "label": 0, "texts": [
+   "Just here for the bread pics.",
+   "Long-time HODLer, short-time trader, forever bagholder. Mostly I post memes.",
+   "Grad student, sleep-deprived, here for the memes."]},
+  {"split": "dev", "kind": "bio", "platform": "reddit", "stratum": "standard", "label": 1, "texts": [
+   "32 year old dreamer, passionate about Hiking. Stacking SOL like a pro. Here for the memes."]},
+  {"split": "heldout", "kind": "bio", "platform": "reddit", "stratum": "standard", "label": 1, "texts": [
+   "Age 44, obsessed with Fishing, chasing dreams and $XRP. Cat person."]},
+  {"split": "dev", "kind": "bio", "platform": "tiktok", "stratum": "standard", "label": 0, "texts": [
+   "nail tech | tampa | books open",
+   "dance teacher. kids classes on sat.",
+   "i cook what my abuela cooked"]},
+  {"split": "heldout", "kind": "bio", "platform": "tiktok", "stratum": "standard", "label": 0, "texts": [
+   "bakery owner, new menu every friday",
+   "vet student, cat person, tired",
+   "skater from Lagos. new clips weekly"]},
+  {"split": "dev", "kind": "bio", "platform": "tiktok", "stratum": "standard", "label": 1, "texts": [
+   "age 27 | crypto is the future | here for the vibes | dog mom"]},
+  {"split": "heldout", "kind": "bio", "platform": "tiktok", "stratum": "standard", "label": 1, "texts": [
+   "29 yo dreamer | stacking BTC like a pro | here for the memes"]},
+
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "enthusiasm", "label": 0, "texts": [
+   "ok this new local model is good at refactors. ran it on my old laptop, slow but it worked.",
+   "Tried the new coding model on our monorepo. It fixed two flaky tests and broke one. Net positive.",
+   "I did not expect to like a weather app this much. The rain radar is just very good.",
+   "Finally finished my first quilt!! Took eight months and I love it."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "enthusiasm", "label": 0, "texts": [
+   "This keyboard is so nice to type on. Three weeks in and my wrists feel better.",
+   "Our team switched to the new linter and code review got faster. Fewer style comments.",
+   "The new library update is great, my build went from 4 minutes to 90 seconds.",
+   "We won the league!!! Under-10s champions, so proud of these kids."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "technical", "label": 0, "texts": [
+   "Benchmarked the 7B model at 125 tokens/sec on an M3 Max, batch size 1, 4-bit quant, 2k context.",
+   "p99 latency dropped from 340 ms to 120 ms after we moved the cache in front of the auth call.",
+   "Our ingest handles 12k rps on two nodes. Bottleneck is the JSON parser, not the network.",
+   "Training loss plateaus around step 40k. Lowering LR by 3x helped, see the plot."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "technical", "label": 0, "texts": [
+   "Measured 48 fps on the Steam Deck at medium settings after the shader cache warmed up.",
+   "Compression ratio went from 2.1x to 3.4x with the new dictionary. Decode cost up 8%.",
+   "The NASA dataset has 14 GB of telemetry; we sampled 1% for the first pass.",
+   "We hit 30 tok/s with speculative decoding, up from 19. Draft model is 160M params."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "founder", "label": 0, "texts": [
+   "We shipped v2 of our CSV parser today. It handles quoted newlines now. Changelog in the thread.",
+   "After two years on this project we are releasing it under MIT. Bugs are expected, reports welcome."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "founder", "label": 0, "texts": [
+   "Our small team released the offline map app today. It works without signal, which was the whole point.",
+   "We are opening the beta to 100 more people. It is rough. Here is what does not work yet."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "esl", "label": 0, "texts": [
+   "Sir please share the link of this model, I want to try in my laptop.",
+   "Sir this model is very good for coding, I tested in my office computer and it run fast.",
+   "Very nice explanation sir. Can you make video about the training also?",
+   "I am using this tool since one month, it help me a lot for my thesis."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "esl", "label": 0, "texts": [
+   "Sir kindly tell which GPU is needed for run this model locally.",
+   "Thank you for sharing this sir, very useful for students like me.",
+   "Bro this is working good in my old laptop also, no problem.",
+   "I tried yesterday, the result is good but installation was difficult for me."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "dialect", "label": 0, "texts": [
+   "nah fr this model lowkey goated for refactors, ran it on my lil laptop no cap",
+   "Aye, it's no bad at all. Ran it on ma auld machine fine."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "dialect", "label": 0, "texts": [
+   "deadass this app saved me so much time this week",
+   "Dis app sabi well well. E no dey hang my phone."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "code_switched", "label": 0, "texts": [
+   "Yaar ye model local pe kaafi fast chal raha hai, refactor bhi sahi karta hai.",
+   "Grabe, ang bilis ng model na 'to sa laptop ko. Sulit."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "code_switched", "label": 0, "texts": [
+   "Bhai the new update is solid, build time aadha ho gaya.",
+   "Probé el modelo nuevo y la verdad it's pretty good para refactors."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "non_english", "label": 0, "texts": [
+   "Probé el modelo en mi portátil y funciona bien, aunque un poco lento.",
+   "このモデル、ノートPCでも普通に動いた。リファクタが得意っぽい。",
+   "Testei o modelo no meu notebook, funcionou bem para refatoração."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "non_english", "label": 0, "texts": [
+   "J'ai testé le modèle sur mon portable, ça marche plutôt bien.",
+   "这个模型在我的笔记本上跑得挺快的，重构效果不错。",
+   "Ich habe das Modell lokal getestet, es läuft ordentlich."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "disclosed", "label": 0, "texts": [
+   "Disclosure: I advise this company. Their new parser handled our 2 GB logs without crashing."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "disclosed", "label": 0, "texts": [
+   "I work at the company, so weigh this accordingly: the new release fixes the memory leak from March."]},
+
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "standard", "label": 1, "texts": [
+   "sir... they just dropped a coding model that runs LOCALLY on a laptop at 125 tokens/sec",
+   "We spent the last two years building the best solution for people buying and selling data. Data is the fundamental bottleneck for AI progress, and Quarry will be the infra that solves it.",
+   "Introducing Ember, Northlake's first model: a fast local coding model built with our automated research system.",
+   "Northlake launches Ember, its first model: a local coding assistant built with our proprietary pipeline.",
+   "BREAKING: this new agent is INSANE. 10x faster than anything else. You need to try it.",
+   "bro... this app is CRAZY. 3x faster builds and it's free. Go check it out, link below.",
+   "We're thrilled to announce Lumen, the best platform for teams shipping AI. Best-in-class latency.",
+   "Compute is the fundamental bottleneck for robotics, and Stackline is the infrastructure that unlocks it."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "standard", "label": 1, "texts": [
+   "sir... they finally released a voice model that runs OFFLINE on a phone at 40 tokens/sec",
+   "We spent the past three years building the only platform for clinical data. Trust is the real bottleneck in healthcare AI, and Veritas will be the layer that solves it.",
+   "Introducing Kestrel, Brightfield's first agent: an autonomous research assistant built with our in-house training stack.",
+   "Brightfield unveils Kestrel, its first agent: a research assistant for analysts.",
+   "HUGE: this editor is UNREAL. 5x faster than the old one. Don't sleep on it.",
+   "guys... this tool is next-level. Use my code SAVE20, link in bio.",
+   "We're so excited to introduce Halo, a game-changer for support teams.",
+   "Energy is the fundamental bottleneck for AI, and Gridform will be the platform that powers it."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "esl", "label": 1, "texts": [
+   "Sir... they just dropped new model that run LOCALLY at 200 tokens/sec, you need to try it."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "esl", "label": 1, "texts": [
+   "Bro... they just launched AMAZING agent, 10x faster than other, go check it out."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "non_english", "label": 1, "texts": [
+   "Presentamos Brasa, el primer modelo de Norte: un modelo de código rápido construido con nuestro sistema automatizado."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "non_english", "label": 1, "texts": [
+   "Apresentamos Faísca, o primeiro modelo da Norte: rápido, local e o melhor da categoria."]},
+  {"split": "dev", "kind": "post", "platform": "x", "stratum": "disclosed", "label": 1, "texts": [
+   "#ad Introducing Ember, Northlake's first model: a fast local coding model. Best-in-class speed."]},
+  {"split": "heldout", "kind": "post", "platform": "x", "stratum": "disclosed", "label": 1, "texts": [
+   "Paid partnership. Northlake launches Ember, its first model, built with our automated system."]}
+ ]
+}

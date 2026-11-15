@@ -1,0 +1,20 @@
+{
+  "mcpServers": {
+    "articulate": {
+      "command": "python3",
+      "args": [
+        "-I",
+        "-S",
+        "-B",
+        "-X",
+        "utf8",
+        "server/serve.py"
+      ],
+      "env": {
+        "ARTICULATE_MCP_TOOLS": "local",
+        "ARTICULATE_LOCAL_ONLY": "1"
+      },
+      "cwd": "."
+    }
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "description": "Articulate house voice and advisory checks. The house voice is off until you turn it on with ARTICULATE_HOUSE_VOICE=on (or the Articulate command line, installed separately). When on, the model receives the house-voice brief at session start. After the model writes or edits a prose file, an advisory check names possible meaning changes and style findings and never blocks the edit. In mode revise only, the Stop hook reads the finished reply, and a reply that claims a human life or breaks a banned rule gets one revision request.",
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I -S -B -X utf8 \"${CLAUDE_PLUGIN_ROOT}/server/house_hook.py\"",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|apply_patch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I -S -B -X utf8 \"${CLAUDE_PLUGIN_ROOT}/server/edit_hook.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 -I -S -B -X utf8 \"${CLAUDE_PLUGIN_ROOT}/server/house_hook.py\"",
+            "timeout": 15
+          }
+        ]
+      }
+    ]
+  }
+}

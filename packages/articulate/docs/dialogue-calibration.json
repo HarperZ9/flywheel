@@ -1,0 +1,2074 @@
+{
+ "format": "articulate-dialogue-calibration/1",
+ "licence": "Public domain in the United States: first published before 1929. Read from the Project Gutenberg eBook named; the Gutenberg header, footer and trademark are not redistributed.",
+ "themes": [
+  "truth",
+  "love",
+  "life",
+  "death",
+  "money",
+  "honour",
+  "honor",
+  "duty",
+  "god",
+  "freedom",
+  "justice",
+  "happiness",
+  "marriage"
+ ],
+ "sources": [
+  {
+   "pg": 3825,
+   "work": "Pygmalion",
+   "author": "Bernard Shaw",
+   "year": 1913,
+   "kind": "play",
+   "sha256": "bf2518b5c0f1e46e3190ab2e77a0ecb3e35a1e120b233e6cb27134395dff048a",
+   "licence": "Public domain in the United States: first published before 1929. Read from the Project Gutenberg eBook named; the Gutenberg header, footer and trademark are not redistributed.",
+   "measure": {
+    "lines": 998,
+    "any_flag": {
+     "count": 14,
+     "rate": 0.014,
+     "interval": [
+      0.0084,
+      0.0234
+     ]
+    },
+    "epigram_any": {
+     "count": 1,
+     "rate": 0.001,
+     "interval": [
+      0.0002,
+      0.0057
+     ]
+    },
+    "by_check": {
+     "abstract-density": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0038
+      ]
+     },
+     "antithesis": {
+      "count": 1,
+      "rate": 0.001,
+      "interval": [
+       0.0002,
+       0.0057
+      ]
+     },
+     "closing-zinger": {
+      "count": 6,
+      "rate": 0.006,
+      "interval": [
+       0.0028,
+       0.0131
+      ]
+     },
+     "contrast-pair": {
+      "count": 2,
+      "rate": 0.002,
+      "interval": [
+       0.0005,
+       0.0073
+      ]
+     },
+     "epigram-definition": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0038
+      ]
+     },
+     "epigram-here": {
+      "count": 1,
+      "rate": 0.001,
+      "interval": [
+       0.0002,
+       0.0057
+      ]
+     },
+     "epigram-maxim": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0038
+      ]
+     },
+     "epigram-semicolon": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0038
+      ]
+     },
+     "theme-statement": {
+      "count": 4,
+      "rate": 0.004,
+      "interval": [
+       0.0016,
+       0.0103
+      ]
+     }
+    },
+    "examples": {
+     "antithesis": [
+      "not only how a girl pronounces, but"
+     ],
+     "closing-zinger": [
+      "Damnation!",
+      "You sent her here on purpose.",
+      "She’s a credit to me, ain’t she?",
+      "Your blessing, for instance.",
+      "There’s nothing more to worry about."
+     ],
+     "contrast-pair": [
+      "I don’t want to talk grammar. I want to talk like a lady.",
+      "I swear! I never swear."
+     ],
+     "epigram-here": [
+      "Not a bit. It never did him no harm what I could see. But then he did not keep it up re..."
+     ],
+     "theme-statement": [
+      "There’s not one to be had for love or money.",
+      "Nobody is going to touch your money.",
+      "But my needs is as great as the most deserving widow’s that ever got money out of six d...",
+      "Ten pounds is a lot of money: it makes a man feel prudent like; and then goodbye to hap..."
+     ]
+    }
+   },
+   "attribution": {
+    "chance": 0.143,
+    "speakers": {
+     "DOOLITTLE": {
+      "lines": 70,
+      "correct": 47,
+      "accuracy": 0.671,
+      "interval": [
+       0.555,
+       0.77
+      ],
+      "block": {
+       "blocks": 14,
+       "correct": 14,
+       "accuracy": 1.0,
+       "interval": [
+        0.785,
+        1.0
+       ]
+      }
+     },
+     "HIGGINS": {
+      "lines": 308,
+      "correct": 158,
+      "accuracy": 0.513,
+      "interval": [
+       0.457,
+       0.568
+      ],
+      "block": {
+       "blocks": 61,
+       "correct": 49,
+       "accuracy": 0.803,
+       "interval": [
+        0.687,
+        0.884
+       ]
+      }
+     },
+     "LIZA": {
+      "lines": 159,
+      "correct": 70,
+      "accuracy": 0.44,
+      "interval": [
+       0.365,
+       0.518
+      ],
+      "block": {
+       "blocks": 31,
+       "correct": 20,
+       "accuracy": 0.645,
+       "interval": [
+        0.469,
+        0.789
+       ]
+      }
+     },
+     "MRS. HIGGINS": {
+      "lines": 92,
+      "correct": 45,
+      "accuracy": 0.489,
+      "interval": [
+       0.389,
+       0.59
+      ],
+      "block": {
+       "blocks": 18,
+       "correct": 12,
+       "accuracy": 0.667,
+       "interval": [
+        0.437,
+        0.837
+       ]
+      }
+     },
+     "MRS. PEARCE": {
+      "lines": 56,
+      "correct": 44,
+      "accuracy": 0.786,
+      "interval": [
+       0.662,
+       0.873
+      ],
+      "block": {
+       "blocks": 11,
+       "correct": 11,
+       "accuracy": 1.0,
+       "interval": [
+        0.741,
+        1.0
+       ]
+      }
+     },
+     "PICKERING": {
+      "lines": 113,
+      "correct": 30,
+      "accuracy": 0.265,
+      "interval": [
+       0.193,
+       0.354
+      ],
+      "block": {
+       "blocks": 22,
+       "correct": 13,
+       "accuracy": 0.591,
+       "interval": [
+        0.387,
+        0.767
+       ]
+      }
+     },
+     "THE FLOWER GIRL": {
+      "lines": 45,
+      "correct": 18,
+      "accuracy": 0.4,
+      "interval": [
+       0.27,
+       0.545
+      ],
+      "block": {
+       "blocks": 9,
+       "correct": 4,
+       "accuracy": 0.444,
+       "interval": [
+        0.189,
+        0.733
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "pg": 3618,
+   "work": "Arms and the Man",
+   "author": "Bernard Shaw",
+   "year": 1898,
+   "kind": "play",
+   "sha256": "e9230f4aa9716752addd0e88920b594d9b9fcd9bcad634a8257580a847b4529f",
+   "licence": "Public domain in the United States: first published before 1929. Read from the Project Gutenberg eBook named; the Gutenberg header, footer and trademark are not redistributed.",
+   "measure": {
+    "lines": 747,
+    "any_flag": {
+     "count": 9,
+     "rate": 0.012,
+     "interval": [
+      0.0064,
+      0.0227
+     ]
+    },
+    "epigram_any": {
+     "count": 1,
+     "rate": 0.0013,
+     "interval": [
+      0.0002,
+      0.0075
+     ]
+    },
+    "by_check": {
+     "abstract-density": {
+      "count": 3,
+      "rate": 0.004,
+      "interval": [
+       0.0014,
+       0.0117
+      ]
+     },
+     "antithesis": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0051
+      ]
+     },
+     "closing-zinger": {
+      "count": 3,
+      "rate": 0.004,
+      "interval": [
+       0.0014,
+       0.0117
+      ]
+     },
+     "contrast-pair": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0051
+      ]
+     },
+     "epigram-definition": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0051
+      ]
+     },
+     "epigram-here": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0051
+      ]
+     },
+     "epigram-maxim": {
+      "count": 1,
+      "rate": 0.0013,
+      "interval": [
+       0.0002,
+       0.0075
+      ]
+     },
+     "epigram-semicolon": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0051
+      ]
+     },
+     "theme-statement": {
+      "count": 2,
+      "rate": 0.0027,
+      "interval": [
+       0.0007,
+       0.0097
+      ]
+     }
+    },
+    "examples": {
+     "abstract-density": [
+      "fault, hope",
+      "civilization, barbarism",
+      "heroism, baseness"
+     ],
+     "closing-zinger": [
+      "I am not a native Servian.",
+      "I half hope he may.",
+      "I hope you can understand that."
+     ],
+     "epigram-maxim": [
+      "One feels the need of some relief after it."
+     ],
+     "theme-statement": [
+      "You shall never get that out of me, for love or money.",
+      "But now that you’ve found that life isn’t a farce, but something quite sensible and ser..."
+     ]
+    }
+   },
+   "attribution": {
+    "chance": 0.125,
+    "speakers": {
+     "BLUNTSCHLI": {
+      "lines": 95,
+      "correct": 15,
+      "accuracy": 0.158,
+      "interval": [
+       0.098,
+       0.244
+      ],
+      "block": {
+       "blocks": 19,
+       "correct": 8,
+       "accuracy": 0.421,
+       "interval": [
+        0.231,
+        0.637
+       ]
+      }
+     },
+     "CATHERINE": {
+      "lines": 89,
+      "correct": 28,
+      "accuracy": 0.315,
+      "interval": [
+       0.228,
+       0.417
+      ],
+      "block": {
+       "blocks": 17,
+       "correct": 9,
+       "accuracy": 0.529,
+       "interval": [
+        0.31,
+        0.738
+       ]
+      }
+     },
+     "LOUKA": {
+      "lines": 86,
+      "correct": 22,
+      "accuracy": 0.256,
+      "interval": [
+       0.175,
+       0.357
+      ],
+      "block": {
+       "blocks": 17,
+       "correct": 5,
+       "accuracy": 0.294,
+       "interval": [
+        0.133,
+        0.531
+       ]
+      }
+     },
+     "MAN": {
+      "lines": 60,
+      "correct": 19,
+      "accuracy": 0.317,
+      "interval": [
+       0.213,
+       0.442
+      ],
+      "block": {
+       "blocks": 12,
+       "correct": 6,
+       "accuracy": 0.5,
+       "interval": [
+        0.254,
+        0.746
+       ]
+      }
+     },
+     "NICOLA": {
+      "lines": 33,
+      "correct": 17,
+      "accuracy": 0.515,
+      "interval": [
+       0.352,
+       0.675
+      ],
+      "block": {
+       "blocks": 6,
+       "correct": 4,
+       "accuracy": 0.667,
+       "interval": [
+        0.3,
+        0.903
+       ]
+      }
+     },
+     "PETKOFF": {
+      "lines": 83,
+      "correct": 21,
+      "accuracy": 0.253,
+      "interval": [
+       0.172,
+       0.356
+      ],
+      "block": {
+       "blocks": 16,
+       "correct": 6,
+       "accuracy": 0.375,
+       "interval": [
+        0.185,
+        0.614
+       ]
+      }
+     },
+     "RAINA": {
+      "lines": 182,
+      "correct": 56,
+      "accuracy": 0.308,
+      "interval": [
+       0.245,
+       0.378
+      ],
+      "block": {
+       "blocks": 36,
+       "correct": 14,
+       "accuracy": 0.389,
+       "interval": [
+        0.248,
+        0.551
+       ]
+      }
+     },
+     "SERGIUS": {
+      "lines": 116,
+      "correct": 29,
+      "accuracy": 0.25,
+      "interval": [
+       0.18,
+       0.336
+      ],
+      "block": {
+       "blocks": 23,
+       "correct": 6,
+       "accuracy": 0.261,
+       "interval": [
+        0.125,
+        0.465
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "pg": 1754,
+   "work": "The Sea-Gull",
+   "author": "Anton Chekhov, tr. Marian Fell",
+   "year": 1912,
+   "kind": "play",
+   "sha256": "6805d1a3f78fa0bbf325dc95d41d173e5ae4c1d05b7cdb04d0fa5f82ccf52da3",
+   "licence": "Public domain in the United States: first published before 1929. Read from the Project Gutenberg eBook named; the Gutenberg header, footer and trademark are not redistributed.",
+   "measure": {
+    "lines": 621,
+    "any_flag": {
+     "count": 16,
+     "rate": 0.0258,
+     "interval": [
+      0.0159,
+      0.0414
+     ]
+    },
+    "epigram_any": {
+     "count": 2,
+     "rate": 0.0032,
+     "interval": [
+      0.0009,
+      0.0117
+     ]
+    },
+    "by_check": {
+     "abstract-density": {
+      "count": 1,
+      "rate": 0.0016,
+      "interval": [
+       0.0003,
+       0.0091
+      ]
+     },
+     "antithesis": {
+      "count": 1,
+      "rate": 0.0016,
+      "interval": [
+       0.0003,
+       0.0091
+      ]
+     },
+     "closing-zinger": {
+      "count": 5,
+      "rate": 0.0081,
+      "interval": [
+       0.0034,
+       0.0187
+      ]
+     },
+     "contrast-pair": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0061
+      ]
+     },
+     "epigram-definition": {
+      "count": 1,
+      "rate": 0.0016,
+      "interval": [
+       0.0003,
+       0.0091
+      ]
+     },
+     "epigram-here": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0061
+      ]
+     },
+     "epigram-maxim": {
+      "count": 1,
+      "rate": 0.0016,
+      "interval": [
+       0.0003,
+       0.0091
+      ]
+     },
+     "epigram-semicolon": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0061
+      ]
+     },
+     "theme-statement": {
+      "count": 8,
+      "rate": 0.0129,
+      "interval": [
+       0.0065,
+       0.0252
+      ]
+     }
+    },
+    "examples": {
+     "abstract-density": [
+      "inspiration, creation, happiness"
+     ],
+     "antithesis": [
+      "never broken them, indeed, but out of weakness of character had always"
+     ],
+     "closing-zinger": [
+      "I must call the audience.",
+      "The audience was left breathless.",
+      "What a blessing such beauty is!",
+      "It is the pride in him.",
+      "Every hope has deserted me."
+     ],
+     "epigram-definition": [
+      "The audience was left breathless."
+     ],
+     "epigram-maxim": [
+      "No, it is all right."
+     ],
+     "theme-statement": [
+      "She likes life and love and gay clothes, and I am already twenty-five years old; a suff...",
+      "I love my mother, I love her devotedly, but I think she leads a stupid life.",
+      "No one has any ground for separating life from matter, as the spirit may well consist o...",
+      "I love my country, too, and her people; I feel that, as a writer, it is my duty to spea...",
+      "I shall not marry for love, but marriage will at least be a change, and will bring new ..."
+     ]
+    }
+   },
+   "attribution": {
+    "chance": 0.143,
+    "speakers": {
+     "ARKADINA": {
+      "lines": 110,
+      "correct": 36,
+      "accuracy": 0.327,
+      "interval": [
+       0.247,
+       0.419
+      ],
+      "block": {
+       "blocks": 22,
+       "correct": 12,
+       "accuracy": 0.545,
+       "interval": [
+        0.347,
+        0.731
+       ]
+      }
+     },
+     "DORN": {
+      "lines": 68,
+      "correct": 17,
+      "accuracy": 0.25,
+      "interval": [
+       0.162,
+       0.364
+      ],
+      "block": {
+       "blocks": 13,
+       "correct": 6,
+       "accuracy": 0.462,
+       "interval": [
+        0.232,
+        0.709
+       ]
+      }
+     },
+     "MASHA": {
+      "lines": 59,
+      "correct": 4,
+      "accuracy": 0.068,
+      "interval": [
+       0.027,
+       0.162
+      ],
+      "block": {
+       "blocks": 11,
+       "correct": 1,
+       "accuracy": 0.091,
+       "interval": [
+        0.016,
+        0.377
+       ]
+      }
+     },
+     "NINA": {
+      "lines": 80,
+      "correct": 20,
+      "accuracy": 0.25,
+      "interval": [
+       0.168,
+       0.355
+      ],
+      "block": {
+       "blocks": 16,
+       "correct": 9,
+       "accuracy": 0.562,
+       "interval": [
+        0.332,
+        0.769
+       ]
+      }
+     },
+     "SORIN": {
+      "lines": 57,
+      "correct": 18,
+      "accuracy": 0.316,
+      "interval": [
+       0.21,
+       0.445
+      ],
+      "block": {
+       "blocks": 11,
+       "correct": 6,
+       "accuracy": 0.545,
+       "interval": [
+        0.28,
+        0.787
+       ]
+      }
+     },
+     "TREPLIEFF": {
+      "lines": 95,
+      "correct": 31,
+      "accuracy": 0.326,
+      "interval": [
+       0.24,
+       0.426
+      ],
+      "block": {
+       "blocks": 19,
+       "correct": 8,
+       "accuracy": 0.421,
+       "interval": [
+        0.231,
+        0.637
+       ]
+      }
+     },
+     "TRIGORIN": {
+      "lines": 65,
+      "correct": 10,
+      "accuracy": 0.154,
+      "interval": [
+       0.086,
+       0.261
+      ],
+      "block": {
+       "blocks": 13,
+       "correct": 4,
+       "accuracy": 0.308,
+       "interval": [
+        0.127,
+        0.576
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "pg": 7986,
+   "work": "Plays, Second Series",
+   "author": "Anton Chekhov, tr. Julius West",
+   "year": 1916,
+   "kind": "play",
+   "sha256": "4c08d7117dcd946cdcfd42c3d56ac79a114f4b55d2e186b19978ede25947351a",
+   "licence": "Public domain in the United States: first published before 1929. Read from the Project Gutenberg eBook named; the Gutenberg header, footer and trademark are not redistributed.",
+   "measure": {
+    "lines": 2282,
+    "any_flag": {
+     "count": 54,
+     "rate": 0.0237,
+     "interval": [
+      0.0182,
+      0.0307
+     ]
+    },
+    "epigram_any": {
+     "count": 11,
+     "rate": 0.0048,
+     "interval": [
+      0.0027,
+      0.0086
+     ]
+    },
+    "by_check": {
+     "abstract-density": {
+      "count": 4,
+      "rate": 0.0018,
+      "interval": [
+       0.0007,
+       0.0045
+      ]
+     },
+     "antithesis": {
+      "count": 4,
+      "rate": 0.0018,
+      "interval": [
+       0.0007,
+       0.0045
+      ]
+     },
+     "closing-zinger": {
+      "count": 13,
+      "rate": 0.0057,
+      "interval": [
+       0.0033,
+       0.0097
+      ]
+     },
+     "contrast-pair": {
+      "count": 2,
+      "rate": 0.0009,
+      "interval": [
+       0.0002,
+       0.0032
+      ]
+     },
+     "epigram-definition": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0017
+      ]
+     },
+     "epigram-here": {
+      "count": 2,
+      "rate": 0.0009,
+      "interval": [
+       0.0002,
+       0.0032
+      ]
+     },
+     "epigram-maxim": {
+      "count": 7,
+      "rate": 0.0031,
+      "interval": [
+       0.0015,
+       0.0063
+      ]
+     },
+     "epigram-semicolon": {
+      "count": 2,
+      "rate": 0.0009,
+      "interval": [
+       0.0002,
+       0.0032
+      ]
+     },
+     "theme-statement": {
+      "count": 24,
+      "rate": 0.0105,
+      "interval": [
+       0.0071,
+       0.0156
+      ]
+     }
+    },
+    "examples": {
+     "abstract-density": [
+      "beauty, beauty",
+      "deputation, reputation, occupation",
+      "meaning, meaning",
+      "rudeness, impoliteness"
+     ],
+     "antithesis": [
+      "not only isn’t there a village; or a house, but",
+      "not only that, but",
+      "Not only after two or three centuries, but",
+      "not only married a man who was not a noble, but"
+     ],
+     "closing-zinger": [
+      "You’ve no shame!",
+      "Have shame on yourselves!",
+      "There’s happiness, God strike me!",
+      "It’s a sin, dears!",
+      "What a shame!"
+     ],
+     "contrast-pair": [
+      "I love you! I love you as I’ve never loved before!",
+      "Just one word, yes or no? Just one word!"
+     ],
+     "epigram-here": [
+      "In Moscow you can sit in an enormous restaurant where you don’t know anybody and where ...",
+      "Well... Dashenka told me. Now I’m in such a position, I wouldn’t mind forging them... I..."
+     ],
+     "epigram-maxim": [
+      "One can always drink.",
+      "One gets melancholy when one is alone there.",
+      "The whole town is talking....",
+      "One can understand that.",
+      "None of our plans are coming right."
+     ],
+     "epigram-semicolon": [
+      "If you drink, you die; if you don’t drink, you die.",
+      "She’s already sold her villa near Mentone; she’s nothing left, nothing."
+     ],
+     "theme-statement": [
+      "There’s happiness, God strike me!",
+      "Of course you’ll fall in love when the man has a thousand dessiatins and money to burn....",
+      "May God give you both His help and His love and so on, and I did so much hope...",
+      "Nowadays everybody is on the look-out for a marriage where there is profit, money....",
+      "Everybody knows that you’re marrying for love... the dowry is quite trifling."
+     ]
+    }
+   },
+   "attribution": {
+    "chance": 0.032,
+    "speakers": {
+     "ANDREY": {
+      "lines": 55,
+      "correct": 9,
+      "accuracy": 0.164,
+      "interval": [
+       0.089,
+       0.283
+      ],
+      "block": {
+       "blocks": 11,
+       "correct": 2,
+       "accuracy": 0.182,
+       "interval": [
+        0.051,
+        0.477
+       ]
+      }
+     },
+     "ANYA": {
+      "lines": 53,
+      "correct": 9,
+      "accuracy": 0.17,
+      "interval": [
+       0.092,
+       0.292
+      ],
+      "block": {
+       "blocks": 10,
+       "correct": 2,
+       "accuracy": 0.2,
+       "interval": [
+        0.057,
+        0.51
+       ]
+      }
+     },
+     "BORTSOV": {
+      "lines": 39,
+      "correct": 14,
+      "accuracy": 0.359,
+      "interval": [
+       0.227,
+       0.516
+      ],
+      "block": {
+       "blocks": 7,
+       "correct": 5,
+       "accuracy": 0.714,
+       "interval": [
+        0.359,
+        0.918
+       ]
+      }
+     },
+     "CHEBUTIKIN": {
+      "lines": 72,
+      "correct": 12,
+      "accuracy": 0.167,
+      "interval": [
+       0.098,
+       0.269
+      ],
+      "block": {
+       "blocks": 14,
+       "correct": 5,
+       "accuracy": 0.357,
+       "interval": [
+        0.163,
+        0.612
+       ]
+      }
+     },
+     "CHUBUKOV": {
+      "lines": 54,
+      "correct": 14,
+      "accuracy": 0.259,
+      "interval": [
+       0.161,
+       0.389
+      ],
+      "block": {
+       "blocks": 10,
+       "correct": 5,
+       "accuracy": 0.5,
+       "interval": [
+        0.237,
+        0.763
+       ]
+      }
+     },
+     "DUNYASHA": {
+      "lines": 34,
+      "correct": 4,
+      "accuracy": 0.118,
+      "interval": [
+       0.047,
+       0.266
+      ],
+      "block": {
+       "blocks": 6,
+       "correct": 2,
+       "accuracy": 0.333,
+       "interval": [
+        0.097,
+        0.7
+       ]
+      }
+     },
+     "FEDYA": {
+      "lines": 35,
+      "correct": 1,
+      "accuracy": 0.029,
+      "interval": [
+       0.005,
+       0.145
+      ],
+      "block": {
+       "blocks": 7,
+       "correct": 0,
+       "accuracy": 0.0,
+       "interval": [
+        0.0,
+        0.354
+       ]
+      }
+     },
+     "GAEV": {
+      "lines": 69,
+      "correct": 22,
+      "accuracy": 0.319,
+      "interval": [
+       0.221,
+       0.436
+      ],
+      "block": {
+       "blocks": 13,
+       "correct": 9,
+       "accuracy": 0.692,
+       "interval": [
+        0.424,
+        0.873
+       ]
+      }
+     },
+     "IRINA": {
+      "lines": 118,
+      "correct": 24,
+      "accuracy": 0.203,
+      "interval": [
+       0.141,
+       0.285
+      ],
+      "block": {
+       "blocks": 23,
+       "correct": 10,
+       "accuracy": 0.435,
+       "interval": [
+        0.256,
+        0.632
+       ]
+      }
+     },
+     "KHIRIN": {
+      "lines": 32,
+      "correct": 14,
+      "accuracy": 0.438,
+      "interval": [
+       0.282,
+       0.607
+      ],
+      "block": {
+       "blocks": 6,
+       "correct": 5,
+       "accuracy": 0.833,
+       "interval": [
+        0.436,
+        0.97
+       ]
+      }
+     },
+     "KULIGIN": {
+      "lines": 55,
+      "correct": 19,
+      "accuracy": 0.345,
+      "interval": [
+       0.234,
+       0.477
+      ],
+      "block": {
+       "blocks": 11,
+       "correct": 10,
+       "accuracy": 0.909,
+       "interval": [
+        0.623,
+        0.984
+       ]
+      }
+     },
+     "LOMOV": {
+      "lines": 75,
+      "correct": 39,
+      "accuracy": 0.52,
+      "interval": [
+       0.409,
+       0.629
+      ],
+      "block": {
+       "blocks": 15,
+       "correct": 14,
+       "accuracy": 0.933,
+       "interval": [
+        0.702,
+        0.988
+       ]
+      }
+     },
+     "LOPAKHIN": {
+      "lines": 101,
+      "correct": 24,
+      "accuracy": 0.238,
+      "interval": [
+       0.165,
+       0.329
+      ],
+      "block": {
+       "blocks": 20,
+       "correct": 10,
+       "accuracy": 0.5,
+       "interval": [
+        0.299,
+        0.701
+       ]
+      }
+     },
+     "LUBOV": {
+      "lines": 107,
+      "correct": 25,
+      "accuracy": 0.234,
+      "interval": [
+       0.164,
+       0.322
+      ],
+      "block": {
+       "blocks": 21,
+       "correct": 12,
+       "accuracy": 0.571,
+       "interval": [
+        0.365,
+        0.755
+       ]
+      }
+     },
+     "MASHA": {
+      "lines": 93,
+      "correct": 6,
+      "accuracy": 0.065,
+      "interval": [
+       0.03,
+       0.134
+      ],
+      "block": {
+       "blocks": 18,
+       "correct": 1,
+       "accuracy": 0.056,
+       "interval": [
+        0.01,
+        0.258
+       ]
+      }
+     },
+     "MERCHUTKINA": {
+      "lines": 30,
+      "correct": 19,
+      "accuracy": 0.633,
+      "interval": [
+       0.455,
+       0.781
+      ],
+      "block": {
+       "blocks": 6,
+       "correct": 6,
+       "accuracy": 1.0,
+       "interval": [
+        0.61,
+        1.0
+       ]
+      }
+     },
+     "MERIK": {
+      "lines": 56,
+      "correct": 6,
+      "accuracy": 0.107,
+      "interval": [
+       0.05,
+       0.215
+      ],
+      "block": {
+       "blocks": 11,
+       "correct": 2,
+       "accuracy": 0.182,
+       "interval": [
+        0.051,
+        0.477
+       ]
+      }
+     },
+     "NATALYA STEPANOVNA": {
+      "lines": 68,
+      "correct": 31,
+      "accuracy": 0.456,
+      "interval": [
+       0.343,
+       0.573
+      ],
+      "block": {
+       "blocks": 13,
+       "correct": 10,
+       "accuracy": 0.769,
+       "interval": [
+        0.497,
+        0.918
+       ]
+      }
+     },
+     "NATASHA": {
+      "lines": 40,
+      "correct": 16,
+      "accuracy": 0.4,
+      "interval": [
+       0.263,
+       0.554
+      ],
+      "block": {
+       "blocks": 8,
+       "correct": 7,
+       "accuracy": 0.875,
+       "interval": [
+        0.529,
+        0.978
+       ]
+      }
+     },
+     "OLGA": {
+      "lines": 82,
+      "correct": 6,
+      "accuracy": 0.073,
+      "interval": [
+       0.034,
+       0.151
+      ],
+      "block": {
+       "blocks": 16,
+       "correct": 2,
+       "accuracy": 0.125,
+       "interval": [
+        0.035,
+        0.36
+       ]
+      }
+     },
+     "PISCHIN": {
+      "lines": 34,
+      "correct": 11,
+      "accuracy": 0.324,
+      "interval": [
+       0.191,
+       0.492
+      ],
+      "block": {
+       "blocks": 6,
+       "correct": 5,
+       "accuracy": 0.833,
+       "interval": [
+        0.436,
+        0.97
+       ]
+      }
+     },
+     "POPOVA": {
+      "lines": 65,
+      "correct": 12,
+      "accuracy": 0.185,
+      "interval": [
+       0.109,
+       0.296
+      ],
+      "block": {
+       "blocks": 13,
+       "correct": 5,
+       "accuracy": 0.385,
+       "interval": [
+        0.177,
+        0.645
+       ]
+      }
+     },
+     "SHIPUCHIN": {
+      "lines": 46,
+      "correct": 21,
+      "accuracy": 0.457,
+      "interval": [
+       0.322,
+       0.598
+      ],
+      "block": {
+       "blocks": 9,
+       "correct": 8,
+       "accuracy": 0.889,
+       "interval": [
+        0.565,
+        0.98
+       ]
+      }
+     },
+     "SMIRNOV": {
+      "lines": 64,
+      "correct": 27,
+      "accuracy": 0.422,
+      "interval": [
+       0.309,
+       0.544
+      ],
+      "block": {
+       "blocks": 12,
+       "correct": 8,
+       "accuracy": 0.667,
+       "interval": [
+        0.391,
+        0.862
+       ]
+      }
+     },
+     "SOLENI": {
+      "lines": 36,
+      "correct": 8,
+      "accuracy": 0.222,
+      "interval": [
+       0.117,
+       0.381
+      ],
+      "block": {
+       "blocks": 7,
+       "correct": 2,
+       "accuracy": 0.286,
+       "interval": [
+        0.082,
+        0.641
+       ]
+      }
+     },
+     "TIHON": {
+      "lines": 56,
+      "correct": 2,
+      "accuracy": 0.036,
+      "interval": [
+       0.01,
+       0.121
+      ],
+      "block": {
+       "blocks": 11,
+       "correct": 0,
+       "accuracy": 0.0,
+       "interval": [
+        0.0,
+        0.259
+       ]
+      }
+     },
+     "TROFIMOV": {
+      "lines": 60,
+      "correct": 11,
+      "accuracy": 0.183,
+      "interval": [
+       0.106,
+       0.299
+      ],
+      "block": {
+       "blocks": 12,
+       "correct": 2,
+       "accuracy": 0.167,
+       "interval": [
+        0.047,
+        0.448
+       ]
+      }
+     },
+     "TUZENBACH": {
+      "lines": 70,
+      "correct": 13,
+      "accuracy": 0.186,
+      "interval": [
+       0.112,
+       0.292
+      ],
+      "block": {
+       "blocks": 14,
+       "correct": 6,
+       "accuracy": 0.429,
+       "interval": [
+        0.214,
+        0.674
+       ]
+      }
+     },
+     "VARYA": {
+      "lines": 74,
+      "correct": 15,
+      "accuracy": 0.203,
+      "interval": [
+       0.127,
+       0.308
+      ],
+      "block": {
+       "blocks": 14,
+       "correct": 8,
+       "accuracy": 0.571,
+       "interval": [
+        0.326,
+        0.786
+       ]
+      }
+     },
+     "VERSHININ": {
+      "lines": 66,
+      "correct": 15,
+      "accuracy": 0.227,
+      "interval": [
+       0.143,
+       0.342
+      ],
+      "block": {
+       "blocks": 13,
+       "correct": 6,
+       "accuracy": 0.462,
+       "interval": [
+        0.232,
+        0.709
+       ]
+      }
+     },
+     "YASHA": {
+      "lines": 36,
+      "correct": 5,
+      "accuracy": 0.139,
+      "interval": [
+       0.061,
+       0.287
+      ],
+      "block": {
+       "blocks": 7,
+       "correct": 3,
+       "accuracy": 0.429,
+       "interval": [
+        0.158,
+        0.75
+       ]
+      }
+     }
+    }
+   }
+  },
+  {
+   "pg": 76,
+   "work": "Adventures of Huckleberry Finn",
+   "author": "Mark Twain",
+   "year": 1884,
+   "kind": "novel",
+   "sha256": "d617a37aa7ae1e1a93dcde2634db2bccb86824e31e29a55230bdbf77d6872d59",
+   "licence": "Public domain in the United States: first published before 1929. Read from the Project Gutenberg eBook named; the Gutenberg header, footer and trademark are not redistributed.",
+   "measure": {
+    "lines": 1393,
+    "any_flag": {
+     "count": 17,
+     "rate": 0.0122,
+     "interval": [
+      0.0076,
+      0.0195
+     ]
+    },
+    "epigram_any": {
+     "count": 4,
+     "rate": 0.0029,
+     "interval": [
+      0.0011,
+      0.0074
+     ]
+    },
+    "by_check": {
+     "abstract-density": {
+      "count": 3,
+      "rate": 0.0022,
+      "interval": [
+       0.0007,
+       0.0063
+      ]
+     },
+     "antithesis": {
+      "count": 2,
+      "rate": 0.0014,
+      "interval": [
+       0.0004,
+       0.0052
+      ]
+     },
+     "closing-zinger": {
+      "count": 3,
+      "rate": 0.0022,
+      "interval": [
+       0.0007,
+       0.0063
+      ]
+     },
+     "contrast-pair": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0028
+      ]
+     },
+     "epigram-definition": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0028
+      ]
+     },
+     "epigram-here": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0028
+      ]
+     },
+     "epigram-maxim": {
+      "count": 1,
+      "rate": 0.0007,
+      "interval": [
+       0.0001,
+       0.0041
+      ]
+     },
+     "epigram-semicolon": {
+      "count": 3,
+      "rate": 0.0022,
+      "interval": [
+       0.0007,
+       0.0063
+      ]
+     },
+     "theme-statement": {
+      "count": 5,
+      "rate": 0.0036,
+      "interval": [
+       0.0015,
+       0.0084
+      ]
+     }
+    },
+    "examples": {
+     "abstract-density": [
+      "fault, blame",
+      "collection, collection",
+      "Glory, goodness"
+     ],
+     "antithesis": [
+      "not only had it in mind to do it, but",
+      "not only fools _us_ but"
+     ],
+     "closing-zinger": [
+      "I hope so, anyway.",
+      "Glory!—A-a-_men!_",
+      "Maybe there’s something ain’t straight about it."
+     ],
+     "epigram-maxim": [
+      "One is rich en t’other is po’."
+     ],
+     "epigram-semicolon": [
+      "Jim won’t ever forgit you, Huck; you’s de bes’ fren’ Jim’s ever had; en you’s de _only_...",
+      "But there’s no hope that he’s come; for he _couldn’t_ come and me miss him.",
+      "You don’t _want_ spring water; you want to water it with your tears."
+     ],
+     "theme-statement": [
+      "You can’t prove anything on him, you know; everything will be quieted down then, and he...",
+      "I ain’t as rich as old Jim Hornback, and I can’t be so blame’ generous and good to Tom,...",
+      "Honor bright, your majesty, I’m telling you the truth.",
+      "Anyhow, there’s one thing—there’s more honor in getting him out through a lot of diffic...",
+      "A body ’d think you _would_ learn to take some sort of care of ’em at your time of life."
+     ]
+    }
+   }
+  },
+  {
+   "pg": 1400,
+   "work": "Great Expectations",
+   "author": "Charles Dickens",
+   "year": 1861,
+   "kind": "novel",
+   "sha256": "9a637118af8e953e9764ec603d9b0a032883384d465acac2e27966a80cf1c6f8",
+   "licence": "Public domain in the United States: first published before 1929. Read from the Project Gutenberg eBook named; the Gutenberg header, footer and trademark are not redistributed.",
+   "measure": {
+    "lines": 2578,
+    "any_flag": {
+     "count": 42,
+     "rate": 0.0163,
+     "interval": [
+      0.0121,
+      0.0219
+     ]
+    },
+    "epigram_any": {
+     "count": 6,
+     "rate": 0.0023,
+     "interval": [
+      0.0011,
+      0.0051
+     ]
+    },
+    "by_check": {
+     "abstract-density": {
+      "count": 8,
+      "rate": 0.0031,
+      "interval": [
+       0.0016,
+       0.0061
+      ]
+     },
+     "antithesis": {
+      "count": 4,
+      "rate": 0.0016,
+      "interval": [
+       0.0006,
+       0.004
+      ]
+     },
+     "closing-zinger": {
+      "count": 14,
+      "rate": 0.0054,
+      "interval": [
+       0.0032,
+       0.0091
+      ]
+     },
+     "contrast-pair": {
+      "count": 4,
+      "rate": 0.0016,
+      "interval": [
+       0.0006,
+       0.004
+      ]
+     },
+     "epigram-definition": {
+      "count": 2,
+      "rate": 0.0008,
+      "interval": [
+       0.0002,
+       0.0028
+      ]
+     },
+     "epigram-here": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0015
+      ]
+     },
+     "epigram-maxim": {
+      "count": 1,
+      "rate": 0.0004,
+      "interval": [
+       0.0001,
+       0.0022
+      ]
+     },
+     "epigram-semicolon": {
+      "count": 3,
+      "rate": 0.0012,
+      "interval": [
+       0.0004,
+       0.0034
+      ]
+     },
+     "theme-statement": {
+      "count": 7,
+      "rate": 0.0027,
+      "interval": [
+       0.0013,
+       0.0056
+      ]
+     }
+    },
+    "examples": {
+     "abstract-density": [
+      "government, government",
+      "sixpence, instance",
+      "pride, hope, mercy",
+      "honour, acquaintance",
+      "pride, pride"
+     ],
+     "antithesis": [
+      "not only prevented him getting off the marshes, but",
+      "never shall be, so that’s always",
+      "Never mind what you have always",
+      "never seen him, for he has always"
+     ],
+     "closing-zinger": [
+      "Never clapped eyes upon her!",
+      "You can’t think how it pleases him.",
+      "I wouldn’t lend anybody a sixpence.",
+      "You needn’t know they’re there.",
+      "Such is the profession!"
+     ],
+     "contrast-pair": [
+      "Pretty well? Pretty well is no answer.",
+      "And your sister, she’s no worse than she were. And Biddy, she’s ever right and ready.",
+      "His employer would see to that, sir. His employer would not allow him to be drunk.",
+      "All right, ain’t you, Aged P.? All right, John, my boy, all right!"
+     ],
+     "epigram-definition": [
+      "The condition is laid down.",
+      "Recommendation is not the word, Mr."
+     ],
+     "epigram-maxim": [
+      "One keeps a secret better than two."
+     ],
+     "epigram-semicolon": [
+      "One brings another, you see; that’s the way of it.",
+      "You’re as proud of it as Punch; ain’t you, Aged? _there’s_ a nod for you; _there’s_ ano...",
+      "Tell me not it cannot be; I tell you this is him!"
+     ],
+     "theme-statement": [
+      "You’d be but a fierce young hound indeed, if at your time of life you could help to hun...",
+      "God knows you’re welcome to it,—so far as it was ever mine We don’t know what you have ...",
+      "I never was so much surprised in all my life,—couldn’t credit my own ed,—to tell you th...",
+      "It’s something to have seen the object of one’s love and duty for even so short a time.",
+      "Never even hinted, for instance, that your patron might have views as to your marriage ..."
+     ]
+    }
+   }
+  },
+  {
+   "pg": 844,
+   "work": "The Importance of Being Earnest",
+   "author": "Oscar Wilde",
+   "year": 1895,
+   "kind": "play",
+   "role": "contrast: epigrams by design",
+   "sha256": "1b8a58099bb1cdef6a845277a4bacf2f4a268702c165bde30124d4b5105d1851",
+   "licence": "Public domain in the United States: first published before 1929. Read from the Project Gutenberg eBook named; the Gutenberg header, footer and trademark are not redistributed.",
+   "measure": {
+    "lines": 876,
+    "any_flag": {
+     "count": 26,
+     "rate": 0.0297,
+     "interval": [
+      0.0203,
+      0.0431
+     ]
+    },
+    "epigram_any": {
+     "count": 14,
+     "rate": 0.016,
+     "interval": [
+      0.0095,
+      0.0266
+     ]
+    },
+    "by_check": {
+     "abstract-density": {
+      "count": 2,
+      "rate": 0.0023,
+      "interval": [
+       0.0006,
+       0.0083
+      ]
+     },
+     "antithesis": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0044
+      ]
+     },
+     "closing-zinger": {
+      "count": 5,
+      "rate": 0.0057,
+      "interval": [
+       0.0024,
+       0.0133
+      ]
+     },
+     "contrast-pair": {
+      "count": 1,
+      "rate": 0.0011,
+      "interval": [
+       0.0002,
+       0.0064
+      ]
+     },
+     "epigram-definition": {
+      "count": 1,
+      "rate": 0.0011,
+      "interval": [
+       0.0002,
+       0.0064
+      ]
+     },
+     "epigram-here": {
+      "count": 0,
+      "rate": 0.0,
+      "interval": [
+       0.0,
+       0.0044
+      ]
+     },
+     "epigram-maxim": {
+      "count": 13,
+      "rate": 0.0148,
+      "interval": [
+       0.0087,
+       0.0252
+      ]
+     },
+     "epigram-semicolon": {
+      "count": 1,
+      "rate": 0.0011,
+      "interval": [
+       0.0002,
+       0.0064
+      ]
+     },
+     "theme-statement": {
+      "count": 5,
+      "rate": 0.0057,
+      "interval": [
+       0.0024,
+       0.0133
+      ]
+     }
+    },
+    "examples": {
+     "abstract-density": [
+      "Charity, charity, interment",
+      "possession, baptism, registration, vaccination, confirmation"
+     ],
+     "closing-zinger": [
+      "I ask merely for information.",
+      "It produces a false impression.",
+      "There is no time to be lost.",
+      "That is what Fiction means.",
+      "What ideas you have of hospitality!"
+     ],
+     "contrast-pair": [
+      "I wish you would have tea-cake instead. I don’t like tea-cake."
+     ],
+     "epigram-definition": [
+      "The truth is rarely pure and never simple."
+     ],
+     "epigram-maxim": [
+      "When one is in town one amuses oneself.",
+      "The very essence of romance is uncertainty.",
+      "The only really safe name is Ernest.",
+      "The whole theory of modern education is radically unsound.",
+      "Everybody is clever nowadays."
+     ],
+     "epigram-semicolon": [
+      "Ignorance is like a delicate exotic fruit; touch it and the bloom is gone."
+     ],
+     "theme-statement": [
+      "The truth is rarely pure and never simple.",
+      "Health is the primary duty of life.",
+      "He is the very soul of truth and honour.",
+      "The happiness of more than one life depends on your answer.",
+      "Gwendolen, it is a terrible thing for a man to find out suddenly that all his life he h..."
+     ]
+    }
+   },
+   "attribution": {
+    "chance": 0.143,
+    "speakers": {
+     "ALGERNON": {
+      "lines": 201,
+      "correct": 75,
+      "accuracy": 0.373,
+      "interval": [
+       0.309,
+       0.442
+      ],
+      "block": {
+       "blocks": 40,
+       "correct": 17,
+       "accuracy": 0.425,
+       "interval": [
+        0.285,
+        0.578
+       ]
+      }
+     },
+     "CECILY": {
+      "lines": 152,
+      "correct": 46,
+      "accuracy": 0.303,
+      "interval": [
+       0.235,
+       0.38
+      ],
+      "block": {
+       "blocks": 30,
+       "correct": 11,
+       "accuracy": 0.367,
+       "interval": [
+        0.219,
+        0.545
+       ]
+      }
+     },
+     "CHASUBLE": {
+      "lines": 42,
+      "correct": 7,
+      "accuracy": 0.167,
+      "interval": [
+       0.083,
+       0.306
+      ],
+      "block": {
+       "blocks": 8,
+       "correct": 3,
+       "accuracy": 0.375,
+       "interval": [
+        0.137,
+        0.694
+       ]
+      }
+     },
+     "GWENDOLEN": {
+      "lines": 101,
+      "correct": 37,
+      "accuracy": 0.366,
+      "interval": [
+       0.279,
+       0.464
+      ],
+      "block": {
+       "blocks": 20,
+       "correct": 12,
+       "accuracy": 0.6,
+       "interval": [
+        0.387,
+        0.781
+       ]
+      }
+     },
+     "JACK": {
+      "lines": 217,
+      "correct": 62,
+      "accuracy": 0.286,
+      "interval": [
+       0.23,
+       0.349
+      ],
+      "block": {
+       "blocks": 43,
+       "correct": 16,
+       "accuracy": 0.372,
+       "interval": [
+        0.244,
+        0.521
+       ]
+      }
+     },
+     "LADY BRACKNELL": {
+      "lines": 84,
+      "correct": 29,
+      "accuracy": 0.345,
+      "interval": [
+       0.252,
+       0.452
+      ],
+      "block": {
+       "blocks": 16,
+       "correct": 11,
+       "accuracy": 0.688,
+       "interval": [
+        0.444,
+        0.858
+       ]
+      }
+     },
+     "MISS PRISM": {
+      "lines": 41,
+      "correct": 8,
+      "accuracy": 0.195,
+      "interval": [
+       0.102,
+       0.34
+      ],
+      "block": {
+       "blocks": 8,
+       "correct": 2,
+       "accuracy": 0.25,
+       "interval": [
+        0.071,
+        0.591
+       ]
+      }
+     }
+    }
+   }
+  }
+ ]
+}

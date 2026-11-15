@@ -1,0 +1,78 @@
+{
+ "residue": {
+  "schema": "articulate/house-receipt/v1",
+  "house_version": "house/1",
+  "house_fingerprint": "sha256:9b45380863a02905b6c3b3a9e553b182924ff650a8557779658158f6defedb62",
+  "ruleset_version": "sha256:9f78a7484bb20f84",
+  "mode": "default",
+  "settings": {
+   "mode": "default",
+   "tuning": {
+    "length": "default",
+    "end_line": "on",
+    "headings": "auto",
+    "lists": "allowed",
+    "limits": "end",
+    "first_person": "actions"
+   }
+  },
+  "input_sha256": "sha256:ad5669714bef8482173ed437a346a3b1fc47b6a99351a594a5b8e38d4b9d432a",
+  "output_sha256": "sha256:1bb89893da622204a7667e594e49cef9dd8bbffddfef07823404a210aa7980e7",
+  "edits": [
+   {
+    "rule": "residue-paragraph",
+    "start": 0,
+    "end": 17,
+    "removed_sha256": "sha256:6046be0bf9ca48c81c1f265d85cb248ac0935361f3dd1f2f3868e72da670d2b3"
+   },
+   {
+    "rule": "residue-paragraph",
+    "start": 207,
+    "end": 272,
+    "removed_sha256": "sha256:7d8b66fa41cce84e609daecc0ff99ad6f3c4c810e3d31956e34b3149b30f3de5"
+   }
+  ],
+  "refused": [],
+  "notes_by_category": {},
+  "human_claim_notes": 0,
+  "timing_ms": 0.0,
+  "ai_detector_consulted": false,
+  "does_not_prove": "The edits are exact and on a closed list, and the paragraphs left in place passed a lexical meaning guard. That does not prove the reply is correct, useful or better to read."
+ },
+ "dash": {
+  "schema": "articulate/house-receipt/v1",
+  "house_version": "house/1",
+  "house_fingerprint": "sha256:9b45380863a02905b6c3b3a9e553b182924ff650a8557779658158f6defedb62",
+  "ruleset_version": "sha256:9f78a7484bb20f84",
+  "mode": "default",
+  "settings": {
+   "mode": "default",
+   "tuning": {
+    "length": "default",
+    "end_line": "on",
+    "headings": "auto",
+    "lists": "allowed",
+    "limits": "end",
+    "first_person": "actions"
+   }
+  },
+  "input_sha256": "sha256:58192d706f8723e7bb35dae288b06d8776c6d9d1d2fdb2a267feade6a5055f99",
+  "output_sha256": "sha256:d37cae4e0fca9fb48de939e36c62d002b62c06c0fb5070a46ca1fcf2f452d4cc",
+  "edits": [
+   {
+    "rule": "dash",
+    "start": 22,
+    "end": 25,
+    "removed_sha256": "sha256:3b2e8119b6fcc97df9852c090cc51531bff2a383f88daa663928c823c3d71585"
+   }
+  ],
+  "refused": [],
+  "notes_by_category": {
+   "style/em-dash": 1
+  },
+  "human_claim_notes": 0,
+  "timing_ms": 0.0,
+  "ai_detector_consulted": false,
+  "does_not_prove": "The edits are exact and on a closed list, and the paragraphs left in place passed a lexical meaning guard. That does not prove the reply is correct, useful or better to read."
+ }
+}

@@ -1,0 +1,8 @@
+# Placeholder-only configuration for an operator-owned hosted service.
+# These values are public identifiers, not access tokens or client secrets.
+# Load them with your service manager; Articulate does not read this file.
+ARTICULATE_HOSTED_BASE_URL=https://articulate.example
+ARTICULATE_HOSTED_ISSUER=https://auth.example
+ARTICULATE_HOSTED_JWKS_URI=https://auth.example/.well-known/jwks.json
+ARTICULATE_HOSTED_BIND=127.0.0.1
+ARTICULATE_HOSTED_PORT=8765
