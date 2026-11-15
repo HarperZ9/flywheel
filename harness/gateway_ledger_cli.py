@@ -1,6 +1,7 @@
 """gateway_ledger_cli.py -- `flywheel gateway-ledger`: read and check the gateway's record.
 
-  flywheel gateway-ledger verify             check every segment; exit 0 only when all hold
+  flywheel gateway-ledger verify             check every segment and every call record;
+                                             exit 0 only when all hold
   flywheel gateway-ledger show [--key NAME] [--kind KIND] [--last N] [--json] [--full]
                                [--unsettled]  list entries, oldest first
   flywheel gateway-ledger settle CALL [--input N --output N | --no-charge] [--note TEXT]
@@ -12,12 +13,17 @@ provider is contacted, and the call's end entry after. `verify` recomputes
 every hash and link, checks each segment against the one before it and the
 last segment against the head record, and names what is wrong. It also names
 every unsettled call, a started entry with no end entry, which a gateway
-leaves when it stops between the two; it then exits 3. `show --key NAME`
+leaves when it stops between the two; it then exits 3. And it checks the
+call records themselves (gateway_call_audit): an end entry with no started
+entry before it, a second end entry for one call, a call id started twice,
+and an end entry that differs from its start on the route, the request hash
+or the caller are each named, and it then exits 4. `show --key NAME`
 lists the calls of one gateway key; `--key owner` lists calls made with the
 gateway token, which includes entries that name no key. `show --unsettled`
 lists the started entries of unsettled calls. `show` also exits 1 when the
-ledger does not verify, after printing the entries that do, and 3 when it
-verifies and holds an unsettled call.
+ledger does not verify, after printing the entries that do, 4 when the chain
+holds and a call record is at fault, and 3 when it verifies and holds an
+unsettled call.
 
 `verify` and `show` only read. They can run while the gateway is running.
 `settle` writes one entry, or leaves a request for a running gateway
@@ -36,6 +42,7 @@ from harness import gateway_ledger
 USAGE = __doc__.split("\n\n", 1)[1].rstrip()
 OWNER = "owner"
 RETRY_AFTER = 0.25                      # seconds before `_checked` reads a second time
+SHOWN = 50                              # call record faults `verify` prints one by one
 WIDTH = 80                              # characters of one field `show` prints without --full
 _CONTROL = {code: f"\\x{code:02x}" for code in [*range(32), 127]}
 
@@ -80,6 +87,20 @@ def render_verify(found: list) -> tuple:
     lines.append(f"gateway ledger {'verifies' if ok else 'DOES NOT VERIFY'}: "
                  f"{total} entries that verify in {len(found)} segment(s)")
     return "\n".join(lines), ok
+
+
+def render_faults(findings: list) -> str:
+    """What `verify` says about call records that break the rules. Empty when none do."""
+    if not findings:
+        return ""
+    lines = [f"  CALL RECORD FAULT {code}: call {_plain(call)} at {_plain(where)}: {text}"
+             for code, call, where, text in findings[:SHOWN]]
+    if len(findings) > SHOWN:
+        lines.append(f"  ... and {len(findings) - SHOWN} more")
+    lines.append(f"{len(findings)} call record fault(s): the chain of hashes holds and the "
+                 "entries do not describe each call as one start followed by one end. A "
+                 "gateway does not write such a record")
+    return "\n".join(lines)
 
 
 def rows(found: list, key=None, kind=None, last=None, calls=None, unsettled=False) -> list:
@@ -199,21 +220,27 @@ def main(argv: "list[str] | None" = None, *, environ=None) -> int:
     home = _home(environ)
     if args.verb == "settle":
         return _settle(args, home)
+    from harness.gateway_call_audit import faults
     from harness.gateway_ledger_settle import report, unsettled
     found = _checked(home)
     text, ok = render_verify(found)
     calls = unsettled(found, home)
     stuck = any(row["state"] == "unsettled" for row in calls.values())
+    wrong = render_faults(faults(found))
+    code = 1 if not ok else 4 if wrong else 3 if stuck else 0
     if args.verb == "verify":
-        print(_ignored(home) + text + ("\n" + report(calls) if calls else ""))
-        return (3 if stuck else 0) if ok else 1
+        print(_ignored(home) + text + ("\n" + wrong if wrong else "")
+              + ("\n" + report(calls) if calls else ""))
+        return code
     for row in rows(found, args.key, args.kind, args.last, calls, args.unsettled):
         print(_json(row) if args.json else _line(row, args.full))
     if not ok:
         print(text, file=sys.stderr)
-    elif stuck:
-        print(report(calls), file=sys.stderr)
-    return (3 if stuck else 0) if ok else 1
+    else:
+        for said in (wrong, report(calls) if stuck else ""):
+            if said:
+                print(said, file=sys.stderr)
+    return code
 
 
 if __name__ == "__main__":

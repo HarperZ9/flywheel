@@ -7,9 +7,13 @@ For each case the same request is sent straight to a loopback stub provider
 and through a real gateway HTTP server pointed at that stub, in turns, one
 request at a time. The stub waits a fixed time before its first byte and notes
 how long it held each request; that wait is taken out of each call, so the
-difference of the two medians is the gateway's own share: its HTTP server, the
-credential check, parsing, the second connection, rendering, the ledger entry
-and, for a virtual key, the key lookup and the debit.
+difference of the two medians is what a caller waits for the gateway: its HTTP
+server, the credential check, parsing, the second connection, rendering, the
+two ledger entries of a call, each committed to the disk (the started entry
+before the request leaves, the end entry before the reply is sent), and, for
+a virtual key, the key lookup and the debit. The record also gives the two
+commits on their own, what is left without them, and what a bare commit costs
+on the same disk.
 
 Two times per call: to the first byte (for a stream, to the first text delta
 a client can read) and to the end of the body. Warm-up calls are thrown away.
@@ -31,7 +35,6 @@ import argparse
 import collections
 import json
 import math
-import platform
 import statistics
 import subprocess
 import sys
@@ -43,6 +46,7 @@ REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
 from scripts import gateway_bench_rig as bench  # noqa: E402
+from scripts.gateway_bench_machine import machine  # noqa: E402
 
 RECORD = REPO / "docs" / "benchmarks" / "gateway-overhead.json"
 STUB_DELAY = 0.05
@@ -62,8 +66,9 @@ PARTS = {
     "upstream connect, send and wait, stream (includes the stub delay)":
         ("gateway_turn_call", None, "_open"),
     "reply read into the neutral form": ("gateway_turn_call", None, "read"),
+    "started entry, committed before the request leaves": ("gateway_calls", None, "begin"),
     "key debit": ("gateway_key_gate", "Bill", "settle"),
-    "ledger entry, with the debit inside it": ("gateway_turn", None, "record"),
+    "end entry, with the debit inside it": ("gateway_turn", None, "record"),
     "receipt": ("gateway_turn", None, "receipt"),
     "whole handler, from the body read to the last byte written":
         ("gateway_interfaces", None, "serve"),
@@ -81,7 +86,12 @@ def _p95(values: list) -> float:
 def summarize(samples: dict) -> dict:
     """Milliseconds for one case, each sample net of the stub's wait: the two
     medians, their difference, and the gateway's slow calls less the stub median."""
-    out = {"calls": len(samples["gateway"])}
+    commits = [row[1] for row in samples["commit"]]
+    out = {"calls": len(samples["gateway"]),
+           "commits_per_call": sorted({row[2] for row in samples["commit"]}),
+           "commits_median_ms": _ms(statistics.median(commits)),
+           "commits_p95_ms": _ms(_p95(commits)),
+           "own_total_median_ms": _ms(bench.overhead(samples, 1, own=True))}
     for which, name in ((0, "first"), (1, "total")):
         direct = statistics.median(row[which] for row in samples["direct"])
         through = [row[which] for row in samples["gateway"]]
@@ -187,59 +197,26 @@ def warm_compare(calls: int, warmup: int) -> list:
     return rows
 
 
-def _cpu() -> str:
-    try:
-        if sys.platform == "win32":
-            import winreg
-            with winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE,
-                                r"HARDWARE\DESCRIPTION\System\CentralProcessor\0") as key:
-                return str(winreg.QueryValueEx(key, "ProcessorNameString")[0]).strip()
-        if sys.platform == "darwin":
-            return subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], text=True,
-                                  capture_output=True, timeout=10).stdout.strip()
-        for line in Path("/proc/cpuinfo").read_text(encoding="utf-8").splitlines():
-            if line.startswith("model name"):
-                return line.split(":", 1)[1].strip()
-    except (OSError, subprocess.SubprocessError) as exc:
-        print(f"cpu model not read ({type(exc).__name__})", file=sys.stderr)
-    return platform.processor() or "unknown"
-
-
-def _ram_gb() -> "float | None":
-    try:
-        if sys.platform == "win32":
-            import ctypes
-
-            class Status(ctypes.Structure):
-                _fields_ = [("length", ctypes.c_ulong), ("load", ctypes.c_ulong)] + [
-                    (name, ctypes.c_ulonglong) for name in
-                    ("total", "free", "page", "page_free", "virt", "virt_free", "ext")]
-            status = Status(length=ctypes.sizeof(Status))
-            ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(status))
-            return round(status.total / 2 ** 30, 1)
-        import os
-        return round(os.sysconf("SC_PAGE_SIZE") * os.sysconf("SC_PHYS_PAGES") / 2 ** 30, 1)
-    except (OSError, ValueError, AttributeError) as exc:
-        print(f"memory size not read ({type(exc).__name__})", file=sys.stderr)
-        return None
-
-
-def machine() -> dict:
-    """The machine, with nothing that names its owner: no host, user or path."""
-    return {"cpu": _cpu(), "logical_cpus": __import__("os").cpu_count(), "ram_gb": _ram_gb(),
-            "os": f"{platform.system()} {platform.release()} (build {platform.version()})",
-            "python": platform.python_version()}
+def disk(count: int = 200) -> dict:
+    """What a bare append-and-commit costs in a temporary folder on this disk."""
+    with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
+        took = bench.commit_cost(tmp, count)
+    return {"commits": count, "median_ms": _ms(statistics.median(took)),
+            "p95_ms": _ms(_p95(took)), "max_ms": _ms(max(took)),
+            "what": "append 300 bytes to a file, then os.fsync; no gateway code"}
 
 
 def table(rows: list) -> str:
-    lines = ["interface      upstream   caller  mode    first ms  total ms  p95 ms  max ms"]
+    lines = ["interface      upstream   caller  mode    first ms  total ms  p95 ms  max ms  "
+             "2 commits ms"]
     for row in rows:
         lines.append(
             f"{row['interface']:<14} {row['upstream']:<10} {row['caller']:<7} "
             f"{'stream' if row['stream'] else 'plain':<7} "
             f"{row['first']['overhead_median_ms']:>8.2f}  "
             f"{row['total']['overhead_median_ms']:>8.2f}  "
-            f"{row['total']['overhead_p95_ms']:>6.2f}  {row['total']['overhead_max_ms']:>6.2f}")
+            f"{row['total']['overhead_p95_ms']:>6.2f}  {row['total']['overhead_max_ms']:>6.2f}  "
+            f"{row['commits_median_ms']:>12.2f}")
     return "\n".join(lines)
 
 
@@ -248,6 +225,8 @@ def main(argv: "list | None" = None) -> int:
     ap.add_argument("--calls", type=int, default=30, help="warm calls per case (default 30)")
     ap.add_argument("--warmup", type=int, default=3, help="calls thrown away first")
     ap.add_argument("--out", default=str(RECORD), help="where the JSON record goes")
+    ap.add_argument("--conditions", default="", help="what else the machine was doing, for "
+                    "the record")
     ap.add_argument("--cold", metavar="PATH", help=argparse.SUPPRESS)
     ap.add_argument("--stream", action="store_true", help=argparse.SUPPRESS)
     ap.add_argument("--plain", action="store_true", help=argparse.SUPPRESS)
@@ -260,8 +239,10 @@ def main(argv: "list | None" = None) -> int:
               "method": {"stub_delay_ms": _ms(STUB_DELAY), "stream_text_events": bench.DELTAS,
                          "warm_calls": args.calls, "warmup_calls": args.warmup,
                          "client": "http.client, one request at a time, a fresh connection "
-                                   "per call", "clock": "time.perf_counter"},
-              "cases": run_cases(args.calls, args.warmup), "first_call": run_cold(),
+                                   "per call", "clock": "time.perf_counter",
+                         "conditions": args.conditions},
+              "disk": disk(), "cases": run_cases(args.calls, args.warmup),
+              "first_call": run_cold(),
               "breakdown": [breakdown("/v1/messages", stream, args.calls)
                             for stream in (False, True)],
               "key_warm_up": warm_compare(args.calls, args.warmup)}
@@ -274,6 +255,8 @@ def main(argv: "list | None" = None) -> int:
 
 def report(record: dict) -> None:
     print(table(record["cases"]))
+    print(f"a bare commit on this disk: median {record['disk']['median_ms']} ms, p95 "
+          f"{record['disk']['p95_ms']} ms over {record['disk']['commits']}")
     for row in record["first_call"]:
         print(f"first call {row['interface']} {'stream' if row['stream'] else 'plain'}: "
               f"{row['first_call_overhead_ms']:.1f} ms over the stub")

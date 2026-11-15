@@ -82,7 +82,8 @@ def cleared(url, keys, raw, post, name: str = "ci-bot") -> None:
     status, _headers, body = post(url, "/v1/messages", raw)
     assert status == 403, body
     assert "suspended" in body["error"]["message"] and "ledger" in body["error"]["message"]
-    keys.mark(name, suspended=None, cleared=time.time())
+    from harness.gateway_key_policy import clear
+    clear(keys, name)                   # what the command runs
 
 
 def rows(home) -> list:

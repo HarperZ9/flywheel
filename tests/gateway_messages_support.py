@@ -57,9 +57,10 @@ def replayed(monkeypatch, provider: str, *, plain=(), streams=()):
     return made
 
 
+from harness.gateway_calls import SAME  # noqa: E402,F401  (what a start and its end agree on)
+
 STARTED = "endpoint_call_started"
 ENDS = ("endpoint_call", "endpoint_call_failed")
-SAME = ("endpoint", "interface", "prompt_sha", "key", "key_fp")
 
 
 def _row(entry) -> tuple:
@@ -70,33 +71,23 @@ def _row(entry) -> tuple:
 
 
 def recorded(ledger) -> list:
-    """The ledger's entries without the started ones, after checking write-ahead order.
+    """The ledger's entries without the started ones, after checking the call records.
 
     Since 2.0.0's fifth review round a call is in the ledger before it is
-    made. So every `endpoint_call` and `endpoint_call_failed` entry must name,
-    in `call`, a started entry that comes before it and agrees with it on the
-    route, the request hash and the caller, and every started entry must have
-    exactly one such end. A test of an unsettled call (a start with no end)
-    reads `ledger.entries` itself. `ledger` may also be a list of entries or
-    of the rows `flywheel gateway-ledger show --json` prints."""
+    made. The rules are checked by `harness.gateway_call_audit.audit`, the code
+    `flywheel gateway-ledger verify` runs, so a test and the tool cannot
+    disagree: every end entry names, in `call`, a started entry that comes
+    before it and agrees with it on the route, the request hash and the
+    caller; a call has one end; a call id is started once. On top of that,
+    here, every started entry must have its end. A test of an unsettled call
+    (a start with no end) reads `ledger.entries` itself. `ledger` may also be
+    a list of entries or of the rows `flywheel gateway-ledger show --json`
+    prints."""
+    from harness.gateway_call_audit import audit
     entries = ledger if isinstance(ledger, list) else ledger.entries
-    started, ended_calls = {}, []
-    for entry in entries:
-        kind, content, meta = _row(entry)
-        if kind == STARTED:
-            assert content == meta["call"] and content not in started
-            started[content] = meta
-        elif kind in ENDS:
-            first = started.get(meta.get("call"))
-            assert first is not None, f"{kind} ({content}) has no started entry before it"
-            assert meta["call"] not in ended_calls, (
-                f"call {meta['call']} has more than one end entry")
-            for name in SAME:
-                assert first.get(name) == meta.get(name), (
-                    f"{name} differs between the start and the end of one call")
-            ended_calls.append(meta["call"])
-    assert sorted(ended_calls) == sorted(started), (
-        "a started entry has no end entry in the ledger")
+    still_open, findings = audit((*_row(entry), index) for index, entry in enumerate(entries))
+    assert not findings, f"the call records are at fault: {findings}"
+    assert not still_open, f"a started entry has no end entry in the ledger: {sorted(still_open)}"
     return [entry for entry in entries if _row(entry)[0] != STARTED]
 
 
@@ -171,9 +162,15 @@ def point_at(monkeypatch, provider: str, url: str) -> None:
 
 @contextmanager
 def gateway_server(monkeypatch, tmp_path, token: str = TOKEN):
-    """A real gateway on a loopback port, with its own empty router ledger."""
+    """A real gateway on a loopback port, with its own empty router ledger.
+
+    The process is marked as a gateway, as `gateway.main` marks it: a model request
+    that leaves outside a ledger account is refused (harness.gateway_reach), so every
+    test that uses this fixture also checks that rule on the route it exercises."""
+    from harness import gateway_reach
     ledger = SessionLedger()
     monkeypatch.setattr(gateway, "_ROUTER_LEDGER", ledger)
+    gateway_reach.enforce(gateway._router_ledger)
 
     class Handler(gateway._Handler):
         pass

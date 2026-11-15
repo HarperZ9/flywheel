@@ -220,7 +220,8 @@ def urllib_transport(method: str, url: str, *, headers: dict = None,
     for k, v in (headers or {}).items():
         req.add_header(k, v)
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
+        from .http_no_redirect import open_request  # the token reaches only this host
+        with open_request(req, timeout) as resp:
             return resp.status, resp.read()
     except urllib.error.HTTPError as e:
         return e.code, e.read()

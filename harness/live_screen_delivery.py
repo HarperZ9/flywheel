@@ -63,10 +63,16 @@ class OpenAIResponsesImageTransport:
         body = json.dumps(payload, separators=(",", ":")).encode("utf-8")
         if len(body) > self.max_body_bytes:
             _fail("SAMPLED_IMAGE_BODY_TOO_LARGE", "sampled image payload exceeds transport limit")
-        status, obj = self.transport(
-            "POST", self.base_url + "/responses",
-            {"content-type": "application/json", "authorization": "Bearer " + self.api_key},
-            body, timeout)
+        from .endpoint_ledgered import recorded     # a model call: in the gateway ledger
+
+        def send():
+            return self.transport(
+                "POST", self.base_url + "/responses",
+                {"content-type": "application/json", "authorization": "Bearer " + self.api_key},
+                body, timeout)
+        status, obj = recorded(
+            "openai", body, send, lambda out: None if type(out[0]) is int and (
+                200 <= out[0] < 300) else f"upstream_status_{out[0]}")
         if type(status) is not int or not 200 <= status < 300:
             _fail("PROVIDER_DELIVERY_FAILED", "provider did not accept sampled image")
         return {"provider_status": status, "provider_response_id": obj.get("id"),
