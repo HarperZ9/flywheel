@@ -1,0 +1,8 @@
+# Nothing below belongs in the plugin repository. The build copies only the
+# files git tracks in the source repository; these rules keep a stray secret or
+# a cache out of a commit made in the plugin repository itself.
+.env
+.env.*
+!.env.example
+__pycache__/
+*.pyc

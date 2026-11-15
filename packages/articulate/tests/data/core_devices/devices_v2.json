@@ -1,0 +1,1877 @@
+{
+ "schema": "articulate/device-fixture/2",
+ "about": "Passages labelled for thirteen rhetorical devices. Each item lists the devices present; every device not listed is labelled absent. split 'dev' items may be read while building the device readers; split 'heldout' items were written and labelled on 2026-10-26 before any reader existed and are scored only after the readers are frozen. One annotator labelled everything; a second annotator is an open step for the author. The dev items repeat the 49 passages of passages.json with a fuller label set (anaphora now also covers three clauses that open with one pronoun, so 'I came, I saw, I conquered' counts), plus new items for the added devices. Labels for isocolon and alliteration were tightened to the definitions above on 2026-10-26, before any reader was written or any item scored. A 'lookalike' item carries the surface shape of some device without that device; it may still carry other devices. On the same day, still before any held-out item was scored, anadiplosis was tightened to the first word of the next clause, and four items were relabelled to match their own definitions: c-draft-reads gains chiasmus; macbeth-fair-foul, c-test-ship and h-love-do gain anadiplosis. proverb-eat-live loses isocolon (3 and 5 words), also before held-out scoring. Split heldout-independent (80 items) was written on 2026-10-26 by a separate agent that saw only the definitions above, never the readers, the lexicons or the other items; it was merged after the reader source was frozen (sha256 of devices.py 8d59af09...). Split heldout was written by the reader builder before the readers existed, but the builder knew those items while writing the opposition lexicon, so it is not independent of the readers.",
+ "devices": [
+  "antithesis",
+  "tricolon",
+  "anaphora",
+  "chiasmus",
+  "alliteration",
+  "assonance",
+  "polysyndeton",
+  "asyndeton",
+  "anadiplosis",
+  "epizeuxis",
+  "isocolon",
+  "zeugma",
+  "oxymoron"
+ ],
+ "definitions": {
+  "antithesis": "two contrasting ideas set against each other in a balanced or mirrored construction, with or without a negation",
+  "tricolon": "three parallel members used for rhythm or emphasis; a plain factual list of three items is not the device",
+  "anaphora": "the same word or words repeated at the start of three or more successive clauses or sentences",
+  "chiasmus": "two content words repeated in reverse order (A B, B A) across paired clauses",
+  "alliteration": "three or more different words within six consecutive words that begin with the same consonant sound",
+  "assonance": "three or more different stressed words within six consecutive words that share a vowel sound",
+  "polysyndeton": "a series of three or more items or clauses with a conjunction before each item after the first",
+  "asyndeton": "a series of three or more coordinate items or clauses with no conjunction",
+  "anadiplosis": "the last content word of one clause repeated as the first word of the next, after at most a conjunction or an article",
+  "epizeuxis": "a word repeated immediately, with at most a comma between, for emphasis",
+  "isocolon": "two or more successive clauses, each with its own verb or a verb elided from a balanced pair, of near-equal length (within one word) and parallel structure; lists of single nouns or adjectives do not count",
+  "zeugma": "one word, usually a verb, governing two others in different senses",
+  "oxymoron": "two contradictory terms set side by side"
+ },
+ "items": [
+  {
+   "id": "dickens-best-worst",
+   "split": "dev",
+   "source": "Dickens, A Tale of Two Cities, 1859",
+   "text": "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness.",
+   "devices": [
+    "antithesis",
+    "anaphora",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "pope-err",
+   "split": "dev",
+   "source": "Pope, An Essay on Criticism, 1711",
+   "text": "To err is human, to forgive divine.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "kjv-called",
+   "split": "dev",
+   "source": "KJV, Matthew 22:14",
+   "text": "For many are called, but few are chosen.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "kjv-spirit-flesh",
+   "split": "dev",
+   "source": "KJV, Matthew 26:41",
+   "text": "The spirit indeed is willing, but the flesh is weak.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "caesar-not-less",
+   "split": "dev",
+   "source": "Shakespeare, Julius Caesar III.ii",
+   "text": "Not that I loved Caesar less, but that I loved Rome more.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "macbeth-fair-foul",
+   "split": "dev",
+   "source": "Shakespeare, Macbeth I.i",
+   "text": "Fair is foul, and foul is fair.",
+   "devices": [
+    "antithesis",
+    "chiasmus",
+    "isocolon",
+    "anadiplosis"
+   ]
+  },
+  {
+   "id": "milton-reign",
+   "split": "dev",
+   "source": "Milton, Paradise Lost I, 1667",
+   "text": "Better to reign in Hell, than serve in Heaven.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "proverb-man-proposes",
+   "split": "dev",
+   "source": "proverb (Thomas a Kempis)",
+   "text": "Man proposes, God disposes.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "lincoln-little-note",
+   "split": "dev",
+   "source": "Lincoln, Gettysburg Address, 1863",
+   "text": "The world will little note, nor long remember what we say here, but it can never forget what they did here.",
+   "devices": [
+    "antithesis"
+   ]
+  },
+  {
+   "id": "c-not-rewrite-but-mark",
+   "split": "dev",
+   "source": "constructed",
+   "text": "The tool does not rewrite your text but marks where it reads as machine-written.",
+   "devices": [
+    "antithesis"
+   ]
+  },
+  {
+   "id": "c-split-antithesis",
+   "split": "dev",
+   "source": "constructed",
+   "text": "It is not a style guide. It is a detector.",
+   "devices": [
+    "antithesis"
+   ]
+  },
+  {
+   "id": "c-not-about",
+   "split": "dev",
+   "source": "constructed",
+   "text": "This report is not about cost; it is about time.",
+   "devices": [
+    "antithesis"
+   ]
+  },
+  {
+   "id": "c-fewer-not-more",
+   "split": "dev",
+   "source": "constructed",
+   "text": "We need fewer meetings, not more of them.",
+   "devices": [
+    "antithesis"
+   ]
+  },
+  {
+   "id": "c-ask-not-river",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Ask not what the river owes you; ask what you owe the river.",
+   "devices": [
+    "antithesis",
+    "chiasmus",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "proverb-penny",
+   "split": "dev",
+   "source": "proverb",
+   "text": "Penny wise, pound foolish.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "lincoln-of-by-for",
+   "split": "dev",
+   "source": "Lincoln, Gettysburg Address, 1863",
+   "text": "Government of the people, by the people, for the people, shall not perish from the earth.",
+   "devices": [
+    "tricolon",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "caesar-veni",
+   "split": "dev",
+   "source": "attributed to Julius Caesar, via Suetonius",
+   "text": "I came, I saw, I conquered.",
+   "devices": [
+    "tricolon",
+    "anaphora",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "declaration-life-liberty",
+   "split": "dev",
+   "source": "Declaration of Independence, 1776",
+   "text": "They are endowed by their Creator with certain unalienable Rights, that among these are Life, Liberty and the pursuit of Happiness.",
+   "devices": [
+    "tricolon"
+   ]
+  },
+  {
+   "id": "caesar-friends",
+   "split": "dev",
+   "source": "Shakespeare, Julius Caesar III.ii",
+   "text": "Friends, Romans, countrymen, lend me your ears.",
+   "devices": [
+    "tricolon",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "kjv-faith-hope",
+   "split": "dev",
+   "source": "KJV, 1 Corinthians 13:13",
+   "text": "And now abideth faith, hope, charity, these three; but the greatest of these is charity.",
+   "devices": [
+    "tricolon",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "lincoln-dedicate",
+   "split": "dev",
+   "source": "Lincoln, Gettysburg Address, 1863",
+   "text": "But, in a larger sense, we can not dedicate, we can not consecrate, we can not hallow this ground.",
+   "devices": [
+    "tricolon",
+    "anaphora",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "c-fast-simple-private",
+   "split": "dev",
+   "source": "constructed",
+   "text": "The tool is fast, simple, and private.",
+   "devices": [
+    "tricolon"
+   ]
+  },
+  {
+   "id": "c-reads-marks-leaves",
+   "split": "dev",
+   "source": "constructed",
+   "text": "It reads the draft, marks the tells, and leaves the rewrite to you.",
+   "devices": [
+    "tricolon",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "c-quickly-cleanly",
+   "split": "dev",
+   "source": "constructed",
+   "text": "It reads quickly, cleanly, and quietly.",
+   "devices": [
+    "tricolon",
+    "alliteration"
+   ]
+  },
+  {
+   "id": "c-clear-honest-short",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Good copy is clear, honest and short.",
+   "devices": [
+    "tricolon"
+   ]
+  },
+  {
+   "id": "kjv-beatitudes",
+   "split": "dev",
+   "source": "KJV, Matthew 5:3-5",
+   "text": "Blessed are the poor in spirit: for theirs is the kingdom of heaven. Blessed are they that mourn: for they shall be comforted. Blessed are the meek: for they shall inherit the earth.",
+   "devices": [
+    "anaphora"
+   ]
+  },
+  {
+   "id": "declaration-he-has",
+   "split": "dev",
+   "source": "Declaration of Independence, 1776",
+   "text": "He has refused his Assent to Laws, the most wholesome and necessary for the public good. He has forbidden his Governors to pass Laws of immediate and pressing importance. He has refused to pass other Laws for the accommodation of large districts of people.",
+   "devices": [
+    "anaphora"
+   ]
+  },
+  {
+   "id": "kjv-a-time",
+   "split": "dev",
+   "source": "KJV, Ecclesiastes 3:2-3",
+   "text": "A time to be born, and a time to die; a time to plant, and a time to pluck up that which is planted; a time to kill, and a time to heal.",
+   "devices": [
+    "antithesis",
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "c-every-receipt",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Every receipt names its text. Every receipt names its ruleset. Every receipt can be replayed by anyone.",
+   "devices": [
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "c-some-people",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Some people collect stamps for years. Some people collect coins from every port. Some people collect grievances instead.",
+   "devices": [
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "c-you-read",
+   "split": "dev",
+   "source": "constructed",
+   "text": "You read the draft once. You mark every tell you see. You leave the rewrite to the author.",
+   "devices": [
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "c-nobody-asked",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Nobody asked for the change. Nobody tested the change. Nobody owned the change when it broke.",
+   "devices": [
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "c-check-the",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Check the hash before you trust it. Check the ruleset before you compare it. Check the date before you cite it.",
+   "devices": [
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "melville-ishmael",
+   "split": "dev",
+   "source": "Melville, Moby-Dick, 1851",
+   "text": "Call me Ishmael. Some years ago, never mind how long precisely, having little or no money in my purse, I thought I would sail about a little and see the watery part of the world.",
+   "devices": []
+  },
+  {
+   "id": "lincoln-four-score",
+   "split": "dev",
+   "source": "Lincoln, Gettysburg Address, 1863",
+   "text": "Four score and seven years ago our fathers brought forth on this continent, a new nation, conceived in Liberty, and dedicated to the proposition that all men are created equal.",
+   "devices": []
+  },
+  {
+   "id": "thoreau-woods",
+   "split": "dev",
+   "source": "Thoreau, Walden, 1854",
+   "text": "I went to the woods because I wished to live deliberately, to front only the essential facts of life, and see if I could not learn what it had to teach.",
+   "devices": []
+  },
+  {
+   "id": "darwin-beagle",
+   "split": "dev",
+   "source": "Darwin, The Voyage of the Beagle, 1839",
+   "text": "After having been twice driven back by heavy south-western gales, Her Majesty's ship Beagle, a ten-gun brig, under the command of Captain Fitz Roy, sailed from Devonport on the 27th of December, 1831.",
+   "devices": []
+  },
+  {
+   "id": "c-bridge-1883",
+   "split": "dev",
+   "source": "constructed",
+   "text": "The bridge opened in 1883 and carried traffic across the river for decades.",
+   "devices": []
+  },
+  {
+   "id": "c-river-rose",
+   "split": "dev",
+   "source": "constructed",
+   "text": "The river rose all night, and by morning the lower road was under water.",
+   "devices": []
+  },
+  {
+   "id": "lk-not-hungry-but",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "She was not hungry, but she ate the bread anyway.",
+   "devices": []
+  },
+  {
+   "id": "lk-could-not-find-but",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "I could not find the key, but the door was unlocked when I got there.",
+   "devices": []
+  },
+  {
+   "id": "lk-not-known-but",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "It is not known whether the samples were stored cold, but the report says they arrived intact.",
+   "devices": []
+  },
+  {
+   "id": "lk-not-only-one",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The ferry did not only run on Sundays; it also ran on public holidays, but only in summer.",
+   "devices": []
+  },
+  {
+   "id": "lk-rather-than-stairs",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "During the drill, use the stairs rather than the lift.",
+   "devices": []
+  },
+  {
+   "id": "lk-eggs-flour-milk",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Add the eggs, flour, and milk to the bowl and stir.",
+   "devices": []
+  },
+  {
+   "id": "lk-boston-salem",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Ships left from Boston, Salem, and Newport that spring.",
+   "devices": []
+  },
+  {
+   "id": "lk-red-white-blue",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The flag on the courthouse is red, white, and blue.",
+   "devices": []
+  },
+  {
+   "id": "lk-smith-log",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Smith arrived at the depot at nine. Smith signed the delivery form. Smith left the depot before ten.",
+   "devices": [
+    "isocolon"
+   ]
+  },
+  {
+   "id": "lk-the-step",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The first step loads the file. The second step parses each line. The third step writes the report.",
+   "devices": [
+    "isocolon"
+   ]
+  },
+  {
+   "id": "proverb-eat-live",
+   "split": "dev",
+   "source": "proverb",
+   "text": "Eat to live, do not live to eat.",
+   "devices": [
+    "antithesis",
+    "chiasmus"
+   ]
+  },
+  {
+   "id": "c-test-ship",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Test what you ship, and ship what you test.",
+   "devices": [
+    "chiasmus",
+    "isocolon",
+    "anadiplosis"
+   ]
+  },
+  {
+   "id": "lk-ship-then-test",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Ship the fix, then test the fix again tomorrow.",
+   "devices": []
+  },
+  {
+   "id": "nursery-peter-piper",
+   "split": "dev",
+   "source": "nursery rhyme, 1813",
+   "text": "Peter Piper picked a peck of pickled peppers.",
+   "devices": [
+    "alliteration"
+   ]
+  },
+  {
+   "id": "c-big-boats",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Big boats bob beside the bay.",
+   "devices": [
+    "alliteration"
+   ]
+  },
+  {
+   "id": "lk-cat-door",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The cat sat by the door all afternoon.",
+   "devices": []
+  },
+  {
+   "id": "c-grey-days",
+   "split": "dev",
+   "source": "constructed",
+   "text": "Grey days make pale faces ache.",
+   "devices": [
+    "assonance"
+   ]
+  },
+  {
+   "id": "poe-mellow-wedding",
+   "split": "dev",
+   "source": "Poe, The Bells, 1849",
+   "text": "Hear the mellow wedding bells, golden bells!",
+   "devices": [
+    "assonance"
+   ]
+  },
+  {
+   "id": "lk-report-filed",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The report was filed on time.",
+   "devices": []
+  },
+  {
+   "id": "kjv-rain-descended",
+   "split": "dev",
+   "source": "KJV, Matthew 7:25",
+   "text": "And the rain descended, and the floods came, and the winds blew, and beat upon that house; and it fell not.",
+   "devices": [
+    "polysyndeton",
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "c-ran-jumped",
+   "split": "dev",
+   "source": "constructed",
+   "text": "We ran and jumped and laughed and fell.",
+   "devices": [
+    "polysyndeton"
+   ]
+  },
+  {
+   "id": "lk-salt-pepper",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Salt and pepper sat on the table by the window.",
+   "devices": []
+  },
+  {
+   "id": "kjv-tribulation",
+   "split": "dev",
+   "source": "KJV, Romans 5:3-4",
+   "text": "We glory in tribulations also: knowing that tribulation worketh patience; and patience, experience; and experience, hope.",
+   "devices": [
+    "anadiplosis"
+   ]
+  },
+  {
+   "id": "c-draft-reads",
+   "split": "dev",
+   "source": "constructed",
+   "text": "The tool reads the draft, and the draft reads better for it.",
+   "devices": [
+    "anadiplosis",
+    "chiasmus"
+   ]
+  },
+  {
+   "id": "lk-read-file",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Read the draft. Then file it with the others.",
+   "devices": []
+  },
+  {
+   "id": "hamlet-words",
+   "split": "dev",
+   "source": "Shakespeare, Hamlet II.ii",
+   "text": "Words, words, words.",
+   "devices": [
+    "epizeuxis",
+    "asyndeton",
+    "tricolon"
+   ]
+  },
+  {
+   "id": "lear-never",
+   "split": "dev",
+   "source": "Shakespeare, King Lear V.iii",
+   "text": "Thou'lt come no more, never, never, never, never, never.",
+   "devices": [
+    "epizeuxis",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "lk-that-that",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "He said that that was fine.",
+   "devices": []
+  },
+  {
+   "id": "lk-had-had",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "By noon she had had enough of the meeting.",
+   "devices": []
+  },
+  {
+   "id": "dickens-bolo",
+   "split": "dev",
+   "source": "Dickens, The Pickwick Papers, 1837",
+   "text": "Miss Bolo went straight home, in a flood of tears and a sedan chair.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "c-hat-leave",
+   "split": "dev",
+   "source": "constructed",
+   "text": "He took his hat and his leave.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "c-keys-temper",
+   "split": "dev",
+   "source": "constructed",
+   "text": "She lost her keys and her temper.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "lk-keys-wallet",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "She lost her keys and her wallet.",
+   "devices": []
+  },
+  {
+   "id": "romeo-loving-hate",
+   "split": "dev",
+   "source": "Shakespeare, Romeo and Juliet I.i",
+   "text": "O brawling love! O loving hate!",
+   "devices": [
+    "oxymoron",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "romeo-sweet-sorrow",
+   "split": "dev",
+   "source": "Shakespeare, Romeo and Juliet II.ii",
+   "text": "Parting is such sweet sorrow.",
+   "devices": [
+    "oxymoron",
+    "alliteration"
+   ]
+  },
+  {
+   "id": "c-deafening-silence",
+   "split": "dev",
+   "source": "constructed",
+   "text": "The hall fell into a deafening silence.",
+   "devices": [
+    "oxymoron"
+   ]
+  },
+  {
+   "id": "lk-long-silence",
+   "split": "dev",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The hall fell into a long silence.",
+   "devices": []
+  },
+  {
+   "id": "h-speech-silver",
+   "split": "heldout",
+   "source": "proverb",
+   "text": "Speech is silver, silence is golden.",
+   "devices": [
+    "antithesis",
+    "isocolon",
+    "alliteration"
+   ]
+  },
+  {
+   "id": "h-love-all",
+   "split": "heldout",
+   "source": "Shakespeare, All's Well That Ends Well I.i",
+   "text": "Love all, trust a few, do wrong to none.",
+   "devices": [
+    "antithesis",
+    "tricolon",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-united-divided",
+   "split": "heldout",
+   "source": "proverb",
+   "text": "United we stand, divided we fall.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-advice-approval",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "Ask for advice, not for approval.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-easy-hard",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "Easy to start, hard to finish.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-lk-did-not-call",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "He did not call, but he wrote the next day.",
+   "devices": []
+  },
+  {
+   "id": "h-lk-train-late",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The train was not late, but the platform had changed.",
+   "devices": []
+  },
+  {
+   "id": "h-stop-look",
+   "split": "heldout",
+   "source": "safety slogan",
+   "text": "Stop, look, and listen.",
+   "devices": [
+    "tricolon",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-read-once",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "Read it once, read it twice, read it aloud.",
+   "devices": [
+    "tricolon",
+    "anaphora",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-liberte",
+   "split": "heldout",
+   "source": "French republican motto",
+   "text": "The motto read liberty, equality, fraternity.",
+   "devices": [
+    "tricolon",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "h-lk-pen-ruler",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Bring a pen, a notebook, and a ruler.",
+   "devices": []
+  },
+  {
+   "id": "h-lk-leeds-york",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Trains run from Leeds, York and Hull.",
+   "devices": []
+  },
+  {
+   "id": "h-psalm-praise",
+   "split": "heldout",
+   "source": "KJV, Psalm 150:3-4",
+   "text": "Praise him with the sound of the trumpet: praise him with the psaltery and harp. Praise him with the timbrel and dance: praise him with stringed instruments and organs.",
+   "devices": [
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-checked-logs",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "We checked the logs. We checked the configs. We checked the backups twice.",
+   "devices": [
+    "anaphora",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-rained",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "It rained on Monday, it rained on Tuesday, it rained all week.",
+   "devices": [
+    "anaphora",
+    "tricolon",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-lk-meeting",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The meeting starts at ten. The room is on floor two. The agenda is attached.",
+   "devices": [
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-love-do",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "Do what you love, and love what you do.",
+   "devices": [
+    "chiasmus",
+    "isocolon",
+    "anadiplosis"
+   ]
+  },
+  {
+   "id": "h-shape-tools",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "We shape our tools, and our tools shape us.",
+   "devices": [
+    "chiasmus",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-lk-built-used",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "We built the tools and then we used them.",
+   "devices": []
+  },
+  {
+   "id": "h-sixpence",
+   "split": "heldout",
+   "source": "nursery rhyme, 1744",
+   "text": "Sing a song of sixpence, a pocket full of rye.",
+   "devices": [
+    "alliteration"
+   ]
+  },
+  {
+   "id": "h-fresh-fish",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "Fresh fish fried fast tastes best.",
+   "devices": [
+    "alliteration"
+   ]
+  },
+  {
+   "id": "h-lk-dog-gate",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "A dog barked at the gate.",
+   "devices": []
+  },
+  {
+   "id": "h-low-road",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "The low road goes slowly home.",
+   "devices": [
+    "assonance"
+   ]
+  },
+  {
+   "id": "h-free-trees",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "Free trees need green leaves.",
+   "devices": [
+    "assonance"
+   ]
+  },
+  {
+   "id": "h-lk-plan-worked",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The plan worked well enough.",
+   "devices": []
+  },
+  {
+   "id": "h-read-wrote",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "We read and wrote and argued and slept.",
+   "devices": [
+    "polysyndeton"
+   ]
+  },
+  {
+   "id": "h-rain-wind-hail",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "There was rain and wind and hail all night.",
+   "devices": [
+    "polysyndeton"
+   ]
+  },
+  {
+   "id": "h-lk-bread-butter",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "Bread and butter waited on the plate.",
+   "devices": []
+  },
+  {
+   "id": "h-fix-test",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "The fix needs a test, and the test needs a reviewer.",
+   "devices": [
+    "anadiplosis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-data-evidence",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "Data becomes evidence; evidence becomes a decision.",
+   "devices": [
+    "anadiplosis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-lk-test-build",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The test passed, and the build shipped.",
+   "devices": [
+    "isocolon"
+   ]
+  },
+  {
+   "id": "h-location",
+   "split": "heldout",
+   "source": "real-estate saying",
+   "text": "Location, location, location.",
+   "devices": [
+    "epizeuxis",
+    "asyndeton",
+    "tricolon"
+   ]
+  },
+  {
+   "id": "h-no-no-no",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "No, no, no, that is the wrong file.",
+   "devices": [
+    "epizeuxis"
+   ]
+  },
+  {
+   "id": "h-lk-that-that",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "He knew that that answer was wrong.",
+   "devices": []
+  },
+  {
+   "id": "h-train-cold",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "She caught the train and a cold.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "h-wallet-nerve",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "He lost his wallet and his nerve.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "h-lk-wallet-phone",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "He lost his wallet and his phone.",
+   "devices": []
+  },
+  {
+   "id": "h-romeo-feather",
+   "split": "heldout",
+   "source": "Shakespeare, Romeo and Juliet I.i",
+   "text": "Feather of lead, bright smoke, cold fire, sick health!",
+   "devices": [
+    "oxymoron",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "h-open-secret",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "It was an open secret in the office.",
+   "devices": [
+    "oxymoron"
+   ]
+  },
+  {
+   "id": "h-living-death",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "Exile felt like a living death.",
+   "devices": [
+    "oxymoron"
+   ]
+  },
+  {
+   "id": "h-lk-fire-hot",
+   "split": "heldout",
+   "source": "constructed",
+   "lookalike": true,
+   "text": "The fire was bright and hot.",
+   "devices": []
+  },
+  {
+   "id": "h-austen-truth",
+   "split": "heldout",
+   "source": "Austen, Pride and Prejudice, 1813",
+   "text": "It is a truth universally acknowledged, that a single man in possession of a good fortune, must be in want of a wife.",
+   "devices": []
+  },
+  {
+   "id": "h-darwin-origin",
+   "split": "heldout",
+   "source": "Darwin, On the Origin of Species, 1859",
+   "text": "When we look to the individuals of the same variety or sub-variety of our older cultivated plants and animals, one of the first points which strikes us, is, that they generally differ much more from each other, than do the individuals of any one species or variety in a state of nature.",
+   "devices": []
+  },
+  {
+   "id": "h-melville-whale",
+   "split": "heldout",
+   "source": "Melville, Moby-Dick, 1851",
+   "text": "It is a way I have of driving off the spleen and regulating the circulation.",
+   "devices": []
+  },
+  {
+   "id": "h-lk-quote-antithesis",
+   "split": "heldout",
+   "source": "constructed",
+   "text": "The reviewer wrote that the change \"is not a fix but a workaround,\" and the logs bear that out.",
+   "devices": [
+    "antithesis"
+   ],
+   "note": "the device sits inside an attributed quotation; it is present in the text and belongs to the quoted writer"
+  },
+  {
+   "id": "ind-dickens-best-worst",
+   "split": "heldout-independent",
+   "source": "Charles Dickens, A Tale of Two Cities (1859)",
+   "text": "It was the best of times, it was the worst of times.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-pope-err-forgive",
+   "split": "heldout-independent",
+   "source": "Alexander Pope, An Essay on Criticism (1711)",
+   "text": "To err is human, to forgive divine.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-matthew-many-few",
+   "split": "heldout-independent",
+   "source": "Matthew 22:14 (KJV)",
+   "text": "For many are called, but few are chosen.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-proverb-speech-silver",
+   "split": "heldout-independent",
+   "source": "proverb",
+   "text": "Speech is silver, silence is golden.",
+   "devices": [
+    "antithesis",
+    "isocolon",
+    "alliteration"
+   ]
+  },
+  {
+   "id": "ind-kennedy-ask-not",
+   "split": "heldout-independent",
+   "source": "John F. Kennedy, inaugural address (1961), US government work",
+   "text": "Ask not what your country can do for you; ask what you can do for your country.",
+   "devices": [
+    "chiasmus",
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-lk-antithesis-not-but-delay",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The delay was not caused by the weather but by a shortage of trained staff.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-antithesis-bridge-but",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The bridge is old but still carries heavy traffic every day.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-caesar-came-saw",
+   "split": "heldout-independent",
+   "source": "Julius Caesar, traditional English rendering of 'veni, vidi, vici'",
+   "text": "I came, I saw, I conquered.",
+   "devices": [
+    "tricolon",
+    "anaphora",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-lincoln-of-by-for",
+   "split": "heldout-independent",
+   "source": "Abraham Lincoln, Gettysburg Address (1863)",
+   "text": "...that government of the people, by the people, for the people, shall not perish from the earth.",
+   "devices": [
+    "tricolon",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "ind-tricolon-head-hand-heart",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The work demands a clear head, a steady hand, and a patient heart.",
+   "devices": [
+    "tricolon"
+   ]
+  },
+  {
+   "id": "ind-lk-tricolon-shopping",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Please buy eggs, flour, and milk on the way home.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-tricolon-toolkit-asyndeton",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The kit includes a hammer, a level, a tape measure.",
+   "devices": [
+    "asyndeton"
+   ],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lincoln-dedicate",
+   "split": "heldout-independent",
+   "source": "Abraham Lincoln, Gettysburg Address (1863)",
+   "text": "But, in a larger sense, we can not dedicate, we can not consecrate, we can not hallow this ground.",
+   "devices": [
+    "anaphora",
+    "tricolon",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-anaphora-every-morning",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Every morning she checked the gauges; every morning she logged the readings; every morning she found the same small leak.",
+   "devices": [
+    "anaphora",
+    "tricolon",
+    "asyndeton",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-dickens-age-wisdom",
+   "split": "heldout-independent",
+   "source": "Charles Dickens, A Tale of Two Cities (1859)",
+   "text": "It was the best of times, it was the worst of times, it was the age of wisdom, it was the age of foolishness.",
+   "devices": [
+    "anaphora",
+    "antithesis",
+    "isocolon",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "ind-lk-anaphora-report-twice",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The report arrived late. The second report, which the auditors had requested in March, arrived even later.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-anaphora-epistrophe-wrong",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Our drafts were wrong in March, his figures were wrong in April, and every forecast was wrong in May.",
+   "devices": [
+    "tricolon",
+    "isocolon"
+   ],
+   "lookalike": true
+  },
+  {
+   "id": "ind-macbeth-fair-foul",
+   "split": "heldout-independent",
+   "source": "William Shakespeare, Macbeth (c. 1606)",
+   "text": "Fair is foul, and foul is fair.",
+   "devices": [
+    "chiasmus",
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-matthew-last-first",
+   "split": "heldout-independent",
+   "source": "Matthew 20:16 (KJV)",
+   "text": "So the last shall be first, and the first last.",
+   "devices": [
+    "chiasmus",
+    "antithesis"
+   ]
+  },
+  {
+   "id": "ind-chiasmus-forget-remember",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "You forget what you want to remember, and you remember what you want to forget.",
+   "devices": [
+    "chiasmus",
+    "antithesis",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-lk-chiasmus-prices-same-order",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "When prices rise, wages rise; when prices fall, wages fall.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-chiasmus-barrels-anadiplosis",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Rain filled the barrels, and the barrels overflowed by noon.",
+   "devices": [
+    "anadiplosis"
+   ],
+   "lookalike": true
+  },
+  {
+   "id": "ind-nursery-peter-piper",
+   "split": "heldout-independent",
+   "source": "traditional nursery rhyme",
+   "text": "Peter Piper picked a peck of pickled peppers.",
+   "devices": [
+    "alliteration"
+   ]
+  },
+  {
+   "id": "ind-sonnet30-sessions",
+   "split": "heldout-independent",
+   "source": "William Shakespeare, Sonnet 30 (1609)",
+   "text": "When to the sessions of sweet silent thought I summon up remembrance of things past.",
+   "devices": [
+    "alliteration"
+   ]
+  },
+  {
+   "id": "ind-alliteration-silver-ships",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Several silver ships sailed south at sunrise.",
+   "devices": [
+    "alliteration"
+   ]
+  },
+  {
+   "id": "ind-lk-alliteration-letter-c",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The cat ceased chewing the cord.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-alliteration-spread-p",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Paul arrived early at the station, and Peter came an hour later with the parcels.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-poe-mellow-bells",
+   "split": "heldout-independent",
+   "source": "Edgar Allan Poe, The Bells (1849)",
+   "text": "Hear the mellow wedding bells, golden bells!",
+   "devices": [
+    "assonance"
+   ]
+  },
+  {
+   "id": "ind-poe-purple-curtain",
+   "split": "heldout-independent",
+   "source": "Edgar Allan Poe, The Raven (1845)",
+   "text": "And the silken, sad, uncertain rustling of each purple curtain",
+   "devices": [
+    "assonance",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "ind-assonance-grey-whale",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The great grey whale made its way through the waves.",
+   "devices": [
+    "assonance"
+   ]
+  },
+  {
+   "id": "ind-assonance-sigh-night",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "I sigh at night when the tide is high.",
+   "devices": [
+    "assonance"
+   ]
+  },
+  {
+   "id": "ind-lk-assonance-dove-stove",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The dove moved over the stove and out the window.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-assonance-boat-two",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The boat floated down the river at noon.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-polysyndeton-tents",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "We packed the tents and the stoves and the ropes and the lanterns before dawn.",
+   "devices": [
+    "polysyndeton"
+   ]
+  },
+  {
+   "id": "ind-polysyndeton-old-man",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The old man read and wrote and argued and slept in the same chair for forty years.",
+   "devices": [
+    "polysyndeton"
+   ]
+  },
+  {
+   "id": "ind-polysyndeton-cart",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The cart carried wheat and barley and oats and rye down to the mill.",
+   "devices": [
+    "polysyndeton"
+   ]
+  },
+  {
+   "id": "ind-lk-polysyndeton-one-and",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The pack holds a map, a compass, and a whistle.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-polysyndeton-pairs",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Salt and pepper sat next to the oil and vinegar on the table.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-asyndeton-tired-hungry",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "He was tired, hungry, cold, far from home.",
+   "devices": [
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "ind-asyndeton-ship-listed",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Our ship listed, its deck flooded, every sailor ran for the boats.",
+   "devices": [
+    "asyndeton",
+    "tricolon",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-asyndeton-pantry",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Rice, beans, lentils, flour, salt: the pantry held nothing else.",
+   "devices": [
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "ind-lk-asyndeton-two-clauses",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The road was long, the night cold.",
+   "devices": [
+    "isocolon"
+   ],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-asyndeton-subordinate-commas",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "On Tuesday, after the meeting, the manager, who had been away, signed the forms.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-anadiplosis-storm-rain",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The storm brought rain, and rain brought floods, and floods brought ruin.",
+   "devices": [
+    "anadiplosis",
+    "polysyndeton",
+    "tricolon",
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-anadiplosis-peace",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "He spent his whole life looking for peace, and peace never came.",
+   "devices": [
+    "anadiplosis"
+   ]
+  },
+  {
+   "id": "ind-anadiplosis-door",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Every house needs a door, and the door must be kept in good repair.",
+   "devices": [
+    "anadiplosis"
+   ]
+  },
+  {
+   "id": "ind-lk-anadiplosis-river-midclause",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The river rose in the night, and by morning the river had reached the porch.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-anadiplosis-water-later",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "He asked for water, and they brought him warm water in a cup.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-epizeuxis-run-run",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Run, run! The dam has broken.",
+   "devices": [
+    "epizeuxis"
+   ]
+  },
+  {
+   "id": "ind-epizeuxis-very-very",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "It was very, very late when the last train finally pulled in.",
+   "devices": [
+    "epizeuxis"
+   ]
+  },
+  {
+   "id": "ind-epizeuxis-no-no",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "No, no, you have misunderstood me entirely.",
+   "devices": [
+    "epizeuxis"
+   ]
+  },
+  {
+   "id": "ind-lk-epizeuxis-had-had",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "By the time the inspector arrived, the crew had had enough of waiting.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-epizeuxis-that-that",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "She said that that was the last bus of the night.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-isocolon-roads-shops",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The roads were empty; the shops were closed.",
+   "devices": [
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-isocolon-hands-voice",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "His hands were steady; his voice was calm.",
+   "devices": [
+    "isocolon"
+   ]
+  },
+  {
+   "id": "ind-lk-isocolon-adjective-list",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The room was bright, clean, and quiet.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-isocolon-unequal-clauses",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The committee approved the budget, but the full council, after a long and bitter debate lasting most of the night, rejected it.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-pickwick-tears-sedan",
+   "split": "heldout-independent",
+   "source": "Charles Dickens, The Pickwick Papers (1837)",
+   "text": "Miss Bolo rose from the table considerably agitated, and went straight home, in a flood of tears and a sedan-chair.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "ind-pope-stain-honour",
+   "split": "heldout-independent",
+   "source": "Alexander Pope, The Rape of the Lock (1714)",
+   "text": "Or stain her honour, or her new brocade.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "ind-zeugma-keys-temper",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "She lost her keys and her temper on the same morning.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "ind-zeugma-cold-train",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "He caught a cold and the last train home.",
+   "devices": [
+    "zeugma"
+   ]
+  },
+  {
+   "id": "ind-lk-zeugma-keys-wallet",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "She lost her keys and her wallet on the same morning.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-zeugma-franklin-hang",
+   "split": "heldout-independent",
+   "source": "attributed to Benjamin Franklin (1776)",
+   "text": "We must all hang together, or assuredly we shall all hang separately.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ],
+   "lookalike": true
+  },
+  {
+   "id": "ind-romeo-sweet-sorrow",
+   "split": "heldout-independent",
+   "source": "William Shakespeare, Romeo and Juliet (c. 1597)",
+   "text": "Parting is such sweet sorrow.",
+   "devices": [
+    "oxymoron",
+    "alliteration"
+   ]
+  },
+  {
+   "id": "ind-romeo-cold-fire",
+   "split": "heldout-independent",
+   "source": "William Shakespeare, Romeo and Juliet (c. 1597)",
+   "text": "Feather of lead, bright smoke, cold fire, sick health!",
+   "devices": [
+    "oxymoron",
+    "asyndeton"
+   ]
+  },
+  {
+   "id": "ind-oxymoron-deafening-silence",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The guests sat in a deafening silence while the verdict was read.",
+   "devices": [
+    "oxymoron"
+   ]
+  },
+  {
+   "id": "ind-oxymoron-open-secret",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Everyone knew it was an open secret that the mill would close.",
+   "devices": [
+    "oxymoron"
+   ]
+  },
+  {
+   "id": "ind-lk-oxymoron-hot-cold-apart",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The days were hot, but the nights were surprisingly cold.",
+   "devices": [
+    "antithesis",
+    "isocolon"
+   ],
+   "lookalike": true
+  },
+  {
+   "id": "ind-lk-oxymoron-hard-soft-apart",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The pilot made a hard landing on the soft grass strip.",
+   "devices": [],
+   "lookalike": true
+  },
+  {
+   "id": "ind-neutral-council-vote",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The city council will vote on the proposed parking rules next Tuesday.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-router-reset",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "To reset the router, hold the button on the back for ten seconds.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-museum",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The museum reopened in June after an eighteen-month renovation.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-rainfall",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Rainfall in the region was about twenty percent below the seasonal average.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-letter-pocket",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "She folded the letter and slipped it into her coat pocket before walking to the car.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-function-returns",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The function returns an empty list when the input file has no records.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-ticket-sales",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Ticket sales rose slightly in the third quarter, according to the company's report.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-ferry",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The ferry to the island leaves twice a day during the summer season.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-uncle-library",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "My uncle worked at the town library for nearly a decade before retiring.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-sample-storage",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "Each sample was stored at four degrees Celsius until analysis.",
+   "devices": []
+  },
+  {
+   "id": "ind-neutral-train-delay",
+   "split": "heldout-independent",
+   "source": "constructed",
+   "text": "The train was delayed by forty minutes because of a signal fault near the station.",
+   "devices": []
+  }
+ ]
+}

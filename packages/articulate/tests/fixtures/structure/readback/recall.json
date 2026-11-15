@@ -1,0 +1,55 @@
+{
+  "note": "Pinned by tests/test_structure_readback.py. marks: spans a reader objected to. reported: marks a finding of the named rule touches at HIGH or MEDIUM. gating: the same at HIGH.",
+  "recall": {
+    "anaphora": {
+      "marks": 1,
+      "reported": 1,
+      "gating": 1
+    },
+    "hand-back formula": {
+      "marks": 1,
+      "reported": 1,
+      "gating": 0
+    },
+    "landing sentences": {
+      "marks": 2,
+      "reported": 2,
+      "gating": 1
+    },
+    "paragraph pinning": {
+      "marks": 3,
+      "reported": 3,
+      "gating": 2
+    },
+    "parallel sentence structures": {
+      "marks": 1,
+      "reported": 1,
+      "gating": 1
+    },
+    "parataxis": {
+      "marks": 2,
+      "reported": 2,
+      "gating": 0
+    },
+    "register": {
+      "marks": 1,
+      "reported": 0,
+      "gating": 0
+    },
+    "rule of three": {
+      "marks": 1,
+      "reported": 1,
+      "gating": 1
+    },
+    "setup and payoff": {
+      "marks": 2,
+      "reported": 2,
+      "gating": 2
+    },
+    "summary beats": {
+      "marks": 1,
+      "reported": 1,
+      "gating": 1
+    }
+  }
+}

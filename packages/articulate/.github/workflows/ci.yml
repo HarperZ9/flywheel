@@ -1,0 +1,195 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+# Every job only reads the repository.
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # Pinned: ubuntu-latest moved to 26.04, where setup-python has no 3.9 build.
+    # 24.04 carries every version in the matrix, so 3.9 stays covered on Linux.
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        python: ["3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      # The suite gates on the benchmark (a regression check), the dogfood check
+      # (our own prose passes our own standard), the mode/receipt/LSP contracts,
+      # and the ReDoS safety test.
+      - run: python -m pytest -q
+
+  # The claude CLI tests start stand-in .cmd and .bat shims through cmd.exe and
+  # check the Windows resolution order. Those tests skip on Linux, so they need
+  # a Windows runner. 3.9 and 3.12 bracket the supported range.
+  test-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        python: ["3.9", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - run: pip install -e ".[dev]"
+      - run: python -m pytest -q
+
+  # The Claude plugin starts its server with python3, and macOS is the third
+  # system it supports. These are the plugin tests; the smoke run starts a built
+  # plugin with the stock python3 the command line tools install.
+  test-macos-plugin:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: >-
+          python -m pytest -q tests/test_tool_annotations.py
+          tests/test_claude_plugin_bundle.py tests/test_claude_plugin_launch.py
+          tests/test_local_mcp_plugin_surface.py tests/test_local_tools_stay_local.py
+          tests/test_claude_plugin_claims.py tests/test_claude_plugin_scripts.py
+          tests/test_claude_plugin_audit.py
+      - run: python scripts/build_claude_plugin.py build/claude-plugin --dev
+      - run: /usr/bin/python3 scripts/smoke_claude_plugin.py build/claude-plugin --command /usr/bin/python3
+
+  extras:
+    # The [mcp] and [hosted] extras pull fastmcp. The default jobs install only
+    # [dev], so the fastmcp tests skip there. This job installs both extras,
+    # fails if fastmcp did not import, and runs the full suite with them.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev,mcp,hosted]"
+      - run: python -c "import fastmcp; print('fastmcp', fastmcp.__version__)"
+      - run: python -m pytest -q tests/test_tool_annotations.py tests/test_hosted_mcp.py tests/test_house_mcp.py tests/test_local_mcp.py tests/test_mcp_editing.py tests/test_voice_mcp.py
+      - run: python -m pytest -q
+
+  hook-clean-repo:
+    # The pre-commit hook from a scratch repository: a clean file commits, a
+    # file with a prose em-dash is refused.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pre-commit
+      - name: The hook passes a clean file and blocks a prose em-dash
+        run: |
+          SRC="$GITHUB_WORKSPACE"
+          REV="$(git -C "$SRC" rev-parse HEAD)"
+          SCRATCH="$RUNNER_TEMP/scratch"
+          mkdir "$SCRATCH" && cd "$SCRATCH"
+          git init -q
+          git config user.email ci@example.invalid
+          git config user.name CI
+          printf 'repos:\n  - repo: %s\n    rev: %s\n    hooks:\n      - id: articulate\n' "$SRC" "$REV" > .pre-commit-config.yaml
+          pre-commit install
+          git add .pre-commit-config.yaml
+          git commit -qm "config" --no-verify
+          cp "$SRC/tests/fixtures/action/clean.md" notes.md
+          git add notes.md
+          git commit -m "clean file"
+          printf '# Plan\n\nThe release is ready \xe2\x80\x94 ship it today.\n' > blocked.md
+          git add blocked.md
+          if git commit -m "blocked file" > hook.log 2>&1; then
+            cat hook.log; echo "the hook let a blocked file through"; exit 1
+          fi
+          cat hook.log
+          grep -q "blocked.md" hook.log
+          test "$(git log --format=%s -1)" = "clean file"
+
+  action-clean-repo:
+    # The GitHub Action from this checkout: a clean file with a committed
+    # content-free receipt passes, a drifted receipt fails, and the gate input
+    # fails a blocked file.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: A clean file and its committed receipt pass
+        uses: ./
+        with:
+          files: tests/fixtures/action/*.md
+          gate: "true"
+          audit-path: tests/fixtures/action/receipts
+      - name: Change the file after its receipt
+        run: printf '\nA line added after the receipt.\n' >> tests/fixtures/action/clean.md
+      - name: A drifted receipt fails
+        id: drift
+        continue-on-error: true
+        uses: ./
+        with:
+          files: tests/fixtures/action/*.md
+          audit-path: tests/fixtures/action/receipts
+          upload-sarif: "false"
+      - name: Write a blocked file
+        run: |
+          mkdir -p ci-blocked/deep
+          printf '# Plan\n\nThe release is ready \xe2\x80\x94 ship it today.\n' > ci-blocked/deep/plan.md
+      - name: A blocked file fails under the gate input
+        id: blocked
+        continue-on-error: true
+        uses: ./
+        with:
+          files: ci-blocked/**/*.md
+          gate: "true"
+          upload-sarif: "false"
+      - name: Both negative runs failed, for the expected reasons
+        run: |
+          test "${{ steps.drift.outcome }}" = failure
+          test "${{ steps.blocked.outcome }}" = failure
+          python -m articulate.cli audit tests/fixtures/action/receipts --reverify > audit.log 2>&1 || true
+          cat audit.log
+          grep -q "source-changed" audit.log
+          python -m articulate.cli check ci-blocked/deep/plan.md --gate > gate.log 2>&1 || true
+          cat gate.log
+          grep -q "blocked" gate.log
+
+  articulate-self-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      # Dogfood in CI: our shipped docs must pass our own gate.
+      - run: python -m articulate.cli check README.md CHANGELOG.md docs/*.md --gate
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install build
+      - run: python -m build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/*
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py

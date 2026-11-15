@@ -1,0 +1,15 @@
+{
+  "name": "articulate-writing",
+  "description": "Articulate Writing: prose checks that run on your computer, for Claude Code.",
+  "owner": {
+    "name": "Zain Dana Harper",
+    "url": "https://github.com/HarperZ9"
+  },
+  "plugins": [
+    {
+      "name": "articulate-writing",
+      "source": "./",
+      "description": "Checks prose on your computer for named writing patterns and shows where each one occurs and what it costs a reader. The checker sends the text nowhere; Claude reads the text as part of your conversation."
+    }
+  ]
+}

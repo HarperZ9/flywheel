@@ -1,0 +1,5150 @@
+{
+ "schema": "articulate/provenance-manifest/v1",
+ "documents": [
+  {
+   "id": "ai-essay-0-olmo2-7b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-0-olmo2-7b.txt",
+   "sha256": "2db81dae226829228e54d142427a97ffd0433ebcce71c958ee756c386c4ca216",
+   "words": 466,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 577
+    },
+    "prompt": "Write a reflective essay of about 350 words about living simply in a cabin beside a pond. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-0-qwen2.5-3b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-0-qwen2.5-3b.txt",
+   "sha256": "ccac7d368e05012baf865f9cbe477a124bdf714e1c151cbd88cbae44ccd79ebc",
+   "words": 509,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 586
+    },
+    "prompt": "Write a reflective essay of about 350 words about living simply in a cabin beside a pond. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-0-qwen2.5-7b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-0-qwen2.5-7b.txt",
+   "sha256": "ec1bda4f51e2a20b8e2d85228af5d934e62e9f69b3ef6ff654e60ebacd52a7e1",
+   "words": 394,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 464
+    },
+    "prompt": "Write a reflective essay of about 350 words about living simply in a cabin beside a pond. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-0-qwen3-8b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-0-qwen3-8b.txt",
+   "sha256": "c812beb2f457bc508ca88d2d1545b7384b01f1d6151e7494e6f9632f7c07c6d9",
+   "words": 347,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 403
+    },
+    "prompt": "Write a reflective essay of about 350 words about living simply in a cabin beside a pond. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-1-olmo2-7b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-1-olmo2-7b.txt",
+   "sha256": "76d1a894f1fae715d143cf78b386b59a3828ab2546cf15f22b70391f24925084",
+   "words": 418,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 487
+    },
+    "prompt": "Write a reflective essay of about 350 words about why people fill their days with errands. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-1-qwen2.5-3b.txt",
+   "sha256": "edc4d9720d0b5f7a33f3887c6a4f23939c58864101fcf6ed88197ba24e7eb640",
+   "words": 389,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 465
+    },
+    "prompt": "Write a reflective essay of about 350 words about why people fill their days with errands. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-1-qwen2.5-7b.txt",
+   "sha256": "911c8dc216b49f850aefacd6740a7d76fb2c919b051036c774fadb9372279c23",
+   "words": 403,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 497
+    },
+    "prompt": "Write a reflective essay of about 350 words about why people fill their days with errands. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-1-qwen3-8b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-1-qwen3-8b.txt",
+   "sha256": "b00b9222d7079d19c82a4eedcfa8ddc6f309dcc80d4e11146d0830cda03cc03f",
+   "words": 340,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 416
+    },
+    "prompt": "Write a reflective essay of about 350 words about why people fill their days with errands. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-2-olmo2-7b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-2-olmo2-7b.txt",
+   "sha256": "e690f3cf0cc01f272f3a02c79286dfa395c04ba11d05c7e03c2bc31eaddca947",
+   "words": 485,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 583
+    },
+    "prompt": "Write a reflective essay of about 350 words about the value of solitude. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-2-qwen2.5-3b.txt",
+   "sha256": "df2fe47dd2486bd187d0fc4a1685fa763ce3f7ec19350e91513f89ab95fea2b5",
+   "words": 401,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 484
+    },
+    "prompt": "Write a reflective essay of about 350 words about the value of solitude. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-2-qwen2.5-7b.txt",
+   "sha256": "ebeb321b716d409a192136972f8db7c618f6ba20696261ea1645e06087613f59",
+   "words": 417,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 502
+    },
+    "prompt": "Write a reflective essay of about 350 words about the value of solitude. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-essay-2-qwen3-8b",
+   "class": "ai",
+   "genre": "essay",
+   "location": "repo",
+   "path": "ai/ai-essay-2-qwen3-8b.txt",
+   "sha256": "afe22ef6789f5cffff71a6ba2304edbb60cbba4cb15f2c11dd670f767948c4ac",
+   "words": 334,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 399
+    },
+    "prompt": "Write a reflective essay of about 350 words about the value of solitude. Write only the essay, with no title."
+   }
+  },
+  {
+   "id": "ai-fiction-0-olmo2-7b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-0-olmo2-7b.txt",
+   "sha256": "0157354b12c2dbeb8f96e308329075da537a9595632f20f6633a0ad1f6987a85",
+   "words": 438,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 545
+    },
+    "prompt": "Write a passage of about 350 words from a novel. A sailor on a whaling ship describes a calm morning at sea. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-0-qwen2.5-3b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-0-qwen2.5-3b.txt",
+   "sha256": "fad9fd0034fb8915e946091f7d0fa9e2cccafecad2074f0913db717a6f6a3ee2",
+   "words": 389,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 485
+    },
+    "prompt": "Write a passage of about 350 words from a novel. A sailor on a whaling ship describes a calm morning at sea. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-0-qwen2.5-7b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-0-qwen2.5-7b.txt",
+   "sha256": "26976ae1b898d1b6471a3798db10ed7bcd8e86fdac7cb6205886345ee5c1332e",
+   "words": 296,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 359
+    },
+    "prompt": "Write a passage of about 350 words from a novel. A sailor on a whaling ship describes a calm morning at sea. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-0-qwen3-8b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-0-qwen3-8b.txt",
+   "sha256": "5e7573d125202f4bc796800cc2c105de746da359516bd60a3e6231a32d2effa8",
+   "words": 373,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 447
+    },
+    "prompt": "Write a passage of about 350 words from a novel. A sailor on a whaling ship describes a calm morning at sea. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-1-olmo2-7b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-1-olmo2-7b.txt",
+   "sha256": "dcd5ceb057257cada5e4283acbafabad5e00de6c5690fa3d3b71314260649cf4",
+   "words": 383,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 473
+    },
+    "prompt": "Write a passage of about 350 words from a novel. A narrator explains how a world with only two dimensions looks to the people in it. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-1-qwen2.5-3b.txt",
+   "sha256": "0765a905d5252ced7ae9ae9cc0b6100b80fc3517fc0aba09b2733a8f8f181663",
+   "words": 419,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 501
+    },
+    "prompt": "Write a passage of about 350 words from a novel. A narrator explains how a world with only two dimensions looks to the people in it. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-1-qwen2.5-7b.txt",
+   "sha256": "a503fddc893ce87ac8dc1f4d5f9437dd887f12c43e9a761843c9f566484341e9",
+   "words": 379,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 448
+    },
+    "prompt": "Write a passage of about 350 words from a novel. A narrator explains how a world with only two dimensions looks to the people in it. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-1-qwen3-8b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-1-qwen3-8b.txt",
+   "sha256": "5aca16a92902a1136ccd6ac2727e7a5628482424bc152f0bddbf299597c13736",
+   "words": 433,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 506
+    },
+    "prompt": "Write a passage of about 350 words from a novel. A narrator explains how a world with only two dimensions looks to the people in it. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-2-olmo2-7b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-2-olmo2-7b.txt",
+   "sha256": "bb3583fcaa0b1eaa19738a63a1363314cf63a354fe479ee47b5276eb54eb17df",
+   "words": 357,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 490
+    },
+    "prompt": "Write a passage of about 350 words from a novel. Three friends on a boating holiday on the Thames argue about what to pack. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-2-qwen2.5-3b.txt",
+   "sha256": "c6702eab39227ba1dd94192c9b86847f0cfe4d437f994bdcb6119152a9beb98d",
+   "words": 415,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 511
+    },
+    "prompt": "Write a passage of about 350 words from a novel. Three friends on a boating holiday on the Thames argue about what to pack. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-2-qwen2.5-7b.txt",
+   "sha256": "97cb513b0ad7377d334d65ebc8ecd79a8258232122d0d6e8c8bece4530d3cc22",
+   "words": 376,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 492
+    },
+    "prompt": "Write a passage of about 350 words from a novel. Three friends on a boating holiday on the Thames argue about what to pack. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-fiction-2-qwen3-8b",
+   "class": "ai",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "ai/ai-fiction-2-qwen3-8b.txt",
+   "sha256": "3a5e5c418924c6baf75b346589d5b8037250b8504206970b0a50af8310699bbd",
+   "words": 363,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 488
+    },
+    "prompt": "Write a passage of about 350 words from a novel. Three friends on a boating holiday on the Thames argue about what to pack. Write only the passage, with no title or preface."
+   }
+  },
+  {
+   "id": "ai-science-0-olmo2-7b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-0-olmo2-7b.txt",
+   "sha256": "35327b32a44835e2207682c13934ecf43d4e22b77c4b13761c26a7a55ad2cd7c",
+   "words": 406,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 471
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about how variation within a species is passed from parents to offspring. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-0-qwen2.5-3b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-0-qwen2.5-3b.txt",
+   "sha256": "e9e075bbfec7e725b15ac737cbafa323ca7a7c64ef28eafd8702804e3040e197",
+   "words": 445,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 502
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about how variation within a species is passed from parents to offspring. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-0-qwen2.5-7b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-0-qwen2.5-7b.txt",
+   "sha256": "88ba7fc4a36417fcead133c87ff0d8ab01964d31ede3c8f3d1c21a0236d475e5",
+   "words": 418,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 490
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about how variation within a species is passed from parents to offspring. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-0-qwen3-8b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-0-qwen3-8b.txt",
+   "sha256": "3aa65c11835f2ab25b19e9263ef26015b69b5cf2bc2304920944593843a28e8f",
+   "words": 393,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 461
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about how variation within a species is passed from parents to offspring. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-1-olmo2-7b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-1-olmo2-7b.txt",
+   "sha256": "a5ce241e83769de3c367a72d23f386d9374f529b3e1489961ad48c489c474d7f",
+   "words": 379,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 467
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about the geology and wildlife of a remote volcanic island chain. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-1-qwen2.5-3b.txt",
+   "sha256": "c11ea1faf69babab6ed2226c5113fb16c3954a4cd56734c36d329228a3177baa",
+   "words": 407,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 494
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about the geology and wildlife of a remote volcanic island chain. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-1-qwen2.5-7b.txt",
+   "sha256": "2cdb7c1a98c763b984432ad10817c8519c324a93cb482f30c3e3734c450b985a",
+   "words": 492,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 609
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about the geology and wildlife of a remote volcanic island chain. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-1-qwen3-8b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-1-qwen3-8b.txt",
+   "sha256": "af261809bddd447126195a4f7ccbd77abc6156a8a2aa221bd9b2a25092a663b5",
+   "words": 367,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 465
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about the geology and wildlife of a remote volcanic island chain. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-2-olmo2-7b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-2-olmo2-7b.txt",
+   "sha256": "401ea3a5f044e48341fafb72b649a391c7158afacbda141807a516fa0dd627dd",
+   "words": 334,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 415
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about how earthworms change the soil of a field over many years. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-2-qwen2.5-3b.txt",
+   "sha256": "7995b5beb448a2de587e404e2a5578a6f1d0a56862744fd39082cacf1b61bfdd",
+   "words": 457,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 557
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about how earthworms change the soil of a field over many years. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-2-qwen2.5-7b.txt",
+   "sha256": "eb89b8212d77addc5416d757d1a2e9b9b6a859838f58403876e70d5c5aaa59b0",
+   "words": 411,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 515
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about how earthworms change the soil of a field over many years. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-science-2-qwen3-8b",
+   "class": "ai",
+   "genre": "science",
+   "location": "repo",
+   "path": "ai/ai-science-2-qwen3-8b.txt",
+   "sha256": "5f696b3297df69ef41281a3e27f1bc4028ffa409e1a73d747b86dc06a7a1b66a",
+   "words": 380,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 3,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 484
+    },
+    "prompt": "Write about 350 words of natural-history writing for general readers about how earthworms change the soil of a field over many years. Write only the text, with no title."
+   }
+  },
+  {
+   "id": "ai-student-essay-cell-phones-at-school-1-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-cell-phones-at-school-1-olmo2-7b.txt",
+   "sha256": "ca07f3e201e219651093bb8b50511b2e34d179c716c1cc99afe5fe8f08cab3d9",
+   "words": 428,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 499
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Cell phones at school",
+    "prompt_sha256": "54f4ecd1c18c70f3e0c25b9209fc51a9d517eeb15b596f745963e70aeaf8ad81",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-cell-phones-at-school-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-cell-phones-at-school-1-qwen2.5-3b.txt",
+   "sha256": "498d7accbdd02438fb13b0dea0e736a6a4989d0ff6f1608ba14fd79cced72d3a",
+   "words": 496,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 573
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Cell phones at school",
+    "prompt_sha256": "54f4ecd1c18c70f3e0c25b9209fc51a9d517eeb15b596f745963e70aeaf8ad81",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-cell-phones-at-school-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-cell-phones-at-school-1-qwen2.5-7b.txt",
+   "sha256": "17943d1e4bafee06c62883c1f1a6fa0dc3019f60d52e9574787753ca71b1808b",
+   "words": 510,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 590
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Cell phones at school",
+    "prompt_sha256": "54f4ecd1c18c70f3e0c25b9209fc51a9d517eeb15b596f745963e70aeaf8ad81",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-cell-phones-at-school-1-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-cell-phones-at-school-1-qwen3-8b.txt",
+   "sha256": "1def7c58fad84210a656cffed5cda6e093831da396a6b464d98a7714cfddd567",
+   "words": 358,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 405
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Cell phones at school",
+    "prompt_sha256": "54f4ecd1c18c70f3e0c25b9209fc51a9d517eeb15b596f745963e70aeaf8ad81",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-cell-phones-at-school-2-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-cell-phones-at-school-2-olmo2-7b.txt",
+   "sha256": "a582c7e9e81cfd794ebfb0e790467b2eab136aa635d98c6003ba8fca9986c9c3",
+   "words": 471,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 550
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Cell phones at school",
+    "prompt_sha256": "54f4ecd1c18c70f3e0c25b9209fc51a9d517eeb15b596f745963e70aeaf8ad81",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-cell-phones-at-school-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-cell-phones-at-school-2-qwen2.5-3b.txt",
+   "sha256": "b11644eb816ea845173604fa4da806923a9be416fd1da6f2930b59b6c6db3186",
+   "words": 664,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 737
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Cell phones at school",
+    "prompt_sha256": "54f4ecd1c18c70f3e0c25b9209fc51a9d517eeb15b596f745963e70aeaf8ad81",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-cell-phones-at-school-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-cell-phones-at-school-2-qwen2.5-7b.txt",
+   "sha256": "57c132c3fdde307c08f5cf18bb80d259837df6ed1a02aae8b88eb53a0a5b9249",
+   "words": 511,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 594
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Cell phones at school",
+    "prompt_sha256": "54f4ecd1c18c70f3e0c25b9209fc51a9d517eeb15b596f745963e70aeaf8ad81",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-cell-phones-at-school-2-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-cell-phones-at-school-2-qwen3-8b.txt",
+   "sha256": "eb4e7ea8fec80928a93f0e807893e491675f1dba12426ae3cd623fe87b049b7e",
+   "words": 400,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 453
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Cell phones at school",
+    "prompt_sha256": "54f4ecd1c18c70f3e0c25b9209fc51a9d517eeb15b596f745963e70aeaf8ad81",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-community-service-1-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-community-service-1-olmo2-7b.txt",
+   "sha256": "dbb9ebcd2ec09ba7c6adfc7a7022ed152b9f532ac72aea6570cb0b9e2f20172c",
+   "words": 456,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 543
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Community service",
+    "prompt_sha256": "2afca52eebc1e26d292c9cf59df9ab2c7ccc7ea4afde9191fb52751028c720ef",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-community-service-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-community-service-1-qwen2.5-3b.txt",
+   "sha256": "f13a474870a953fb0adde92c59bc4365420ae856fb11757eed7b9723deb55f75",
+   "words": 568,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 646
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Community service",
+    "prompt_sha256": "2afca52eebc1e26d292c9cf59df9ab2c7ccc7ea4afde9191fb52751028c720ef",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-community-service-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-community-service-1-qwen2.5-7b.txt",
+   "sha256": "27ceafd9b626966aef97801550783fefcbec4f0d5eb4de06908d115f6056119d",
+   "words": 500,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 567
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Community service",
+    "prompt_sha256": "2afca52eebc1e26d292c9cf59df9ab2c7ccc7ea4afde9191fb52751028c720ef",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-community-service-1-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-community-service-1-qwen3-8b.txt",
+   "sha256": "95204d7d36578ac81b23b5f15df7c6797cea9dbd27791195f1b56caaa811e9fd",
+   "words": 330,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 372
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Community service",
+    "prompt_sha256": "2afca52eebc1e26d292c9cf59df9ab2c7ccc7ea4afde9191fb52751028c720ef",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-community-service-2-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-community-service-2-olmo2-7b.txt",
+   "sha256": "4b13b2f26bb03a6606aaa2ee4080f92fb2567e5d1fbbaa8cfaf3da9a28a9bab8",
+   "words": 508,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 595
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Community service",
+    "prompt_sha256": "2afca52eebc1e26d292c9cf59df9ab2c7ccc7ea4afde9191fb52751028c720ef",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-community-service-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-community-service-2-qwen2.5-3b.txt",
+   "sha256": "9043d0174df18f6392a282c888a19dd519e4747ee2adcba355804f44293ec89a",
+   "words": 343,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 391
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Community service",
+    "prompt_sha256": "2afca52eebc1e26d292c9cf59df9ab2c7ccc7ea4afde9191fb52751028c720ef",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-community-service-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-community-service-2-qwen2.5-7b.txt",
+   "sha256": "0c58b82c5d0d3c258683822798471125583100fdae0c22c9b11e99515812f686",
+   "words": 464,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 531
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Community service",
+    "prompt_sha256": "2afca52eebc1e26d292c9cf59df9ab2c7ccc7ea4afde9191fb52751028c720ef",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-community-service-2-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-community-service-2-qwen3-8b.txt",
+   "sha256": "6c60d2179d16218d4f08c9f59f625a6de8bacf23eb771e2fb11a57afa669a94e",
+   "words": 335,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 384
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Community service",
+    "prompt_sha256": "2afca52eebc1e26d292c9cf59df9ab2c7ccc7ea4afde9191fb52751028c720ef",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-distance-learning-1-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-distance-learning-1-olmo2-7b.txt",
+   "sha256": "37699983a13a5019734132b178c362c38b9210961b0d660bbc9badbec3f073d9",
+   "words": 439,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 511
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Distance learning",
+    "prompt_sha256": "19395c1314e3ad3a4fa792415c9998568815cb9ed53dc756680cf4a8d5061f31",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-distance-learning-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-distance-learning-1-qwen2.5-3b.txt",
+   "sha256": "a9cb4dc15bf131d42bbd31fa355a514fea81f62cdf3bcfebca62a4d7bea76076",
+   "words": 468,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 533
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Distance learning",
+    "prompt_sha256": "19395c1314e3ad3a4fa792415c9998568815cb9ed53dc756680cf4a8d5061f31",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-distance-learning-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-distance-learning-1-qwen2.5-7b.txt",
+   "sha256": "ca96c8f5c53074d53efcddc7fce3a3b4528e93dcbe973cd9e2cd572571bde489",
+   "words": 533,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 610
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Distance learning",
+    "prompt_sha256": "19395c1314e3ad3a4fa792415c9998568815cb9ed53dc756680cf4a8d5061f31",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-distance-learning-1-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-distance-learning-1-qwen3-8b.txt",
+   "sha256": "8a6b578ff7ec9084b85da3d13375f2f0130e03f3eab5665ba07ac37d589f3fe5",
+   "words": 530,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 599
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Distance learning",
+    "prompt_sha256": "19395c1314e3ad3a4fa792415c9998568815cb9ed53dc756680cf4a8d5061f31",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-distance-learning-2-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-distance-learning-2-olmo2-7b.txt",
+   "sha256": "9db32205b0c08c98f09670ec13e81513418ea095ee90a2ccc39118fb5e3dba13",
+   "words": 421,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 486
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Distance learning",
+    "prompt_sha256": "19395c1314e3ad3a4fa792415c9998568815cb9ed53dc756680cf4a8d5061f31",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-distance-learning-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-distance-learning-2-qwen2.5-3b.txt",
+   "sha256": "cdc16dd3ba8cda22e01646585a3a705df8df7824be64185f852c2e7f8fb7ab7b",
+   "words": 400,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 460
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Distance learning",
+    "prompt_sha256": "19395c1314e3ad3a4fa792415c9998568815cb9ed53dc756680cf4a8d5061f31",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-distance-learning-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-distance-learning-2-qwen2.5-7b.txt",
+   "sha256": "707498391ad92e09c12dedccb5706325f31dd47073b2d91b41424cf62fae7899",
+   "words": 506,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 574
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Distance learning",
+    "prompt_sha256": "19395c1314e3ad3a4fa792415c9998568815cb9ed53dc756680cf4a8d5061f31",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-distance-learning-2-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-distance-learning-2-qwen3-8b.txt",
+   "sha256": "954884aba3d09b122c15bfc4d4782ffab96f1ecb72e5ecde32aeeecb0c7e38de",
+   "words": 492,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 564
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Distance learning",
+    "prompt_sha256": "19395c1314e3ad3a4fa792415c9998568815cb9ed53dc756680cf4a8d5061f31",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-mandatory-extracurricular-activities-1-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-mandatory-extracurricular-activities-1-olmo2-7b.txt",
+   "sha256": "bd03a401e4ead3d022969dd192288b3ff0370d3db392811089496234362bfb47",
+   "words": 547,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 659
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Mandatory extracurricular activities",
+    "prompt_sha256": "f97ffa5c0a1dadecd8a50a2e289aabcaa9fa688c1683cf75cd9a6ec24458c51e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-mandatory-extracurricular-activities-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-mandatory-extracurricular-activities-1-qwen2.5-3b.txt",
+   "sha256": "5a71892ec61a7653c5a7986a927344a98eaf1f3597ebccda9172c4d01ddc6cf1",
+   "words": 466,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 582
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Mandatory extracurricular activities",
+    "prompt_sha256": "f97ffa5c0a1dadecd8a50a2e289aabcaa9fa688c1683cf75cd9a6ec24458c51e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-mandatory-extracurricular-activities-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-mandatory-extracurricular-activities-1-qwen2.5-7b.txt",
+   "sha256": "4a0d2d1d67f2397de0ea2600cc2dfbf7f09a33fce5a274165e61d7c5043f8164",
+   "words": 475,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 584
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Mandatory extracurricular activities",
+    "prompt_sha256": "f97ffa5c0a1dadecd8a50a2e289aabcaa9fa688c1683cf75cd9a6ec24458c51e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-mandatory-extracurricular-activities-1-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-mandatory-extracurricular-activities-1-qwen3-8b.txt",
+   "sha256": "0e3a3d080d36f90d8f344e515f3b433a70e9dab0f8571b3df6aa7de1a0e3652a",
+   "words": 504,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 591
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Mandatory extracurricular activities",
+    "prompt_sha256": "f97ffa5c0a1dadecd8a50a2e289aabcaa9fa688c1683cf75cd9a6ec24458c51e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-mandatory-extracurricular-activities-2-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-mandatory-extracurricular-activities-2-olmo2-7b.txt",
+   "sha256": "ca57b404dbe30bbd8bb406f05fef58482ce1b4b39fa3ed9755f0df1e0e9fd12f",
+   "words": 407,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 504
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Mandatory extracurricular activities",
+    "prompt_sha256": "f97ffa5c0a1dadecd8a50a2e289aabcaa9fa688c1683cf75cd9a6ec24458c51e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-mandatory-extracurricular-activities-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-mandatory-extracurricular-activities-2-qwen2.5-3b.txt",
+   "sha256": "21bcff6fc1325aab6b4b3cedbb894eab63e36553e07575ac4048c637f4a2bf2c",
+   "words": 385,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 470
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Mandatory extracurricular activities",
+    "prompt_sha256": "f97ffa5c0a1dadecd8a50a2e289aabcaa9fa688c1683cf75cd9a6ec24458c51e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-mandatory-extracurricular-activities-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-mandatory-extracurricular-activities-2-qwen2.5-7b.txt",
+   "sha256": "d3ac67dec4762ec1f346a5a86a5ae2e7ff85d891a41a85502cd316c78e1e21b0",
+   "words": 412,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 504
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Mandatory extracurricular activities",
+    "prompt_sha256": "f97ffa5c0a1dadecd8a50a2e289aabcaa9fa688c1683cf75cd9a6ec24458c51e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-mandatory-extracurricular-activities-2-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-mandatory-extracurricular-activities-2-qwen3-8b.txt",
+   "sha256": "a0018d61b349101ba0a5a501473e8e9910035192c785e83437d11b60c3a212b2",
+   "words": 400,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 482
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Mandatory extracurricular activities",
+    "prompt_sha256": "f97ffa5c0a1dadecd8a50a2e289aabcaa9fa688c1683cf75cd9a6ec24458c51e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-seeking-multiple-opinions-1-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-seeking-multiple-opinions-1-olmo2-7b.txt",
+   "sha256": "ac39291a04eb7967dcd5b5fa5b991bf61dbeba62308a31b6537c63ad9f7a64b7",
+   "words": 442,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 513
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Seeking multiple opinions",
+    "prompt_sha256": "cd9605d8c3f3aff560c0797cc36c4987043f5a6323b24af436d61212eaea465e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-seeking-multiple-opinions-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-seeking-multiple-opinions-1-qwen2.5-3b.txt",
+   "sha256": "fa9b8f67c1e67f427f3e6b6dd16e401cc12441ac42db163fba1020a9e73a6cb1",
+   "words": 379,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 441
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Seeking multiple opinions",
+    "prompt_sha256": "cd9605d8c3f3aff560c0797cc36c4987043f5a6323b24af436d61212eaea465e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-seeking-multiple-opinions-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-seeking-multiple-opinions-1-qwen2.5-7b.txt",
+   "sha256": "39ac284fb45465168d77c7004b25eb401c6a9d9a923b4885221c01ef25e8ed9b",
+   "words": 497,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 582
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Seeking multiple opinions",
+    "prompt_sha256": "cd9605d8c3f3aff560c0797cc36c4987043f5a6323b24af436d61212eaea465e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-seeking-multiple-opinions-1-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-seeking-multiple-opinions-1-qwen3-8b.txt",
+   "sha256": "f677e9ee17455903f88c688be62c858edc0bfc2043733cf979390cc2ea4c50c4",
+   "words": 438,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 508
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Seeking multiple opinions",
+    "prompt_sha256": "cd9605d8c3f3aff560c0797cc36c4987043f5a6323b24af436d61212eaea465e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-seeking-multiple-opinions-2-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-seeking-multiple-opinions-2-olmo2-7b.txt",
+   "sha256": "8eacfe79a39499110eb7ecacfa4041a0bcd1691b370ca513f1cc68f26796fe0f",
+   "words": 423,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 486
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Seeking multiple opinions",
+    "prompt_sha256": "cd9605d8c3f3aff560c0797cc36c4987043f5a6323b24af436d61212eaea465e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-seeking-multiple-opinions-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-seeking-multiple-opinions-2-qwen2.5-3b.txt",
+   "sha256": "5d9062146a1688f0830acbcfc288fa6250e1769422e67cd202d45e2f449a11c2",
+   "words": 404,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 465
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Seeking multiple opinions",
+    "prompt_sha256": "cd9605d8c3f3aff560c0797cc36c4987043f5a6323b24af436d61212eaea465e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-seeking-multiple-opinions-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-seeking-multiple-opinions-2-qwen2.5-7b.txt",
+   "sha256": "ee24dd0bde630ec18932df68d3a4a1fd8a9054fabc11bf5dcf8e1310eda5aeb4",
+   "words": 472,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 560
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Seeking multiple opinions",
+    "prompt_sha256": "cd9605d8c3f3aff560c0797cc36c4987043f5a6323b24af436d61212eaea465e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-seeking-multiple-opinions-2-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-seeking-multiple-opinions-2-qwen3-8b.txt",
+   "sha256": "f018a6cb8aa06c7ba46578e5bec87e656ac14cae0b661f3e7e89ae97970857aa",
+   "words": 404,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 472
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Seeking multiple opinions",
+    "prompt_sha256": "cd9605d8c3f3aff560c0797cc36c4987043f5a6323b24af436d61212eaea465e",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-summer-projects-1-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-summer-projects-1-olmo2-7b.txt",
+   "sha256": "139cb2d7db421e53947715635c03ae2c2ddac5d36c44aef569fb7c2ca70e111f",
+   "words": 442,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 528
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Summer projects",
+    "prompt_sha256": "613078f3359ff87757676ad8e878a9cf43d88296249facc664c10bbe9df4da8c",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-summer-projects-1-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-summer-projects-1-qwen2.5-3b.txt",
+   "sha256": "03d9c72ed1d27891f43d79607e6da9cff7fe89817373d9d7c4243ef371b31eaf",
+   "words": 495,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 574
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Summer projects",
+    "prompt_sha256": "613078f3359ff87757676ad8e878a9cf43d88296249facc664c10bbe9df4da8c",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-summer-projects-1-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-summer-projects-1-qwen2.5-7b.txt",
+   "sha256": "77e41f240dbed5f311fda7fe4d6d7af4c2769a02ac9447ead5b01b2c72d1805e",
+   "words": 547,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 629
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Summer projects",
+    "prompt_sha256": "613078f3359ff87757676ad8e878a9cf43d88296249facc664c10bbe9df4da8c",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-summer-projects-1-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-summer-projects-1-qwen3-8b.txt",
+   "sha256": "76f15b5dde68dd0b1c11e3124b2eb41f25191d5f07a97788293d4bd9e2a405f6",
+   "words": 416,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 484
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Summer projects",
+    "prompt_sha256": "613078f3359ff87757676ad8e878a9cf43d88296249facc664c10bbe9df4da8c",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-summer-projects-2-olmo2-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-summer-projects-2-olmo2-7b.txt",
+   "sha256": "732774a65605cf5c0cf50321db7131e8274b4bf777c1821e145096682e318d33",
+   "words": 506,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 589
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Summer projects",
+    "prompt_sha256": "613078f3359ff87757676ad8e878a9cf43d88296249facc664c10bbe9df4da8c",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-summer-projects-2-qwen2.5-3b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-summer-projects-2-qwen2.5-3b.txt",
+   "sha256": "290c0dfba8af5683ed1c1b4a4f7dfd896457ef3cecbf58d21777b929be70346e",
+   "words": 410,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:3b",
+    "digest": "357c53fb659c5076de1d65ccb0b397446227b71a42be9d1603d46168015c9e4b",
+    "family": "qwen2",
+    "parameter_size": "3.1B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 487
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Summer projects",
+    "prompt_sha256": "613078f3359ff87757676ad8e878a9cf43d88296249facc664c10bbe9df4da8c",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-summer-projects-2-qwen2.5-7b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-summer-projects-2-qwen2.5-7b.txt",
+   "sha256": "e4ba8c7f7e5792d95ea91265b045991396c0bec008dbeb2754261f372316226e",
+   "words": 552,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 636
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Summer projects",
+    "prompt_sha256": "613078f3359ff87757676ad8e878a9cf43d88296249facc664c10bbe9df4da8c",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "ai-student-essay-summer-projects-2-qwen3-8b",
+   "class": "ai",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "ai/ai-student-essay-summer-projects-2-qwen3-8b.txt",
+   "sha256": "a52f99ec2fa9004d82fed954b88f82f792d80184045a845fb97df360fac92ebb",
+   "words": 495,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen3:8b",
+    "digest": "500a1f067a9f782620b40bee6f7b0c89e17ae61f686b92c24933e4ca4b2b8b41",
+    "family": "qwen3",
+    "parameter_size": "8.2B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 2,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 571
+    },
+    "prompt_template": "{assignment}\n\nWrite the essay. Write only the essay, with no title.",
+    "prompt_name": "Summer projects",
+    "prompt_sha256": "613078f3359ff87757676ad8e878a9cf43d88296249facc664c10bbe9df4da8c",
+    "prompt_note": "assignment text from PERSUADE 2.0; kept local"
+   }
+  },
+  {
+   "id": "human-gutenberg-1228-0",
+   "class": "human",
+   "genre": "science",
+   "location": "repo",
+   "path": "human/gutenberg-1228-0.txt",
+   "sha256": "2817c11a01b38354b5443f982bd4356389cc3041afa5eeb1d71cb1bec484fc19",
+   "words": 314,
+   "written": "1859",
+   "source": {
+    "work": "Charles Darwin, On the Origin of Species (1859)",
+    "upstream": "Project Gutenberg eBook #1228",
+    "upstream_sha256": "873e32a80875f38788e25af5ae275f20115dff217e630c5f06a79102c5beace5",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-1228-1",
+   "class": "human",
+   "genre": "science",
+   "location": "repo",
+   "path": "human/gutenberg-1228-1.txt",
+   "sha256": "04b6e281f4b603ad38829351d7e91a39576e60cf0417b1e40a9d005312be3abd",
+   "words": 324,
+   "written": "1859",
+   "source": {
+    "work": "Charles Darwin, On the Origin of Species (1859)",
+    "upstream": "Project Gutenberg eBook #1228",
+    "upstream_sha256": "873e32a80875f38788e25af5ae275f20115dff217e630c5f06a79102c5beace5",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-1228-2",
+   "class": "human",
+   "genre": "science",
+   "location": "repo",
+   "path": "human/gutenberg-1228-2.txt",
+   "sha256": "1ab7cc7a9503d2ca34428a4f4a15c78c7f167ec852945a3a52508f1e473005e8",
+   "words": 444,
+   "written": "1859",
+   "source": {
+    "work": "Charles Darwin, On the Origin of Species (1859)",
+    "upstream": "Project Gutenberg eBook #1228",
+    "upstream_sha256": "873e32a80875f38788e25af5ae275f20115dff217e630c5f06a79102c5beace5",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-201-0",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-201-0.txt",
+   "sha256": "e77a4dc2ff3c60992effeb9ccba963736e54aecb789df92bb188f6c72c3962ba",
+   "words": 297,
+   "written": "1884",
+   "source": {
+    "work": "Edwin A. Abbott, Flatland (1884)",
+    "upstream": "Project Gutenberg eBook #201",
+    "upstream_sha256": "949a208bf135cce73ac518dafe1ed7fa2eec0d967f273f2985814b5861112241",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-201-1",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-201-1.txt",
+   "sha256": "2c8ca06f3c6bd39b924c37f585868e9861ac6355480b92c5f05c55aa426a5a85",
+   "words": 300,
+   "written": "1884",
+   "source": {
+    "work": "Edwin A. Abbott, Flatland (1884)",
+    "upstream": "Project Gutenberg eBook #201",
+    "upstream_sha256": "949a208bf135cce73ac518dafe1ed7fa2eec0d967f273f2985814b5861112241",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-201-2",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-201-2.txt",
+   "sha256": "5c0a14546ad63aa437da57011552445c5f53695518db6d45f76c53d591b85f6f",
+   "words": 264,
+   "written": "1884",
+   "source": {
+    "work": "Edwin A. Abbott, Flatland (1884)",
+    "upstream": "Project Gutenberg eBook #201",
+    "upstream_sha256": "949a208bf135cce73ac518dafe1ed7fa2eec0d967f273f2985814b5861112241",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-205-0",
+   "class": "human",
+   "genre": "essay",
+   "location": "repo",
+   "path": "human/gutenberg-205-0.txt",
+   "sha256": "17cb6a8c08780e65cd021ce95a909889018862ecc969ad47f79343fdf15d3721",
+   "words": 270,
+   "written": "1854",
+   "source": {
+    "work": "Henry David Thoreau, Walden (1854)",
+    "upstream": "Project Gutenberg eBook #205",
+    "upstream_sha256": "ae102eeb00d51790a6b024d8b6c73d3b5cc6d63b47fea3cd532c9678a6935469",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-205-1",
+   "class": "human",
+   "genre": "essay",
+   "location": "repo",
+   "path": "human/gutenberg-205-1.txt",
+   "sha256": "59bd58ed299f0a39867f3ff9515ffeeca33bbd20beea0fd4b7344a11d3b63303",
+   "words": 437,
+   "written": "1854",
+   "source": {
+    "work": "Henry David Thoreau, Walden (1854)",
+    "upstream": "Project Gutenberg eBook #205",
+    "upstream_sha256": "ae102eeb00d51790a6b024d8b6c73d3b5cc6d63b47fea3cd532c9678a6935469",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-205-2",
+   "class": "human",
+   "genre": "essay",
+   "location": "repo",
+   "path": "human/gutenberg-205-2.txt",
+   "sha256": "b00256fd4a10b3d5d0abe75c70e265bce4dec8e2a9a542315932124ba306a368",
+   "words": 402,
+   "written": "1854",
+   "source": {
+    "work": "Henry David Thoreau, Walden (1854)",
+    "upstream": "Project Gutenberg eBook #205",
+    "upstream_sha256": "ae102eeb00d51790a6b024d8b6c73d3b5cc6d63b47fea3cd532c9678a6935469",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-2701-0",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-2701-0.txt",
+   "sha256": "0e7825348183e86bb53b53a6d281b600a527c61d7975290881d05aa7445feb1a",
+   "words": 295,
+   "written": "1851",
+   "source": {
+    "work": "Herman Melville, Moby-Dick (1851)",
+    "upstream": "Project Gutenberg eBook #2701",
+    "upstream_sha256": "96ce59a9afab4b00b879d3b7a96dec5ea7d843ee9f6393a7137bdbe0ee02c4f2",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-2701-1",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-2701-1.txt",
+   "sha256": "f70d32a883b4eda508d1a2cd7adb914ec86c8439791dba936c63d416a777a1a7",
+   "words": 261,
+   "written": "1851",
+   "source": {
+    "work": "Herman Melville, Moby-Dick (1851)",
+    "upstream": "Project Gutenberg eBook #2701",
+    "upstream_sha256": "96ce59a9afab4b00b879d3b7a96dec5ea7d843ee9f6393a7137bdbe0ee02c4f2",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-2701-2",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-2701-2.txt",
+   "sha256": "0f5a85244f426ff3adfc5c46d880b8425baa2018d80aa707084bb3cdaad2c393",
+   "words": 342,
+   "written": "1851",
+   "source": {
+    "work": "Herman Melville, Moby-Dick (1851)",
+    "upstream": "Project Gutenberg eBook #2701",
+    "upstream_sha256": "96ce59a9afab4b00b879d3b7a96dec5ea7d843ee9f6393a7137bdbe0ee02c4f2",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-308-0",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-308-0.txt",
+   "sha256": "12ac2d71ff19038c298c7aa3c6a37cec60c465270a489fff5ced163988cea855",
+   "words": 268,
+   "written": "1889",
+   "source": {
+    "work": "Jerome K. Jerome, Three Men in a Boat (1889)",
+    "upstream": "Project Gutenberg eBook #308",
+    "upstream_sha256": "e537612ce9710ef3ce262734359c2deb72a56adb4eb917cd7ebcbc608ba92a34",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-308-1",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-308-1.txt",
+   "sha256": "3dd1624c68b32b556708e17055952077bbc273dbe659098e39af7b23befbff4f",
+   "words": 254,
+   "written": "1889",
+   "source": {
+    "work": "Jerome K. Jerome, Three Men in a Boat (1889)",
+    "upstream": "Project Gutenberg eBook #308",
+    "upstream_sha256": "e537612ce9710ef3ce262734359c2deb72a56adb4eb917cd7ebcbc608ba92a34",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-308-2",
+   "class": "human",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "human/gutenberg-308-2.txt",
+   "sha256": "1aac85e071f7d4a9bf7c5fbb2b5f66d1198fcb080371d2300f1910f59f831c7b",
+   "words": 272,
+   "written": "1889",
+   "source": {
+    "work": "Jerome K. Jerome, Three Men in a Boat (1889)",
+    "upstream": "Project Gutenberg eBook #308",
+    "upstream_sha256": "e537612ce9710ef3ce262734359c2deb72a56adb4eb917cd7ebcbc608ba92a34",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-944-0",
+   "class": "human",
+   "genre": "science",
+   "location": "repo",
+   "path": "human/gutenberg-944-0.txt",
+   "sha256": "a9605055c306b34c7877f19267aa660d484192a457b4a1b31e46f142de4c1a1b",
+   "words": 404,
+   "written": "1839",
+   "source": {
+    "work": "Charles Darwin, The Voyage of the Beagle (1839)",
+    "upstream": "Project Gutenberg eBook #944",
+    "upstream_sha256": "318ff656d074f66ab0e8ba8fe2f046154124771a79b54a10d8f9c29987b31018",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-944-1",
+   "class": "human",
+   "genre": "science",
+   "location": "repo",
+   "path": "human/gutenberg-944-1.txt",
+   "sha256": "73ee74dd516cf13f76219d9d16a67d59b891c08223277e856ad69bfc93fa4989",
+   "words": 443,
+   "written": "1839",
+   "source": {
+    "work": "Charles Darwin, The Voyage of the Beagle (1839)",
+    "upstream": "Project Gutenberg eBook #944",
+    "upstream_sha256": "318ff656d074f66ab0e8ba8fe2f046154124771a79b54a10d8f9c29987b31018",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-gutenberg-944-2",
+   "class": "human",
+   "genre": "science",
+   "location": "repo",
+   "path": "human/gutenberg-944-2.txt",
+   "sha256": "a9ce4c1bcc0234796cf8b8dba1789091ffa7f216d8826d240f67790e4943c021",
+   "words": 419,
+   "written": "1839",
+   "source": {
+    "work": "Charles Darwin, The Voyage of the Beagle (1839)",
+    "upstream": "Project Gutenberg eBook #944",
+    "upstream_sha256": "318ff656d074f66ab0e8ba8fe2f046154124771a79b54a10d8f9c29987b31018",
+    "licence": "Public domain in the United States; Project Gutenberg header and footer removed, so no Project Gutenberg trademark terms apply",
+    "transform": "seeded excerpt; lines unwrapped; underscore italics removed"
+   }
+  },
+  {
+   "id": "human-persuade-004AC288D833",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-004AC288D833.txt",
+   "sha256": "6d52c245a1a877cf45c7332aaff545031eebb22495cb0b61d65d874f08f0bed9",
+   "words": 328,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 004AC288D833",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-053ACB9DFE74",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-053ACB9DFE74.txt",
+   "sha256": "e16e03fc7b04513d75469ce8bb7685570f54f0b61e5b20c93eaef9b1f593b767",
+   "words": 268,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 053ACB9DFE74",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-0BDADA3AFF77",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-0BDADA3AFF77.txt",
+   "sha256": "ec8557ea2b0e1354b02aa85e2d8fd2f46548ef7fe688ba567341b562ca3d97a9",
+   "words": 257,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 0BDADA3AFF77",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-1649A2246587",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-1649A2246587.txt",
+   "sha256": "0952a9c6098b47d7ad657d3c29960007ea4eef4e8a8a3b494b2d862c11f275e2",
+   "words": 498,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 1649A2246587",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-18925C953322",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-18925C953322.txt",
+   "sha256": "5630ef450a3ad8b36881a2b0917e3faf78903f41f3e7d39db0b2e452fd9c73ac",
+   "words": 307,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 18925C953322",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-18EDFBD73F06",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-18EDFBD73F06.txt",
+   "sha256": "d78b742a86644e74e12294b4a1555a99a050a4a1554051280962dff73b822b11",
+   "words": 503,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 18EDFBD73F06",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-19E57B0657A6",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-19E57B0657A6.txt",
+   "sha256": "65e0d7cd59ab3c3a7d0d66eeae4f436c0a532ae5f25a84b37fd358192aafd504",
+   "words": 643,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 19E57B0657A6",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-22075172920B",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-22075172920B.txt",
+   "sha256": "377a5fe3d0c36d9ca5b5068db50f3b39491d27a1097cfaebbcfa12fa29ea55cf",
+   "words": 424,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 22075172920B",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-231993662C14",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-231993662C14.txt",
+   "sha256": "08d743d842c0a14960982ef49fe35f88b68d55e5607646e0c234d2675eb1124b",
+   "words": 371,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 231993662C14",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-2321C93F8D7E",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-2321C93F8D7E.txt",
+   "sha256": "54b68d11935cb61a5c68fb8991c24256c8ebadbaaabfbeb42cbd6194046c9588",
+   "words": 446,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 2321C93F8D7E",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-280F4A13DE2B",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-280F4A13DE2B.txt",
+   "sha256": "95b893589c9530927a1a49ef6d1d912d2b6b79686aad8895e1398e9b7719aa07",
+   "words": 266,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 280F4A13DE2B",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-352CEEDDF08C",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-352CEEDDF08C.txt",
+   "sha256": "06f53c7aadfc5d0e27993e64ce966953cea5b6048649dea2d9c751343f517c9b",
+   "words": 358,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 352CEEDDF08C",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-36B4B627FE00",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-36B4B627FE00.txt",
+   "sha256": "ecca8b6e3d5e34fb52d458fb121168f21b0a0a8b4ac74bfbe33fa69d6d27764f",
+   "words": 350,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 36B4B627FE00",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-3AA24312B2FE",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-3AA24312B2FE.txt",
+   "sha256": "2d2d525bf6a8cc6470ca0f7e93a3798a2b622201970bd0412fe67a0fd9347cf3",
+   "words": 404,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 3AA24312B2FE",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-3F0396A77EE0",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-3F0396A77EE0.txt",
+   "sha256": "cc1d877d19085fcbde7f5e551c8562e16f287505517fbdfc926890c3f452acdd",
+   "words": 379,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 3F0396A77EE0",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-4183BA00BE40",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-4183BA00BE40.txt",
+   "sha256": "e752bc7e523b02c202e6b646c5a9d69f1f55bb8d915e36b9631a0dd1d737a59f",
+   "words": 569,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 4183BA00BE40",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-477B00F899E2",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-477B00F899E2.txt",
+   "sha256": "cc12e0133fe4c12a4a3c5ef75e3629b17b8cbf6ec379437a65427839e47f92c0",
+   "words": 639,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 477B00F899E2",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-51DD6A82BD9D",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-51DD6A82BD9D.txt",
+   "sha256": "d95ba01a46a329d056b935aafe5a795fbda0a61a6accd1d73033e3f2532bd099",
+   "words": 185,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 51DD6A82BD9D",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-5412AD81F965",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-5412AD81F965.txt",
+   "sha256": "3955080cde306d5183550a5bd34c3d44b51d823066e3efa6c6bcc4379079a9c7",
+   "words": 600,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 5412AD81F965",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-584A4BB1E954",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-584A4BB1E954.txt",
+   "sha256": "fa1682dcbb06cf7eab38e6bcc678a27db0a6610e080b80b3dff102d9e4e17995",
+   "words": 203,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 584A4BB1E954",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-5945ADE75E5E",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-5945ADE75E5E.txt",
+   "sha256": "b51a359073c603b39efc24405dca1d7a5d5061257af5ef064e17d3caede3520e",
+   "words": 640,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 5945ADE75E5E",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-5C5D301481AB",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-5C5D301481AB.txt",
+   "sha256": "d8f67a2c060e66a5402d314cd5a843929c9246652363088cd590a8585b4c63a6",
+   "words": 378,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 5C5D301481AB",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-6C4DB05BBBF2",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-6C4DB05BBBF2.txt",
+   "sha256": "248b0c73eb2969fe7472c4699dc02e83f3c54bca16d1dfca765c8fc3b9bd5312",
+   "words": 322,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 6C4DB05BBBF2",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-6D7B020952E0",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-6D7B020952E0.txt",
+   "sha256": "8cdf45928c016b1c1523489f9b34858192ff9db562a392daac9d61d727f3b1e0",
+   "words": 307,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 6D7B020952E0",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-6ECEC81235E5",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-6ECEC81235E5.txt",
+   "sha256": "f355466b0dabbabefb14b79bc3da0c10332eff34514fb62e112f045625b3f64b",
+   "words": 685,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 6ECEC81235E5",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-723AE830442A",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-723AE830442A.txt",
+   "sha256": "b87de7429746be367a9826edffa6ca4cdedd44257c9da1f284b3a99a8a4f97e4",
+   "words": 260,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 723AE830442A",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-7245B7DB7729",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-7245B7DB7729.txt",
+   "sha256": "7860a1ef1e0a12d10f104cfc0d9a42401f5961ba7e85a38844f726657e9c003f",
+   "words": 370,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 7245B7DB7729",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-7D1925281627",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-7D1925281627.txt",
+   "sha256": "c421429c573a8820ed48d83ebd371769c1c0c3db60a516621cd3ee2ea4f2531a",
+   "words": 347,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 7D1925281627",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-7EEF498A0C92",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-7EEF498A0C92.txt",
+   "sha256": "c3748bfac7b385a002a012fe3453b084950f6894f7f87cc600a58bdd4c107d04",
+   "words": 482,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 7EEF498A0C92",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-832BF7151D40",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-832BF7151D40.txt",
+   "sha256": "a90796426805363b7a4a42e971c38045eaae1a1593253b9cd94f782d5f265659",
+   "words": 484,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 832BF7151D40",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-8BF8505849C8",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-8BF8505849C8.txt",
+   "sha256": "fb40c6e3e03be918e434a157da57a2f0ab1ba01901977c780a73ce37dc16b55e",
+   "words": 459,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 8BF8505849C8",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-8C42568E1362",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-8C42568E1362.txt",
+   "sha256": "a422a87f03d3fc8118b5da1b9188ff078b9c5ec3ba2f5f492c1a7e5b9854d483",
+   "words": 181,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 8C42568E1362",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-8D0E04684275",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-8D0E04684275.txt",
+   "sha256": "af209072995a320dbfc23dc85944927d79b11e10c5908101def66550a82f55ec",
+   "words": 335,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 8D0E04684275",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-8E555DA6ED4D",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-8E555DA6ED4D.txt",
+   "sha256": "9128e0e917f1a00ebc19d911e527aaef69df04a03a9b89b6e5a293a64b51b039",
+   "words": 333,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 8E555DA6ED4D",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-92E97E947628",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-92E97E947628.txt",
+   "sha256": "488d9fa05da5847028ba55879cb0afd272fb0a332060e342fab8630fd5e89317",
+   "words": 162,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 92E97E947628",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-9ABAA03ACB4B",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-9ABAA03ACB4B.txt",
+   "sha256": "63dff48704daae06e76479295e93d23a714e46277c800790bcd52a962a9f0b35",
+   "words": 268,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay 9ABAA03ACB4B",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-A82F551BD455",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-A82F551BD455.txt",
+   "sha256": "37ce420561f51bcc2b8bf0634b6f57913147928e0251a2ea963e8d7921393316",
+   "words": 308,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay A82F551BD455",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-A9E9851F3E7E",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-A9E9851F3E7E.txt",
+   "sha256": "a4e1ea20ebab7d6a54252d2573583a56f708d5d749b88ec463a91a833dee330f",
+   "words": 335,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay A9E9851F3E7E",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-B29CFA250576",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-B29CFA250576.txt",
+   "sha256": "f06d9b74615f9b00acadbde33348a2733d420d427076e5904a289d66401f1adb",
+   "words": 693,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay B29CFA250576",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-B5A7C13D13B8",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-B5A7C13D13B8.txt",
+   "sha256": "b94074d2e6149b5d8bfd08fb0fde337841c3ef73bd9ac60898091e6af2e8876d",
+   "words": 466,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay B5A7C13D13B8",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-BA541CCAA2FF",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-BA541CCAA2FF.txt",
+   "sha256": "d9bbd40bde5a64f3d8cbd987fbc25948faa89057e7cd3026287a9874e3b95e11",
+   "words": 360,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay BA541CCAA2FF",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-BDC47D47817A",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-BDC47D47817A.txt",
+   "sha256": "ef355edcebc94efbf41421dade603c5c0eb663ea3abb3cdfcdcd5f1062c1940d",
+   "words": 325,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay BDC47D47817A",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-C0459F75A8DB",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-C0459F75A8DB.txt",
+   "sha256": "d26433ce640306bd996a67e590ec6825fe895f214fd173f6f78efcc2ff22f222",
+   "words": 539,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Summer projects"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay C0459F75A8DB",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-CD0C46A0B2E6",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-CD0C46A0B2E6.txt",
+   "sha256": "a5e1ff7aef59d65cc25fd0fad7bbfcb4d8852194f219a5dbc50b6c7ae052d803",
+   "words": 179,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay CD0C46A0B2E6",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-D1C69AFBCE83",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-D1C69AFBCE83.txt",
+   "sha256": "30d3fc4d6d080827f8d8e416098c24b9490335ff7755bfd869d46fb6fbdbcbf6",
+   "words": 294,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Community service"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay D1C69AFBCE83",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-D93BADC352CF",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-D93BADC352CF.txt",
+   "sha256": "cc640a9879a701c6dceb36951767273fe89e8706a2b092108b365d56f0416a8e",
+   "words": 238,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay D93BADC352CF",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-E0C7A011BEF5",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-E0C7A011BEF5.txt",
+   "sha256": "683d4c06568f7dd0b578e8d131b4c2803ec05cf3549b557c687100515f19652a",
+   "words": 152,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay E0C7A011BEF5",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-E7F9A77683D2",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-E7F9A77683D2.txt",
+   "sha256": "ae61135770c0ce0c0e1560d4c08be7a7b27ca265706306a755b87ff2e90308b9",
+   "words": 202,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay E7F9A77683D2",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-E8BF036DCFA5",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-E8BF036DCFA5.txt",
+   "sha256": "5cc94ab87a30cd8fa079cf6a4c99759196489479f7cc8ef110537bfeaea39ad8",
+   "words": 218,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay E8BF036DCFA5",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-EBD98D754ECD",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-EBD98D754ECD.txt",
+   "sha256": "b8c8bdd8dba69f1d8357537450e70ab7be5d5ada11555611891fe19f0a36febf",
+   "words": 541,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay EBD98D754ECD",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-EE6DDAF8FD20",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-EE6DDAF8FD20.txt",
+   "sha256": "dffde97e705949a36b1425915cbc6a15451ceb3c5ad391bd4eab6c8e0609a62d",
+   "words": 267,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Cell phones at school"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay EE6DDAF8FD20",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-EFB0DDC8EA77",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-EFB0DDC8EA77.txt",
+   "sha256": "9dd3ed0c5f94aae53049b5f20caa601ce9bfb6c0339606720303d692c1487fc0",
+   "words": 636,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "No",
+    "prompt_name": "Distance learning"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay EFB0DDC8EA77",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-FA1B10147C1C",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-FA1B10147C1C.txt",
+   "sha256": "0efb9648c0a22875e30ea18f1cdfd556e121190bb16be41b3854c07e32622f75",
+   "words": 173,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Mandatory extracurricular activities"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay FA1B10147C1C",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-persuade-FE3CA06DDCA1",
+   "class": "human",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "human/persuade-FE3CA06DDCA1.txt",
+   "sha256": "2d3cdcbde85428ebd82e0bd0b6e6f965e16f94f3dc04ca79759a613e55941795",
+   "words": 319,
+   "written": "2010 to 2020",
+   "group": {
+    "ell_status": "Yes",
+    "prompt_name": "Seeking multiple opinions"
+   },
+   "source": {
+    "work": "PERSUADE 2.0 training set, essay FE3CA06DDCA1",
+    "upstream": "https://github.com/scrosseye/persuade_corpus_2.0",
+    "upstream_sha256": "f61319edd8bf16a982711ea0399fad59c05afaec05cdf0767f16a2c05c467e23",
+    "licence": "CC BY-NC-SA 4.0; kept local, never committed",
+    "transform": "full_text, outer whitespace stripped"
+   }
+  },
+  {
+   "id": "human-speech-declaration-preamble",
+   "class": "human",
+   "genre": "speech",
+   "location": "repo",
+   "path": "../human/declaration-preamble.txt",
+   "sha256": "6785782acec5c703b64dc29bf1d01decacf663bbbc5d58e5802f2e81e6d0974b",
+   "words": 106,
+   "written": "1776",
+   "source": {
+    "work": "US Declaration of Independence, preamble",
+    "licence": "Public domain",
+    "transform": "none"
+   }
+  },
+  {
+   "id": "human-speech-gettysburg",
+   "class": "human",
+   "genre": "speech",
+   "location": "repo",
+   "path": "../human/gettysburg.txt",
+   "sha256": "549013fc0e09deb7ed2f2b07848320aef00cce50b28165c0ce20951d845ea9cb",
+   "words": 121,
+   "written": "1863",
+   "source": {
+    "work": "Abraham Lincoln, Gettysburg Address",
+    "licence": "Public domain",
+    "transform": "none"
+   }
+  },
+  {
+   "id": "human-speech-lincoln-2nd-inaugural",
+   "class": "human",
+   "genre": "speech",
+   "location": "repo",
+   "path": "../human/lincoln-2nd-inaugural.txt",
+   "sha256": "77cb2436dcc0583aca40b448cef30dd35b2c13f38fdbe0499acc9e0de24302f4",
+   "words": 92,
+   "written": "1865",
+   "source": {
+    "work": "Abraham Lincoln, second inaugural address, excerpt",
+    "licence": "Public domain",
+    "transform": "none"
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-1228-0-olmo2-7b",
+   "class": "mixed",
+   "genre": "science",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-1228-0-olmo2-7b.txt",
+   "sha256": "155331295c7d398ee3be69270fd7beb21e2762648b51f338d8b36ad9354cd118",
+   "words": 254,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 311
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-1228-0",
+     "base_sha256": "2817c11a01b38354b5443f982bd4356389cc3041afa5eeb1d71cb1bec484fc19",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-1228-0-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "science",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-1228-0-qwen2.5-7b.txt",
+   "sha256": "94bf986459f9c8c5b912b61e4ea631cc0cc6e4e21df7186e79714ce5b3af93f7",
+   "words": 236,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 279
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-1228-0",
+     "base_sha256": "2817c11a01b38354b5443f982bd4356389cc3041afa5eeb1d71cb1bec484fc19",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-201-0-olmo2-7b",
+   "class": "mixed",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-201-0-olmo2-7b.txt",
+   "sha256": "16bc68fcff099ea40720ddd6ccea32f4a29de31068c888995db532d1d723e9a4",
+   "words": 209,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 270
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-201-0",
+     "base_sha256": "e77a4dc2ff3c60992effeb9ccba963736e54aecb789df92bb188f6c72c3962ba",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-201-0-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-201-0-qwen2.5-7b.txt",
+   "sha256": "1d9cf2c560149b8ea0b6c7177fd352a5aa09758ef697edca128fa9b68e3316e4",
+   "words": 209,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 274
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-201-0",
+     "base_sha256": "e77a4dc2ff3c60992effeb9ccba963736e54aecb789df92bb188f6c72c3962ba",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-205-0-olmo2-7b",
+   "class": "mixed",
+   "genre": "essay",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-205-0-olmo2-7b.txt",
+   "sha256": "eacf8869a9d886d5e9e9a5cc8a2d97f2bd58cc3fea3c784af6cd9fe25876b2f7",
+   "words": 233,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 297
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-205-0",
+     "base_sha256": "17cb6a8c08780e65cd021ce95a909889018862ecc969ad47f79343fdf15d3721",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-205-0-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "essay",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-205-0-qwen2.5-7b.txt",
+   "sha256": "d7f6c5d4b5127547539fb30822c62e6135628ddd6644b4bdce4ab4301d504579",
+   "words": 258,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 320
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-205-0",
+     "base_sha256": "17cb6a8c08780e65cd021ce95a909889018862ecc969ad47f79343fdf15d3721",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-2701-0-olmo2-7b",
+   "class": "mixed",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-2701-0-olmo2-7b.txt",
+   "sha256": "ee2eb28072545ee2b08d45619bd917d14922d1efabaa17f683d17f830a1d67cf",
+   "words": 311,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 439
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-2701-0",
+     "base_sha256": "0e7825348183e86bb53b53a6d281b600a527c61d7975290881d05aa7445feb1a",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-2701-0-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-2701-0-qwen2.5-7b.txt",
+   "sha256": "2222f8182788266594df58e3aa76d1cb288eaffdef6810a724bc48b551ee1071",
+   "words": 268,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 384
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-2701-0",
+     "base_sha256": "0e7825348183e86bb53b53a6d281b600a527c61d7975290881d05aa7445feb1a",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-308-0-olmo2-7b",
+   "class": "mixed",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-308-0-olmo2-7b.txt",
+   "sha256": "3f2d9e714541fde4edd25842c5b9fabc5d3508236f0ec25aca5421e826b80d8d",
+   "words": 188,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 254
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-308-0",
+     "base_sha256": "12ac2d71ff19038c298c7aa3c6a37cec60c465270a489fff5ced163988cea855",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-308-0-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "fiction",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-308-0-qwen2.5-7b.txt",
+   "sha256": "43fde0eefbe441596d36d511ca64d33df233401a6dad4cf93154271f80528c1a",
+   "words": 253,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 341
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-308-0",
+     "base_sha256": "12ac2d71ff19038c298c7aa3c6a37cec60c465270a489fff5ced163988cea855",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-944-0-olmo2-7b",
+   "class": "mixed",
+   "genre": "science",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-944-0-olmo2-7b.txt",
+   "sha256": "8d0499145fe311ed443cb2d8c1bfd8353e8185303add3fe53c2e600cd11e6536",
+   "words": 284,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 381
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-944-0",
+     "base_sha256": "a9605055c306b34c7877f19267aa660d484192a457b4a1b31e46f142de4c1a1b",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-gutenberg-944-0-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "science",
+   "location": "repo",
+   "path": "mixed/mixed-edit-gutenberg-944-0-qwen2.5-7b.txt",
+   "sha256": "2489d24b52cf97e3d308352fb7749497e36afddf0d0e6e1ea8bfc45169a02036",
+   "words": 289,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 375
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-gutenberg-944-0",
+     "base_sha256": "a9605055c306b34c7877f19267aa660d484192a457b4a1b31e46f142de4c1a1b",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-18925C953322-olmo2-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-18925C953322-olmo2-7b.txt",
+   "sha256": "ca03e14ff0564b7e8849269034c53e389ca0a4b3b2d67626a541d54f334568dc",
+   "words": 259,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 308
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-18925C953322",
+     "base_sha256": "5630ef450a3ad8b36881a2b0917e3faf78903f41f3e7d39db0b2e452fd9c73ac",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-18925C953322-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-18925C953322-qwen2.5-7b.txt",
+   "sha256": "4a585983ed0f478de71a029951bae7455c412ff5cf167d0c493583dd50ff2c43",
+   "words": 187,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 221
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-18925C953322",
+     "base_sha256": "5630ef450a3ad8b36881a2b0917e3faf78903f41f3e7d39db0b2e452fd9c73ac",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-19E57B0657A6-olmo2-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-19E57B0657A6-olmo2-7b.txt",
+   "sha256": "f14b35e4c02cbfe3fd57fdd0586d6820d1f069c5ea1256e5d320dea5bf4eaccc",
+   "words": 264,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 313
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-19E57B0657A6",
+     "base_sha256": "65e0d7cd59ab3c3a7d0d66eeae4f436c0a532ae5f25a84b37fd358192aafd504",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-19E57B0657A6-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-19E57B0657A6-qwen2.5-7b.txt",
+   "sha256": "633319ad4e7f1832455be90573fa338208a9586f1aee97487f52c815acc4039e",
+   "words": 277,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 343
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-19E57B0657A6",
+     "base_sha256": "65e0d7cd59ab3c3a7d0d66eeae4f436c0a532ae5f25a84b37fd358192aafd504",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-22075172920B-olmo2-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-22075172920B-olmo2-7b.txt",
+   "sha256": "b2b47f5d95f9eaa101df1f5b80c7f82ae60f91f41fdd607dc7b089cc8a9814dd",
+   "words": 285,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 359
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-22075172920B",
+     "base_sha256": "377a5fe3d0c36d9ca5b5068db50f3b39491d27a1097cfaebbcfa12fa29ea55cf",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-22075172920B-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-22075172920B-qwen2.5-7b.txt",
+   "sha256": "0333bc503e8a4b084c32eace66cdee103fc4896a7501ec4c18a09bfe82429ebf",
+   "words": 263,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 332
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-22075172920B",
+     "base_sha256": "377a5fe3d0c36d9ca5b5068db50f3b39491d27a1097cfaebbcfa12fa29ea55cf",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-231993662C14-olmo2-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-231993662C14-olmo2-7b.txt",
+   "sha256": "6360455ac0b167cff590ba4334af5112d0c0dede60a668f2ef4733f824110300",
+   "words": 295,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 348
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-231993662C14",
+     "base_sha256": "08d743d842c0a14960982ef49fe35f88b68d55e5607646e0c234d2675eb1124b",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-231993662C14-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-231993662C14-qwen2.5-7b.txt",
+   "sha256": "cdaa86cc2ae5d949d158f59dd8b2554b7e3b21e96d9f15e7682006ac047d6759",
+   "words": 225,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 266
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-231993662C14",
+     "base_sha256": "08d743d842c0a14960982ef49fe35f88b68d55e5607646e0c234d2675eb1124b",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-2321C93F8D7E-olmo2-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-2321C93F8D7E-olmo2-7b.txt",
+   "sha256": "c72ca7c8b82f9ffaa4f78141cdf1d11d847d6c5334d642975beab58fa6a5fc52",
+   "words": 387,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 455
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-2321C93F8D7E",
+     "base_sha256": "54b68d11935cb61a5c68fb8991c24256c8ebadbaaabfbeb42cbd6194046c9588",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-2321C93F8D7E-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-2321C93F8D7E-qwen2.5-7b.txt",
+   "sha256": "58036c1cf55bbe03935103c4b45033469eb3f87565cfdb0c4a9439e8c2839eb8",
+   "words": 234,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 282
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-2321C93F8D7E",
+     "base_sha256": "54b68d11935cb61a5c68fb8991c24256c8ebadbaaabfbeb42cbd6194046c9588",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-36B4B627FE00-olmo2-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-36B4B627FE00-olmo2-7b.txt",
+   "sha256": "27c40c462f80c94aa0c4efdacdde780a8f1ed384c110623289d7fb0cebf15071",
+   "words": 240,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "olmo2:7b",
+    "digest": "4208d3b406db076e1569c97a2fb67cf9c86b845544c1a61ff218259daf9e3538",
+    "family": "olmo2",
+    "parameter_size": "7.3B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 278
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-36B4B627FE00",
+     "base_sha256": "ecca8b6e3d5e34fb52d458fb121168f21b0a0a8b4ac74bfbe33fa69d6d27764f",
+     "by": "olmo2:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  },
+  {
+   "id": "mixed-edit-persuade-36B4B627FE00-qwen2.5-7b",
+   "class": "mixed",
+   "genre": "student-essay",
+   "location": "local",
+   "path": "mixed/mixed-edit-persuade-36B4B627FE00-qwen2.5-7b.txt",
+   "sha256": "33f2f37e58c9db9ef3f917db27284cb29e1a77a55848f444fb878519d857c19d",
+   "words": 222,
+   "written": "2026-10-21",
+   "generation": {
+    "model": "qwen2.5:7b",
+    "digest": "845dbda0ea48ed749caafd9e6037047aa19acfcfd82e704d7ca97d631a0b697e",
+    "family": "qwen2",
+    "parameter_size": "7.6B",
+    "quantization": "Q4_K_M",
+    "ollama_version": "0.40.6",
+    "server": "local Ollama",
+    "seed": 1,
+    "options": {
+     "temperature": 0.8,
+     "top_p": 0.95,
+     "num_predict": 900
+    },
+    "date": "2026-10-21",
+    "result": {
+     "done_reason": "stop",
+     "eval_count": 260
+    },
+    "prompt_template": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text.\n\n{text}",
+    "edit": {
+     "operation": "AI edit of a human text",
+     "base_id": "human-persuade-36B4B627FE00",
+     "base_sha256": "ecca8b6e3d5e34fb52d458fb121168f21b0a0a8b4ac74bfbe33fa69d6d27764f",
+     "by": "qwen2.5:7b",
+     "instruction": "Edit the following text for clarity and flow. Keep its meaning, its point of view and roughly its length. Return only the edited text."
+    }
+   }
+  }
+ ]
+}

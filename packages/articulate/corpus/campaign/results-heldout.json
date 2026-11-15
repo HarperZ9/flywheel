@@ -1,0 +1,627 @@
+{
+ "split": "heldout",
+ "targets": {
+  "precision": 0.9,
+  "recall": 0.8,
+  "fpr": 0.05,
+  "pair_precision": 0.95,
+  "pair_recall": 0.9
+ },
+ "fairness_margin": 0.1,
+ "post": {
+  "overall": {
+   "tp": 9,
+   "fp": 0,
+   "fn": 2,
+   "positives": 11,
+   "negatives": 22,
+   "precision": 1.0,
+   "recall": 0.818,
+   "fpr": 0.0,
+   "recall_ci": [
+    0.523,
+    0.949
+   ],
+   "fpr_ci": [
+    0.0,
+    0.149
+   ]
+  },
+  "meets_targets": true,
+  "by_stratum": {
+   "code_switched": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 2,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.658
+    ]
+   },
+   "dialect": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 2,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.658
+    ]
+   },
+   "disclosed": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "positives": 1,
+    "negatives": 1,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.207,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.793
+    ]
+   },
+   "enthusiasm": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 4,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.49
+    ]
+   },
+   "esl": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "positives": 1,
+    "negatives": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.207,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.49
+    ]
+   },
+   "founder": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 2,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.658
+    ]
+   },
+   "non_english": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 1,
+    "positives": 1,
+    "negatives": 3,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     0.793
+    ],
+    "fpr_ci": [
+     0.0,
+     0.562
+    ]
+   },
+   "standard": {
+    "tp": 7,
+    "fp": 0,
+    "fn": 1,
+    "positives": 8,
+    "negatives": 0,
+    "precision": 1.0,
+    "recall": 0.875,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.529,
+     0.978
+    ],
+    "fpr_ci": [
+     0.0,
+     1.0
+    ]
+   },
+   "technical": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 4,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.49
+    ]
+   }
+  },
+  "by_platform": {
+   "x": {
+    "tp": 9,
+    "fp": 0,
+    "fn": 2,
+    "positives": 11,
+    "negatives": 22,
+    "precision": 1.0,
+    "recall": 0.818,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.523,
+     0.949
+    ],
+    "fpr_ci": [
+     0.0,
+     0.149
+    ]
+   }
+  },
+  "fairness": {
+   "margin": 0.1,
+   "overall_fpr": 0.0,
+   "passed": true,
+   "strata": {
+    "code_switched": {
+     "fpr": 0.0,
+     "negatives": 2,
+     "fpr_ci": [
+      0.0,
+      0.658
+     ],
+     "within_bound": true
+    },
+    "dialect": {
+     "fpr": 0.0,
+     "negatives": 2,
+     "fpr_ci": [
+      0.0,
+      0.658
+     ],
+     "within_bound": true
+    },
+    "disclosed": {
+     "fpr": 0.0,
+     "negatives": 1,
+     "fpr_ci": [
+      0.0,
+      0.793
+     ],
+     "within_bound": true
+    },
+    "enthusiasm": {
+     "fpr": 0.0,
+     "negatives": 4,
+     "fpr_ci": [
+      0.0,
+      0.49
+     ],
+     "within_bound": true
+    },
+    "esl": {
+     "fpr": 0.0,
+     "negatives": 4,
+     "fpr_ci": [
+      0.0,
+      0.49
+     ],
+     "within_bound": true
+    },
+    "founder": {
+     "fpr": 0.0,
+     "negatives": 2,
+     "fpr_ci": [
+      0.0,
+      0.658
+     ],
+     "within_bound": true
+    },
+    "non_english": {
+     "fpr": 0.0,
+     "negatives": 3,
+     "fpr_ci": [
+      0.0,
+      0.562
+     ],
+     "within_bound": true
+    },
+    "technical": {
+     "fpr": 0.0,
+     "negatives": 4,
+     "fpr_ci": [
+      0.0,
+      0.49
+     ],
+     "within_bound": true
+    }
+   },
+   "note": "small strata: an upper interval above the bound is not ruled out"
+  }
+ },
+ "bio": {
+  "overall": {
+   "tp": 30,
+   "fp": 0,
+   "fn": 1,
+   "positives": 31,
+   "negatives": 39,
+   "precision": 1.0,
+   "recall": 0.968,
+   "fpr": 0.0,
+   "recall_ci": [
+    0.838,
+    0.994
+   ],
+   "fpr_ci": [
+    0.0,
+    0.09
+   ]
+  },
+  "meets_targets": true,
+  "by_stratum": {
+   "code_switched": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 3,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.562
+    ]
+   },
+   "crypto_real": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 4,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.49
+    ]
+   },
+   "dialect": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 3,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.562
+    ]
+   },
+   "esl": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "positives": 1,
+    "negatives": 4,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.207,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.49
+    ]
+   },
+   "generated": {
+    "tp": 20,
+    "fp": 0,
+    "fn": 0,
+    "positives": 20,
+    "negatives": 0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.839,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     1.0
+    ]
+   },
+   "non_english": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 1,
+    "positives": 1,
+    "negatives": 6,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     0.793
+    ],
+    "fpr_ci": [
+     0.0,
+     0.39
+    ]
+   },
+   "standard": {
+    "tp": 9,
+    "fp": 0,
+    "fn": 0,
+    "positives": 9,
+    "negatives": 17,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.701,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.184
+    ]
+   },
+   "translated": {
+    "tp": 0,
+    "fp": 0,
+    "fn": 0,
+    "positives": 0,
+    "negatives": 2,
+    "precision": 0.0,
+    "recall": 0.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.0,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.658
+    ]
+   }
+  },
+  "by_platform": {
+   "linkedin": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "positives": 1,
+    "negatives": 3,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.207,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.562
+    ]
+   },
+   "reddit": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "positives": 1,
+    "negatives": 3,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.207,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.562
+    ]
+   },
+   "tiktok": {
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "positives": 1,
+    "negatives": 3,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.207,
+     1.0
+    ],
+    "fpr_ci": [
+     0.0,
+     0.562
+    ]
+   },
+   "x": {
+    "tp": 27,
+    "fp": 0,
+    "fn": 1,
+    "positives": 28,
+    "negatives": 30,
+    "precision": 1.0,
+    "recall": 0.964,
+    "fpr": 0.0,
+    "recall_ci": [
+     0.823,
+     0.994
+    ],
+    "fpr_ci": [
+     -0.0,
+     0.114
+    ]
+   }
+  },
+  "fairness": {
+   "margin": 0.1,
+   "overall_fpr": 0.0,
+   "passed": true,
+   "strata": {
+    "code_switched": {
+     "fpr": 0.0,
+     "negatives": 3,
+     "fpr_ci": [
+      0.0,
+      0.562
+     ],
+     "within_bound": true
+    },
+    "crypto_real": {
+     "fpr": 0.0,
+     "negatives": 4,
+     "fpr_ci": [
+      0.0,
+      0.49
+     ],
+     "within_bound": true
+    },
+    "dialect": {
+     "fpr": 0.0,
+     "negatives": 3,
+     "fpr_ci": [
+      0.0,
+      0.562
+     ],
+     "within_bound": true
+    },
+    "esl": {
+     "fpr": 0.0,
+     "negatives": 4,
+     "fpr_ci": [
+      0.0,
+      0.49
+     ],
+     "within_bound": true
+    },
+    "non_english": {
+     "fpr": 0.0,
+     "negatives": 6,
+     "fpr_ci": [
+      0.0,
+      0.39
+     ],
+     "within_bound": true
+    },
+    "standard": {
+     "fpr": 0.0,
+     "negatives": 17,
+     "fpr_ci": [
+      0.0,
+      0.184
+     ],
+     "within_bound": true
+    },
+    "translated": {
+     "fpr": 0.0,
+     "negatives": 2,
+     "fpr_ci": [
+      0.0,
+      0.658
+     ],
+     "within_bound": true
+    }
+   },
+   "note": "small strata: an upper interval above the bound is not ruled out"
+  }
+ },
+ "clusters": {
+  "pairs_predicted": 84,
+  "pairs_gold": 84,
+  "tp": 84,
+  "pair_precision": 1.0,
+  "pair_recall": 1.0,
+  "threshold": 0.5,
+  "meets_targets": true
+ },
+ "controls": {
+  "always_flag_posts": true,
+  "always_flag_bios": true,
+  "shuffled_labels_bios": true,
+  "keyword_bios": true,
+  "spec_number_posts": true,
+  "exact_match_clusters": true,
+  "topic_word_clusters": true
+ },
+ "passed": true
+}

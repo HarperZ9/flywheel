@@ -25,3 +25,9 @@ packages/canon/tests/test_client_capture.py
 # field names the typesetting tool (LaTeX with hyperref), no person; a rebuild would
 # change the bytes of a published paper.
 packages/emet/papers/emet-integrity-witness.pdf
+# articulate's privacy-pack test feeds the detector five address and path
+# literals and asserts each is found. The two Windows literals (lines 17, 18)
+# use a workspace-style folder name with a made-up file; they are test input,
+# published already in the tool's own repository. This check skips whole files,
+# so the entry is the one test file.
+packages/articulate/tests/test_pack_privacy.py

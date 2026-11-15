@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "baseline_tag": "v0.5.2",
+  "baseline_commit": "2884ce4a489b6598d51b57bbdfc98edb3d3ef306",
+  "ruleset_fingerprint": "sha256:9f78a7484bb20f84",
+  "normalization": "CRLF to LF; initializer __version__ assignment only",
+  "closure": "detector imports masking; ruleset_fingerprint imports genres, modes, profiles; profiles and genres recurse; package initializer imports detector, profiles, genres. All rule and profile data is inline in these files.",
+  "excluded": "Editor guards, prompts, transports, CLI adapters and receipts are not imported by this detector closure. Their retention and behavior are not proven. The Python runtime and supplied text/profile arguments remain external inputs.",
+  "does_not_prove": "fairness, semantic quality, adapter behavior, installed artifact identity, or release readiness",
+  "files": {
+    "src/articulate/__init__.py": {
+      "git_blob_sha256": "fe5997c2ea0ed35a99625fe9552866af0e8641bc97b1ad8c41694581d33bdff9",
+      "retained_sha256": "bfa3cb4378ef60226f9776041ceb55c20d484d55653c44752d8400244da52e42"
+    },
+    "src/articulate/detector.py": {
+      "git_blob_sha256": "f1d971612212afdc5377e47f55db19f3326092531ae9adb5027f28711c3d8a10",
+      "retained_sha256": "f1d971612212afdc5377e47f55db19f3326092531ae9adb5027f28711c3d8a10"
+    },
+    "src/articulate/masking.py": {
+      "git_blob_sha256": "cbb75c6e4807ecffd4c750b534fc2da4412ed47d56cdab554e6e6687716d90cb",
+      "retained_sha256": "cbb75c6e4807ecffd4c750b534fc2da4412ed47d56cdab554e6e6687716d90cb"
+    },
+    "src/articulate/profiles.py": {
+      "git_blob_sha256": "70a00d9b3776244f5b6a354aed3d891aa6be315242c0e1f1d8ecbaa27d679ffa",
+      "retained_sha256": "70a00d9b3776244f5b6a354aed3d891aa6be315242c0e1f1d8ecbaa27d679ffa"
+    },
+    "src/articulate/genres.py": {
+      "git_blob_sha256": "63e1e9c481e808999249b5957241a1731fa11ccd59493a2b1cf2ceaa9faf10bc",
+      "retained_sha256": "63e1e9c481e808999249b5957241a1731fa11ccd59493a2b1cf2ceaa9faf10bc"
+    },
+    "src/articulate/modes.py": {
+      "git_blob_sha256": "a92eb04ed88e99a1206281adda4045d13389b05676ac2b4409e77bb873a18b95",
+      "retained_sha256": "a92eb04ed88e99a1206281adda4045d13389b05676ac2b4409e77bb873a18b95"
+    }
+  }
+}

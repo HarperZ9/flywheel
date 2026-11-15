@@ -1,0 +1,6 @@
+button: Save And Continue To The Next Step
+label: Enter the email address you use for work
+error: Something went wrong.
+title: Account Settings
+link: For details, click here.
+tooltip: Read the [docs](https://example.com/docs) or [learn more](https://example.com/more).

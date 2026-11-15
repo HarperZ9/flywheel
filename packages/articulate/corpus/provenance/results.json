@@ -1,0 +1,987 @@
+{
+ "articulate": {
+  "by_genre": {
+   "essay": {
+    "fpr": {
+     "ci95": [
+      0.438,
+      1.0
+     ],
+     "k": 3,
+     "n": 3,
+     "rate": 1.0
+    },
+    "precision": {
+     "ci95": [
+      0.548,
+      0.93
+     ],
+     "k": 12,
+     "n": 15,
+     "rate": 0.8
+    },
+    "recall": {
+     "ci95": [
+      0.757,
+      1.0
+     ],
+     "k": 12,
+     "n": 12,
+     "rate": 1.0
+    }
+   },
+   "fiction": {
+    "fpr": {
+     "ci95": [
+      0.453,
+      0.937
+     ],
+     "k": 7,
+     "n": 9,
+     "rate": 0.778
+    },
+    "precision": {
+     "ci95": [
+      0.41,
+      0.809
+     ],
+     "k": 12,
+     "n": 19,
+     "rate": 0.632
+    },
+    "recall": {
+     "ci95": [
+      0.757,
+      1.0
+     ],
+     "k": 12,
+     "n": 12,
+     "rate": 1.0
+    }
+   },
+   "science": {
+    "fpr": {
+     "ci95": [
+      0.61,
+      1.0
+     ],
+     "k": 6,
+     "n": 6,
+     "rate": 1.0
+    },
+    "precision": {
+     "ci95": [
+      0.437,
+      0.837
+     ],
+     "k": 12,
+     "n": 18,
+     "rate": 0.667
+    },
+    "recall": {
+     "ci95": [
+      0.757,
+      1.0
+     ],
+     "k": 12,
+     "n": 12,
+     "rate": 1.0
+    }
+   },
+   "speech": {
+    "fpr": {
+     "ci95": [
+      0.0,
+      0.562
+     ],
+     "k": 0,
+     "n": 3,
+     "rate": 0.0
+    },
+    "precision": {
+     "ci95": null,
+     "k": 0,
+     "n": 0,
+     "rate": null
+    },
+    "recall": {
+     "ci95": null,
+     "k": 0,
+     "n": 0,
+     "rate": null
+    }
+   },
+   "student-essay": {
+    "fpr": {
+     "ci95": [
+      0.631,
+      0.854
+     ],
+     "k": 41,
+     "n": 54,
+     "rate": 0.759
+    },
+    "precision": {
+     "ci95": [
+      0.436,
+      0.639
+     ],
+     "k": 48,
+     "n": 89,
+     "rate": 0.539
+    },
+    "recall": {
+     "ci95": [
+      0.926,
+      1.0
+     ],
+     "k": 48,
+     "n": 48,
+     "rate": 1.0
+    }
+   }
+  },
+  "by_model": {
+   "olmo2:7b": {
+    "fpr": {
+     "ci95": [
+      0.652,
+      0.842
+     ],
+     "k": 57,
+     "n": 75,
+     "rate": 0.76
+    },
+    "precision": {
+     "ci95": [
+      0.183,
+      0.377
+     ],
+     "k": 21,
+     "n": 78,
+     "rate": 0.269
+    },
+    "recall": {
+     "ci95": [
+      0.845,
+      1.0
+     ],
+     "k": 21,
+     "n": 21,
+     "rate": 1.0
+    }
+   },
+   "qwen2.5:3b": {
+    "fpr": {
+     "ci95": [
+      0.652,
+      0.842
+     ],
+     "k": 57,
+     "n": 75,
+     "rate": 0.76
+    },
+    "precision": {
+     "ci95": [
+      0.183,
+      0.377
+     ],
+     "k": 21,
+     "n": 78,
+     "rate": 0.269
+    },
+    "recall": {
+     "ci95": [
+      0.845,
+      1.0
+     ],
+     "k": 21,
+     "n": 21,
+     "rate": 1.0
+    }
+   },
+   "qwen2.5:7b": {
+    "fpr": {
+     "ci95": [
+      0.652,
+      0.842
+     ],
+     "k": 57,
+     "n": 75,
+     "rate": 0.76
+    },
+    "precision": {
+     "ci95": [
+      0.183,
+      0.377
+     ],
+     "k": 21,
+     "n": 78,
+     "rate": 0.269
+    },
+    "recall": {
+     "ci95": [
+      0.845,
+      1.0
+     ],
+     "k": 21,
+     "n": 21,
+     "rate": 1.0
+    }
+   },
+   "qwen3:8b": {
+    "fpr": {
+     "ci95": [
+      0.652,
+      0.842
+     ],
+     "k": 57,
+     "n": 75,
+     "rate": 0.76
+    },
+    "precision": {
+     "ci95": [
+      0.183,
+      0.377
+     ],
+     "k": 21,
+     "n": 78,
+     "rate": 0.269
+    },
+    "recall": {
+     "ci95": [
+      0.845,
+      1.0
+     ],
+     "k": 21,
+     "n": 21,
+     "rate": 1.0
+    }
+   }
+  },
+  "mixed_flag_rate": {
+   "ci95": [
+    0.798,
+    0.993
+   ],
+   "k": 23,
+   "n": 24,
+   "rate": 0.958
+  },
+  "overall": {
+   "fpr": {
+    "ci95": [
+     0.652,
+     0.842
+    ],
+    "k": 57,
+    "n": 75,
+    "rate": 0.76
+   },
+   "precision": {
+    "ci95": [
+     0.513,
+     0.673
+    ],
+    "k": 84,
+    "n": 141,
+    "rate": 0.596
+   },
+   "recall": {
+    "ci95": [
+     0.956,
+     1.0
+    ],
+    "k": 84,
+    "n": 84,
+    "rate": 1.0
+   }
+  },
+  "student_essay_fpr_by_ell": {
+   "No": {
+    "ci95": [
+     0.713,
+     0.939
+    ],
+    "k": 31,
+    "n": 36,
+    "rate": 0.861
+   },
+   "Yes": {
+    "ci95": [
+     0.337,
+     0.754
+    ],
+    "k": 10,
+    "n": 18,
+    "rate": 0.556
+   }
+  }
+ },
+ "binoculars_vs_articulate": {
+  "10% in-sample human FPR": {
+   "agreement": {
+    "ci95": [
+     0.282,
+     0.429
+    ],
+    "k": 56,
+    "n": 159,
+    "rate": 0.352
+   },
+   "articulate_only": [
+    "ai-essay-0-qwen2.5-3b",
+    "ai-essay-1-olmo2-7b",
+    "ai-essay-1-qwen2.5-3b",
+    "ai-essay-1-qwen2.5-7b",
+    "ai-fiction-0-olmo2-7b",
+    "ai-fiction-0-qwen2.5-3b",
+    "ai-fiction-1-olmo2-7b",
+    "ai-fiction-2-olmo2-7b",
+    "ai-fiction-2-qwen2.5-3b",
+    "ai-fiction-2-qwen2.5-7b",
+    "ai-science-0-olmo2-7b",
+    "ai-science-0-qwen2.5-3b",
+    "ai-science-0-qwen2.5-7b",
+    "ai-science-1-qwen2.5-3b",
+    "ai-science-2-olmo2-7b",
+    "ai-science-2-qwen2.5-3b",
+    "ai-student-essay-cell-phones-at-school-1-olmo2-7b",
+    "ai-student-essay-cell-phones-at-school-1-qwen2.5-3b",
+    "ai-student-essay-cell-phones-at-school-2-olmo2-7b",
+    "ai-student-essay-cell-phones-at-school-2-qwen2.5-3b",
+    "ai-student-essay-community-service-1-olmo2-7b",
+    "ai-student-essay-community-service-1-qwen2.5-3b",
+    "ai-student-essay-community-service-1-qwen2.5-7b",
+    "ai-student-essay-community-service-2-olmo2-7b",
+    "ai-student-essay-community-service-2-qwen2.5-3b",
+    "ai-student-essay-distance-learning-1-olmo2-7b",
+    "ai-student-essay-distance-learning-1-qwen2.5-3b",
+    "ai-student-essay-distance-learning-2-olmo2-7b",
+    "ai-student-essay-distance-learning-2-qwen2.5-3b",
+    "ai-student-essay-mandatory-extracurricular-activities-1-olmo2-7b",
+    "ai-student-essay-mandatory-extracurricular-activities-1-qwen2.5-3b",
+    "ai-student-essay-mandatory-extracurricular-activities-2-olmo2-7b",
+    "ai-student-essay-mandatory-extracurricular-activities-2-qwen2.5-3b",
+    "ai-student-essay-seeking-multiple-opinions-1-olmo2-7b",
+    "ai-student-essay-seeking-multiple-opinions-1-qwen2.5-3b",
+    "ai-student-essay-seeking-multiple-opinions-1-qwen2.5-7b",
+    "ai-student-essay-seeking-multiple-opinions-2-olmo2-7b",
+    "ai-student-essay-seeking-multiple-opinions-2-qwen2.5-3b",
+    "ai-student-essay-summer-projects-1-olmo2-7b",
+    "ai-student-essay-summer-projects-1-qwen2.5-3b",
+    "ai-student-essay-summer-projects-1-qwen2.5-7b",
+    "ai-student-essay-summer-projects-2-olmo2-7b",
+    "ai-student-essay-summer-projects-2-qwen2.5-3b",
+    "ai-student-essay-summer-projects-2-qwen2.5-7b",
+    "human-gutenberg-1228-0",
+    "human-gutenberg-1228-1",
+    "human-gutenberg-201-1",
+    "human-gutenberg-201-2",
+    "human-gutenberg-205-0",
+    "human-gutenberg-205-1",
+    "human-gutenberg-205-2",
+    "human-gutenberg-2701-0",
+    "human-gutenberg-2701-1",
+    "human-gutenberg-2701-2",
+    "human-gutenberg-308-0",
+    "human-gutenberg-308-1",
+    "human-gutenberg-944-0",
+    "human-gutenberg-944-2",
+    "human-persuade-0BDADA3AFF77",
+    "human-persuade-1649A2246587",
+    "human-persuade-18EDFBD73F06",
+    "human-persuade-19E57B0657A6",
+    "human-persuade-22075172920B",
+    "human-persuade-231993662C14",
+    "human-persuade-2321C93F8D7E",
+    "human-persuade-280F4A13DE2B",
+    "human-persuade-352CEEDDF08C",
+    "human-persuade-36B4B627FE00",
+    "human-persuade-3AA24312B2FE",
+    "human-persuade-3F0396A77EE0",
+    "human-persuade-4183BA00BE40",
+    "human-persuade-477B00F899E2",
+    "human-persuade-5412AD81F965",
+    "human-persuade-584A4BB1E954",
+    "human-persuade-5945ADE75E5E",
+    "human-persuade-6C4DB05BBBF2",
+    "human-persuade-6D7B020952E0",
+    "human-persuade-6ECEC81235E5",
+    "human-persuade-7245B7DB7729",
+    "human-persuade-7D1925281627",
+    "human-persuade-7EEF498A0C92",
+    "human-persuade-832BF7151D40",
+    "human-persuade-8C42568E1362",
+    "human-persuade-8D0E04684275",
+    "human-persuade-8E555DA6ED4D",
+    "human-persuade-92E97E947628",
+    "human-persuade-9ABAA03ACB4B",
+    "human-persuade-A9E9851F3E7E",
+    "human-persuade-B29CFA250576",
+    "human-persuade-B5A7C13D13B8",
+    "human-persuade-BA541CCAA2FF",
+    "human-persuade-C0459F75A8DB",
+    "human-persuade-CD0C46A0B2E6",
+    "human-persuade-D1C69AFBCE83",
+    "human-persuade-D93BADC352CF",
+    "human-persuade-EBD98D754ECD",
+    "human-persuade-EE6DDAF8FD20",
+    "human-persuade-EFB0DDC8EA77",
+    "human-persuade-FE3CA06DDCA1"
+   ],
+   "binoculars_at_threshold": {
+    "fpr": {
+     "ci95": [
+      0.037,
+      0.164
+     ],
+     "k": 6,
+     "n": 75,
+     "rate": 0.08
+    },
+    "precision": {
+     "ci95": [
+      0.743,
+      0.939
+     ],
+     "k": 40,
+     "n": 46,
+     "rate": 0.87
+    },
+    "recall": {
+     "ci95": [
+      0.373,
+      0.582
+     ],
+     "k": 40,
+     "n": 84,
+     "rate": 0.476
+    }
+   },
+   "binoculars_only": [
+    "human-persuade-8BF8505849C8",
+    "human-speech-declaration-preamble",
+    "human-speech-gettysburg",
+    "human-speech-lincoln-2nd-inaugural"
+   ],
+   "threshold_note": "Binoculars flags above the in-sample 10% human false-positive point"
+  },
+  "20% in-sample human FPR": {
+   "agreement": {
+    "ci95": [
+     0.432,
+     0.586
+    ],
+    "k": 81,
+    "n": 159,
+    "rate": 0.509
+   },
+   "articulate_only": [
+    "ai-fiction-2-qwen2.5-3b",
+    "ai-science-0-qwen2.5-7b",
+    "ai-student-essay-cell-phones-at-school-1-olmo2-7b",
+    "ai-student-essay-cell-phones-at-school-1-qwen2.5-3b",
+    "ai-student-essay-cell-phones-at-school-2-olmo2-7b",
+    "ai-student-essay-cell-phones-at-school-2-qwen2.5-3b",
+    "ai-student-essay-community-service-1-olmo2-7b",
+    "ai-student-essay-community-service-1-qwen2.5-3b",
+    "ai-student-essay-community-service-2-olmo2-7b",
+    "ai-student-essay-community-service-2-qwen2.5-3b",
+    "ai-student-essay-distance-learning-1-olmo2-7b",
+    "ai-student-essay-distance-learning-1-qwen2.5-3b",
+    "ai-student-essay-distance-learning-2-olmo2-7b",
+    "ai-student-essay-distance-learning-2-qwen2.5-3b",
+    "ai-student-essay-mandatory-extracurricular-activities-2-olmo2-7b",
+    "ai-student-essay-mandatory-extracurricular-activities-2-qwen2.5-3b",
+    "ai-student-essay-seeking-multiple-opinions-1-qwen2.5-3b",
+    "ai-student-essay-seeking-multiple-opinions-2-olmo2-7b",
+    "ai-student-essay-seeking-multiple-opinions-2-qwen2.5-3b",
+    "ai-student-essay-summer-projects-1-olmo2-7b",
+    "ai-student-essay-summer-projects-1-qwen2.5-3b",
+    "ai-student-essay-summer-projects-2-olmo2-7b",
+    "ai-student-essay-summer-projects-2-qwen2.5-3b",
+    "human-gutenberg-1228-1",
+    "human-gutenberg-201-1",
+    "human-gutenberg-205-0",
+    "human-gutenberg-205-2",
+    "human-gutenberg-2701-0",
+    "human-gutenberg-2701-2",
+    "human-gutenberg-308-1",
+    "human-gutenberg-944-0",
+    "human-gutenberg-944-2",
+    "human-persuade-0BDADA3AFF77",
+    "human-persuade-1649A2246587",
+    "human-persuade-18EDFBD73F06",
+    "human-persuade-19E57B0657A6",
+    "human-persuade-22075172920B",
+    "human-persuade-231993662C14",
+    "human-persuade-2321C93F8D7E",
+    "human-persuade-352CEEDDF08C",
+    "human-persuade-36B4B627FE00",
+    "human-persuade-3AA24312B2FE",
+    "human-persuade-3F0396A77EE0",
+    "human-persuade-4183BA00BE40",
+    "human-persuade-477B00F899E2",
+    "human-persuade-5412AD81F965",
+    "human-persuade-584A4BB1E954",
+    "human-persuade-5945ADE75E5E",
+    "human-persuade-6C4DB05BBBF2",
+    "human-persuade-6D7B020952E0",
+    "human-persuade-6ECEC81235E5",
+    "human-persuade-7245B7DB7729",
+    "human-persuade-7D1925281627",
+    "human-persuade-7EEF498A0C92",
+    "human-persuade-832BF7151D40",
+    "human-persuade-8C42568E1362",
+    "human-persuade-8D0E04684275",
+    "human-persuade-8E555DA6ED4D",
+    "human-persuade-92E97E947628",
+    "human-persuade-9ABAA03ACB4B",
+    "human-persuade-A9E9851F3E7E",
+    "human-persuade-B29CFA250576",
+    "human-persuade-B5A7C13D13B8",
+    "human-persuade-BA541CCAA2FF",
+    "human-persuade-C0459F75A8DB",
+    "human-persuade-CD0C46A0B2E6",
+    "human-persuade-D1C69AFBCE83",
+    "human-persuade-D93BADC352CF",
+    "human-persuade-EBD98D754ECD",
+    "human-persuade-EE6DDAF8FD20",
+    "human-persuade-EFB0DDC8EA77",
+    "human-persuade-FE3CA06DDCA1"
+   ],
+   "binoculars_at_threshold": {
+    "fpr": {
+     "ci95": [
+      0.115,
+      0.289
+     ],
+     "k": 14,
+     "n": 75,
+     "rate": 0.187
+    },
+    "precision": {
+     "ci95": [
+      0.711,
+      0.885
+     ],
+     "k": 61,
+     "n": 75,
+     "rate": 0.813
+    },
+    "recall": {
+     "ci95": [
+      0.623,
+      0.81
+     ],
+     "k": 61,
+     "n": 84,
+     "rate": 0.726
+    }
+   },
+   "binoculars_only": [
+    "human-gutenberg-308-2",
+    "human-persuade-8BF8505849C8",
+    "human-persuade-E8BF036DCFA5",
+    "human-speech-declaration-preamble",
+    "human-speech-gettysburg",
+    "human-speech-lincoln-2nd-inaugural"
+   ],
+   "threshold_note": "Binoculars flags above the in-sample 20% human false-positive point"
+  },
+  "5% in-sample human FPR": {
+   "agreement": {
+    "ci95": [
+     0.063,
+     0.157
+    ],
+    "k": 16,
+    "n": 159,
+    "rate": 0.101
+   },
+   "articulate_only": [
+    "ai-essay-0-olmo2-7b",
+    "ai-essay-0-qwen2.5-3b",
+    "ai-essay-0-qwen2.5-7b",
+    "ai-essay-0-qwen3-8b",
+    "ai-essay-1-olmo2-7b",
+    "ai-essay-1-qwen2.5-3b",
+    "ai-essay-1-qwen2.5-7b",
+    "ai-essay-1-qwen3-8b",
+    "ai-essay-2-olmo2-7b",
+    "ai-essay-2-qwen2.5-3b",
+    "ai-essay-2-qwen2.5-7b",
+    "ai-essay-2-qwen3-8b",
+    "ai-fiction-0-olmo2-7b",
+    "ai-fiction-0-qwen2.5-3b",
+    "ai-fiction-0-qwen2.5-7b",
+    "ai-fiction-0-qwen3-8b",
+    "ai-fiction-1-olmo2-7b",
+    "ai-fiction-1-qwen2.5-3b",
+    "ai-fiction-1-qwen2.5-7b",
+    "ai-fiction-1-qwen3-8b",
+    "ai-fiction-2-olmo2-7b",
+    "ai-fiction-2-qwen2.5-3b",
+    "ai-fiction-2-qwen2.5-7b",
+    "ai-fiction-2-qwen3-8b",
+    "ai-science-0-olmo2-7b",
+    "ai-science-0-qwen2.5-3b",
+    "ai-science-0-qwen2.5-7b",
+    "ai-science-0-qwen3-8b",
+    "ai-science-1-olmo2-7b",
+    "ai-science-1-qwen2.5-3b",
+    "ai-science-1-qwen2.5-7b",
+    "ai-science-1-qwen3-8b",
+    "ai-science-2-olmo2-7b",
+    "ai-science-2-qwen2.5-3b",
+    "ai-science-2-qwen2.5-7b",
+    "ai-science-2-qwen3-8b",
+    "ai-student-essay-cell-phones-at-school-1-olmo2-7b",
+    "ai-student-essay-cell-phones-at-school-1-qwen2.5-3b",
+    "ai-student-essay-cell-phones-at-school-1-qwen2.5-7b",
+    "ai-student-essay-cell-phones-at-school-1-qwen3-8b",
+    "ai-student-essay-cell-phones-at-school-2-olmo2-7b",
+    "ai-student-essay-cell-phones-at-school-2-qwen2.5-3b",
+    "ai-student-essay-cell-phones-at-school-2-qwen2.5-7b",
+    "ai-student-essay-cell-phones-at-school-2-qwen3-8b",
+    "ai-student-essay-community-service-1-olmo2-7b",
+    "ai-student-essay-community-service-1-qwen2.5-3b",
+    "ai-student-essay-community-service-1-qwen2.5-7b",
+    "ai-student-essay-community-service-1-qwen3-8b",
+    "ai-student-essay-community-service-2-olmo2-7b",
+    "ai-student-essay-community-service-2-qwen2.5-3b",
+    "ai-student-essay-community-service-2-qwen2.5-7b",
+    "ai-student-essay-community-service-2-qwen3-8b",
+    "ai-student-essay-distance-learning-1-olmo2-7b",
+    "ai-student-essay-distance-learning-1-qwen2.5-3b",
+    "ai-student-essay-distance-learning-1-qwen2.5-7b",
+    "ai-student-essay-distance-learning-1-qwen3-8b",
+    "ai-student-essay-distance-learning-2-olmo2-7b",
+    "ai-student-essay-distance-learning-2-qwen2.5-3b",
+    "ai-student-essay-distance-learning-2-qwen2.5-7b",
+    "ai-student-essay-distance-learning-2-qwen3-8b",
+    "ai-student-essay-mandatory-extracurricular-activities-1-olmo2-7b",
+    "ai-student-essay-mandatory-extracurricular-activities-1-qwen2.5-3b",
+    "ai-student-essay-mandatory-extracurricular-activities-1-qwen2.5-7b",
+    "ai-student-essay-mandatory-extracurricular-activities-1-qwen3-8b",
+    "ai-student-essay-mandatory-extracurricular-activities-2-olmo2-7b",
+    "ai-student-essay-mandatory-extracurricular-activities-2-qwen2.5-3b",
+    "ai-student-essay-mandatory-extracurricular-activities-2-qwen2.5-7b",
+    "ai-student-essay-mandatory-extracurricular-activities-2-qwen3-8b",
+    "ai-student-essay-seeking-multiple-opinions-1-olmo2-7b",
+    "ai-student-essay-seeking-multiple-opinions-1-qwen2.5-3b",
+    "ai-student-essay-seeking-multiple-opinions-1-qwen2.5-7b",
+    "ai-student-essay-seeking-multiple-opinions-1-qwen3-8b",
+    "ai-student-essay-seeking-multiple-opinions-2-olmo2-7b",
+    "ai-student-essay-seeking-multiple-opinions-2-qwen2.5-3b",
+    "ai-student-essay-seeking-multiple-opinions-2-qwen2.5-7b",
+    "ai-student-essay-seeking-multiple-opinions-2-qwen3-8b",
+    "ai-student-essay-summer-projects-1-olmo2-7b",
+    "ai-student-essay-summer-projects-1-qwen2.5-3b",
+    "ai-student-essay-summer-projects-1-qwen2.5-7b",
+    "ai-student-essay-summer-projects-1-qwen3-8b",
+    "ai-student-essay-summer-projects-2-olmo2-7b",
+    "ai-student-essay-summer-projects-2-qwen2.5-3b",
+    "ai-student-essay-summer-projects-2-qwen2.5-7b",
+    "ai-student-essay-summer-projects-2-qwen3-8b",
+    "human-gutenberg-1228-0",
+    "human-gutenberg-1228-1",
+    "human-gutenberg-1228-2",
+    "human-gutenberg-201-1",
+    "human-gutenberg-201-2",
+    "human-gutenberg-205-0",
+    "human-gutenberg-205-1",
+    "human-gutenberg-205-2",
+    "human-gutenberg-2701-0",
+    "human-gutenberg-2701-1",
+    "human-gutenberg-2701-2",
+    "human-gutenberg-308-0",
+    "human-gutenberg-308-1",
+    "human-gutenberg-944-0",
+    "human-gutenberg-944-1",
+    "human-gutenberg-944-2",
+    "human-persuade-0BDADA3AFF77",
+    "human-persuade-1649A2246587",
+    "human-persuade-18EDFBD73F06",
+    "human-persuade-19E57B0657A6",
+    "human-persuade-22075172920B",
+    "human-persuade-231993662C14",
+    "human-persuade-2321C93F8D7E",
+    "human-persuade-280F4A13DE2B",
+    "human-persuade-352CEEDDF08C",
+    "human-persuade-36B4B627FE00",
+    "human-persuade-3AA24312B2FE",
+    "human-persuade-3F0396A77EE0",
+    "human-persuade-4183BA00BE40",
+    "human-persuade-477B00F899E2",
+    "human-persuade-5412AD81F965",
+    "human-persuade-584A4BB1E954",
+    "human-persuade-5945ADE75E5E",
+    "human-persuade-6C4DB05BBBF2",
+    "human-persuade-6D7B020952E0",
+    "human-persuade-6ECEC81235E5",
+    "human-persuade-7245B7DB7729",
+    "human-persuade-7D1925281627",
+    "human-persuade-7EEF498A0C92",
+    "human-persuade-832BF7151D40",
+    "human-persuade-8C42568E1362",
+    "human-persuade-8D0E04684275",
+    "human-persuade-8E555DA6ED4D",
+    "human-persuade-92E97E947628",
+    "human-persuade-9ABAA03ACB4B",
+    "human-persuade-A9E9851F3E7E",
+    "human-persuade-B29CFA250576",
+    "human-persuade-B5A7C13D13B8",
+    "human-persuade-BA541CCAA2FF",
+    "human-persuade-C0459F75A8DB",
+    "human-persuade-CD0C46A0B2E6",
+    "human-persuade-D1C69AFBCE83",
+    "human-persuade-D93BADC352CF",
+    "human-persuade-EBD98D754ECD",
+    "human-persuade-EE6DDAF8FD20",
+    "human-persuade-EFB0DDC8EA77",
+    "human-persuade-FE3CA06DDCA1"
+   ],
+   "binoculars_at_threshold": {
+    "fpr": {
+     "ci95": [
+      0.007,
+      0.092
+     ],
+     "k": 2,
+     "n": 75,
+     "rate": 0.027
+    },
+    "precision": {
+     "ci95": [
+      0.0,
+      0.658
+     ],
+     "k": 0,
+     "n": 2,
+     "rate": 0.0
+    },
+    "recall": {
+     "ci95": [
+      0.0,
+      0.044
+     ],
+     "k": 0,
+     "n": 84,
+     "rate": 0.0
+    }
+   },
+   "binoculars_only": [
+    "human-speech-declaration-preamble",
+    "human-speech-lincoln-2nd-inaugural"
+   ],
+   "threshold_note": "Binoculars flags above the in-sample 5% human false-positive point"
+  }
+ },
+ "counts": {
+  "ai/essay": 12,
+  "ai/fiction": 12,
+  "ai/science": 12,
+  "ai/student-essay": 48,
+  "human/essay": 3,
+  "human/fiction": 9,
+  "human/science": 6,
+  "human/speech": 3,
+  "human/student-essay": 54,
+  "mixed/essay": 2,
+  "mixed/fiction": 6,
+  "mixed/science": 4,
+  "mixed/student-essay": 12
+ },
+ "detectors": {
+  "binoculars": {
+   "by_genre": {
+    "essay": {
+     "auroc": 1.0,
+     "ci95": [
+      1.0,
+      1.0
+     ],
+     "n_ai": 12,
+     "n_human": 3
+    },
+    "fiction": {
+     "auroc": 0.87,
+     "ci95": [
+      0.685,
+      1.0
+     ],
+     "n_ai": 12,
+     "n_human": 9
+    },
+    "science": {
+     "auroc": 0.764,
+     "ci95": [
+      0.486,
+      0.972
+     ],
+     "n_ai": 12,
+     "n_human": 6
+    },
+    "speech": {
+     "auroc": null,
+     "ci95": null,
+     "n_ai": 0,
+     "n_human": 3
+    },
+    "student-essay": {
+     "auroc": 0.905,
+     "ci95": [
+      0.846,
+      0.955
+     ],
+     "n_ai": 48,
+     "n_human": 54
+    }
+   },
+   "by_model": {
+    "olmo2:7b": {
+     "auroc": 0.8,
+     "ci95": [
+      0.705,
+      0.882
+     ],
+     "n_ai": 21,
+     "n_human": 75
+    },
+    "qwen2.5:3b": {
+     "auroc": 0.721,
+     "ci95": [
+      0.602,
+      0.827
+     ],
+     "n_ai": 21,
+     "n_human": 75
+    },
+    "qwen2.5:7b": {
+     "auroc": 0.931,
+     "ci95": [
+      0.873,
+      0.975
+     ],
+     "n_ai": 21,
+     "n_human": 75
+    },
+    "qwen3:8b": {
+     "auroc": 0.96,
+     "ci95": [
+      0.907,
+      1.0
+     ],
+     "n_ai": 21,
+     "n_human": 75
+    }
+   },
+   "overall": {
+    "auroc": 0.853,
+    "ci95": [
+     0.791,
+     0.911
+    ],
+    "n_ai": 84,
+    "n_human": 75
+   }
+  },
+  "fast-detectgpt": {
+   "by_genre": {
+    "essay": {
+     "auroc": 1.0,
+     "ci95": [
+      1.0,
+      1.0
+     ],
+     "n_ai": 12,
+     "n_human": 3
+    },
+    "fiction": {
+     "auroc": 0.88,
+     "ci95": [
+      0.713,
+      1.0
+     ],
+     "n_ai": 12,
+     "n_human": 9
+    },
+    "science": {
+     "auroc": 1.0,
+     "ci95": [
+      1.0,
+      1.0
+     ],
+     "n_ai": 12,
+     "n_human": 6
+    },
+    "speech": {
+     "auroc": null,
+     "ci95": null,
+     "n_ai": 0,
+     "n_human": 3
+    },
+    "student-essay": {
+     "auroc": 0.76,
+     "ci95": [
+      0.663,
+      0.845
+     ],
+     "n_ai": 48,
+     "n_human": 54
+    }
+   },
+   "by_model": {
+    "olmo2:7b": {
+     "auroc": 0.648,
+     "ci95": [
+      0.528,
+      0.765
+     ],
+     "n_ai": 21,
+     "n_human": 75
+    },
+    "qwen2.5:3b": {
+     "auroc": 0.775,
+     "ci95": [
+      0.668,
+      0.872
+     ],
+     "n_ai": 21,
+     "n_human": 75
+    },
+    "qwen2.5:7b": {
+     "auroc": 0.86,
+     "ci95": [
+      0.783,
+      0.927
+     ],
+     "n_ai": 21,
+     "n_human": 75
+    },
+    "qwen3:8b": {
+     "auroc": 0.97,
+     "ci95": [
+      0.931,
+      0.997
+     ],
+     "n_ai": 21,
+     "n_human": 75
+    }
+   },
+   "overall": {
+    "auroc": 0.813,
+    "ci95": [
+     0.744,
+     0.878
+    ],
+    "n_ai": 84,
+    "n_human": 75
+   }
+  }
+ },
+ "documents_measured": 183,
+ "scope": "Measured on this corpus only. A flag names a prose pattern in a text. Use other evidence to decide who wrote a text."
+}

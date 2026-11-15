@@ -134,6 +134,18 @@ ALLOWED = (
     "packages/bulletin/scripts/smoke.mjs",
     "packages/bulletin/src/reports.ts",
     "packages/bulletin/test/reports.test.ts",
+    # articulate 0.19.1 reads version 1 receipts, which name a finding's scope
+    # with the older field (scope.py LEGACY_KEY, in the package and in the
+    # plugin's vendored copy); its changelog, a ruleset baseline, a recorded
+    # receipt set and a test carry the name for that reason
+    "packages/articulate/CHANGELOG.md",
+    "packages/articulate/claude-plugin/src/articulate/corpus_receipt.py",
+    "packages/articulate/claude-plugin/src/articulate/scope.py",
+    "packages/articulate/scripts/release_ruleset_baseline.json",
+    "packages/articulate/src/articulate/corpus_receipt.py",
+    "packages/articulate/src/articulate/scope.py",
+    "packages/articulate/tests/house1_receipts.json",
+    "packages/articulate/tests/test_corpus_receipt.py",
     # emet's Flywheel reporter reads evaluation artifacts under either name, and its
     # changelog, its guide and its test say so
     "packages/emet/CHANGELOG.md",

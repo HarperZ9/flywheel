@@ -1,0 +1,1692 @@
+{
+ "splits": {
+  "dev": {
+   "n": 76,
+   "after": {
+    "antithesis": {
+     "tp": 16,
+     "pos": 17,
+     "recall": [
+      0.941,
+      0.73,
+      0.99
+     ],
+     "fp": 1,
+     "neg": 59,
+     "fpr": [
+      0.017,
+      0.003,
+      0.09
+     ],
+     "misses": [
+      "proverb-man-proposes"
+     ],
+     "false_alarms": [
+      "romeo-loving-hate"
+     ]
+    },
+    "tricolon": {
+     "tp": 10,
+     "pos": 11,
+     "recall": [
+      0.909,
+      0.623,
+      0.984
+     ],
+     "fp": 2,
+     "neg": 65,
+     "fpr": [
+      0.031,
+      0.008,
+      0.105
+     ],
+     "misses": [
+      "kjv-faith-hope"
+     ],
+     "false_alarms": [
+      "lincoln-four-score",
+      "lk-red-white-blue"
+     ]
+    },
+    "anaphora": {
+     "tp": 12,
+     "pos": 12,
+     "recall": [
+      1.0,
+      0.757,
+      1.0
+     ],
+     "fp": 1,
+     "neg": 64,
+     "fpr": [
+      0.016,
+      0.003,
+      0.083
+     ],
+     "misses": [],
+     "false_alarms": [
+      "lk-smith-log"
+     ]
+    },
+    "chiasmus": {
+     "tp": 5,
+     "pos": 5,
+     "recall": [
+      1.0,
+      0.566,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 71,
+     "fpr": [
+      0.0,
+      0.0,
+      0.051
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "alliteration": {
+     "tp": 4,
+     "pos": 4,
+     "recall": [
+      1.0,
+      0.51,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 72,
+     "fpr": [
+      0.0,
+      0.0,
+      0.051
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "assonance": {
+     "tp": 1,
+     "pos": 2,
+     "recall": [
+      0.5,
+      0.095,
+      0.905
+     ],
+     "fp": 0,
+     "neg": 74,
+     "fpr": [
+      0.0,
+      0.0,
+      0.049
+     ],
+     "misses": [
+      "poe-mellow-wedding"
+     ],
+     "false_alarms": []
+    },
+    "polysyndeton": {
+     "tp": 2,
+     "pos": 2,
+     "recall": [
+      1.0,
+      0.342,
+      1.0
+     ],
+     "fp": 1,
+     "neg": 74,
+     "fpr": [
+      0.014,
+      0.002,
+      0.073
+     ],
+     "misses": [],
+     "false_alarms": [
+      "kjv-tribulation"
+     ]
+    },
+    "asyndeton": {
+     "tp": 8,
+     "pos": 8,
+     "recall": [
+      1.0,
+      0.676,
+      1.0
+     ],
+     "fp": 1,
+     "neg": 68,
+     "fpr": [
+      0.015,
+      0.003,
+      0.079
+     ],
+     "misses": [],
+     "false_alarms": [
+      "lincoln-four-score"
+     ]
+    },
+    "anadiplosis": {
+     "tp": 4,
+     "pos": 4,
+     "recall": [
+      1.0,
+      0.51,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 72,
+     "fpr": [
+      0.0,
+      0.0,
+      0.051
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "epizeuxis": {
+     "tp": 2,
+     "pos": 2,
+     "recall": [
+      1.0,
+      0.342,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 74,
+     "fpr": [
+      0.0,
+      0.0,
+      0.049
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "isocolon": {
+     "tp": 23,
+     "pos": 24,
+     "recall": [
+      0.958,
+      0.798,
+      0.993
+     ],
+     "fp": 1,
+     "neg": 52,
+     "fpr": [
+      0.019,
+      0.003,
+      0.101
+     ],
+     "misses": [
+      "c-ask-not-river"
+     ],
+     "false_alarms": [
+      "kjv-beatitudes"
+     ]
+    },
+    "zeugma": {
+     "tp": 3,
+     "pos": 3,
+     "recall": [
+      1.0,
+      0.438,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 73,
+     "fpr": [
+      0.0,
+      0.0,
+      0.05
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "oxymoron": {
+     "tp": 3,
+     "pos": 3,
+     "recall": [
+      1.0,
+      0.438,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 73,
+     "fpr": [
+      0.0,
+      0.0,
+      0.05
+     ],
+     "misses": [],
+     "false_alarms": []
+    }
+   },
+   "before_line": {
+    "antithesis": {
+     "tp": 3,
+     "pos": 17,
+     "recall": [
+      0.176,
+      0.062,
+      0.41
+     ],
+     "fp": 4,
+     "neg": 59,
+     "fpr": [
+      0.068,
+      0.027,
+      0.162
+     ],
+     "misses": [
+      "dickens-best-worst",
+      "pope-err",
+      "kjv-called",
+      "kjv-spirit-flesh",
+      "macbeth-fair-foul",
+      "milton-reign",
+      "proverb-man-proposes",
+      "lincoln-little-note",
+      "c-split-antithesis",
+      "c-fewer-not-more",
+      "c-ask-not-river",
+      "proverb-penny",
+      "kjv-a-time",
+      "proverb-eat-live"
+     ],
+     "false_alarms": [
+      "lk-not-hungry-but",
+      "lk-could-not-find-but",
+      "lk-not-known-but",
+      "lk-not-only-one"
+     ]
+    },
+    "tricolon": {
+     "tp": 2,
+     "pos": 11,
+     "recall": [
+      0.182,
+      0.051,
+      0.477
+     ],
+     "fp": 3,
+     "neg": 65,
+     "fpr": [
+      0.046,
+      0.016,
+      0.127
+     ],
+     "misses": [
+      "lincoln-of-by-for",
+      "caesar-veni",
+      "declaration-life-liberty",
+      "caesar-friends",
+      "kjv-faith-hope",
+      "lincoln-dedicate",
+      "c-reads-marks-leaves",
+      "c-clear-honest-short",
+      "hamlet-words"
+     ],
+     "false_alarms": [
+      "lk-eggs-flour-milk",
+      "lk-boston-salem",
+      "lk-red-white-blue"
+     ]
+    },
+    "anaphora": {
+     "tp": 3,
+     "pos": 12,
+     "recall": [
+      0.25,
+      0.089,
+      0.532
+     ],
+     "fp": 1,
+     "neg": 64,
+     "fpr": [
+      0.016,
+      0.003,
+      0.083
+     ],
+     "misses": [
+      "dickens-best-worst",
+      "caesar-veni",
+      "lincoln-dedicate",
+      "declaration-he-has",
+      "kjv-a-time",
+      "c-every-receipt",
+      "c-some-people",
+      "c-you-read",
+      "kjv-rain-descended"
+     ],
+     "false_alarms": [
+      "lk-smith-log"
+     ]
+    }
+   },
+   "before_runs": {
+    "antithesis": {
+     "tp": 1,
+     "pos": 17,
+     "recall": [
+      0.059,
+      0.01,
+      0.27
+     ],
+     "fp": 0,
+     "neg": 59,
+     "fpr": [
+      0.0,
+      0.0,
+      0.061
+     ],
+     "misses": [
+      "dickens-best-worst",
+      "pope-err",
+      "kjv-called",
+      "kjv-spirit-flesh",
+      "caesar-not-less",
+      "macbeth-fair-foul",
+      "milton-reign",
+      "proverb-man-proposes",
+      "lincoln-little-note",
+      "c-not-rewrite-but-mark",
+      "c-not-about",
+      "c-fewer-not-more",
+      "c-ask-not-river",
+      "proverb-penny",
+      "kjv-a-time",
+      "proverb-eat-live"
+     ],
+     "false_alarms": []
+    },
+    "tricolon": {
+     "tp": 7,
+     "pos": 11,
+     "recall": [
+      0.636,
+      0.354,
+      0.848
+     ],
+     "fp": 5,
+     "neg": 65,
+     "fpr": [
+      0.077,
+      0.033,
+      0.168
+     ],
+     "misses": [
+      "caesar-veni",
+      "declaration-life-liberty",
+      "caesar-friends",
+      "kjv-faith-hope"
+     ],
+     "false_alarms": [
+      "dickens-best-worst",
+      "melville-ishmael",
+      "lk-eggs-flour-milk",
+      "lk-red-white-blue",
+      "lear-never"
+     ]
+    },
+    "anaphora": {
+     "tp": 6,
+     "pos": 12,
+     "recall": [
+      0.5,
+      0.254,
+      0.746
+     ],
+     "fp": 1,
+     "neg": 64,
+     "fpr": [
+      0.016,
+      0.003,
+      0.083
+     ],
+     "misses": [
+      "dickens-best-worst",
+      "caesar-veni",
+      "lincoln-dedicate",
+      "kjv-a-time",
+      "c-you-read",
+      "kjv-rain-descended"
+     ],
+     "false_alarms": [
+      "lk-smith-log"
+     ]
+    }
+   }
+  },
+  "heldout": {
+   "n": 45,
+   "after": {
+    "antithesis": {
+     "tp": 4,
+     "pos": 6,
+     "recall": [
+      0.667,
+      0.3,
+      0.903
+     ],
+     "fp": 1,
+     "neg": 39,
+     "fpr": [
+      0.026,
+      0.005,
+      0.132
+     ],
+     "misses": [
+      "h-speech-silver",
+      "h-lk-quote-antithesis"
+     ],
+     "false_alarms": [
+      "h-lk-train-late"
+     ]
+    },
+    "tricolon": {
+     "tp": 5,
+     "pos": 6,
+     "recall": [
+      0.833,
+      0.436,
+      0.97
+     ],
+     "fp": 4,
+     "neg": 39,
+     "fpr": [
+      0.103,
+      0.041,
+      0.236
+     ],
+     "misses": [
+      "h-love-all"
+     ],
+     "false_alarms": [
+      "h-lk-pen-ruler",
+      "h-psalm-praise",
+      "h-no-no-no",
+      "h-romeo-feather"
+     ]
+    },
+    "anaphora": {
+     "tp": 3,
+     "pos": 4,
+     "recall": [
+      0.75,
+      0.301,
+      0.954
+     ],
+     "fp": 0,
+     "neg": 41,
+     "fpr": [
+      0.0,
+      0.0,
+      0.086
+     ],
+     "misses": [
+      "h-psalm-praise"
+     ],
+     "false_alarms": []
+    },
+    "chiasmus": {
+     "tp": 2,
+     "pos": 2,
+     "recall": [
+      1.0,
+      0.342,
+      1.0
+     ],
+     "fp": 2,
+     "neg": 43,
+     "fpr": [
+      0.047,
+      0.013,
+      0.155
+     ],
+     "misses": [],
+     "false_alarms": [
+      "h-fix-test",
+      "h-data-evidence"
+     ]
+    },
+    "alliteration": {
+     "tp": 3,
+     "pos": 3,
+     "recall": [
+      1.0,
+      0.438,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 42,
+     "fpr": [
+      0.0,
+      0.0,
+      0.084
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "assonance": {
+     "tp": 2,
+     "pos": 2,
+     "recall": [
+      1.0,
+      0.342,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 43,
+     "fpr": [
+      0.0,
+      0.0,
+      0.082
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "polysyndeton": {
+     "tp": 2,
+     "pos": 2,
+     "recall": [
+      1.0,
+      0.342,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 43,
+     "fpr": [
+      0.0,
+      0.0,
+      0.082
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "asyndeton": {
+     "tp": 5,
+     "pos": 6,
+     "recall": [
+      0.833,
+      0.436,
+      0.97
+     ],
+     "fp": 1,
+     "neg": 39,
+     "fpr": [
+      0.026,
+      0.005,
+      0.132
+     ],
+     "misses": [
+      "h-love-all"
+     ],
+     "false_alarms": [
+      "h-no-no-no"
+     ]
+    },
+    "anadiplosis": {
+     "tp": 3,
+     "pos": 3,
+     "recall": [
+      1.0,
+      0.438,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 42,
+     "fpr": [
+      0.0,
+      0.0,
+      0.084
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "epizeuxis": {
+     "tp": 2,
+     "pos": 2,
+     "recall": [
+      1.0,
+      0.342,
+      1.0
+     ],
+     "fp": 1,
+     "neg": 43,
+     "fpr": [
+      0.023,
+      0.004,
+      0.121
+     ],
+     "misses": [],
+     "false_alarms": [
+      "h-data-evidence"
+     ]
+    },
+    "isocolon": {
+     "tp": 12,
+     "pos": 16,
+     "recall": [
+      0.75,
+      0.505,
+      0.898
+     ],
+     "fp": 4,
+     "neg": 29,
+     "fpr": [
+      0.138,
+      0.055,
+      0.306
+     ],
+     "misses": [
+      "h-advice-approval",
+      "h-stop-look",
+      "h-love-do",
+      "h-shape-tools"
+     ],
+     "false_alarms": [
+      "h-lk-train-late",
+      "h-lk-pen-ruler",
+      "h-sixpence",
+      "h-romeo-feather"
+     ]
+    },
+    "zeugma": {
+     "tp": 2,
+     "pos": 2,
+     "recall": [
+      1.0,
+      0.342,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 43,
+     "fpr": [
+      0.0,
+      0.0,
+      0.082
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "oxymoron": {
+     "tp": 3,
+     "pos": 3,
+     "recall": [
+      1.0,
+      0.438,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 42,
+     "fpr": [
+      0.0,
+      0.0,
+      0.084
+     ],
+     "misses": [],
+     "false_alarms": []
+    }
+   },
+   "before_line": {
+    "antithesis": {
+     "tp": 1,
+     "pos": 6,
+     "recall": [
+      0.167,
+      0.03,
+      0.564
+     ],
+     "fp": 2,
+     "neg": 39,
+     "fpr": [
+      0.051,
+      0.014,
+      0.169
+     ],
+     "misses": [
+      "h-speech-silver",
+      "h-love-all",
+      "h-united-divided",
+      "h-advice-approval",
+      "h-easy-hard"
+     ],
+     "false_alarms": [
+      "h-lk-did-not-call",
+      "h-lk-train-late"
+     ]
+    },
+    "tricolon": {
+     "tp": 1,
+     "pos": 6,
+     "recall": [
+      0.167,
+      0.03,
+      0.564
+     ],
+     "fp": 0,
+     "neg": 39,
+     "fpr": [
+      0.0,
+      0.0,
+      0.09
+     ],
+     "misses": [
+      "h-love-all",
+      "h-read-once",
+      "h-liberte",
+      "h-rained",
+      "h-location"
+     ],
+     "false_alarms": []
+    },
+    "anaphora": {
+     "tp": 0,
+     "pos": 4,
+     "recall": [
+      0.0,
+      0.0,
+      0.49
+     ],
+     "fp": 0,
+     "neg": 41,
+     "fpr": [
+      0.0,
+      0.0,
+      0.086
+     ],
+     "misses": [
+      "h-read-once",
+      "h-psalm-praise",
+      "h-checked-logs",
+      "h-rained"
+     ],
+     "false_alarms": []
+    }
+   },
+   "before_runs": {
+    "antithesis": {
+     "tp": 0,
+     "pos": 6,
+     "recall": [
+      0.0,
+      0.0,
+      0.39
+     ],
+     "fp": 0,
+     "neg": 39,
+     "fpr": [
+      0.0,
+      0.0,
+      0.09
+     ],
+     "misses": [
+      "h-speech-silver",
+      "h-love-all",
+      "h-united-divided",
+      "h-advice-approval",
+      "h-easy-hard",
+      "h-lk-quote-antithesis"
+     ],
+     "false_alarms": []
+    },
+    "tricolon": {
+     "tp": 3,
+     "pos": 6,
+     "recall": [
+      0.5,
+      0.188,
+      0.812
+     ],
+     "fp": 1,
+     "neg": 39,
+     "fpr": [
+      0.026,
+      0.005,
+      0.132
+     ],
+     "misses": [
+      "h-love-all",
+      "h-stop-look",
+      "h-liberte"
+     ],
+     "false_alarms": [
+      "h-no-no-no"
+     ]
+    },
+    "anaphora": {
+     "tp": 1,
+     "pos": 4,
+     "recall": [
+      0.25,
+      0.046,
+      0.699
+     ],
+     "fp": 0,
+     "neg": 41,
+     "fpr": [
+      0.0,
+      0.0,
+      0.086
+     ],
+     "misses": [
+      "h-read-once",
+      "h-psalm-praise",
+      "h-rained"
+     ],
+     "false_alarms": []
+    }
+   }
+  },
+  "heldout-independent": {
+   "n": 80,
+   "after": {
+    "antithesis": {
+     "tp": 8,
+     "pos": 12,
+     "recall": [
+      0.667,
+      0.391,
+      0.862
+     ],
+     "fp": 1,
+     "neg": 68,
+     "fpr": [
+      0.015,
+      0.003,
+      0.079
+     ],
+     "misses": [
+      "ind-proverb-speech-silver",
+      "ind-kennedy-ask-not",
+      "ind-lk-chiasmus-prices-same-order",
+      "ind-lk-zeugma-franklin-hang"
+     ],
+     "false_alarms": [
+      "ind-lk-antithesis-not-but-delay"
+     ]
+    },
+    "tricolon": {
+     "tp": 6,
+     "pos": 8,
+     "recall": [
+      0.75,
+      0.409,
+      0.929
+     ],
+     "fp": 6,
+     "neg": 72,
+     "fpr": [
+      0.083,
+      0.039,
+      0.17
+     ],
+     "misses": [
+      "ind-anaphora-every-morning",
+      "ind-asyndeton-ship-listed"
+     ],
+     "false_alarms": [
+      "ind-lk-tricolon-toolkit-asyndeton",
+      "ind-lk-polysyndeton-one-and",
+      "ind-asyndeton-tired-hungry",
+      "ind-lk-asyndeton-subordinate-commas",
+      "ind-lk-isocolon-adjective-list",
+      "ind-romeo-cold-fire"
+     ]
+    },
+    "anaphora": {
+     "tp": 4,
+     "pos": 4,
+     "recall": [
+      1.0,
+      0.51,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 76,
+     "fpr": [
+      0.0,
+      0.0,
+      0.048
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "chiasmus": {
+     "tp": 4,
+     "pos": 4,
+     "recall": [
+      1.0,
+      0.51,
+      1.0
+     ],
+     "fp": 1,
+     "neg": 76,
+     "fpr": [
+      0.013,
+      0.002,
+      0.071
+     ],
+     "misses": [],
+     "false_alarms": [
+      "ind-lk-chiasmus-prices-same-order"
+     ]
+    },
+    "alliteration": {
+     "tp": 5,
+     "pos": 5,
+     "recall": [
+      1.0,
+      0.566,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 75,
+     "fpr": [
+      0.0,
+      0.0,
+      0.049
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "assonance": {
+     "tp": 3,
+     "pos": 4,
+     "recall": [
+      0.75,
+      0.301,
+      0.954
+     ],
+     "fp": 4,
+     "neg": 76,
+     "fpr": [
+      0.053,
+      0.021,
+      0.128
+     ],
+     "misses": [
+      "ind-poe-mellow-bells"
+     ],
+     "false_alarms": [
+      "ind-tricolon-head-hand-heart",
+      "ind-lk-assonance-dove-stove",
+      "ind-lk-assonance-boat-two",
+      "ind-neutral-rainfall"
+     ]
+    },
+    "polysyndeton": {
+     "tp": 4,
+     "pos": 4,
+     "recall": [
+      1.0,
+      0.51,
+      1.0
+     ],
+     "fp": 1,
+     "neg": 76,
+     "fpr": [
+      0.013,
+      0.002,
+      0.071
+     ],
+     "misses": [],
+     "false_alarms": [
+      "ind-pope-stain-honour"
+     ]
+    },
+    "asyndeton": {
+     "tp": 8,
+     "pos": 11,
+     "recall": [
+      0.727,
+      0.434,
+      0.903
+     ],
+     "fp": 2,
+     "neg": 69,
+     "fpr": [
+      0.029,
+      0.008,
+      0.1
+     ],
+     "misses": [
+      "ind-anaphora-every-morning",
+      "ind-poe-purple-curtain",
+      "ind-asyndeton-ship-listed"
+     ],
+     "false_alarms": [
+      "ind-lk-chiasmus-prices-same-order",
+      "ind-lk-asyndeton-subordinate-commas"
+     ]
+    },
+    "anadiplosis": {
+     "tp": 4,
+     "pos": 4,
+     "recall": [
+      1.0,
+      0.51,
+      1.0
+     ],
+     "fp": 2,
+     "neg": 76,
+     "fpr": [
+      0.026,
+      0.007,
+      0.091
+     ],
+     "misses": [],
+     "false_alarms": [
+      "ind-macbeth-fair-foul",
+      "ind-matthew-last-first"
+     ]
+    },
+    "epizeuxis": {
+     "tp": 3,
+     "pos": 3,
+     "recall": [
+      1.0,
+      0.438,
+      1.0
+     ],
+     "fp": 0,
+     "neg": 77,
+     "fpr": [
+      0.0,
+      0.0,
+      0.048
+     ],
+     "misses": [],
+     "false_alarms": []
+    },
+    "isocolon": {
+     "tp": 17,
+     "pos": 20,
+     "recall": [
+      0.85,
+      0.64,
+      0.948
+     ],
+     "fp": 5,
+     "neg": 60,
+     "fpr": [
+      0.083,
+      0.036,
+      0.181
+     ],
+     "misses": [
+      "ind-kennedy-ask-not",
+      "ind-lk-zeugma-franklin-hang",
+      "ind-lk-oxymoron-hot-cold-apart"
+     ],
+     "false_alarms": [
+      "ind-tricolon-head-hand-heart",
+      "ind-lk-tricolon-toolkit-asyndeton",
+      "ind-lk-polysyndeton-one-and",
+      "ind-lk-isocolon-unequal-clauses",
+      "ind-romeo-cold-fire"
+     ]
+    },
+    "zeugma": {
+     "tp": 2,
+     "pos": 4,
+     "recall": [
+      0.5,
+      0.15,
+      0.85
+     ],
+     "fp": 0,
+     "neg": 76,
+     "fpr": [
+      0.0,
+      0.0,
+      0.048
+     ],
+     "misses": [
+      "ind-pickwick-tears-sedan",
+      "ind-pope-stain-honour"
+     ],
+     "false_alarms": []
+    },
+    "oxymoron": {
+     "tp": 4,
+     "pos": 4,
+     "recall": [
+      1.0,
+      0.51,
+      1.0
+     ],
+     "fp": 1,
+     "neg": 76,
+     "fpr": [
+      0.013,
+      0.002,
+      0.071
+     ],
+     "misses": [],
+     "false_alarms": [
+      "ind-matthew-last-first"
+     ]
+    }
+   },
+   "before_line": {
+    "antithesis": {
+     "tp": 0,
+     "pos": 12,
+     "recall": [
+      0.0,
+      0.0,
+      0.243
+     ],
+     "fp": 1,
+     "neg": 68,
+     "fpr": [
+      0.015,
+      0.003,
+      0.079
+     ],
+     "misses": [
+      "ind-dickens-best-worst",
+      "ind-pope-err-forgive",
+      "ind-matthew-many-few",
+      "ind-proverb-speech-silver",
+      "ind-kennedy-ask-not",
+      "ind-dickens-age-wisdom",
+      "ind-macbeth-fair-foul",
+      "ind-matthew-last-first",
+      "ind-chiasmus-forget-remember",
+      "ind-lk-chiasmus-prices-same-order",
+      "ind-lk-zeugma-franklin-hang",
+      "ind-lk-oxymoron-hot-cold-apart"
+     ],
+     "false_alarms": [
+      "ind-lk-antithesis-not-but-delay"
+     ]
+    },
+    "tricolon": {
+     "tp": 0,
+     "pos": 8,
+     "recall": [
+      0.0,
+      0.0,
+      0.324
+     ],
+     "fp": 2,
+     "neg": 72,
+     "fpr": [
+      0.028,
+      0.008,
+      0.096
+     ],
+     "misses": [
+      "ind-caesar-came-saw",
+      "ind-lincoln-of-by-for",
+      "ind-tricolon-head-hand-heart",
+      "ind-lincoln-dedicate",
+      "ind-anaphora-every-morning",
+      "ind-lk-anaphora-epistrophe-wrong",
+      "ind-asyndeton-ship-listed",
+      "ind-anadiplosis-storm-rain"
+     ],
+     "false_alarms": [
+      "ind-lk-tricolon-shopping",
+      "ind-lk-isocolon-adjective-list"
+     ]
+    },
+    "anaphora": {
+     "tp": 0,
+     "pos": 4,
+     "recall": [
+      0.0,
+      0.0,
+      0.49
+     ],
+     "fp": 0,
+     "neg": 76,
+     "fpr": [
+      0.0,
+      0.0,
+      0.048
+     ],
+     "misses": [
+      "ind-caesar-came-saw",
+      "ind-lincoln-dedicate",
+      "ind-anaphora-every-morning",
+      "ind-dickens-age-wisdom"
+     ],
+     "false_alarms": []
+    }
+   },
+   "before_runs": {
+    "antithesis": {
+     "tp": 0,
+     "pos": 12,
+     "recall": [
+      0.0,
+      0.0,
+      0.243
+     ],
+     "fp": 0,
+     "neg": 68,
+     "fpr": [
+      0.0,
+      0.0,
+      0.053
+     ],
+     "misses": [
+      "ind-dickens-best-worst",
+      "ind-pope-err-forgive",
+      "ind-matthew-many-few",
+      "ind-proverb-speech-silver",
+      "ind-kennedy-ask-not",
+      "ind-dickens-age-wisdom",
+      "ind-macbeth-fair-foul",
+      "ind-matthew-last-first",
+      "ind-chiasmus-forget-remember",
+      "ind-lk-chiasmus-prices-same-order",
+      "ind-lk-zeugma-franklin-hang",
+      "ind-lk-oxymoron-hot-cold-apart"
+     ],
+     "false_alarms": []
+    },
+    "tricolon": {
+     "tp": 2,
+     "pos": 8,
+     "recall": [
+      0.25,
+      0.071,
+      0.591
+     ],
+     "fp": 3,
+     "neg": 72,
+     "fpr": [
+      0.042,
+      0.014,
+      0.115
+     ],
+     "misses": [
+      "ind-caesar-came-saw",
+      "ind-tricolon-head-hand-heart",
+      "ind-anaphora-every-morning",
+      "ind-lk-anaphora-epistrophe-wrong",
+      "ind-asyndeton-ship-listed",
+      "ind-anadiplosis-storm-rain"
+     ],
+     "false_alarms": [
+      "ind-lk-tricolon-shopping",
+      "ind-dickens-age-wisdom",
+      "ind-lk-isocolon-adjective-list"
+     ]
+    },
+    "anaphora": {
+     "tp": 0,
+     "pos": 4,
+     "recall": [
+      0.0,
+      0.0,
+      0.49
+     ],
+     "fp": 0,
+     "neg": 76,
+     "fpr": [
+      0.0,
+      0.0,
+      0.048
+     ],
+     "misses": [
+      "ind-caesar-came-saw",
+      "ind-lincoln-dedicate",
+      "ind-anaphora-every-morning",
+      "ind-dickens-age-wisdom"
+     ],
+     "false_alarms": []
+    }
+   }
+  }
+ },
+ "pairs": {
+  "rows": [
+   {
+    "id": "m-oxford-comma",
+    "device": "tricolon",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-tricolon-clauses",
+    "device": "tricolon",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-tricolon-nouns",
+    "device": "tricolon",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-tricolon-removed",
+    "device": "tricolon",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-reorder-clause",
+    "device": "antithesis",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-contraction",
+    "device": "antithesis",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-antithesis-no-negation",
+    "device": "antithesis",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-word-swap",
+    "device": "antithesis",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-removed",
+    "device": "antithesis",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-anaphora-every-each",
+    "device": "anaphora",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-anaphora-blessed-happy",
+    "device": "anaphora",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-anaphora-joined",
+    "device": "anaphora",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-anaphora-removed",
+    "device": "anaphora",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "i-split-antithesis-order",
+    "device": "antithesis",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "i-anaphora-interleaved",
+    "device": "anaphora",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "i-quoted-antithesis",
+    "device": "antithesis",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   }
+  ],
+  "kept": 12,
+  "kept_flips": 4,
+  "kept_both_miss": 0,
+  "removed": 4,
+  "removed_stuck": 0
+ },
+ "fairness": {
+  "antithesis": {
+   "toefl": "9/91",
+   "college_win0": "8/70",
+   "persuade_ell": "4/18",
+   "persuade_other": "7/36",
+   "toefl_minus_college_win0": [
+    -0.015,
+    -0.121,
+    0.08
+   ],
+   "persuade_ell_minus_persuade_other": [
+    0.028,
+    -0.176,
+    0.277
+   ]
+  },
+  "tricolon": {
+   "toefl": "17/91",
+   "college_win0": "21/70",
+   "persuade_ell": "5/18",
+   "persuade_other": "10/36",
+   "toefl_minus_college_win0": [
+    -0.113,
+    -0.246,
+    0.019
+   ],
+   "persuade_ell_minus_persuade_other": [
+    0.0,
+    -0.223,
+    0.26
+   ]
+  },
+  "anaphora": {
+   "toefl": "7/91",
+   "college_win0": "4/70",
+   "persuade_ell": "6/18",
+   "persuade_other": "6/36",
+   "toefl_minus_college_win0": [
+    0.02,
+    -0.07,
+    0.101
+   ],
+   "persuade_ell_minus_persuade_other": [
+    0.166,
+    -0.062,
+    0.412
+   ]
+  },
+  "chiasmus": {
+   "toefl": "1/91",
+   "college_win0": "1/70",
+   "persuade_ell": "1/18",
+   "persuade_other": "3/36",
+   "toefl_minus_college_win0": [
+    -0.003,
+    -0.067,
+    0.047
+   ],
+   "persuade_ell_minus_persuade_other": [
+    -0.027,
+    -0.17,
+    0.182
+   ]
+  },
+  "alliteration": {
+   "toefl": "18/91",
+   "college_win0": "19/70",
+   "persuade_ell": "7/18",
+   "persuade_other": "20/36",
+   "toefl_minus_college_win0": [
+    -0.073,
+    -0.206,
+    0.056
+   ],
+   "persuade_ell_minus_persuade_other": [
+    -0.167,
+    -0.405,
+    0.109
+   ]
+  },
+  "assonance": {
+   "toefl": "15/91",
+   "college_win0": "14/70",
+   "persuade_ell": "4/18",
+   "persuade_other": "16/36",
+   "toefl_minus_college_win0": [
+    -0.035,
+    -0.16,
+    0.083
+   ],
+   "persuade_ell_minus_persuade_other": [
+    -0.222,
+    -0.429,
+    0.052
+   ]
+  },
+  "polysyndeton": {
+   "toefl": "7/91",
+   "college_win0": "10/70",
+   "persuade_ell": "2/18",
+   "persuade_other": "12/36",
+   "toefl_minus_college_win0": [
+    -0.066,
+    -0.173,
+    0.031
+   ],
+   "persuade_ell_minus_persuade_other": [
+    -0.222,
+    -0.404,
+    0.031
+   ]
+  },
+  "asyndeton": {
+   "toefl": "5/91",
+   "college_win0": "12/70",
+   "persuade_ell": "3/18",
+   "persuade_other": "2/36",
+   "toefl_minus_college_win0": [
+    -0.116,
+    -0.225,
+    -0.019
+   ],
+   "persuade_ell_minus_persuade_other": [
+    0.111,
+    -0.055,
+    0.34
+   ]
+  },
+  "anadiplosis": {
+   "toefl": "3/91",
+   "college_win0": "1/70",
+   "persuade_ell": "3/18",
+   "persuade_other": "3/36",
+   "toefl_minus_college_win0": [
+    0.019,
+    -0.048,
+    0.079
+   ],
+   "persuade_ell_minus_persuade_other": [
+    0.084,
+    -0.09,
+    0.315
+   ]
+  },
+  "epizeuxis": {
+   "toefl": "1/91",
+   "college_win0": "2/70",
+   "persuade_ell": "1/18",
+   "persuade_other": "5/36",
+   "toefl_minus_college_win0": [
+    -0.018,
+    -0.088,
+    0.035
+   ],
+   "persuade_ell_minus_persuade_other": [
+    -0.083,
+    -0.238,
+    0.134
+   ]
+  },
+  "isocolon": {
+   "toefl": "12/91",
+   "college_win0": "14/70",
+   "persuade_ell": "4/18",
+   "persuade_other": "8/36",
+   "toefl_minus_college_win0": [
+    -0.068,
+    -0.189,
+    0.046
+   ],
+   "persuade_ell_minus_persuade_other": [
+    0.0,
+    -0.207,
+    0.253
+   ]
+  },
+  "zeugma": {
+   "toefl": "0/91",
+   "college_win0": "0/70",
+   "persuade_ell": "0/18",
+   "persuade_other": "0/36",
+   "toefl_minus_college_win0": [
+    0.0,
+    -0.052,
+    0.041
+   ],
+   "persuade_ell_minus_persuade_other": [
+    0.0,
+    -0.096,
+    0.176
+   ]
+  },
+  "oxymoron": {
+   "toefl": "0/91",
+   "college_win0": "1/70",
+   "persuade_ell": "0/18",
+   "persuade_other": "0/36",
+   "toefl_minus_college_win0": [
+    -0.014,
+    -0.077,
+    0.028
+   ],
+   "persuade_ell_minus_persuade_other": [
+    0.0,
+    -0.096,
+    0.176
+   ]
+  }
+ }
+}

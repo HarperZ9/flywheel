@@ -1,0 +1,1011 @@
+{
+ "ruleset": "sha256:9f78a7484bb20f84",
+ "devices": {
+  "antithesis": {
+   "line": {
+    "tp": 3,
+    "pos": 16,
+    "recall": [
+     0.188,
+     0.066,
+     0.43
+    ],
+    "fp": 4,
+    "neg": 33,
+    "fpr": [
+     0.121,
+     0.048,
+     0.273
+    ],
+    "lookalike_fp": 4,
+    "lookalikes": 10
+   },
+   "runs": {
+    "tp": 1,
+    "pos": 16,
+    "recall": [
+     0.062,
+     0.011,
+     0.283
+    ],
+    "fp": 0,
+    "neg": 33,
+    "fpr": [
+     0.0,
+     0.0,
+     0.104
+    ],
+    "lookalike_fp": 0,
+    "lookalikes": 10
+   },
+   "either": {
+    "tp": 4,
+    "pos": 16,
+    "recall": [
+     0.25,
+     0.102,
+     0.495
+    ],
+    "fp": 4,
+    "neg": 33,
+    "fpr": [
+     0.121,
+     0.048,
+     0.273
+    ]
+   }
+  },
+  "tricolon": {
+   "line": {
+    "tp": 2,
+    "pos": 10,
+    "recall": [
+     0.2,
+     0.057,
+     0.51
+    ],
+    "fp": 3,
+    "neg": 39,
+    "fpr": [
+     0.077,
+     0.027,
+     0.203
+    ],
+    "lookalike_fp": 3,
+    "lookalikes": 10
+   },
+   "runs": {
+    "tp": 6,
+    "pos": 10,
+    "recall": [
+     0.6,
+     0.313,
+     0.832
+    ],
+    "fp": 4,
+    "neg": 39,
+    "fpr": [
+     0.103,
+     0.041,
+     0.236
+    ],
+    "lookalike_fp": 2,
+    "lookalikes": 10
+   },
+   "either": {
+    "tp": 6,
+    "pos": 10,
+    "recall": [
+     0.6,
+     0.313,
+     0.832
+    ],
+    "fp": 5,
+    "neg": 39,
+    "fpr": [
+     0.128,
+     0.056,
+     0.267
+    ]
+   }
+  },
+  "anaphora": {
+   "line": {
+    "tp": 3,
+    "pos": 10,
+    "recall": [
+     0.3,
+     0.108,
+     0.603
+    ],
+    "fp": 1,
+    "neg": 39,
+    "fpr": [
+     0.026,
+     0.005,
+     0.132
+    ],
+    "lookalike_fp": 1,
+    "lookalikes": 10
+   },
+   "runs": {
+    "tp": 6,
+    "pos": 10,
+    "recall": [
+     0.6,
+     0.313,
+     0.832
+    ],
+    "fp": 1,
+    "neg": 39,
+    "fpr": [
+     0.026,
+     0.005,
+     0.132
+    ],
+    "lookalike_fp": 1,
+    "lookalikes": 10
+   },
+   "either": {
+    "tp": 6,
+    "pos": 10,
+    "recall": [
+     0.6,
+     0.313,
+     0.832
+    ],
+    "fp": 1,
+    "neg": 39,
+    "fpr": [
+     0.026,
+     0.005,
+     0.132
+    ]
+   }
+  },
+  "_misses": {
+   "antithesis/line": [
+    "dickens-best-worst",
+    "pope-err",
+    "kjv-called",
+    "kjv-spirit-flesh",
+    "macbeth-fair-foul",
+    "milton-reign",
+    "proverb-man-proposes",
+    "lincoln-little-note",
+    "c-split-antithesis",
+    "c-fewer-not-more",
+    "c-ask-not-river",
+    "proverb-penny",
+    "kjv-a-time"
+   ],
+   "antithesis/runs": [
+    "dickens-best-worst",
+    "pope-err",
+    "kjv-called",
+    "kjv-spirit-flesh",
+    "caesar-not-less",
+    "macbeth-fair-foul",
+    "milton-reign",
+    "proverb-man-proposes",
+    "lincoln-little-note",
+    "c-not-rewrite-but-mark",
+    "c-not-about",
+    "c-fewer-not-more",
+    "c-ask-not-river",
+    "proverb-penny",
+    "kjv-a-time"
+   ],
+   "tricolon/line": [
+    "lincoln-of-by-for",
+    "caesar-veni",
+    "declaration-life-liberty",
+    "caesar-friends",
+    "kjv-faith-hope",
+    "lincoln-dedicate",
+    "c-reads-marks-leaves",
+    "c-clear-honest-short"
+   ],
+   "tricolon/runs": [
+    "caesar-veni",
+    "declaration-life-liberty",
+    "caesar-friends",
+    "kjv-faith-hope"
+   ],
+   "anaphora/line": [
+    "dickens-best-worst",
+    "lincoln-dedicate",
+    "declaration-he-has",
+    "kjv-a-time",
+    "c-every-receipt",
+    "c-some-people",
+    "c-you-read"
+   ],
+   "anaphora/runs": [
+    "dickens-best-worst",
+    "lincoln-dedicate",
+    "kjv-a-time",
+    "c-you-read"
+   ]
+  },
+  "_false_alarms": {
+   "antithesis/line": [
+    "lk-not-hungry-but",
+    "lk-could-not-find-but",
+    "lk-not-known-but",
+    "lk-not-only-one"
+   ],
+   "antithesis/runs": [],
+   "tricolon/line": [
+    "lk-eggs-flour-milk",
+    "lk-boston-salem",
+    "lk-red-white-blue"
+   ],
+   "tricolon/runs": [
+    "dickens-best-worst",
+    "melville-ishmael",
+    "lk-eggs-flour-milk",
+    "lk-red-white-blue"
+   ],
+   "anaphora/line": [
+    "lk-smith-log"
+   ],
+   "anaphora/runs": [
+    "lk-smith-log"
+   ]
+  }
+ },
+ "metamers": {
+  "rows": [
+   {
+    "id": "m-oxford-comma",
+    "readout": "tricolon/line",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-oxford-comma",
+    "readout": "tricolon/runs",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-tricolon-clauses",
+    "readout": "tricolon/line",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-tricolon-clauses",
+    "readout": "tricolon/runs",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-tricolon-nouns",
+    "readout": "tricolon/line",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-tricolon-nouns",
+    "readout": "tricolon/runs",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-tricolon-removed",
+    "readout": "tricolon/line",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-tricolon-removed",
+    "readout": "tricolon/runs",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-reorder-clause",
+    "readout": "antithesis/line",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-reorder-clause",
+    "readout": "antithesis/runs",
+    "device_kept": true,
+    "a": false,
+    "b": false,
+    "flip": false
+   },
+   {
+    "id": "m-antithesis-contraction",
+    "readout": "antithesis/line",
+    "device_kept": true,
+    "a": false,
+    "b": true,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-contraction",
+    "readout": "antithesis/runs",
+    "device_kept": true,
+    "a": false,
+    "b": true,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-no-negation",
+    "readout": "antithesis/line",
+    "device_kept": true,
+    "a": false,
+    "b": false,
+    "flip": false
+   },
+   {
+    "id": "m-antithesis-no-negation",
+    "readout": "antithesis/runs",
+    "device_kept": true,
+    "a": false,
+    "b": false,
+    "flip": false
+   },
+   {
+    "id": "m-antithesis-word-swap",
+    "readout": "antithesis/line",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-word-swap",
+    "readout": "antithesis/runs",
+    "device_kept": true,
+    "a": false,
+    "b": false,
+    "flip": false
+   },
+   {
+    "id": "m-antithesis-removed",
+    "readout": "antithesis/line",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-antithesis-removed",
+    "readout": "antithesis/runs",
+    "device_kept": false,
+    "a": false,
+    "b": false,
+    "flip": false
+   },
+   {
+    "id": "m-anaphora-every-each",
+    "readout": "anaphora/line",
+    "device_kept": true,
+    "a": false,
+    "b": false,
+    "flip": false
+   },
+   {
+    "id": "m-anaphora-every-each",
+    "readout": "anaphora/runs",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-anaphora-blessed-happy",
+    "readout": "anaphora/line",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-anaphora-blessed-happy",
+    "readout": "anaphora/runs",
+    "device_kept": true,
+    "a": true,
+    "b": true,
+    "flip": false
+   },
+   {
+    "id": "m-anaphora-joined",
+    "readout": "anaphora/line",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-anaphora-joined",
+    "readout": "anaphora/runs",
+    "device_kept": true,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-anaphora-removed",
+    "readout": "anaphora/line",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   },
+   {
+    "id": "m-anaphora-removed",
+    "readout": "anaphora/runs",
+    "device_kept": false,
+    "a": true,
+    "b": false,
+    "flip": true
+   }
+  ],
+  "kept_pairs_read": 20,
+  "kept_flips": 8,
+  "kept_both_miss": 5,
+  "removed_pairs_read": 6,
+  "removed_stuck_on_b": 0
+ },
+ "isomers": {
+  "pairs": {
+   "rows": [
+    {
+     "id": "i-split-antithesis-order",
+     "readout": "antithesis/line",
+     "device_kept": true,
+     "a": false,
+     "b": false,
+     "flip": false
+    },
+    {
+     "id": "i-split-antithesis-order",
+     "readout": "antithesis/runs",
+     "device_kept": true,
+     "a": true,
+     "b": false,
+     "flip": true
+    },
+    {
+     "id": "i-anaphora-interleaved",
+     "readout": "anaphora/line",
+     "device_kept": false,
+     "a": true,
+     "b": false,
+     "flip": true
+    },
+    {
+     "id": "i-anaphora-interleaved",
+     "readout": "anaphora/runs",
+     "device_kept": false,
+     "a": true,
+     "b": false,
+     "flip": true
+    },
+    {
+     "id": "i-quoted-antithesis",
+     "readout": "antithesis/line",
+     "device_kept": true,
+     "a": true,
+     "b": true,
+     "flip": false
+    },
+    {
+     "id": "i-quoted-antithesis",
+     "readout": "antithesis/runs",
+     "device_kept": true,
+     "a": false,
+     "b": false,
+     "flip": false
+    }
+   ],
+   "kept_pairs_read": 4,
+   "kept_flips": 1,
+   "kept_both_miss": 2,
+   "removed_pairs_read": 2,
+   "removed_stuck_on_b": 0
+  },
+  "sentence_shuffle": {
+   "documents": 183,
+   "readout_changed": {
+    "antithesis/line": 0,
+    "antithesis/runs": 5,
+    "tricolon/line": 0,
+    "tricolon/runs": 1,
+    "anaphora/line": 2,
+    "anaphora/runs": 4
+   }
+  }
+ },
+ "corpus": {
+  "antithesis/line": {
+   "ai": {
+    "k": 53,
+    "n": 84,
+    "rate": [
+     0.631,
+     0.524,
+     0.726
+    ]
+   },
+   "human": {
+    "k": 18,
+    "n": 75,
+    "rate": [
+     0.24,
+     0.158,
+     0.348
+    ]
+   },
+   "mixed": {
+    "k": 7,
+    "n": 24,
+    "rate": [
+     0.292,
+     0.149,
+     0.492
+    ]
+   },
+   "human_by_genre": {
+    "essay": "2/3",
+    "fiction": "1/9",
+    "science": "1/6",
+    "speech": "0/3",
+    "student-essay": "14/54"
+   }
+  },
+  "antithesis/runs": {
+   "ai": {
+    "k": 5,
+    "n": 84,
+    "rate": [
+     0.06,
+     0.026,
+     0.132
+    ]
+   },
+   "human": {
+    "k": 5,
+    "n": 75,
+    "rate": [
+     0.067,
+     0.029,
+     0.147
+    ]
+   },
+   "mixed": {
+    "k": 0,
+    "n": 24,
+    "rate": [
+     0.0,
+     0.0,
+     0.138
+    ]
+   },
+   "human_by_genre": {
+    "essay": "0/3",
+    "fiction": "0/9",
+    "science": "0/6",
+    "speech": "0/3",
+    "student-essay": "5/54"
+   }
+  },
+  "tricolon/line": {
+   "ai": {
+    "k": 50,
+    "n": 84,
+    "rate": [
+     0.595,
+     0.488,
+     0.694
+    ]
+   },
+   "human": {
+    "k": 9,
+    "n": 75,
+    "rate": [
+     0.12,
+     0.064,
+     0.213
+    ]
+   },
+   "mixed": {
+    "k": 5,
+    "n": 24,
+    "rate": [
+     0.208,
+     0.092,
+     0.405
+    ]
+   },
+   "human_by_genre": {
+    "essay": "0/3",
+    "fiction": "1/9",
+    "science": "0/6",
+    "speech": "0/3",
+    "student-essay": "8/54"
+   }
+  },
+  "tricolon/runs": {
+   "ai": {
+    "k": 75,
+    "n": 84,
+    "rate": [
+     0.893,
+     0.809,
+     0.943
+    ]
+   },
+   "human": {
+    "k": 36,
+    "n": 75,
+    "rate": [
+     0.48,
+     0.371,
+     0.591
+    ]
+   },
+   "mixed": {
+    "k": 11,
+    "n": 24,
+    "rate": [
+     0.458,
+     0.279,
+     0.649
+    ]
+   },
+   "human_by_genre": {
+    "essay": "2/3",
+    "fiction": "5/9",
+    "science": "4/6",
+    "speech": "3/3",
+    "student-essay": "22/54"
+   }
+  },
+  "anaphora/line": {
+   "ai": {
+    "k": 0,
+    "n": 84,
+    "rate": [
+     0.0,
+     0.0,
+     0.044
+    ]
+   },
+   "human": {
+    "k": 4,
+    "n": 75,
+    "rate": [
+     0.053,
+     0.021,
+     0.129
+    ]
+   },
+   "mixed": {
+    "k": 0,
+    "n": 24,
+    "rate": [
+     0.0,
+     0.0,
+     0.138
+    ]
+   },
+   "human_by_genre": {
+    "essay": "0/3",
+    "fiction": "0/9",
+    "science": "0/6",
+    "speech": "0/3",
+    "student-essay": "4/54"
+   }
+  },
+  "anaphora/runs": {
+   "ai": {
+    "k": 2,
+    "n": 84,
+    "rate": [
+     0.024,
+     0.007,
+     0.083
+    ]
+   },
+   "human": {
+    "k": 6,
+    "n": 75,
+    "rate": [
+     0.08,
+     0.037,
+     0.164
+    ]
+   },
+   "mixed": {
+    "k": 0,
+    "n": 24,
+    "rate": [
+     0.0,
+     0.0,
+     0.138
+    ]
+   },
+   "human_by_genre": {
+    "essay": "0/3",
+    "fiction": "0/9",
+    "science": "0/6",
+    "speech": "0/3",
+    "student-essay": "6/54"
+   }
+  },
+  "filler-intensifier/line": {
+   "ai": {
+    "k": 6,
+    "n": 84,
+    "rate": [
+     0.071,
+     0.033,
+     0.147
+    ]
+   },
+   "human": {
+    "k": 27,
+    "n": 75,
+    "rate": [
+     0.36,
+     0.261,
+     0.473
+    ]
+   },
+   "mixed": {
+    "k": 2,
+    "n": 24,
+    "rate": [
+     0.083,
+     0.023,
+     0.258
+    ]
+   },
+   "human_by_genre": {
+    "essay": "1/3",
+    "fiction": "2/9",
+    "science": "2/6",
+    "speech": "0/3",
+    "student-essay": "22/54"
+   }
+  }
+ },
+ "fairness": {
+  "toefl_vs_college_win0": {
+   "antithesis/line": {
+    "toefl": "2/91",
+    "college": "3/70",
+    "diff": [
+     -0.021,
+     -0.099,
+     0.041
+    ]
+   },
+   "antithesis/runs": {
+    "toefl": "0/91",
+    "college": "0/70",
+    "diff": [
+     0.0,
+     -0.052,
+     0.041
+    ]
+   },
+   "tricolon/line": {
+    "toefl": "4/91",
+    "college": "14/70",
+    "diff": [
+     -0.156,
+     -0.267,
+     -0.056
+    ]
+   },
+   "tricolon/runs": {
+    "toefl": "13/91",
+    "college": "24/70",
+    "diff": [
+     -0.2,
+     -0.331,
+     -0.067
+    ]
+   },
+   "anaphora/line": {
+    "toefl": "0/91",
+    "college": "0/70",
+    "diff": [
+     0.0,
+     -0.052,
+     0.041
+    ]
+   },
+   "anaphora/runs": {
+    "toefl": "1/91",
+    "college": "0/70",
+    "diff": [
+     0.011,
+     -0.042,
+     0.06
+    ]
+   },
+   "filler-intensifier/line": {
+    "toefl": "26/91",
+    "college": "2/70",
+    "diff": [
+     0.257,
+     0.149,
+     0.359
+    ],
+    "per1k_ratio": [
+     10.61,
+     3.77,
+     Infinity
+    ]
+   }
+  },
+  "toefl_vs_cs224n_win0": {
+   "antithesis/line": {
+    "toefl": "2/91",
+    "cs224n": "9/145",
+    "diff": [
+     -0.04,
+     -0.094,
+     0.022
+    ]
+   },
+   "antithesis/runs": {
+    "toefl": "0/91",
+    "cs224n": "0/145",
+    "diff": [
+     0.0,
+     -0.026,
+     0.041
+    ]
+   },
+   "tricolon/line": {
+    "toefl": "4/91",
+    "cs224n": "10/145",
+    "diff": [
+     -0.025,
+     -0.084,
+     0.046
+    ]
+   },
+   "tricolon/runs": {
+    "toefl": "13/91",
+    "cs224n": "41/145",
+    "diff": [
+     -0.14,
+     -0.237,
+     -0.031
+    ]
+   },
+   "anaphora/line": {
+    "toefl": "0/91",
+    "cs224n": "0/145",
+    "diff": [
+     0.0,
+     -0.026,
+     0.041
+    ]
+   },
+   "anaphora/runs": {
+    "toefl": "1/91",
+    "cs224n": "1/145",
+    "diff": [
+     0.004,
+     -0.028,
+     0.053
+    ]
+   },
+   "filler-intensifier/line": {
+    "toefl": "26/91",
+    "cs224n": "4/145",
+    "diff": [
+     0.258,
+     0.165,
+     0.359
+    ],
+    "per1k_ratio": [
+     11.06,
+     4.84,
+     55.85
+    ]
+   }
+  },
+  "persuade_ell_vs_other": {
+   "antithesis/line": {
+    "ell": "4/18",
+    "other": "10/36",
+    "diff": [
+     -0.056,
+     -0.265,
+     0.203
+    ]
+   },
+   "antithesis/runs": {
+    "ell": "1/18",
+    "other": "4/36",
+    "diff": [
+     -0.055,
+     -0.204,
+     0.158
+    ]
+   },
+   "tricolon/line": {
+    "ell": "0/18",
+    "other": "8/36",
+    "diff": [
+     -0.222,
+     -0.381,
+     -0.017
+    ]
+   },
+   "tricolon/runs": {
+    "ell": "9/18",
+    "other": "13/36",
+    "diff": [
+     0.139,
+     -0.127,
+     0.389
+    ]
+   },
+   "anaphora/line": {
+    "ell": "2/18",
+    "other": "2/36",
+    "diff": [
+     0.055,
+     -0.093,
+     0.276
+    ]
+   },
+   "anaphora/runs": {
+    "ell": "3/18",
+    "other": "3/36",
+    "diff": [
+     0.084,
+     -0.09,
+     0.315
+    ]
+   },
+   "filler-intensifier/line": {
+    "ell": "7/18",
+    "other": "15/36",
+    "diff": [
+     -0.028,
+     -0.274,
+     0.24
+    ],
+    "per1k_ratio": [
+     1.71,
+     0.57,
+     3.68
+    ]
+   }
+  }
+ }
+}

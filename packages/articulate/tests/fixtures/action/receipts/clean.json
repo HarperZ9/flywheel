@@ -1,0 +1,29 @@
+{
+  "schema": "articulate/receipt/audit/v1",
+  "articulate_version": "0.14.0",
+  "created_at": "2026-10-23T05:37:03.652679+00:00",
+  "reviewer": "fixture",
+  "ruleset_version": "sha256:9f78a7484bb20f84",
+  "profile": "flavored",
+  "text_sha256": "sha256:5cb4044a0bed93c5683968dd80124b02fcac2147ec5b496318e28480bffb4bce",
+  "gate": "ok",
+  "clean": true,
+  "verdict": "clean",
+  "sufficient": true,
+  "texture_score": 18,
+  "counts": {
+    "high": 0,
+    "medium": 0,
+    "low": 1
+  },
+  "findings": [
+    {
+      "rule_id": "paragraph-uniformity/4-paragraphs-near-uniform-length-cv-0-25",
+      "tier": "LOW",
+      "category": "paragraph-uniformity",
+      "line": 1
+    }
+  ],
+  "redaction": "drop",
+  "file": "tests/fixtures/action/clean.md"
+}

@@ -1,0 +1,28 @@
+{
+  "id": "specimen-a",
+  "read_on": "2026-11-15",
+  "profile": "chat",
+  "verdict": "objected",
+  "source": "Three sentences from one reply that its reader quoted back as stock phrases. The sentences are as written. The sentences around them are stand-ins, and names and figures are changed.",
+  "text": "The editor wrote back this morning with four sentences about the entry. His last sentence is the useful part. He asks for counterexamples only, since he presumes each conjecture was checked when it was added.\n\nThe sweep found one failure in 140 lines. That agrees with what your own study concluded.\n\nI have not replied to him. A reply would go out in your name, so it is yours to write or approve. Going by your own emails, one line is enough.\n",
+  "marks": [
+    {
+      "starts": "His last sentence is the useful part.",
+      "ends": "the useful part.",
+      "rule": "setup and payoff",
+      "reader_said": "Why do you say his last sentence is the useful part?"
+    },
+    {
+      "starts": "That agrees with what your own study concluded.",
+      "ends": "study concluded.",
+      "rule": "summary beats",
+      "reader_said": "Why are you going back to the same talk that you always have been using?"
+    },
+    {
+      "starts": "A reply would go out in your name",
+      "ends": "to write or approve.",
+      "rule": "hand-back formula",
+      "reader_said": "Quoted back with the two above. The same session wrote this line four times in one day."
+    }
+  ]
+}
