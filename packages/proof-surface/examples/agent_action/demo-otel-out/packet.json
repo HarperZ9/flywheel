@@ -1,0 +1,76 @@
+{
+  "version": "agent-action-proof-packet/v0",
+  "packet_id": "demo-otel",
+  "claim": "demo",
+  "scope": "demo",
+  "sources": [
+    {
+      "ref": "trace:4bf92f3577b34da6a3ce929d0e0e4736",
+      "sha256": "1d746359a8e178de2f0eac11fa548da2dbc2389d97876bb774c64221eac5b7d3"
+    }
+  ],
+  "context": {
+    "service": "demo-config-agent",
+    "trace_id": "4bf92f3577b34da6a3ce929d0e0e4736",
+    "tool_authority": "grant-fs-write-work"
+  },
+  "actions": [
+    {
+      "action_id": "00f067aa0ba902b7",
+      "actor": "user:zain",
+      "agent": "agent:claude-opus-4-8",
+      "model": "claude-opus-4-8",
+      "tool": "fs",
+      "action_kind": "fs.write",
+      "target": "/work/config.json",
+      "cost": {
+        "tokens": 60
+      },
+      "span_digest": "5d93b62ae7d4e357daaf6a9a6c6a47d33a8da5c976c8890a0a96304961032199"
+    }
+  ],
+  "admission": [
+    {
+      "action_id": "00f067aa0ba902b7",
+      "decision": "allow",
+      "reasons": [],
+      "authorization_ref": "grant-fs-write-work"
+    }
+  ],
+  "side_effects": [
+    {
+      "action_id": "00f067aa0ba902b7",
+      "class": "write",
+      "idempotency_key": "9f2c1a7b4e6d8f03a1b2c3d4e5f60718293a4b5c6d7e8f9019a2b3c4d5e6f708",
+      "compensation": {
+        "reversible": true,
+        "rollback_ref": null
+      },
+      "before_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "after_digest": "9f2c1a7b4e6d8f03a1b2c3d4e5f60718293a4b5c6d7e8f9019a2b3c4d5e6f708"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "/work/config.json",
+      "sha256": "9f2c1a7b4e6d8f03a1b2c3d4e5f60718293a4b5c6d7e8f9019a2b3c4d5e6f708"
+    }
+  ],
+  "verdicts": {
+    "overall": "MATCH",
+    "per_action": [
+      {
+        "action_id": "00f067aa0ba902b7",
+        "status": "MATCH"
+      }
+    ]
+  },
+  "uncertainty": [],
+  "decision_summary": {
+    "decision": "approve",
+    "reason": "the evidence matched every checked claim within tolerance",
+    "confidence": "high",
+    "missing_evidence": [],
+    "next_action": "proceed"
+  }
+}

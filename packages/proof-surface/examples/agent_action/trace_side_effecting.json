@@ -1,0 +1,52 @@
+{
+  "trace_id": "trace-demo-write",
+  "service": "demo-config-agent",
+  "spans": [
+    {
+      "span_id": "span-plan",
+      "parent_span_id": null,
+      "name": "plan the change",
+      "kind": "internal",
+      "start_unix_ns": 0,
+      "end_unix_ns": 1000,
+      "status": { "code": "ok", "message": "" },
+      "attributes": {
+        "actor.id": "user:zain",
+        "agent.id": "agent:claude-opus-4-8",
+        "model.id": "claude-opus-4-8",
+        "tool.name": "reasoning",
+        "action.kind": "plan",
+        "side_effect.class": "read",
+        "cost.tokens": 240,
+        "cost.wall_ms": 900
+      },
+      "events": []
+    },
+    {
+      "span_id": "span-write-config",
+      "parent_span_id": "span-plan",
+      "name": "write /work/config.json",
+      "kind": "client",
+      "start_unix_ns": 1000,
+      "end_unix_ns": 4200,
+      "status": { "code": "ok", "message": "" },
+      "attributes": {
+        "actor.id": "user:zain",
+        "agent.id": "agent:claude-opus-4-8",
+        "model.id": "claude-opus-4-8",
+        "tool.name": "fs",
+        "action.kind": "fs.write",
+        "action.target": "/work/config.json",
+        "side_effect.class": "write",
+        "content.sha256": "9f2c1a7b4e6d8f03a1b2c3d4e5f60718293a4b5c6d7e8f9019a2b3c4d5e6f708",
+        "before.sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+        "after.sha256": "9f2c1a7b4e6d8f03a1b2c3d4e5f60718293a4b5c6d7e8f9019a2b3c4d5e6f708",
+        "reversible": true,
+        "rollback.ref": "backup:/work/config.json@span-write-config",
+        "cost.tokens": 60,
+        "cost.wall_ms": 3200
+      },
+      "events": []
+    }
+  ]
+}

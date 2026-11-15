@@ -1,0 +1,40 @@
+{
+  "planned_action": {
+    "action_kind": "read_file",
+    "target": "C:/dev/public/proof-surface/conformance/",
+    "estimated_cost": {
+      "tokens": 500,
+      "wall_ms": 200
+    }
+  },
+  "authorization": {
+    "authorization_version": "0.1",
+    "receipt_id": "ar-gate-minimal-valid",
+    "kind": "authorization-grant",
+    "principal": {
+      "id": "user:alice@example.com",
+      "role": "project-owner"
+    },
+    "agent": {
+      "id": "agent:proof-surface-keystone"
+    },
+    "intent": "Read conformance vectors in the local repository.",
+    "scope": {
+      "allowed_actions": ["read_file", "list_directory"],
+      "allowed_targets": ["C:/dev/public/proof-surface/conformance/"],
+      "max_actions": 20
+    },
+    "granted_at": "2026-06-17T00:00:00Z",
+    "expires_at": "2099-12-31T23:59:59Z",
+    "revoked": false,
+    "notes": "Verifier input only -- never re-injected as model context."
+  },
+  "budget": {
+    "remaining_tokens": 10000,
+    "remaining_wall_ms": 30000,
+    "remaining_actions": 5
+  },
+  "state": {
+    "witness_verdict": "MATCH"
+  }
+}

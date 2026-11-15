@@ -1,0 +1,14 @@
+{
+  "title": "Visual-measurement proof packet demo-visual",
+  "disposition": "publishable",
+  "claims": [
+    {
+      "text": "Metric delta_e_2000_mean measured 1.42 dE is within tolerance 2.0 of target 0.0.",
+      "falsification": "the measured deviation exceeds the stated tolerance."
+    },
+    {
+      "text": "Metric white_luminance measured 118.0 cd/m2 is within tolerance 5.0 of target 120.0.",
+      "falsification": "the measured deviation exceeds the stated tolerance."
+    }
+  ]
+}

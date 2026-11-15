@@ -1,0 +1,37 @@
+{
+  "contract": "evaluation-contract",
+  "version": "0.1",
+  "schema": "../../../schemas/evaluation-contract.schema.json",
+  "fixtures": [
+    {
+      "path": "valid/all-required-pass.contract.json",
+      "expected": "valid",
+      "reason": "all required fields present, closed enums satisfied, no forbidden keys, criteria non-empty"
+    },
+    {
+      "path": "invalid/forbidden-prefire-root.contract.json",
+      "expected": "invalid",
+      "reason": "prefire suppression key 'prefire' at root must be rejected by the forbidden-field guard"
+    },
+    {
+      "path": "invalid/forbidden-prefire-nested.contract.json",
+      "expected": "invalid",
+      "reason": "prefire suppression key 'federal_appointment' nested inside a criterion must be rejected by the recursive forbidden-field guard"
+    },
+    {
+      "path": "invalid/unknown-root-field.contract.json",
+      "expected": "invalid",
+      "reason": "unknown root field 'approved_by' must fail closed (additionalProperties:false)"
+    },
+    {
+      "path": "invalid/bad-direction-enum.contract.json",
+      "expected": "invalid",
+      "reason": "direction '>' is not in the closed enum {'>=' , '<='}"
+    },
+    {
+      "path": "invalid/empty-criteria.contract.json",
+      "expected": "invalid",
+      "reason": "criteria array must contain at least one criterion"
+    }
+  ]
+}

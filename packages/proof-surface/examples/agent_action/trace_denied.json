@@ -1,0 +1,31 @@
+{
+  "trace_id": "trace-demo-denied",
+  "service": "demo-config-agent",
+  "spans": [
+    {
+      "span_id": "span-write-passwd",
+      "parent_span_id": null,
+      "name": "write /etc/passwd",
+      "kind": "client",
+      "start_unix_ns": 0,
+      "end_unix_ns": 2000,
+      "status": { "code": "ok", "message": "" },
+      "attributes": {
+        "actor.id": "user:zain",
+        "agent.id": "agent:claude-opus-4-8",
+        "model.id": "claude-opus-4-8",
+        "tool.name": "fs",
+        "action.kind": "fs.write",
+        "action.target": "/etc/passwd",
+        "side_effect.class": "write",
+        "content.sha256": "dead0000beef0000dead0000beef0000dead0000beef0000dead0000beef0000",
+        "before.sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+        "after.sha256": "dead0000beef0000dead0000beef0000dead0000beef0000dead0000beef0000",
+        "reversible": false,
+        "cost.tokens": 40,
+        "cost.wall_ms": 1900
+      },
+      "events": []
+    }
+  ]
+}

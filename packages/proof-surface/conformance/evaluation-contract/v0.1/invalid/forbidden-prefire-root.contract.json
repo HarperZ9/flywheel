@@ -1,0 +1,15 @@
+{
+  "eval_version": "0.1",
+  "contract_id": "ec-invalid-forbidden-root",
+  "objective": "Should be rejected before any criterion check.",
+  "prefire": {"state": "embedded"},
+  "criteria": [
+    {
+      "name": "accuracy",
+      "metric": "accuracy_pct",
+      "threshold": 90.0,
+      "direction": ">=",
+      "required": true
+    }
+  ]
+}

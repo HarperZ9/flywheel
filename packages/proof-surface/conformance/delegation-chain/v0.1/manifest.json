@@ -1,0 +1,17 @@
+{
+  "contract": "delegation-chain",
+  "version": "0.1",
+  "schema": "../../../schemas/delegation-chain.schema.json",
+  "fixtures": [
+    { "path": "valid/single-hop.chain.json", "expected": "valid", "reason": "one hop, human root, allowlist scope, required expiry, real hash-chain binding" },
+    { "path": "valid/two-hop-attenuating.chain.json", "expected": "valid", "reason": "human root grants broad authority; sub-delegation narrows actions and targets (attenuation), real chained bindings" },
+    { "path": "invalid/forbidden-prefire-root.chain.json", "expected": "invalid", "reason": "prefire authorization-suppression key 'prefire' at root" },
+    { "path": "invalid/forbidden-nested-in-party.chain.json", "expected": "invalid", "reason": "prefire key 'sovereignty_capsule' nested inside a party must be rejected by the recursive forbidden-field guard" },
+    { "path": "invalid/unknown-root-field.chain.json", "expected": "invalid", "reason": "unknown root field must fail closed (additionalProperties:false)" },
+    { "path": "invalid/agent-root.chain.json", "expected": "invalid", "reason": "the root hop's 'from' party is an agent -- authority cannot originate with an agent" },
+    { "path": "invalid/bad-binding-format.chain.json", "expected": "invalid", "reason": "binding is not a 64-char lowercase hex SHA-256 digest" },
+    { "path": "invalid/empty-hops.chain.json", "expected": "invalid", "reason": "hops must be a non-empty array" },
+    { "path": "invalid/bad-party-kind.chain.json", "expected": "invalid", "reason": "party kind outside the closed enum {human, agent}" },
+    { "path": "invalid/non-iso-expiry.chain.json", "expected": "invalid", "reason": "expires_at is not an ISO-8601 datetime with timezone" }
+  ]
+}

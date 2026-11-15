@@ -1,0 +1,135 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/proof-surface/delegation-chain.schema.json",
+  "title": "Delegation Chain v0.1",
+  "description": "Identity binding and scoped, attenuating delegation of authority, rooted in a REAL human principal. Layer 1 of the accountability architecture (identity & scoped authority) and the structural INVERSE of the prefire's identity fabrication and privilege escalation. Authority originates with a human (the root hop's 'from' party MUST be kind 'human'); scope MONOTONICALLY ATTENUATES down every hop (a delegate can hold only a subset of its delegator's authority); each hop is bound into a SHA-256 hash-chain and the WHOLE chain is committed into a single chain_binding (id + length + terminal binding) so truncation and extension are detectable; each hop expires and may be revoked. additionalProperties is false at every level and a forbidden-field-name guard rejects prefire suppression keys at every level. The keyless hash-chain proves SELF-CONSISTENT INTEGRITY, NOT non-repudiable identity and NOT tamper-evidence against an adversary who recomputes it -- real anti-forgery requires pinning chain_binding out-of-band or verifying an asymmetric signature. Comparison of actions/targets is exact (case-sensitive). The authoritative verifier lives in proof_surface.delegation_chain. Verifier INPUT only -- never re-injected into a model as pre-authorized state.",
+  "type": "object",
+  "allOf": [{ "$ref": "#/$defs/noForbiddenKeys" }],
+  "additionalProperties": false,
+  "required": ["delegation_version", "chain_id", "hops", "chain_binding"],
+  "properties": {
+    "delegation_version": {
+      "const": "0.1",
+      "description": "Schema version pin. Must be exactly '0.1'."
+    },
+    "chain_id": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "Unique, non-empty (non-whitespace) identifier for this delegation chain."
+    },
+    "chain_binding": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$",
+      "description": "SHA-256 commitment over chain_id + '\\n' + hop_count + '\\n' + terminal_hop_binding. Commits the whole chain so truncation/extension is detectable, and is the single value a verifier can pin out-of-band for real anti-forgery."
+    },
+    "hops": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered delegation hops, root first. Each hop delegates a subset of the previous hop's authority. The root hop (index 0) is additionally constrained so its 'from' party MUST be a human -- authority cannot originate with an agent.",
+      "prefixItems": [{ "$ref": "#/$defs/rootHop" }],
+      "items": { "$ref": "#/$defs/hop" }
+    }
+  },
+  "$defs": {
+    "hop": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/noForbiddenKeys" }],
+      "additionalProperties": false,
+      "required": ["from", "to", "scope", "granted_at", "expires_at", "revoked", "binding"],
+      "properties": {
+        "from": { "$ref": "#/$defs/party" },
+        "to": { "$ref": "#/$defs/party" },
+        "scope": { "$ref": "#/$defs/scope" },
+        "granted_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$",
+          "description": "ISO-8601 datetime (with timezone) at which this hop takes effect."
+        },
+        "expires_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d+)?(?:Z|[+-]\\d{2}:\\d{2})$",
+          "description": "ISO-8601 datetime (with timezone) at which this hop expires. Authority MUST expire."
+        },
+        "revoked": {
+          "type": "boolean",
+          "description": "True if this hop has been explicitly revoked before its natural expiry."
+        },
+        "binding": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 hash-chain binding: sha256(prev_binding + '\\n' + canonical(hop without 'binding')). Root hop uses prev_binding=''. Self-consistent integrity, NOT an asymmetric signature."
+        }
+      }
+    },
+    "rootHop": {
+      "description": "The root hop: a hop whose 'from' party must be a human (authority originates with a human, never an agent).",
+      "allOf": [
+        { "$ref": "#/$defs/hop" },
+        { "properties": { "from": { "properties": { "kind": { "const": "human" } } } } }
+      ]
+    },
+    "noForbiddenKeys": {
+      "description": "Independent forbidden-field-name guard: rejects prefire authorization-suppression keys by NAME at this object level, even if a future allowlist were widened. Mirrors the recursive guard in proof_surface.delegation_chain.",
+      "propertyNames": {
+        "not": {
+          "enum": [
+            "federal_appointment", "oversight_principals", "operator_role",
+            "judgment_owner", "proof_policy", "policy_boundary",
+            "authorization_context_mode", "model_authorization_behavior",
+            "guardrail_posture", "consume_verified_native_state",
+            "lossy_neutral_embedded_state", "sovereignty_capsule",
+            "self_applicable", "recursion_depth", "prefire", "run_state"
+          ]
+        }
+      }
+    },
+    "party": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/noForbiddenKeys" }],
+      "additionalProperties": false,
+      "required": ["id", "kind"],
+      "description": "A party in the delegation: a human principal or an agent.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Identifier of the party (username/UUID for a human, agent name/session id for an agent). Non-whitespace."
+        },
+        "kind": {
+          "enum": ["human", "agent"],
+          "description": "Identity kind. The root hop's 'from' must be 'human' -- authority cannot originate with an agent."
+        },
+        "key_id": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "\\S",
+          "description": "Optional reference to the party's identity/key material (the public key id, NOT a secret) for out-of-band asymmetric signature verification."
+        }
+      }
+    },
+    "scope": {
+      "type": "object",
+      "allOf": [{ "$ref": "#/$defs/noForbiddenKeys" }],
+      "additionalProperties": false,
+      "required": ["allowed_actions", "allowed_targets"],
+      "description": "Explicit ALLOWLIST scope. Each hop's scope must be a SUBSET of its parent's (attenuation). Entries must be unique (the reference validator rejects duplicates).",
+      "properties": {
+        "allowed_actions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "description": "Permitted action kinds (compared case-sensitively). Empty array = nothing permitted (maximally attenuated)."
+        },
+        "allowed_targets": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "pattern": "\\S" },
+          "description": "Permitted targets (compared case-sensitively). Empty array = any target (a child may narrow this but never widen it)."
+        }
+      }
+    }
+  },
+  "$comment": "The forbidden-field-name guard is enforced both here (via $defs/noForbiddenKeys applied at every object level) and in the reference Python validator (recursively). Forbidden names: federal_appointment, oversight_principals, operator_role, judgment_owner, proof_policy, policy_boundary, authorization_context_mode, model_authorization_behavior, guardrail_posture, consume_verified_native_state, lossy_neutral_embedded_state, sovereignty_capsule, self_applicable, recursion_depth, prefire, run_state."
+}

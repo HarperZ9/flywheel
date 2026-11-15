@@ -1,0 +1,14 @@
+{
+  "proof_surface_version": "0.1",
+  "packet_id": "unknown-root-field",
+  "surface": "packet with an unexpected root field",
+  "status": "ready",
+  "claims": [
+    { "claim": "Has a claim.", "evidence": "Has evidence." }
+  ],
+  "checks": [
+    { "tool": "fixture", "status": "pass", "summary": "shape present" }
+  ],
+  "action_items": [],
+  "unexpected_field": "must fail closed"
+}

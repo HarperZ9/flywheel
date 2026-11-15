@@ -1,0 +1,22 @@
+{
+  "measurements": [
+    {
+      "claim": "Metric delta_e_2000_mean measured 1.42 dE is within tolerance 2.0 of target 0.0.",
+      "deviation": 1.42,
+      "tolerance": 2.0,
+      "method": "build-color deltaE2000",
+      "evidence": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ]
+    },
+    {
+      "claim": "Metric white_luminance measured 118.0 cd/m2 is within tolerance 5.0 of target 120.0.",
+      "deviation": 2.0,
+      "tolerance": 5.0,
+      "method": "calibrate-pro sensorless estimate",
+      "evidence": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ]
+    }
+  ]
+}

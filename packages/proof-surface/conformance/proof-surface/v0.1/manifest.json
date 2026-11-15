@@ -1,0 +1,10 @@
+{
+  "contract": "proof-surface-packet",
+  "version": "0.1",
+  "schema": "../../../schemas/proof-surface-packet.schema.json",
+  "fixtures": [
+    { "path": "valid/minimal.packet.json", "expected": "valid", "reason": "minimal packet with one claim, one check, empty action list" },
+    { "path": "invalid/unknown-root-field.packet.json", "expected": "invalid", "reason": "unknown root field must fail closed" },
+    { "path": "invalid/bad-check-status.packet.json", "expected": "invalid", "reason": "check status must be pass, warn, fail, or unknown" }
+  ]
+}

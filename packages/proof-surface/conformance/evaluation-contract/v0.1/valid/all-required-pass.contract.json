@@ -1,0 +1,29 @@
+{
+  "eval_version": "0.1",
+  "contract_id": "ec-all-required-pass",
+  "objective": "Verify accuracy and latency meet production thresholds.",
+  "criteria": [
+    {
+      "name": "accuracy",
+      "metric": "accuracy_pct",
+      "threshold": 90.0,
+      "direction": ">=",
+      "required": true
+    },
+    {
+      "name": "p99_latency_ms",
+      "metric": "p99_latency_ms",
+      "threshold": 500.0,
+      "direction": "<=",
+      "required": true
+    },
+    {
+      "name": "optional_coverage",
+      "metric": "line_coverage_pct",
+      "threshold": 80.0,
+      "direction": ">=",
+      "required": false
+    }
+  ],
+  "notes": "Valid minimal contract. All required criteria present and well-formed."
+}

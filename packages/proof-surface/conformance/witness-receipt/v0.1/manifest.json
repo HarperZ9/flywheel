@@ -1,0 +1,10 @@
+{
+  "contract": "witness-receipt",
+  "version": "0.1",
+  "schema": "../../../schemas/witness-receipt.schema.json",
+  "fixtures": [
+    { "path": "valid/minimal.receipt.json", "expected": "valid", "reason": "EMET-shaped receipt with a lattice verdict and no authority language" },
+    { "path": "invalid/forbidden-verdict.receipt.json", "expected": "invalid", "reason": "verdict must be a witness fact, never an authority token" },
+    { "path": "invalid/authority-in-notes.receipt.json", "expected": "invalid", "reason": "authority token in free-text is rejected by the lexical denylist" }
+  ]
+}

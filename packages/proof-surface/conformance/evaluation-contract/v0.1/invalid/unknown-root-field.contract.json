@@ -1,0 +1,15 @@
+{
+  "eval_version": "0.1",
+  "contract_id": "ec-invalid-unknown-root",
+  "objective": "Unknown root field must be rejected.",
+  "approved_by": "auto-approver",
+  "criteria": [
+    {
+      "name": "accuracy",
+      "metric": "accuracy_pct",
+      "threshold": 90.0,
+      "direction": ">=",
+      "required": true
+    }
+  ]
+}

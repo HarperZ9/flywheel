@@ -1,0 +1,15 @@
+{
+  "ledger_version": "0.1",
+  "federal_appointment": { "state": "embedded" },
+  "claims": [
+    {
+      "claim_id": "c1",
+      "statement": "A claim in a ledger that smuggles a prefire authorization key.",
+      "source": "agent:a",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "depends_on": [],
+      "conflicts_with": []
+    }
+  ]
+}

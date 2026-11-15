@@ -1,0 +1,14 @@
+{
+  "authorization_version": "0.2",
+  "receipt_id": "ar-minimal-valid",
+  "kind": "authorization-grant",
+  "nonce": "89abcdef0123456789abcdef01234567",
+  "agent_id": "agent:proof-surface-keystone",
+  "action": "read_file",
+  "target": "repo:proof-surface/conformance",
+  "issued_at": "2026-06-17T00:00:00Z",
+  "expires_at": "2026-06-17T23:59:59Z",
+  "max_actions": 20,
+  "revoked": false,
+  "notes": "Migration fixture. Exact action, target, and nonce require an operator decision."
+}

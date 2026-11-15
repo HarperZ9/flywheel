@@ -1,0 +1,10 @@
+{
+  "model": { "id": "claude-opus-4-8", "provider": "hosted", "config_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" },
+  "eval_set": { "name": "arithmetic-bench", "ref": "datasets/arith@v1", "sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad", "size": 500 },
+  "objective": { "name": "promotion-gate", "summary": "promote iff accuracy >= 0.90 and p95 latency <= 100ms" },
+  "metrics": [
+    { "metric": "accuracy", "value": 0.94, "target": 0.90, "direction": "maximize", "tolerance": 0.01, "unit": "ratio", "method": "exact-match", "evidence": ["e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"] },
+    { "metric": "p95_latency_ms", "value": 88, "target": 100, "direction": "minimize", "tolerance": 5, "unit": "ms", "method": "timer", "evidence": ["e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"] }
+  ],
+  "uncertainty": ["single offline eval suite; distribution shift not tested"]
+}

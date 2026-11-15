@@ -1,0 +1,13 @@
+{
+  "authorization_version": "0.2",
+  "receipt_id": "ar2-nan-budget",
+  "kind": "authorization-grant",
+  "nonce": "0123456789abcdef0123456789abcdef",
+  "agent_id": "agent:router-7",
+  "action": "lane.call",
+  "target": "forum/forum_route",
+  "issued_at": "2026-08-02T12:00:00Z",
+  "expires_at": "2026-08-02T12:05:00Z",
+  "max_actions": NaN,
+  "revoked": false
+}

@@ -1,0 +1,15 @@
+{
+  "ledger_version": "0.1",
+  "approved_by": "auto-approver",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "statement": "A claim in a ledger carrying an unexpected root field.",
+      "source": "agent:a",
+      "confidence": 0.9,
+      "evidence_refs": [],
+      "depends_on": [],
+      "conflicts_with": []
+    }
+  ]
+}

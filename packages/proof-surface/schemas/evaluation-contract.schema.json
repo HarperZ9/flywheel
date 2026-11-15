@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/proof-surface/evaluation-contract.schema.json",
+  "title": "Evaluation Contract v0.1",
+  "description": "A deploy gate expressed as measurable, uncertainty-aware criteria. EvalDecision is advisory-only: it REPORTS a recommendation (deploy/block/needs-human); it never grants authority and is never injected into a model as trusted state. Default-deny: deploy only if every required criterion passes. Never deploy on uncertainty. additionalProperties is false at every level. The authoritative recursive forbidden-field-name guard lives in proof_surface.evaluation_contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "eval_version",
+    "contract_id",
+    "objective",
+    "criteria"
+  ],
+  "properties": {
+    "eval_version": {
+      "const": "0.1",
+      "description": "Schema version pin. Must be exactly '0.1'."
+    },
+    "contract_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Unique, non-empty identifier for this evaluation contract."
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Plain-language statement of what is being evaluated. Non-empty."
+    },
+    "criteria": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Ordered list of measurable pass/fail criteria. At least one required.",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "metric", "threshold", "direction", "required"],
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Human-readable criterion identifier. Must match result names in evaluate()."
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Name or path of the measured quantity."
+          },
+          "threshold": {
+            "type": "number",
+            "description": "The numeric boundary the measurement must satisfy."
+          },
+          "direction": {
+            "enum": [">=", "<="],
+            "description": "Comparison direction: '>=' (higher is better) or '<=' (lower is better)."
+          },
+          "required": {
+            "type": "boolean",
+            "description": "If true, this criterion gates deployment. A fail or uncertain result blocks or escalates."
+          }
+        }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional human-readable annotation for reviewers."
+    }
+  },
+  "$comment": "Forbidden field names (rejected by name at every object level by the reference validator): federal_appointment, oversight_principals, operator_role, judgment_owner, proof_policy, policy_boundary, authorization_context_mode, model_authorization_behavior, guardrail_posture, consume_verified_native_state, lossy_neutral_embedded_state, sovereignty_capsule, self_applicable, recursion_depth, prefire, run_state."
+}

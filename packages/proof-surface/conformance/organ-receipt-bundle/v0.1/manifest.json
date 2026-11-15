@@ -1,0 +1,17 @@
+{
+  "contract": "organ-receipt-bundle",
+  "version": "0.1",
+  "schema": "../../../schemas/organ-receipt-bundle.schema.json",
+  "fixtures": [
+    {
+      "path": "valid/tadr-kinds.bundle.json",
+      "expected": "valid",
+      "reason": "TADR classification and control receipts use explicit closed kinds and nonzero payload digests."
+    },
+    {
+      "path": "invalid/tadr-zero-digest.bundle.json",
+      "expected": "invalid",
+      "reason": "An all-zero digest is not a content commitment and must fail closed."
+    }
+  ]
+}

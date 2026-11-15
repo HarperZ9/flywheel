@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/proof-surface/organ-receipt-bundle.schema.json",
+  "title": "Organ Receipt Bundle v0.1",
+  "description": "Compact interchange spine across sibling organs. Carries entry IDs, organ IDs, receipt kinds, advisory statuses, payload digests/refs, summaries, and edges. It does not embed heavy payloads, grant authority, or become trusted model context.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "organ_bundle_version",
+    "bundle_id",
+    "generated_at",
+    "subject",
+    "entries"
+  ],
+  "properties": {
+    "organ_bundle_version": {"const": "0.1"},
+    "bundle_id": {"type": "string", "minLength": 1},
+    "generated_at": {"type": "string", "minLength": 1},
+    "subject": {"type": "string", "minLength": 1},
+    "entries": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/entry"}
+    },
+    "edges": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/edge"}
+    },
+    "notes": {"type": "string"}
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "entry_id",
+        "organ_id",
+        "receipt_kind",
+        "status",
+        "payload_sha256",
+        "summary"
+      ],
+      "properties": {
+        "entry_id": {"type": "string", "minLength": 1},
+        "organ_id": {"type": "string", "minLength": 1},
+        "receipt_kind": {
+          "enum": [
+            "coherence-observation",
+            "crucible-assessment",
+            "emet-witness",
+            "forum-route",
+            "gather-corpus",
+            "index-context-envelope",
+            "learn-lesson",
+            "learn-receipt",
+            "proof-surface-gate",
+            "provenance-receipt",
+            "raw-health",
+            "tadr-classification",
+            "tadr-control"
+          ]
+        },
+        "status": {
+          "enum": [
+            "allow",
+            "deny",
+            "fail",
+            "needs-human",
+            "not-applicable",
+            "pass",
+            "unknown",
+            "unverified",
+            "warn"
+          ]
+        },
+        "payload_sha256": {
+          "type": "string",
+          "pattern": "^(?!0{64}$)[0-9a-f]{64}$"
+        },
+        "summary": {"type": "string", "minLength": 1},
+        "payload_ref": {"type": "string", "minLength": 1}
+      }
+    },
+    "edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["from", "to", "relation"],
+      "properties": {
+        "from": {"type": "string", "minLength": 1},
+        "to": {"type": "string", "minLength": 1},
+        "relation": {
+          "enum": ["corroborates", "derived-from", "gates", "observed-after"]
+        }
+      }
+    }
+  },
+  "$comment": "The Python reference validator also enforces duplicate entry_id detection, edge referential integrity, and the recursive forbidden-field-name guard used across proof-surface."
+}

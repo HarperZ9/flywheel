@@ -1,0 +1,30 @@
+{
+  "schema": "proof-surface.authorization-schema-parity/v1",
+  "base": "valid/minimal.receipt.json",
+  "cases": [
+    {"case_id": "whitespace-receipt-id", "field": "receipt_id", "value": "   ", "expected": "invalid"},
+    {"case_id": "whitespace-agent-id", "field": "agent_id", "value": "\t", "expected": "invalid"},
+    {"case_id": "whitespace-action", "field": "action", "value": "\n", "expected": "invalid"},
+    {"case_id": "whitespace-target", "field": "target", "value": "  \r\n", "expected": "invalid"},
+    {"case_id": "whitespace-policy-ref", "field": "policy_ref", "value": "   ", "expected": "invalid"},
+    {"case_id": "whitespace-notes", "field": "notes", "value": "\t", "expected": "invalid"},
+    {"case_id": "integer-receipt-id", "field": "receipt_id", "value": 7, "expected": "invalid"},
+    {"case_id": "boolean-agent-id", "field": "agent_id", "value": false, "expected": "invalid"},
+    {"case_id": "no-zone-issued-at", "field": "issued_at", "value": "2026-08-02T12:00:00", "expected": "invalid"},
+    {"case_id": "malformed-issued-month", "field": "issued_at", "value": "2026-13-02T12:00:00Z", "expected": "invalid"},
+    {"case_id": "malformed-issued-day", "field": "issued_at", "value": "2026-02-30T12:00:00Z", "expected": "invalid"},
+    {"case_id": "malformed-expires-hour", "field": "expires_at", "value": "2026-08-02T25:05:00Z", "expected": "invalid"},
+    {"case_id": "no-zone-expires-at", "field": "expires_at", "value": "2026-08-02T12:05:00", "expected": "invalid"},
+    {"case_id": "boolean-max-actions", "field": "max_actions", "value": true, "expected": "invalid"},
+    {"case_id": "fractional-max-actions", "field": "max_actions", "value": 1.5, "expected": "invalid"},
+    {"case_id": "zero-max-actions", "field": "max_actions", "value": 0, "expected": "invalid"},
+    {"case_id": "integer-revoked", "field": "revoked", "value": 0, "expected": "invalid"},
+    {"case_id": "integer-nonce", "field": "nonce", "value": 12345678901234567890123456789012, "expected": "invalid"},
+    {"case_id": "short-nonce", "field": "nonce", "value": "0123456789abcdef", "expected": "invalid"},
+    {"case_id": "zero-nonce", "field": "nonce", "value": "00000000000000000000000000000000", "expected": "invalid"},
+    {"case_id": "uppercase-nonce", "field": "nonce", "value": "0123456789ABCDEF0123456789ABCDEF", "expected": "invalid"},
+    {"case_id": "null-policy-ref", "field": "policy_ref", "value": null, "expected": "invalid"},
+    {"case_id": "null-notes", "field": "notes", "value": null, "expected": "invalid"},
+    {"case_id": "unknown-field", "field": "unexpected_authority", "value": true, "expected": "invalid"}
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "measurements": [
+    {
+      "claim": "Metric accuracy (maximize target 0.9) is within tolerance 0.01.",
+      "deviation": 0.0,
+      "tolerance": 0.01,
+      "method": "exact-match",
+      "evidence": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ]
+    },
+    {
+      "claim": "Metric p95_latency_ms (minimize target 100) is within tolerance 5.0.",
+      "deviation": 0.0,
+      "tolerance": 5.0,
+      "method": "timer",
+      "evidence": [
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      ]
+    }
+  ]
+}

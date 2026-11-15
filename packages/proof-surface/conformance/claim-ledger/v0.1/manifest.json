@@ -1,0 +1,13 @@
+{
+  "contract": "claim-ledger",
+  "version": "0.1",
+  "schema": "../../../schemas/claim-ledger.schema.json",
+  "fixtures": [
+    { "path": "valid/multi-claim.ledger.json", "expected": "valid", "reason": "three claims with one declared conflict and one dependency" },
+    { "path": "invalid/confidence-out-of-range.ledger.json", "expected": "invalid", "reason": "confidence outside [0.0, 1.0]" },
+    { "path": "invalid/dangling-depends-on.ledger.json", "expected": "invalid", "reason": "depends_on references a claim_id that does not exist" },
+    { "path": "invalid/duplicate-claim-id.ledger.json", "expected": "invalid", "reason": "two claims share the same claim_id" },
+    { "path": "invalid/forbidden-prefire-root.ledger.json", "expected": "invalid", "reason": "prefire authorization-suppression key at root" },
+    { "path": "invalid/unknown-root-field.ledger.json", "expected": "invalid", "reason": "unknown root field (additionalProperties:false)" }
+  ]
+}
