@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.zip binary
+
+# Each results/run-*/SHA256SUMS seals its run folder by the SHA-256 of exact bytes.
+# `* text=auto eol=lf` above writes LF on checkout, but it still converts line
+# endings on commit, and that is how two files in run-2026-10-02-linux were
+# committed as LF after being sealed as CRLF. `-text` turns conversion off for the
+# sealed folders in both directions, so the committed blob is the sealed bytes and
+# checkout writes it unchanged under any core.autocrlf setting. Later lines win.
+results/** -text

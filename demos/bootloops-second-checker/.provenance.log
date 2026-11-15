@@ -1,0 +1,4 @@
+2026-10-02T01:02:13-07:00 opened WITNESS_FORMAT.md (tools/trust/receipt)
+2026-10-02T01:04:22-07:00 read bootloops.ai/tools/receipt.html text (docs only) for the system JSONL line format, which WITNESS_FORMAT.md does not define
+2026-10-02T01:09:51-07:00 clean-room checkers (Python src/second_checker, JS js/check.mjs) complete and committed; core.py NOT yet opened
+2026-10-02T01:09:57-07:00 FIRST OPENED core.py and tests/ (test_banked.py, test_core.py)

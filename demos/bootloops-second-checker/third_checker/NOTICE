@@ -1,0 +1,14 @@
+spec_WITNESS_FORMAT.md is BootLoops' tools/trust/receipt/WITNESS_FORMAT.md at
+commit 66b680ce742e654cfe86da4f072a69061fe182b1, copied unchanged. It is
+licensed under CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/):
+"BootLoops 1.0, Anthropic, PBC and Matthew D. Schwartz (2026),
+https://www.bootloops.ai". The same text is embedded in task.txt.
+
+The text of the public tool page https://www.bootloops.ai/tools/receipt.html,
+which was part of the prompt the models received, is not redistributed here
+because the page states no license. task.txt marks where it went;
+build_task.py rebuilds the exact prompt from a saved copy and checks it
+against the recorded hashes.
+
+Everything else in this directory is model output or prompt text written for
+this test, released with the repository under the MIT License.

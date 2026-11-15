@@ -1,0 +1,163 @@
+{
+ "banana-bundle.zip": {
+  "files": 12,
+  "hits": []
+ },
+ "c3-dbox-bundle.zip": {
+  "files": 9,
+  "hits": []
+ },
+ "cosmo-ancillary.zip": {
+  "files": 24,
+  "hits": []
+ },
+ "cy3-banana-bundle.zip": {
+  "files": 13,
+  "hits": []
+ },
+ "ggH-bundle.zip": {
+  "files": 8,
+  "hits": []
+ },
+ "health-stars-record.tar.gz": {
+  "files": 393,
+  "hits": [
+   [
+    "health-stars-record/runs/enclosure_census_k72_rows.jsonl",
+    [
+     "name"
+    ]
+   ],
+   [
+    "health-stars-record/runs/review0927_item1_witnessfree.json",
+    [
+     "name"
+    ]
+   ],
+   [
+    "health-stars-record/runs/stress_certified_docsonly_rows.jsonl",
+    [
+     "name"
+    ]
+   ],
+   [
+    "health-stars-record/runs/witness_family_sweep.json",
+    [
+     "name"
+    ]
+   ],
+   [
+    "health-stars-record/src/review0927_item1_witnessfree.py",
+    [
+     "name"
+    ]
+   ],
+   [
+    "health-stars-record/src/witness_family_sweep.py",
+    [
+     "name"
+    ]
+   ]
+  ]
+ },
+ "hexabox-bundle.zip": {
+  "files": 26,
+  "hits": []
+ },
+ "hexabox-regeneration-bundle.zip": {
+  "files": 47,
+  "hits": []
+ },
+ "hourly-o3-exhibits.csv.gz": {
+  "files": 1,
+  "hits": []
+ },
+ "icc-bundle.zip": {
+  "files": 136,
+  "hits": []
+ },
+ "kite-bundle.zip": {
+  "files": 30,
+  "hits": []
+ },
+ "lbl3e-bundle.zip": {
+  "files": 54,
+  "hits": []
+ },
+ "lbl3kp-bundle.zip": {
+  "files": 29,
+  "hits": []
+ },
+ "lbl3se-bundle.zip": {
+  "files": 14,
+  "hits": []
+ },
+ "lbl3vp-bundle.zip": {
+  "files": 97,
+  "hits": []
+ },
+ "lbl3x-bundle.zip": {
+  "files": 99,
+  "hits": [
+   [
+    "lbl3x-bundle/lbl3x-kernel-witness/slice_n1_fits.pkl.gz",
+    [
+     "PICKLE(not loaded)"
+    ]
+   ],
+   [
+    "lbl3x-bundle/lbl3x-kernel-witness/witness_manifest.json",
+    [
+     "name"
+    ]
+   ],
+   [
+    "lbl3x-bundle/row21_chain/data/C_EPS.json",
+    [
+     "name"
+    ]
+   ]
+  ]
+ },
+ "lbl3x-witness-bundle.zip": {
+  "files": 4,
+  "hits": [
+   [
+    "lbl3x-bundle/CONTENTS-witness.txt",
+    [
+     "name"
+    ]
+   ],
+   [
+    "lbl3x-bundle/lbl3x-kernel-witness/slice_n1_exact.pkl.gz",
+    [
+     "PICKLE(not loaded)"
+    ]
+   ]
+  ]
+ },
+ "mpl-suite-bundle.zip": {
+  "files": 158,
+  "hits": []
+ },
+ "qqww-t4-bundle.zip": {
+  "files": 119,
+  "hits": []
+ },
+ "sunrise-bundle.zip": {
+  "files": 21,
+  "hits": []
+ },
+ "threshold-banana-bundle.zip": {
+  "files": 39,
+  "hits": []
+ },
+ "trials-census.zip": {
+  "files": 18,
+  "hits": []
+ },
+ "zgamma-bundle.zip": {
+  "files": 196,
+  "hits": []
+ }
+}

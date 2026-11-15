@@ -1,0 +1,137 @@
+[
+ {
+  "module": "Scale_norm_num_rmc_10",
+  "ok": true,
+  "rc": 0,
+  "timeout": false,
+  "wall_s": 34.32,
+  "cumulative_ms": {
+   "type checking": 29.8,
+   "tactic execution": 1420.0,
+   "elaboration": 332.0
+  },
+  "axioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ],
+  "axioms_ok": true,
+  "errors": [],
+  "uses_forbidden": false,
+  "leanchecker_rc": 0,
+  "leanchecker_s": 48.87,
+  "leanchecker_tail": "",
+  "tactic": "norm_num_rmc",
+  "terms": 10,
+  "lam_nnz": 1,
+  "n_cols": 10
+ },
+ {
+  "module": "Scale_norm_num_rmc_100",
+  "ok": true,
+  "rc": 0,
+  "timeout": false,
+  "wall_s": 10.43,
+  "cumulative_ms": {
+   "type checking": 102.0,
+   "tactic execution": 904.0,
+   "elaboration": 264.0
+  },
+  "axioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ],
+  "axioms_ok": true,
+  "errors": [],
+  "uses_forbidden": false,
+  "leanchecker_rc": 0,
+  "leanchecker_s": 40.19,
+  "leanchecker_tail": "",
+  "tactic": "norm_num_rmc",
+  "terms": 100,
+  "lam_nnz": 10,
+  "n_cols": 20
+ },
+ {
+  "module": "Scale_norm_num_rmc_300",
+  "ok": true,
+  "rc": 0,
+  "timeout": false,
+  "wall_s": 12.93,
+  "cumulative_ms": {
+   "type checking": 322.0,
+   "tactic execution": 1050.0,
+   "elaboration": 780.0
+  },
+  "axioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ],
+  "axioms_ok": true,
+  "errors": [],
+  "uses_forbidden": false,
+  "leanchecker_rc": 0,
+  "leanchecker_s": 39.9,
+  "leanchecker_tail": "",
+  "tactic": "norm_num_rmc",
+  "terms": 300,
+  "lam_nnz": 30,
+  "n_cols": 58
+ },
+ {
+  "module": "Scale_norm_num_rmc_1000",
+  "ok": true,
+  "rc": 0,
+  "timeout": false,
+  "wall_s": 19.16,
+  "cumulative_ms": {
+   "type checking": 1090.0,
+   "tactic execution": 1830.0,
+   "elaboration": 2750.0
+  },
+  "axioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ],
+  "axioms_ok": true,
+  "errors": [],
+  "uses_forbidden": false,
+  "leanchecker_rc": 0,
+  "leanchecker_s": 40.76,
+  "leanchecker_tail": "",
+  "tactic": "norm_num_rmc",
+  "terms": 1000,
+  "lam_nnz": 100,
+  "n_cols": 199
+ },
+ {
+  "module": "Scale_norm_num_rmc_3000",
+  "ok": true,
+  "rc": 0,
+  "timeout": false,
+  "wall_s": 52.09,
+  "cumulative_ms": {
+   "type checking": 5680.0,
+   "tactic execution": 4100.0,
+   "elaboration": 10900.0
+  },
+  "axioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ],
+  "axioms_ok": true,
+  "errors": [],
+  "uses_forbidden": false,
+  "leanchecker_rc": 0,
+  "leanchecker_s": 42.39,
+  "leanchecker_tail": "",
+  "tactic": "norm_num_rmc",
+  "terms": 3000,
+  "lam_nnz": 300,
+  "n_cols": 595
+ }
+]
