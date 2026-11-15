@@ -1,0 +1,13 @@
+{
+  "contract": "work-record-receipt",
+  "version": "0.1",
+  "schema": "../../../schemas/work-record-receipt.schema.json",
+  "fixtures": [
+    { "path": "valid/minimal.record.json", "expected": "valid", "reason": "all required fields, output-only direction, no forbidden keys" },
+    { "path": "invalid/forbidden-federal-appointment.record.json", "expected": "invalid", "reason": "prefire authorization keys forbidden by name" },
+    { "path": "invalid/forbidden-nested-authz-mode.record.json", "expected": "invalid", "reason": "forbidden field name rejected even when nested" },
+    { "path": "invalid/unknown-root-field.record.json", "expected": "invalid", "reason": "unknown root field must fail closed" },
+    { "path": "invalid/bad-outcome.record.json", "expected": "invalid", "reason": "outcome must be a closed enum value" },
+    { "path": "invalid/wrong-direction.record.json", "expected": "invalid", "reason": "direction must be output-only" }
+  ]
+}

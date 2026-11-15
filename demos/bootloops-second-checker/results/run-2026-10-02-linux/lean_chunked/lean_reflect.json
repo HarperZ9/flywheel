@@ -1,0 +1,60 @@
+{
+ "controls": [],
+ "scale": [
+  {
+   "tag": "Rs300000c10000",
+   "n": 1,
+   "spec_sha256": "90a2d40abe2f63c6d53d603ccdf7244716b892aac2c4409c24a070045b189c89",
+   "spec_ok": true,
+   "spec_hash_ok": true,
+   "prf_ok": true,
+   "aud_ok": true,
+   "axioms": [
+    "Classical.choice",
+    "Quot.sound",
+    "propext"
+   ],
+   "axioms_ok": true,
+   "forbidden": [],
+   "leanchecker_rc": [
+    0,
+    0
+   ],
+   "prf_timeout": false,
+   "wall_s": {
+    "spec": 553.93,
+    "prf": 98.04,
+    "aud": 5.74
+   },
+   "errors": [],
+   "audit_pass": true,
+   "chunk_terms": 10000,
+   "terms": 300000
+  },
+  {
+   "tag": "Rs1000000c10000",
+   "n": 1,
+   "spec_sha256": "4de0bbb103b3be5c11f3e3081a31771d100af5727a9d2efa858c350499a19087",
+   "spec_ok": false,
+   "spec_hash_ok": true,
+   "prf_ok": false,
+   "aud_ok": false,
+   "axioms": [],
+   "axioms_ok": false,
+   "forbidden": [],
+   "leanchecker_rc": null,
+   "prf_timeout": false,
+   "wall_s": {
+    "spec": 2406.01,
+    "prf": 26.99,
+    "aud": 0
+   },
+   "errors": [
+    "<repo>/lean/ReceiptLean/Gen/Rs1000000c10000Prf.lean:1:0: error: object file '<repo>/lean/.lake/build/lib/lean/ReceiptLean/Gen/Rs1000000c10000Spec.olean' of module ReceiptLean.Gen.Rs1000000c10000Spec does not exist"
+   ],
+   "audit_pass": false,
+   "chunk_terms": 10000,
+   "terms": 1000000
+  }
+ ]
+}

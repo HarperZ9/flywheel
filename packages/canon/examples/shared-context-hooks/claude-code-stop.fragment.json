@@ -1,0 +1,22 @@
+{
+  "merge_note": "Fragment only. Merge the hooks.Stop entry into an existing Claude Code settings hooks list and keep every existing Stop hook entry already present. Mount it beside the UserPromptSubmit fragment: the answer is linked to the prompt that hook captured. Needs canon 0.4.0 or later; canon 0.3.0 rejects --capture. An answer is stored only when this Stop input carries the prompt id and last_assistant_message, which the tests supply synthetically.",
+  "example_metadata_note": "The required_environment object is illustrative documentation, not a valid hook-root configuration key. Set these variables in the host environment or wrapper script.",
+  "required_environment": {
+    "CANON_CONTEXT_DB": "<absolute path in a per-user folder>/canon-context.sqlite",
+    "CANON_CONTEXT_WORKSPACE_ID": "<workspace>",
+    "CANON_CONTEXT_PROJECT_ID": "<project>",
+    "CANON_CONTEXT_CONTAINER_ID": "shared"
+  },
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m canon.client_capture --client claude-code --capture prompts+responses"
+          }
+        ]
+      }
+    ]
+  }
+}

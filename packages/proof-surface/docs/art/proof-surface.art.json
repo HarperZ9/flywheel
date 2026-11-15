@@ -1,0 +1,229 @@
+{
+  "header": {
+    "name": "proof-surface",
+    "role": "evidence a stranger can re-check",
+    "tagline": "A claim, its evidence, and a verdict anyone can derive again.",
+    "words": [
+      "gate",
+      "packet",
+      "verdict",
+      "tolerance",
+      "bundle"
+    ]
+  },
+  "flows": [
+    {
+      "file": "gate-lane.svg",
+      "kicker": "one planned action, one decision",
+      "title": "What the pre-execution gate reads before an agent is allowed to act",
+      "footnote": "The gate reports a decision and grants no authority. Nothing it returns is fed back into a model as trusted state, and a request it cannot parse is denied rather than passed along.",
+      "alt": "Eight stages of a single gate evaluation: request, shape, reserved names, authorization, budget, state, human gap, and aggregate. A request describes one planned action with its kind, its target and an estimated cost in tokens and wall time. Five fields are allowed at the root and any other field is refused. Reserved names are rejected at every level of the object rather than only at the top, so a forbidden key cannot hide inside a nested block. Four checks then run: authorization, budget, state and the human gap. Each check returns one of four values: pass, fail, unknown, or not applicable. The state check reads a witness verdict from a closed set of seven, of which only three count as confirming, alongside a target digest and the digest that was expected. The aggregate is not a vote. One failure anywhere denies the action; with no failure but any unknown the answer is that a person still has to look; allow requires authorization to pass outright and the other three to pass or not apply. Three outcomes: allow, deny, and needs human.",
+      "stages": [
+        {
+          "title": "Request",
+          "note": "One planned action, and what it costs."
+        },
+        {
+          "title": "Shape",
+          "note": "Five fields at the root. No others."
+        },
+        {
+          "title": "Reserved",
+          "note": "A refused name at any depth, not just the top."
+        },
+        {
+          "title": "Authorization",
+          "note": "A grant, or the action is denied outright."
+        },
+        {
+          "title": "Budget",
+          "note": "Tokens, wall time and actions still left."
+        },
+        {
+          "title": "State",
+          "note": "A witness verdict and two digests."
+        },
+        {
+          "title": "Human gap",
+          "note": "Whether a person still has to look."
+        },
+        {
+          "title": "Aggregate",
+          "note": "The weakest of the four checks decides."
+        }
+      ],
+      "returns": [
+        {
+          "from": 2,
+          "to": 1,
+          "label": "A MALFORMED REQUEST IS DENIED, NOT PARSED"
+        },
+        {
+          "from": 7,
+          "to": 5,
+          "label": "THREE OF SEVEN VERDICTS CONFIRM ANYTHING"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "ALLOW",
+          "note": "every check passed or did not apply",
+          "tone": "verified"
+        },
+        {
+          "label": "DENY",
+          "note": "one check failed, and one is enough",
+          "tone": "drift"
+        },
+        {
+          "label": "NEEDS HUMAN",
+          "note": "nothing failed, something is unknown",
+          "tone": "none"
+        }
+      ]
+    },
+    {
+      "file": "packet-lane.svg",
+      "kicker": "evidence in, packet out",
+      "title": "How raw evidence becomes a packet a reader can re-derive without the tool",
+      "footnote": "An empty measurement set reads as a match, because there is nothing left to refute. A missing deviation, or a tolerance at or below zero, reads as unverifiable instead of quietly passing.",
+      "alt": "Eight stages of one domain run: evidence, wedge, contract, honesty gate, measure, combine, decide, and bundle. Evidence starts as a trace, a run record or a measurement already on disk. One command routes it to one of eleven domain wedges, each of which owns its own arguments. The contract rejects unknown fields rather than ignoring them, so an unrecognised document is unverifiable rather than valid. Each wedge then applies its own refusal, the rule that stops that domain's characteristic overclaim. Measurement is a margin: tolerance minus deviation, over tolerance, matching if that margin is at or above zero. The combination is not an average. Unverifiable dominates, then drift, and an empty set reads as a match because there is nothing to refute. One decision follows from the overall verdict, with a closed vocabulary of seven outcomes and three confidence levels, defaulting to escalate when the verdict is not recognised. Four artifacts are written and hashed into one manifest, which records a digest per file and a digest over those digests. Three outcomes: match, drift, and unverifiable.",
+      "stages": [
+        {
+          "title": "Evidence",
+          "note": "A trace, a run, a measurement on disk."
+        },
+        {
+          "title": "Wedge",
+          "note": "One of eleven domains, one command."
+        },
+        {
+          "title": "Contract",
+          "note": "An unknown field is refused, not ignored."
+        },
+        {
+          "title": "Honesty gate",
+          "note": "The refusal that domain is built around."
+        },
+        {
+          "title": "Measure",
+          "note": "Deviation read against a tolerance."
+        },
+        {
+          "title": "Combine",
+          "note": "Unverifiable wins, then drift. No average."
+        },
+        {
+          "title": "Decide",
+          "note": "One decision, derived from the verdict."
+        },
+        {
+          "title": "Bundle",
+          "note": "Four artifacts under one hashed bundle."
+        }
+      ],
+      "returns": [
+        {
+          "from": 3,
+          "to": 1,
+          "label": "EACH WEDGE BRINGS ITS OWN REFUSAL"
+        },
+        {
+          "from": 7,
+          "to": 4,
+          "label": "A READER RECOMPUTES BOTH FROM THE BYTES"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "MATCH",
+          "note": "every claim held inside its tolerance",
+          "tone": "verified"
+        },
+        {
+          "label": "DRIFT",
+          "note": "one claim moved outside its tolerance",
+          "tone": "drift"
+        },
+        {
+          "label": "UNVERIFIABLE",
+          "note": "a claim could not be checked at all",
+          "tone": "none"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "wedge-refusals.svg",
+      "kicker": "eleven domains, eleven refusals",
+      "title": "What each domain refuses to let a packet claim",
+      "source": "telos-proof <domain> --help",
+      "heads": [
+        "domain",
+        "refuses",
+        "the rule that does it"
+      ],
+      "fields": [
+        {
+          "key": "agent-action",
+          "value": "UNBOUND ACTION",
+          "note": "Every material action carries one admission and one side-effect class. No verdict may cite an action absent from the trace."
+        },
+        {
+          "key": "visual-measurement",
+          "value": "CALIBRATION",
+          "note": "A read-only colour surface may not claim a physical calibration. Read-only stopped the writing; it never stopped the sentence."
+        },
+        {
+          "key": "research-claim",
+          "value": "TIER INFLATION",
+          "note": "A fenced prover branch is not citable support, one modality caps at hypothesis, and the rung cannot exceed the executed tier."
+        },
+        {
+          "key": "model-eval",
+          "value": "PROMOTION",
+          "note": "Default-deny. Promote is derivable only when the overall verdict came back as a match, and any other verdict invalidates it."
+        },
+        {
+          "key": "optimization-workflow",
+          "value": "HARDWARE",
+          "note": "A hardware execution claim needs a completed hardware branch. A quantum advantage claim needs the hardware claim first."
+        },
+        {
+          "key": "rollout-receipt",
+          "value": "COLLAPSE",
+          "note": "Reward score, verifier verdict, admission policy and promotion decision stay four records. None stands in for another."
+        },
+        {
+          "key": "eval-attempt",
+          "value": "CONTAMINATION",
+          "tone": "drift",
+          "note": "A correct outcome recorded next to ground-truth access is contamination rather than a pass. The boundary flags are results too."
+        },
+        {
+          "key": "ai4science",
+          "value": "DISCOVERY",
+          "note": "A measured rung needs a measurement, a reproduced rung needs an independent one, and peer review needs no open objection."
+        },
+        {
+          "key": "conservation",
+          "value": "NO-FAIL CHECK",
+          "note": "The negative fixture has to break the invariant, with drift past tolerance. A check that cannot fail is not a check."
+        },
+        {
+          "key": "control-certificate",
+          "value": "SIM-TO-REAL",
+          "note": "Every condition the certificate kind requires must be witnessed, and hardware validity never follows from simulation alone."
+        },
+        {
+          "key": "competition-attempt",
+          "value": "LADDER",
+          "note": "The overall verdict may cite only layers that ran. A fenced layer cites the probe that proved the fence and carries no result."
+        }
+      ],
+      "alt": "Eleven domain wedges, one to a row, each with the overclaim it refuses and the rule that does the refusing. Agent action binds every material action to one admission and one side-effect class. Visual measurement blocks a calibration claim from a read-only surface. Research claim stops tier inflation from a fenced branch or a single modality. Model eval is default-deny on promotion. Optimization workflow blocks a hardware or quantum claim without a completed hardware branch. Rollout receipt keeps reward, verdict, admission and promotion as four separate records. Eval attempt is accented, because it is the one row where a correct answer is refused: a correct outcome recorded alongside ground-truth access is contamination rather than a pass. AI for science gates each promotion rung on measurement, independent reproduction and settled objections. Conservation requires a negative fixture that provably breaks the invariant. Control certificate requires every condition of its kind to be witnessed and blocks hardware validity from simulation. Competition attempt allows the overall verdict to cite only layers that executed.",
+      "footnote": "The eleven share one seam and one verdict rule, so a reader who learns to read one packet can read all of them. Each refusal is enforced on validation rather than left to the person writing the document."
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "canon_schema": "canon.record/v1",
+  "kind": "adr-decision",
+  "id": "adr-0001-container-name",
+  "scope": "workspace",
+  "data": {
+    "title": "Name the container canon; give it a standalone repo",
+    "status": "accepted",
+    "context": "The container is a net-new assembly and needs a home and a name before F0 lands.",
+    "decision": "Name it canon. Home it at a new standalone public repository.",
+    "consequences": [
+      "Container code stays out of project-docs.",
+      "F0 schema, validator, and fixtures land in the new repo."
+    ]
+  },
+  "provenance": {
+    "harness": "claude-code",
+    "source_hash": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "native_id": null,
+    "session_id": "sess-42",
+    "create_ord": 210,
+    "create_time": null,
+    "model_slug": "claude-opus-4-8"
+  },
+  "temporal": {
+    "valid_until": null,
+    "supersedes": null
+  }
+}

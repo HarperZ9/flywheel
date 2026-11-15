@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+type: software
+title: "learn"
+abstract: "Study planner for the terminal and MCP: schedules reviews, tracks repeat mistakes and checks mastery from the attempts you record. Leaves graded questions to you."
+version: "2.3.0"
+date-released: 2026-10-03
+authors:
+  - family-names: "Harper"
+    given-names: "Zain Dana"
+    orcid: "https://orcid.org/0009-0001-7175-5393"
+repository-code: "https://github.com/HarperZ9/learn"
+url: "https://harperz9.github.io/learn.html"
+license-url: "https://github.com/HarperZ9/learn/blob/main/LICENSE"
+keywords:
+  - cli
+  - fsrs
+  - learning
+  - nodejs
+  - retrieval-practice
+  - spaced-repetition
+  - zero-dependency
+  - mcp

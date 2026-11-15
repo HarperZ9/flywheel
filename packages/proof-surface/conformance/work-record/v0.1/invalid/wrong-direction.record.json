@@ -1,0 +1,11 @@
+{
+  "work_record_version": "0.1",
+  "record_id": "wr-wrong-direction",
+  "direction": "bidirectional",
+  "intent": "Direction must be output-only; an inbound direction is rejected.",
+  "inputs": [],
+  "actions": [],
+  "evidence": [],
+  "outcome": "completed",
+  "cost": { "tokens": 0, "wall_ms": 0 }
+}

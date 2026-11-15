@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 440" role="img" aria-label="Project Telos mark for behavior-transform.io.">
+  <title>behavior-transform.io mark</title>
+  <rect width="520" height="440" rx="44" fill="#f4f3ef"/>
+  <path d="M260 62 V378" stroke="#0b0c0e" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="132" cy="138" r="34" fill="none" stroke="#0b0c0e" stroke-width="10"/>
+  <circle cx="132" cy="302" r="34" fill="none" stroke="#0b0c0e" stroke-width="10"/>
+  <circle cx="388" cy="138" r="34" fill="none" stroke="#0b0c0e" stroke-width="10"/>
+  <circle cx="388" cy="302" r="38" fill="none" stroke="#4636e8" stroke-width="12"/>
+  <path d="M166 138 H244 M166 302 H244 M276 138 H354 M276 302 H350" stroke="#0b0c0e" stroke-width="10" stroke-linecap="round"/>
+</svg>

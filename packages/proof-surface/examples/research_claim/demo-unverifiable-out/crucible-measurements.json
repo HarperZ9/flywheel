@@ -1,0 +1,13 @@
+{
+  "measurements": [
+    {
+      "claim": "The statement holds under the lean-total-termination check.",
+      "deviation": null,
+      "tolerance": 0.5,
+      "method": "lean-total-termination",
+      "evidence": [
+        "no general proof; only a bounded probe exists"
+      ]
+    }
+  ]
+}

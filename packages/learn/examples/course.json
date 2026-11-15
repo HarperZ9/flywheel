@@ -1,0 +1,12 @@
+{
+  "adapter": "fake",
+  "course": "Intro to Accountable Automation",
+  "steps": [
+    { "kind": "navigate", "target": "course://intro-to-accountable-automation" },
+    { "kind": "waitFor", "target": "#module-1" },
+    { "kind": "click", "target": "#module-1-start" },
+    { "kind": "capture", "capture": "dom" },
+    { "kind": "assess", "label": "Quiz 1: what the engine may automate" },
+    { "kind": "complete" }
+  ]
+}

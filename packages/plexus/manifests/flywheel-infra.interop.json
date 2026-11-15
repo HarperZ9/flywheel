@@ -1,0 +1,108 @@
+{
+  "organ": "flywheel-infra",
+  "invoke": {
+    "cli": "flywheel",
+    "python_import": "harness"
+  },
+  "emits": [
+    {
+      "capability": "flywheel.egress/1",
+      "title": "sealed egress event receipt",
+      "module": "harness/infra/egress.py:build_egress_receipt",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.lesson/1",
+      "title": "sealed organizational lesson",
+      "module": "harness/lesson.py:build_lesson",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.tool-call-receipt/1",
+      "title": "sealed tool-call receipt",
+      "module": "harness/tool_call_receipt.py:build_receipt",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.tadr-classification/1",
+      "title": "sealed tier classification",
+      "module": "harness/governance/tadr_receipt.py:build_classification_receipt",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.governance-envelope/1",
+      "title": "cross-lane governance state",
+      "module": "harness/governance_envelope.py:GovernanceEnvelope",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.credential-scan/1",
+      "title": "sealed credential exposure report",
+      "module": "harness/infra/credential_scanner.py:build_credential_scan_receipt",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.correlated-event/1",
+      "title": "cross-layer correlated detection",
+      "module": "harness/infra/correlator.py:build_correlated_receipt",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.isolation-test/1",
+      "title": "boundary test verdict",
+      "module": "harness/infra/isolation_test.py:run_isolation_test",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.kill-switch/1",
+      "title": "dual-confirmed infrastructure stop",
+      "module": "harness/infra/kill_switch.py:build_kill_receipt",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "flywheel.run-bom/1",
+      "title": "sealed run bill of materials",
+      "module": "harness/infra/run_bom.py:RunBOM.sealed",
+      "summary": "",
+      "consumable_as": []
+    }
+  ],
+  "consumes": [
+    {
+      "capability": "accountable-surface.actuation-outcome/1",
+      "title": "intent-vs-outcome for lesson derivation",
+      "module": "harness/lesson_mappers.py:intent_outcome_lessons",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "mneme.drift-report/1",
+      "title": "memory drift for lesson derivation",
+      "module": "harness/lesson_mappers.py:drift_lessons",
+      "summary": "",
+      "consumable_as": []
+    },
+    {
+      "capability": "learn.tutor-misconceptions/1",
+      "title": "graded failures for lesson derivation",
+      "module": "harness/lesson_mappers.py:misconception_lessons",
+      "summary": "",
+      "consumable_as": []
+    }
+  ],
+  "evidence": [
+    "harness/lesson.py",
+    "harness/infra/egress.py",
+    "harness/governance/tadr_receipt.py",
+    "harness/tool_call_receipt.py"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "receipt_id": "emet-verify-forbidden-verdict",
+  "verdict": "APPROVED",
+  "witness": {
+    "implementation": "emet-python-reference",
+    "spec_version": "0.2.0-draft",
+    "self_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "check": "verify"
+  },
+  "subject": [
+    {
+      "name": "example.txt",
+      "digest": { "sha256": "2222222222222222222222222222222222222222222222222222222222222222" }
+    }
+  ],
+  "evidence": { "exit_code": 0, "stdout_verdict_line": "..." },
+  "notes": "verdict must be a witness fact from the closed lattice, never an authority token"
+}

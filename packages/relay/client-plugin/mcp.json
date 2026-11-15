@@ -1,0 +1,17 @@
+{
+  "mcpServers": {
+    "relay": {
+      "args": [
+        "-I",
+        "-S",
+        "-B",
+        "${PLUGIN_ROOT}/server/serve.py"
+      ],
+      "command": "python3",
+      "env": {
+        "RELAY_MCP_ROOT": "${RELAY_MCP_ROOT}"
+      },
+      "type": "stdio"
+    }
+  }
+}

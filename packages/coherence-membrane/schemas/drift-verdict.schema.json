@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/HarperZ9/coherence-membrane/schemas/drift-verdict.schema.json",
+  "title": "DriftVerdict",
+  "description": "The closed drift lattice. verdict is the load-bearing field; it is exactly the write-gate's witness_verdict, so a perceived drift flows into the gate's state check without translation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["verdict"],
+  "properties": {
+    "verdict": { "enum": ["MATCH", "DRIFT", "UNVERIFIABLE"] },
+    "distance": {
+      "description": "Perceptual Hamming distance (0..64) for DRIFT/MATCH; null when UNVERIFIABLE.",
+      "type": ["integer", "null"],
+      "minimum": 0,
+      "maximum": 64
+    },
+    "reason": { "type": "string" }
+  }
+}

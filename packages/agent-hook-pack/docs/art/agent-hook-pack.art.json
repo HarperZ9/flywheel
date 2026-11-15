@@ -1,0 +1,209 @@
+{
+  "header": {
+    "name": "agent-hook-pack",
+    "role": "hooks that run before a mistake",
+    "tagline": "Five small hooks that run before a change becomes a problem.",
+    "words": [
+      "hook",
+      "block",
+      "audit",
+      "install",
+      "stage"
+    ]
+  },
+  "flows": [
+    {
+      "file": "proposal-lane.svg",
+      "kicker": "one proposal, one exit code",
+      "title": "What a hook decides before an agent touches a file",
+      "footnote": "The hook never edits the proposal. It answers with an exit code, and the tool that called it is the thing that stops.",
+      "alt": "Eight stages from a proposed edit to an exit code: proposal, payload, scaffold, basename, components, exit code, reason, error. An agent asks to read or edit a file. The hook is handed the tool name and the file path as JSON on standard input, and a call with no file path is let through untouched. A write to a file whose name starts with .env is allowed, because scaffolding a template is not the same as reading an existing one. The file's base name is matched against sixteen names that are never opened. The path is then split into parts and checked against four credential directories, matched as whole components so a module named private_key is not caught by accident. Exit zero lets the call proceed and exit two stops it. A block prints the path and the reason on standard error, which is what the calling tool shows. A hook that raises exits one, so a broken check is visible instead of silently permissive. Three outcomes: allowed, blocked, and hook error.",
+      "stages": [
+        {
+          "title": "Proposal",
+          "note": "An agent asks to read or edit a file."
+        },
+        {
+          "title": "Payload",
+          "note": "Tool name and file path, on stdin."
+        },
+        {
+          "title": "Scaffold",
+          "note": "A write to a new .env is allowed."
+        },
+        {
+          "title": "Basename",
+          "note": "Sixteen names are never opened."
+        },
+        {
+          "title": "Components",
+          "note": "Four credential directories, by part."
+        },
+        {
+          "title": "Exit code",
+          "note": "Zero proceeds. Two stops the call."
+        },
+        {
+          "title": "Reason",
+          "note": "The block names the path, on stderr."
+        },
+        {
+          "title": "Error",
+          "note": "A hook that raises exits one."
+        }
+      ],
+      "returns": [
+        {
+          "from": 7,
+          "to": 5,
+          "label": "A BROKEN HOOK EXITS ONE, NOT ZERO"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "ALLOWED",
+          "note": "no name and no part matched",
+          "tone": "verified"
+        },
+        {
+          "label": "BLOCKED",
+          "note": "exit two, with the path named",
+          "tone": "drift"
+        },
+        {
+          "label": "HOOK ERROR",
+          "note": "exit one says the check did not run",
+          "tone": "none"
+        }
+      ]
+    },
+    {
+      "file": "staged-sweep-lane.svg",
+      "kicker": "one turn, one sweep",
+      "title": "What the stop hook reads before a commit exists",
+      "footnote": "Everything here is read from the index and from files already on disk. Nothing is written, and no commit has happened yet.",
+      "alt": "Eight stages of the stop-time sweep: turn ends, repository, staged list, base names, key files, contents, report, block. The hook runs when the assistant finishes a turn, ahead of any commit. Outside a git working tree it exits immediately, and so does an empty index. The staged list comes from git diff cached, so only files already added are considered. Eight base names are refused outright, among them .env and credentials.json. Private key files are caught by name too, including any pem or key suffix. For each staged file still present on disk, the contents are read and matched against six credential shapes: a generic key or password assignment, an AWS access key, a GitHub token, a Slack token, a live Stripe key, and a PEM private key header. Every hit is named on standard error, path by path. Exit two stops the turn, so the secret is found while it is still only staged. Three outcomes: clean, blocked, and not a repository.",
+      "stages": [
+        {
+          "title": "Turn ends",
+          "note": "The stop hook runs after the work."
+        },
+        {
+          "title": "Repository",
+          "note": "Outside a work tree it does nothing."
+        },
+        {
+          "title": "Staged list",
+          "note": "Only what is already in the index."
+        },
+        {
+          "title": "Base names",
+          "note": "Eight names refused outright."
+        },
+        {
+          "title": "Key files",
+          "note": "Private keys, pem and key suffixes."
+        },
+        {
+          "title": "Contents",
+          "note": "Six credential shapes, file by file."
+        },
+        {
+          "title": "Report",
+          "note": "Every hit named, path by path."
+        },
+        {
+          "title": "Block",
+          "note": "Exit two, before a commit exists."
+        }
+      ],
+      "returns": [
+        {
+          "from": 6,
+          "to": 4,
+          "label": "A STAGED FILE NOW GONE IS NAMED, NOT READ"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "CLEAN",
+          "note": "nothing staged matched a shape",
+          "tone": "verified"
+        },
+        {
+          "label": "BLOCKED",
+          "note": "exit two, and every hit is named",
+          "tone": "drift"
+        },
+        {
+          "label": "NOT A REPO",
+          "note": "no index to read, so nothing ran",
+          "tone": "none"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "audit-findings.svg",
+      "kicker": "nine findings, one command",
+      "title": "What the audit can say about a directory of hooks",
+      "source": "agent-hook-pack audit",
+      "heads": [
+        "finding",
+        "raised by",
+        "what was read"
+      ],
+      "fields": [
+        {
+          "key": "hook_dir_missing",
+          "value": "NO DIR",
+          "note": "The path given as the source does not exist. This is the only finding reported on its own, because there is nothing left to inspect."
+        },
+        {
+          "key": "required_hook_missing",
+          "value": "NO FILE",
+          "note": "One of the five expected names is absent. The list is fixed in the package, so a hook you added yourself is never required."
+        },
+        {
+          "key": "hook_empty",
+          "value": "NO BYTES",
+          "tone": "drift",
+          "note": "The file holds nothing but whitespace. Inspection of that file stops here, so an empty hook is never checked for a shebang or for a token."
+        },
+        {
+          "key": "shebang_missing",
+          "value": "LINE ONE",
+          "note": "The first line does not begin with a hash and a bang, so the file is not runnable as a hook whatever it contains."
+        },
+        {
+          "key": "shebang_unexpected",
+          "value": "WRONG SHELL",
+          "note": "A python file whose first line names no python, or a shell file naming neither bash nor sh. Only reported when a shebang is present."
+        },
+        {
+          "key": "secret_pattern_0",
+          "value": "GITHUB PAT",
+          "note": "A personal access token shape sits in the hook text. The hooks are copied into other repositories, so a token in one travels."
+        },
+        {
+          "key": "secret_pattern_1",
+          "value": "API KEY",
+          "note": "A key with the widely used prefix and at least twenty characters after it."
+        },
+        {
+          "key": "secret_pattern_2",
+          "value": "AWS KEY",
+          "note": "An access key identifier, matched on its fixed prefix and the sixteen uppercase characters that follow."
+        },
+        {
+          "key": "secret_pattern_3",
+          "value": "PRIVATE KEY",
+          "note": "A PEM header for a private key of any type. The block itself is not read, only the line that opens it."
+        }
+      ],
+      "alt": "The nine findings an audit can return, one to a row, each with what raises it and what the audit read to raise it. A missing source directory is reported alone, because nothing else can be inspected. A missing required hook is one of five fixed names. An empty file, a first line that is not a shebang, and a shebang naming the wrong interpreter are each their own finding. The last four are credential shapes found in the hook text itself: a GitHub token, an API key prefix, an AWS access key identifier, and a PEM private key header. The empty-file row is accented, because inspection of that file stops there and no further check runs against it.",
+      "footnote": "The audit reads the directory it is pointed at and nothing else. A clean result says the hooks are runnable and carry no credential shapes. It says nothing about the repository those hooks were installed into, which is what the hooks themselves are for."
+    }
+  ]
+}

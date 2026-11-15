@@ -104,9 +104,10 @@ def serve(handler, path: str, ledger) -> None:
     owner, a virtual key is a named caller whose allow-list and limits are
     checked here, before either interface sends anything upstream.
 
-    Two refusals come before that. With no ledger to record the call in, the
+    Three refusals come before that. With no ledger to record the call in, the
     answer is 503 (gateway_ledger_gate). A body that stops arriving is answered
-    408 (gateway_read_timeout). Neither reaches an upstream."""
+    408 (gateway_read_timeout). A body with text that is not valid UTF-8 is
+    answered 400 (gateway_account). None reaches an upstream."""
     from . import gateway_key_gate as gate
     if ledger is None:
         from .gateway_ledger_gate import refusal as no_ledger
@@ -116,6 +117,9 @@ def serve(handler, path: str, ledger) -> None:
     except TimeoutError:
         from .gateway_read_timeout import timed_out
         return send(handler, timed_out(handler, path))
+    from .gateway_account import encodable, unencodable
+    if not encodable(body):             # the ledger could not hash it: refused at intake
+        return send(handler, unencodable(path))
     caller, refusal = gate.enter(handler, path, body, ledger)
     if refusal is not None:
         return send(handler, refusal)

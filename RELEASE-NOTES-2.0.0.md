@@ -1,6 +1,6 @@
 # Flywheel 2.0.0
 
-Released 2026-11-14.
+Released 2026-11-15.
 
 The coding session now works the way a hosted provider expects: replies
 stream, tools go through the provider's own function calling, and Anthropic
@@ -98,8 +98,18 @@ call's arguments could run as a different call. It is fixed (#472), and so
 are nine of the others (#473); the eleventh was a gap in the limits page,
 now closed. The third reviewer's probe scripts were run again against the
 fixed code and no longer reproduce, with one exception that the limits page
-describes (calls on one key that are in flight together). #472 and #473
-were tested by their author and have not had a further independent review.
+describes (calls on one key that are in flight together). A fourth
+reviewer, who had written none of the fixes either, then read #472 and #473
+and found twelve items, and eight sentences in these notes and the changelog
+that claimed more than the tests showed. One item blocked the release: a
+request whose text could not be hashed was served on a stream with no ledger
+entry and no charge. It is fixed, with seven others (#475), and the eight
+sentences are corrected. A fifth round (#511) then built what the fourth had
+left as stated limits: a call is in the ledger before it is made, calls in
+flight when a ledger write fails are recorded, the chat routes and
+`/v1/embeddings` record a failed call, a late request body gets 408 on every
+route, and one rule decides when a key is suspended. #475 and #511 were
+tested by their author and have not had an independent review.
 You will notice these:
 
 - **The gateway ledger is a file.** It lives in `gateway-ledger/` under the
@@ -113,14 +123,32 @@ You will notice these:
   `gateway-ledger` folder cannot be written. The gateway prints at start
   whether the ledger opened: look for the `ledger` line, and for
   `LEDGER UNAVAILABLE`. A ledger that stops taking writes while the gateway
-  runs (a full disk) gets the same 503 from the next call on. The one call
-  that meets the failure has already reached the provider. The gateway tries
-  the ledger again when a call comes in, at most once a second; when the
-  write works it serves that call, and the ledger records the gap.
-- **Each entry is committed to the disk before the reply is sent.** That
-  commit (fsync) is on by default and took a median of 1.2 ms and 2.9 ms on
-  the two drives measured. `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips it and
-  accepts that a power loss can lose the newest entries.
+  runs (a full disk) gets the same 503 from the next call on: a call whose
+  start cannot be recorded is not sent. Calls that were already in flight
+  had reached their provider; each ends with 500 or a stream error and
+  suspends its key. The gateway tries the ledger again when a call comes in,
+  at most once a second; when the write works it serves that call, and the
+  ledger records the gap and then the end of each call that was in flight,
+  marked `late`. `/v1/embeddings` is refused with the others.
+- **A call is in the ledger before it is made.** Each call has two entries:
+  `endpoint_call_started`, committed to the disk before the request leaves
+  the gateway, and its end entry (`endpoint_call` or `endpoint_call_failed`)
+  with the same `call` id. A script that counted entries to count calls
+  should count the kind `endpoint_call`. The two commits (fsync) are on by
+  default and together took 2.3 to 3.7 ms on the measured machine; one took
+  a median of 1.2 ms and 2.9 ms on the two drives measured.
+  `FLYWHEEL_GATEWAY_LEDGER_SYNC=0` skips them and accepts that a power loss
+  can lose the newest entries.
+- **A gateway that is killed in the middle of a call leaves an unsettled
+  call.** The started entry is there and the end entry is not.
+  `flywheel gateway-ledger verify` and `show` name it and exit 3 (1 still
+  means the ledger does not verify). The call's reservation counts against
+  its key until you settle it: read what the provider billed, then run
+  `flywheel gateway-ledger settle CALL --input N --output N`, or
+  `--no-charge`. Flywheel does not check that figure against the provider.
+- **A request with text that is not valid UTF-8 gets 400.** A body whose
+  strings hold a lone surrogate (the escape `\ud800` with no second half) is
+  refused before a key is admitted, and nothing is sent upstream.
 - **A virtual key refuses Anthropic pass-through features unless you allow
   them.** A Messages request to an Anthropic upstream that carries an
   `anthropic-beta` value, a provider-defined tool or `mcp_servers` gets 403
@@ -136,14 +164,16 @@ You will notice these:
   one had arrived, else an estimate of the text, tool-call arguments and
   thinking. A client that resets its connection before the first byte is
   recorded and charged for the prompt. An estimate here is at least a
-  quarter of the characters, so text without spaces is not nearly free.
-  Before, such calls cost the key nothing.
+  quarter of the characters, and the input is also at least a quarter of the
+  request's bytes, which counts tool definitions, images and documents, so
+  text without spaces is not nearly free. Before, such calls cost the key
+  nothing.
 - **A key's limits are read again when the request body has arrived.** A
   key that was revoked, suspended or over a limit by then is refused, even if
   the request's headers came earlier.
 - **A client that goes silent during its request is disconnected after 30
-  seconds.** A client that sends headers and no body gets 408 on a model
-  interface. The request line and headers must arrive within those 30
+  seconds.** A client that sends headers and no body gets 408, on every
+  route. The request line and headers must arrive within those 30
   seconds, and a request body within two minutes, whether or not the client
   holds a credential. `FLYWHEEL_GATEWAY_READ_TIMEOUT` sets another number
   of seconds; `0` switches the timeout and the deadlines off. Writes have
@@ -159,7 +189,8 @@ You will notice these:
   TOOL lines with OpenAI, Anthropic or Gemini, set `FLYWHEEL_NATIVE_TOOLS=0`,
   which uses the text protocol as 1.x did.
 - **A model moves to the text protocol only when its host says it cannot
-  take tools.** The session then prints one `Notice:` line and records it.
+  take tools.** Each session on that model then prints one `Notice:` line
+  and records it, also a session that did not meet the error itself.
   An error that merely mentions tools or functions no longer does this. A
   host that words the refusal in a way Flywheel does not recognize fails the
   request; set `FLYWHEEL_NATIVE_TOOLS=0` for it.
@@ -173,9 +204,18 @@ You will notice these:
   that started Lean. `LEAN_PATH`, `LEAN_SYSROOT`, `ELAN_HOME`,
   `ELAN_TOOLCHAIN`, `LEAN_NUM_THREADS` and `LEAN_STACK_SIZE_KB` still reach
   it. A custom variable you relied on does not.
-- **`flywheel gateway-key clear NAME`** lifts a suspension. A key is
-  suspended when a streamed reply left the gateway and its charge could not
-  be recorded.
+- **`flywheel gateway-key clear NAME`** lifts a suspension. One rule
+  decides when a key is suspended: one of its calls reached the provider and
+  was not fully accounted, which means its debit or its ledger entry failed,
+  for any reason, whether the reply was delivered or held back. A provider's
+  own failure suspends nothing. A failed debit is recorded as
+  `"charged_tokens": 0` with the amount under `uncharged_tokens`.
+- **`/v1/chat/completions`, `/api/route` and `/v1/embeddings` record a
+  failed provider call.** The first two left no entry for a provider error;
+  embeddings left no entry at all, and now also answers 503 when the ledger
+  is unavailable.
+- **`flywheel gateway-ledger show --json` prints ASCII.** Characters outside
+  printable ASCII are `\uXXXX` escapes; a JSON parser reads the same row.
 
 [docs/MIGRATING-2.0.md](docs/MIGRATING-2.0.md) has a section for each, and
 [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md) lists what the
@@ -232,13 +272,15 @@ receipt or a gate envelope you kept.
 ## Which versions get fixes
 
 2.x gets fixes in the next release. 1.9.x gets security fixes only, until
-2027-02-12, 90 days after this release. [SECURITY.md](SECURITY.md)
+2027-02-13, 90 days after this release. [SECURITY.md](SECURITY.md)
 says how to report a vulnerability privately.
 
 ## Limits
 
 Read these before you upgrade. The full list, with the reason each limit was
-left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
+left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md). Each
+row there says what would close it: an issue with a design note (#489 to
+#510), or the reason software cannot.
 
 ### Not measured and not run
 
@@ -267,6 +309,14 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
   It was not measured again after #473 either, which reads the request
   head line by line under a deadline and holds one lock from the row read to
   the admission; the 50 ms timing gate ran with both changes.
+  Since #511 a call commits two ledger entries where it committed one, and
+  on Windows a loopback upstream is connected without a timer wait that
+  cost about 15 ms on a quarter to a half of calls. One run of the timing
+  gate on the same machine after both: 2.6 to 6.5 ms to the end of the
+  reply, of which the two commits were 2.3 to 3.7 ms. The published table
+  was not measured again. The timing gate now budgets the gateway's own
+  time and reports the time inside the commit apart from it, because that
+  time is the disk's.
   Provider network time, concurrency and other machines are outside the
   figure.
   [docs/BENCHMARKS.md](docs/BENCHMARKS.md) has the table.
@@ -314,7 +364,9 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
   token-count request. A field that changes the price of a token is not seen
   by a spend limit, which uses the prices you gave the key; a token limit is
   not affected. A token-count request is not charged and leaves no ledger
-  entry.
+  entry; it is the one request sent to a provider without one. It goes only
+  to an Anthropic upstream's count route, which the Claude API documents as
+  free to use. No live call was made to confirm that.
 - **Key totals and settings are in a file** (`gateway-keys.json`) that any
   process of the same user can rewrite: limits, totals, allow-lists, the
   output cap, the in-flight limit and the suspension flag. Check the totals
@@ -339,25 +391,32 @@ left, is in [docs/KNOWN-LIMITS-2.0.0.md](docs/KNOWN-LIMITS-2.0.0.md).
   home answers every model call with 503. Give it its own `FLYWHEEL_HOME`.
 - **The 503 covers the routes that write to the ledger**: `/v1/messages`,
   `/v1/messages/count_tokens`, `/v1/responses`, `/v1/chat/completions` with a
-  provider endpoint, and `/api/route`. `/v1/embeddings`, the local model on
-  the chat path and the gateway's own agent, companion and evaluation routes
-  never wrote to this ledger and are not refused.
-- **The call that meets a ledger write failure has already reached the
-  provider.** Every model interface writes its entry after the provider
-  answered. A plain reply is then held back and answered 500; a stream's
-  text has left and its key is suspended. If the failed write left a line
-  cut short, `verify` exits 1 from then on and names the recorded break.
-- **A gateway that stops between a provider's reply and the ledger append
-  leaves no entry.** The provider billed the call and the ledger does not
-  show it.
-- **A stream's text leaves before its ledger entry exists.** The entry holds
-  the hash of the whole reply and is on disk before the stream's last event.
-  Treat a stream without its last event as unrecorded.
+  provider endpoint, `/api/route` and `/v1/embeddings`. The local model on
+  the chat path never wrote to this ledger and is not refused. The gateway's
+  agent runs keep their own record, a private trace for each run with a
+  started record before each provider request, and are not refused either.
+- **Calls in flight when a ledger write first fails have already reached
+  the provider.** A call that starts then is refused before it is sent.
+  The calls already in flight end with 500, or with a stream error after
+  their text has left, and each suspends its key. Their end entries are
+  appended when the ledger resumes. If the failed write left a line cut
+  short, `verify` exits 1 from then on and names the recorded break. A
+  request that has left cannot be recalled.
+- **An unsettled call is settled by hand.** A gateway that stops between a
+  provider's reply and the end entry leaves the call's started entry.
+  `verify` names it and you settle it with what the provider billed.
+  Flywheel does not read that figure from the provider, and it cannot tell
+  a call that was billed from one that never left, because the started
+  entry is written before the request does.
+- **A stream's text leaves before its end entry exists.** The end entry
+  holds the hash of the whole reply and is on disk before the stream's last
+  event; the started entry is on disk before the stream begins. Treat a
+  stream without its last event as unrecorded.
 - **On a pass-through stream, a reply the gateway refuses at its end has
   already reached the client.** The refusal is an error event, no receipt
   and a failed entry. Do not act on a streamed reply that has no `x_receipt`.
 - **`FLYWHEEL_GATEWAY_LEDGER_SYNC=0` trades durability for speed.** A power
-  loss can then lose the newest entries.
+  loss can then lose the newest entries, started entries included.
 - **`verify` catches a changed byte, a removed entry, a cut line and a
   missing segment.** A process of the same user that rewrites a segment and
   its head record together, or removes the whole folder, is not detected by

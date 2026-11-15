@@ -1,0 +1,40 @@
+{
+  "organ_bundle_version": "0.1",
+  "bundle_id": "orb-tadr-mixed",
+  "generated_at": "2026-08-02T12:00:00Z",
+  "subject": "governance-evidence",
+  "entries": [
+    {
+      "entry_id": "classification",
+      "organ_id": "governance.tadr",
+      "receipt_kind": "tadr-classification",
+      "status": "pass",
+      "payload_sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+      "summary": "Classification structure passed its independent checker.",
+      "payload_ref": "receipts/classification.json"
+    },
+    {
+      "entry_id": "controls",
+      "organ_id": "governance.tadr",
+      "receipt_kind": "tadr-control",
+      "status": "unverified",
+      "payload_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
+      "summary": "Control observations remain unverified pending trusted authority.",
+      "payload_ref": "receipts/controls.json"
+    },
+    {
+      "entry_id": "gate",
+      "organ_id": "gate.proof_surface",
+      "receipt_kind": "proof-surface-gate",
+      "status": "needs-human",
+      "payload_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
+      "summary": "The gate does not infer authority from structural validity.",
+      "payload_ref": "receipts/gate.json"
+    }
+  ],
+  "edges": [
+    {"from": "classification", "to": "controls", "relation": "gates"},
+    {"from": "controls", "to": "gate", "relation": "gates"}
+  ],
+  "notes": "Synthetic conformance vector. Digests bind fixtures, not production evidence."
+}

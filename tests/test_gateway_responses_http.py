@@ -142,7 +142,7 @@ def test_tool_round_trip_over_http_for_each_upstream_dialect(monkeypatch, tmp_pa
     assert support.kinds(ledger) == ["endpoint_call", "endpoint_call"] and ledger.verify()
 
 
-def _three_ways(monkeypatch, record=None):
+def _three_ways(monkeypatch, record=None, read=support.recorded):
     """One text conversation through chat, Responses and Messages; the entries."""
     reply = plain_object("openai", "turn2")
     reply["choices"][0]["message"]["content"] = "Nothing else changed.\n"
@@ -168,7 +168,7 @@ def _three_ways(monkeypatch, record=None):
         assert len(upstream.requests) == 3
     said = body["choices"][0]["message"]["content"]
     assert said == answer.body["output"][0]["content"][0]["text"] == message.body["content"][0]["text"]
-    return ledger.entries
+    return read(ledger)
 
 
 def _equivalent(chat, other, interface: str) -> None:
@@ -177,15 +177,19 @@ def _equivalent(chat, other, interface: str) -> None:
     assert chat.content == other.content
     assert other.meta.get("interface") == interface
     assert other.meta.get("key") == "owner" and other.meta.get("usage_reported") is True
-    assert chat.meta == {key: value for key, value in other.meta.items()
-                         if key not in ("interface", "key", "usage_reported")}
+    # `call` is the id of each call's own started entry (support.recorded checked the pair).
+    assert chat.meta["call"] != other.meta["call"]
+    assert {key: value for key, value in chat.meta.items() if key != "call"} == {
+        key: value for key, value in other.meta.items()
+        if key not in ("interface", "key", "usage_reported", "call")}
 
 
 def test_chat_responses_and_messages_leave_equal_ledger_entries(monkeypatch):
     chat, responses, messages = _three_ways(monkeypatch)
     _equivalent(chat, responses, "openai-responses")
     _equivalent(chat, messages, "anthropic-messages")
-    assert set(chat.meta) == {"endpoint", "model_ref", "seed", "prompt_sha", "response_sha"}
+    assert set(chat.meta) == {"endpoint", "model_ref", "seed", "prompt_sha", "response_sha",
+                              "call"}
     assert chat.meta["model_ref"] == "ollama:stub-model"
 
 
@@ -204,7 +208,8 @@ def test_equivalence_fails_when_the_responses_path_drops_a_meta_key(monkeypatch,
         target = Dropping(ledger) if turn.interface == "openai-responses" else ledger
         whole(target, upstream, turn, reply)
 
-    chat, responses, messages = _three_ways(monkeypatch, record)
+    # Read without the write-ahead check: it would name the planted fault first.
+    chat, responses, messages = _three_ways(monkeypatch, record, support.ended)
     _equivalent(chat, messages, "anthropic-messages")       # the untouched path still holds
     with pytest.raises(AssertionError):
         _equivalent(chat, responses, "openai-responses")

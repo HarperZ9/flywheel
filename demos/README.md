@@ -56,3 +56,21 @@ No shot needed a `--dry-run` placeholder.
 `demos/harness-first-run/` predates these and includes a final step that asks
 the local 14B coder to continue a function. That one is intentionally excluded
 from the read-only set here because it exercises a live model endpoint.
+
+## Evidence demos and receipts that moved in
+
+Five folders here are not recorded shots. Each was its own repository and now lives in this one as
+its final tree, in one commit that names the source commit. They have no `transcript.json`, so
+`scripts/build_demos_index.py` leaves them out of `index.json`. Their checks run in
+`.github/workflows/demos.yml` when a change touches one of them.
+
+| Demo | What it shows | Run it | Came from | Checks |
+|---|---|---|---|---|
+| [flywheel-evidence-task](flywheel-evidence-task/) | The evidence-task skill as a plugin at a repository root: a claim becomes a source-linked evidence packet with measurements and false-success controls. The maintained plugin is `plugins/flywheel-evidence-task`. | `python scripts/check_plugin.py` | `HarperZ9/flywheel-evidence-task` at `7daa67ba` | plugin consistency with a corrupted-copy control, art receipts |
+| [flywheel-receipt-demo](flywheel-receipt-demo/) | The receipt path in one command: an honest receipt re-derives as MATCH and a forged one as DRIFT. Pinned to `flywheel-verify==1.0.0`. | `python demo/run_demo.py` | `HarperZ9/flywheel-receipt-demo` at `b2cb71bf` | the demo run, art receipts |
+| [bootloops-second-checker](bootloops-second-checker/) | An independent second checker for BootLoops RECEIPT v1.0 witnesses, with a Lean 4 kernel check over ZMod p and sealed run folders. | `python -m pytest -q tests` | `HarperZ9/bootloops-second-checker` at `f29a7201` | pytest on Linux and Windows, sealed bytes, run-folder manifests |
+| [crewai-kickoff-replay-receipt](crewai-kickoff-replay-receipt/) | A sealed replay audit of CrewAI `kickoff_for_each` with red and green logs and a candidate patch. | `python verify_public.py` | `HarperZ9/crewai-kickoff-replay-receipt` at `f9a2192b` | its verifier, `SHA256SUMS` |
+| [vllm-ci-forum-receipt](vllm-ci-forum-receipt/) | A sealed, read-only Forum receipt over public vLLM CI data, with pinned snapshots and stated unknowns. | `python verify_publication.py` | `HarperZ9/vllm-ci-forum-receipt` at `565dc98d` | its verifier, `SHA256SUMS.txt`, its 27 unit tests, Forum ledger verify |
+
+The two sealed receipts are byte-for-byte copies. Their own repositories stay the published record:
+`packages/seal-watch` clones each one fresh every day and runs its verifier.

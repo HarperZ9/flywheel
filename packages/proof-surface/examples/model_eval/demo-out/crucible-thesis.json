@@ -1,0 +1,14 @@
+{
+  "title": "Model-eval proof packet demo-model-eval",
+  "disposition": "publishable",
+  "claims": [
+    {
+      "text": "Metric accuracy (maximize target 0.9) is within tolerance 0.01.",
+      "falsification": "the metric deviates beyond the stated tolerance."
+    },
+    {
+      "text": "Metric p95_latency_ms (minimize target 100) is within tolerance 5.0.",
+      "falsification": "the metric deviates beyond the stated tolerance."
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+PHASE: RED, unmodified pinned production source
+PYTHON: 3.12.10
+CWD: <crewai-repository-root>
+COMMAND: .\.venv\Scripts\python.exe -m pytest -q -n 0 --tb=short --disable-warnings lib/crewai/tests/test_kickoff_for_each_replay.py::test_kickoff_for_each_persists_only_the_most_recent_run_for_replay
+EXIT_CODE: 1
+
+F                                                                        [100%]
+================================== FAILURES ===================================
+_____ test_kickoff_for_each_persists_only_the_most_recent_run_for_replay ______
+lib\crewai\tests\test_kickoff_for_each_replay.py:82: in test_kickoff_for_each_persists_only_the_most_recent_run_for_replay
+    assert len(stored) == 1
+E   assert 0 == 1
+E    +  where 0 = len([])
+=========================== short test summary info ===========================
+FAILED lib/crewai/tests/test_kickoff_for_each_replay.py::test_kickoff_for_each_persists_only_the_most_recent_run_for_replay
+1 failed, 30 warnings in 20.77s

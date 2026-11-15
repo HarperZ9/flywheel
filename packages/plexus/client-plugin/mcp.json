@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "plexus": {
+      "args": [
+        "-I",
+        "-S",
+        "-B",
+        "${PLUGIN_ROOT}/server/serve.py"
+      ],
+      "command": "python3",
+      "env": {},
+      "type": "stdio"
+    }
+  }
+}

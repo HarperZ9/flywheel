@@ -1,0 +1,11 @@
+{
+  "author": {
+    "name": "Zain Dana Harper"
+  },
+  "description": "Search and read project context from a local database you choose, scoped to one project.",
+  "license": "AGPL-3.0-only",
+  "mcpServers": "./mcp.json",
+  "name": "canon-local",
+  "skills": "./skills/",
+  "version": "0.7.0"
+}

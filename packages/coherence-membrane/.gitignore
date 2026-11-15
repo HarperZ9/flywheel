@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+CLAUDE.local.md
+_drafts/
+
+# pytest coverage artifact
+.coverage
+
+# The committed template must survive the .env.* rule above (global standard)
+!.env.example
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

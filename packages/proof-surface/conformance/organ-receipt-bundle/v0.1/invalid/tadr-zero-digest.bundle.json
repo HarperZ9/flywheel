@@ -1,0 +1,17 @@
+{
+  "organ_bundle_version": "0.1",
+  "bundle_id": "orb-tadr-zero-digest",
+  "generated_at": "2026-08-02T12:00:00Z",
+  "subject": "governance-evidence",
+  "entries": [
+    {
+      "entry_id": "controls",
+      "organ_id": "governance.tadr",
+      "receipt_kind": "tadr-control",
+      "status": "unverified",
+      "payload_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "summary": "An all-zero digest is not a payload commitment.",
+      "payload_ref": "receipts/controls.json"
+    }
+  ]
+}

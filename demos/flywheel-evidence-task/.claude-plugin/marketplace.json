@@ -1,0 +1,15 @@
+{
+  "name": "flywheel-evidence-task",
+  "owner": {
+    "name": "Zain Dana Harper",
+    "url": "https://github.com/HarperZ9"
+  },
+  "description": "Flywheel Evidence Task: a skill that turns a claim into a source-linked evidence packet.",
+  "plugins": [
+    {
+      "name": "flywheel-evidence-task",
+      "source": "./",
+      "description": "Check a Flywheel or Bulletin claim and get a source-linked evidence packet with measurements and false-success controls."
+    }
+  ]
+}

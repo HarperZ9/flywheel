@@ -1,0 +1,46 @@
+name: discover
+description: Fail a release when the repo, site or video plan is missing what search engines, AI search and registries read.
+branding:
+  icon: search
+  color: gray-dark
+inputs:
+  mode:
+    description: repo, site or video
+    required: false
+    default: repo
+  path:
+    description: Repository root, site root, or video manifest path
+    required: false
+    default: "."
+  args:
+    description: Extra arguments, such as --min-score 80 or --online
+    required: false
+    default: ""
+  gate:
+    description: Fail the job on a blocking finding
+    required: false
+    default: "true"
+  token:
+    description: Token for reading the repository's description and topics
+    required: false
+    default: ${{ github.token }}
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+      with:
+        python-version: "3.12"
+    - shell: bash
+      run: python -m pip install --disable-pip-version-check --quiet "${{ github.action_path }}"
+    - shell: bash
+      env:
+        GITHUB_TOKEN: ${{ inputs.token }}
+        DISCOVER_MODE: ${{ inputs.mode }}
+        DISCOVER_PATH: ${{ inputs.path }}
+        DISCOVER_ARGS: ${{ inputs.args }}
+        DISCOVER_GATE: ${{ inputs.gate }}
+      run: |
+        gate=""
+        if [ "$DISCOVER_GATE" = "true" ]; then gate="--gate"; fi
+        # shellcheck disable=SC2086
+        discover "$DISCOVER_MODE" "$DISCOVER_PATH" $gate $DISCOVER_ARGS

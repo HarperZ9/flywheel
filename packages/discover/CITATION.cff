@@ -1,0 +1,19 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "discover: a pre-release discoverability check"
+abstract: "A command-line check that a repository, package, static site and video plan carry what search engines, AI search and registries read: a benefit-first README, topics, package keywords, CITATION.cff, JSON-LD, sitemap, llms.txt and video chapters."
+type: software
+version: "0.1.2"
+date-released: 2026-10-23
+license: AGPL-3.0-only
+authors:
+  - family-names: "Harper"
+    given-names: "Zain Dana"
+    orcid: "https://orcid.org/0009-0001-7175-5393"
+repository-code: "https://github.com/HarperZ9/discover"
+keywords:
+  - discoverability
+  - seo
+  - llms-txt
+  - json-ld
+  - release-gate

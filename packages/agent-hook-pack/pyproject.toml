@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-hook-pack"
+version = "0.1.0"
+description = "Public-safe local git/agent hooks: secret checks, branch guards, and pre-commit hygiene."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Zain Dana Harper" }]
+keywords = ["hooks", "assistant", "safety", "cli", "git"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development",
+]
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+agent-hook-pack = "agent_hook_pack.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/agent-hook-pack"
+Repository = "https://github.com/HarperZ9/agent-hook-pack"
+Issues = "https://github.com/HarperZ9/agent-hook-pack/issues"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]

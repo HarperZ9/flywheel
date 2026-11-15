@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://harperz9.github.io/proof-surface/gate-request.schema.json",
+  "title": "Pre-Execution Gate Request v0.1",
+  "description": "Input to the pre-execution gate: a default-deny, fail-closed, ADVISORY mediation layer. The gate checks a planned action against an authorization receipt, a resource budget, optional observed state, and optional human-gap attestation evidence, then returns allow/deny/needs-human. The gate REPORTS a decision for a runtime/operator to enforce; it NEVER grants authority and is NEVER injected into a model as trusted state. additionalProperties is false at every level. The forbidden-field-name guard (same set as authorization-receipt and work-record) is applied recursively by the reference validator.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["planned_action", "authorization", "budget"],
+  "properties": {
+    "planned_action": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["action_kind", "target"],
+      "description": "The action the agent intends to perform.",
+      "properties": {
+        "action_kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Machine-readable kind label for the planned action (e.g. 'read_file', 'write_file', 'call_api')."
+        },
+        "target": {
+          "type": "string",
+          "minLength": 1,
+          "description": "The resource or entity the action will act upon."
+        },
+        "estimated_cost": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "Optional cost estimates for this action. Omit if cost is not known. If any dimension is provided and the matching remaining budget is absent, the gate returns needs-human (never allow).",
+          "properties": {
+            "tokens": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Estimated token consumption."
+            },
+            "wall_ms": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Estimated wall-clock time in milliseconds."
+            }
+          }
+        }
+      }
+    },
+    "authorization": {
+      "type": "object",
+      "description": "An authorization-receipt object. Validated with validate_authorization_receipt; structural invalidity or a check_action denial causes the gate to deny. See authorization-receipt.schema.json for the full shape.",
+      "$comment": "The full structural constraints are defined in authorization-receipt.schema.json. This field accepts any object; the reference validator applies validate_authorization_receipt + check_action at evaluation time."
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Currently available resource budget. All fields are optional; omit a field if that dimension is unlimited or unknown. The gate treats an absent remaining_* as unknown when a matching estimated cost is provided.",
+      "properties": {
+        "remaining_tokens": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Token budget remaining."
+        },
+        "remaining_wall_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Wall-clock budget remaining in milliseconds."
+        },
+        "remaining_actions": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Action-count budget remaining. If present and <= 0, the gate denies."
+        }
+      }
+    },
+    "state": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "Optional observed state of the target. If absent, state is not-applicable and does not block. If present, DRIFT -> deny; UNVERIFIABLE -> needs-human; digest mismatch -> deny.",
+      "properties": {
+        "witness_verdict": {
+          "type": "string",
+          "enum": ["MATCH", "DRIFT", "UNVERIFIABLE"],
+          "description": "Witness verdict for the target from the byte-witness layer. MATCH passes; DRIFT denies; UNVERIFIABLE escalates to needs-human."
+        },
+        "target_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Observed SHA-256 digest of the target (64 lowercase hex chars)."
+        },
+        "expected_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Expected SHA-256 digest of the target (64 lowercase hex chars). If both target_digest and expected_digest are present and differ, the gate denies."
+        }
+      }
+    },
+    "human_gap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["requires_human_act", "act_kind"],
+      "description": "Optional marker for work where a human-owned act remains outside the tool/model boundary. If requires_human_act is true, the gate needs external operator attestation, an evidence label, and an evidence digest before this dimension can pass.",
+      "properties": {
+        "requires_human_act": {
+          "type": "boolean",
+          "description": "True when the request depends on a human-owned act that the tool cannot synthesize."
+        },
+        "act_kind": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Machine-readable kind label for the human act, such as authorship_attestation, viva_defense, or external_review."
+        },
+        "evidence_label": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Human-readable pointer to the external attestation evidence."
+        },
+        "evidence_digest": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "SHA-256 digest of the external attestation artifact (64 lowercase hex chars)."
+        },
+        "operator_attested": {
+          "type": "boolean",
+          "description": "True only when the operator has attested that the external human act and evidence exist."
+        }
+      }
+    }
+  },
+  "$comment": "Forbidden field names (rejected by name at every object level by the reference validator -- identical set to authorization-receipt and work-record-receipt): federal_appointment, oversight_principals, operator_role, judgment_owner, proof_policy, policy_boundary, authorization_context_mode, model_authorization_behavior, guardrail_posture, consume_verified_native_state, lossy_neutral_embedded_state, sovereignty_capsule, self_applicable, recursion_depth, prefire, run_state."
+}

@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="420" viewBox="0 0 1280 420" role="img" aria-labelledby="title desc">
+  <title id="title">behavior-transform.io IO boundary calibration layer</title>
+  <desc id="desc">A technical README hero showing behavior-transform.io as an IO membrane between operators, tools, and model-boundary hosts.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#151617"/>
+      <stop offset="0.48" stop-color="#1d2422"/>
+      <stop offset="1" stop-color="#241b22"/>
+    </linearGradient>
+    <linearGradient id="membrane" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#6ee7d8"/>
+      <stop offset="0.5" stop-color="#d7bc69"/>
+      <stop offset="1" stop-color="#ee7c8a"/>
+    </linearGradient>
+    <pattern id="grid" width="28" height="28" patternUnits="userSpaceOnUse">
+      <path d="M 28 0 L 0 0 0 28" fill="none" stroke="#f5efe7" stroke-opacity="0.055" stroke-width="1"/>
+    </pattern>
+  </defs>
+
+  <rect width="1280" height="420" fill="url(#bg)"/>
+  <rect width="1280" height="420" fill="url(#grid)"/>
+  <path d="M640 32 C706 91 706 153 640 210 C574 267 574 329 640 388" fill="none" stroke="url(#membrane)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M610 32 C676 91 676 153 610 210 C544 267 544 329 610 388" fill="none" stroke="#6ee7d8" stroke-width="1.5" opacity="0.42"/>
+  <path d="M670 32 C736 91 736 153 670 210 C604 267 604 329 670 388" fill="none" stroke="#ee7c8a" stroke-width="1.5" opacity="0.42"/>
+
+  <g font-family="Conso, Consolas, monospace" font-size="18" fill="#f5efe7">
+    <text x="104" y="115">operator</text>
+    <text x="104" y="167">safe_read / safe_exec / safe_fetch</text>
+    <text x="104" y="219">mode: ops | research | academic</text>
+    <text x="104" y="271">local hashes + redacted refs</text>
+
+    <text x="782" y="115">host surface</text>
+    <text x="782" y="167">CLI JSON / hooks / shell profiles</text>
+    <text x="782" y="219">future MCP adapter</text>
+    <text x="782" y="271">MATCH | DRIFT | UNVERIFIABLE</text>
+  </g>
+
+  <g stroke="#f5efe7" stroke-opacity="0.45" stroke-width="1.5" fill="none">
+    <path d="M360 158 H584"/>
+    <path d="M360 250 H584"/>
+    <path d="M696 158 H920"/>
+    <path d="M696 250 H920"/>
+  </g>
+
+  <g transform="translate(72 316)">
+    <text x="0" y="0" font-family="Kilon, Conso, Inter, Arial, sans-serif" font-size="56" font-weight="700" fill="#f5efe7">behavior-transform.io</text>
+    <rect x="4" y="18" width="548" height="4" fill="url(#membrane)"/>
+    <text x="0" y="58" font-family="Inter, Segoe UI, Arial, sans-serif" font-size="21" fill="#cdd8d3">Project Telos private-line IO boundary calibration</text>
+  </g>
+</svg>

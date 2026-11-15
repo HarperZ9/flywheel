@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "agent-routing-kit"
+version = "0.1.0"
+description = "Deterministic agent task routing and context-budget helpers with public/private lane signals."
+readme = "README.md"
+requires-python = ">=3.9"
+license = "MIT"
+authors = [{ name = "Zain Dana Harper" }]
+keywords = ["agents", "routing", "codex", "context", "workflow"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = []
+
+[project.scripts]
+agent-route = "agent_routing_kit.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/agent-routing-kit"
+Repository = "https://github.com/HarperZ9/agent-routing-kit"
+Issues = "https://github.com/HarperZ9/agent-routing-kit/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]

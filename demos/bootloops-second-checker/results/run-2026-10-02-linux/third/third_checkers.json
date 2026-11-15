@@ -1,0 +1,41 @@
+{
+ "check3_abl": {
+  "non_pass_reasons": {},
+  "plain": {
+   "PASS": 12187
+  },
+  "table": {
+   "PASS": 12187
+  }
+ },
+ "check3_v0": {
+  "non_pass_reasons": {
+   "plain: fingerprint mismatch": 8411,
+   "plain: identity does not hold": 2506,
+   "table: fingerprint mismatch": 8411,
+   "table: identity does not hold": 2506
+  },
+  "plain": {
+   "FAIL": 10917,
+   "PASS": 1270
+  },
+  "table": {
+   "FAIL": 10917,
+   "PASS": 1270
+  }
+ },
+ "check3_v1": {
+  "non_pass_reasons": {
+   "plain: identity does not hold": 8208,
+   "table: identity does not hold": 8208
+  },
+  "plain": {
+   "FAIL": 8208,
+   "PASS": 3979
+  },
+  "table": {
+   "FAIL": 8208,
+   "PASS": 3979
+  }
+ }
+}

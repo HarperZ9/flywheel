@@ -1,0 +1,56 @@
+[
+  {
+    "canon_schema": "canon.record/v1",
+    "kind": "personality-block",
+    "id": "voice",
+    "scope": "global",
+    "data": {"title": "Voice (global default)", "body": "Feature-first. No em-dashes."},
+    "provenance": {"harness": "author", "source_hash": "0000000000000000000000000000000000000000000000000000000000000000", "native_id": null, "session_id": null, "create_ord": 1, "create_time": null, "model_slug": null},
+    "temporal": {"valid_until": null, "supersedes": null}
+  },
+  {
+    "canon_schema": "canon.record/v1",
+    "kind": "personality-block",
+    "id": "voice",
+    "scope": "workspace",
+    "data": {"title": "Voice (workspace override)", "body": "Feature-first, calibrated uncertainty kept for chat."},
+    "provenance": {"harness": "author", "source_hash": "0000000000000000000000000000000000000000000000000000000000000000", "native_id": null, "session_id": null, "create_ord": 5, "create_time": null, "model_slug": null},
+    "temporal": {"valid_until": null, "supersedes": null}
+  },
+  {
+    "canon_schema": "canon.record/v1",
+    "kind": "personality-block",
+    "id": "testing",
+    "scope": "global",
+    "data": {"title": "Testing (superseded)", "body": "Old: always run the full suite."},
+    "provenance": {"harness": "author", "source_hash": "0000000000000000000000000000000000000000000000000000000000000000", "native_id": null, "session_id": null, "create_ord": 2, "create_time": null, "model_slug": null},
+    "temporal": {"valid_until": 7, "supersedes": null}
+  },
+  {
+    "canon_schema": "canon.record/v1",
+    "kind": "personality-block",
+    "id": "testing",
+    "scope": "global",
+    "data": {"title": "Testing (current)", "body": "Targeted regression slice by default."},
+    "provenance": {"harness": "author", "source_hash": "0000000000000000000000000000000000000000000000000000000000000000", "native_id": null, "session_id": null, "create_ord": 9, "create_time": null, "model_slug": null},
+    "temporal": {"valid_until": null, "supersedes": null}
+  },
+  {
+    "canon_schema": "canon.record/v1",
+    "kind": "personality-block",
+    "id": "shipping",
+    "scope": "workspace",
+    "data": {"title": "Shipping posture", "body": "Local-to-shipped flips register to user-facing."},
+    "provenance": {"harness": "author", "source_hash": "0000000000000000000000000000000000000000000000000000000000000000", "native_id": null, "session_id": null, "create_ord": 6, "create_time": null, "model_slug": null},
+    "temporal": {"valid_until": null, "supersedes": null}
+  },
+  {
+    "canon_schema": "canon.record/v1",
+    "kind": "personality-block",
+    "id": "deprecated",
+    "scope": "workspace",
+    "data": {"title": "Deprecated block", "body": "Retired guidance."},
+    "provenance": {"harness": "author", "source_hash": "0000000000000000000000000000000000000000000000000000000000000000", "native_id": null, "session_id": null, "create_ord": 4, "create_time": null, "model_slug": null},
+    "temporal": {"valid_until": 9, "supersedes": null}
+  }
+]

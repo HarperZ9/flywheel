@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+.prime/
+dist/
+.env
+.env.*
+!.env.example
+.envrc
+.envrc.local
+node_modules/
+CLAUDE.local.md

@@ -1,0 +1,29 @@
+[project]
+name = "mlflow-terminal-state"
+description = "Terminal-state scoring: classify agent-run records into seven verdicts and keep the quality denominator honest. Exhaustive 324-case dataset, deterministic reference oracle."
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Zain Dana Harper" },
+]
+tags = ["eval", "train", "scoring", "reliability", "structured-output"]
+version = "0.1.1"
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "verifiers>=0.3.0",
+]
+
+[project.urls]
+Repository = "https://github.com/HarperZ9/terminal-state-fixtures"
+Documentation = "https://github.com/HarperZ9/terminal-state-fixtures/tree/main/environments/mlflow_terminal_state"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build]
+include = ["mlflow_terminal_state.py", "pyproject.toml", "README.md", "LICENSE"]
+
+[tool.verifiers.eval]
+num_examples = 5
+rollouts_per_example = 3

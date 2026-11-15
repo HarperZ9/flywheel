@@ -1,0 +1,20 @@
+{
+  "envelope_version": "1",
+  "subject": "model-reference-fixture",
+  "source": {
+    "name": "local fixture",
+    "kind": "local-fixture"
+  },
+  "references": [
+    {
+      "name": "fixture",
+      "locator": "tests/fixtures/valid.json",
+      "retrieved_at": "2026-06-12"
+    }
+  ],
+  "validation": {
+    "status": "verified",
+    "notes": "synthetic fixture"
+  }
+}
+

@@ -1,0 +1,19 @@
+Your program from the previous turn was run. Below are its outputs on inputs that are valid under the specification (three independent checkers agree they PASS). Your program reports FAIL on them. It also violated two interface rules I gave: it computes a fingerprint (the interface says ignore that field) and it can raise a traceback on unexpected input (the interface says never crash; emit MALFORMED). Re-read the specification, fix every defect you can find, not only these, and output the complete corrected program in one Python code block, followed by a list of what you changed.
+
+=== system.jsonl (3 rows, BootLoops' own test fixture) ===
+{"101": 2147483642, "203": 1}
+{"102": 2147483640, "202": 1, "203": 2147483644}
+{"101": 2147483646, "201": 1, "202": 2147483645}
+=== w_bl-receipt_2147483647_201.json ===
+{"c": {"101": 31, "102": 14}, "family": "int-synth", "identity": "sum_i lam[i]*R_i == e_target - sum_m c[m]*e_m (mod p)", "kind": "lambda-witness", "lam": {"idx": [0, 1, 2], "n_rows": 3, "val": [6, 2, 1]}, "p": 2147483647, "point": {}, "receipt_version": "1.0", "system": {"fingerprint": "4aa4997859bf990f1baca63944afee88b9741d59e751b637416835d4da86edb2", "n_rows": 3, "source": "bootloops tools/trust/receipt/emitter.py"}, "target": {"col": 201}}
+=== w_bl-receipt_2147483647_202.json ===
+{"c": {"101": 15, "102": 7}, "family": "int-synth", "identity": "sum_i lam[i]*R_i == e_target - sum_m c[m]*e_m (mod p)", "kind": "lambda-witness", "lam": {"idx": [0, 1], "n_rows": 3, "val": [3, 1]}, "p": 2147483647, "point": {}, "receipt_version": "1.0", "system": {"fingerprint": "4aa4997859bf990f1baca63944afee88b9741d59e751b637416835d4da86edb2", "n_rows": 3, "source": "bootloops tools/trust/receipt/emitter.py"}, "target": {"col": 202}}
+=== w_bl-receipt_2147483647_203.json ===
+{"c": {"101": 5}, "family": "int-synth", "identity": "sum_i lam[i]*R_i == e_target - sum_m c[m]*e_m (mod p)", "kind": "lambda-witness", "lam": {"idx": [0], "n_rows": 3, "val": [1]}, "p": 2147483647, "point": {}, "receipt_version": "1.0", "system": {"fingerprint": "4aa4997859bf990f1baca63944afee88b9741d59e751b637416835d4da86edb2", "n_rows": 3, "source": "bootloops tools/trust/receipt/emitter.py"}, "target": {"col": 203}}
+=== your program's output on those three ===
+{"witness": "w_bl-receipt_2147483647_201.json", "verdict": "FAIL", "reason": "fingerprint mismatch"}
+{"witness": "w_bl-receipt_2147483647_202.json", "verdict": "FAIL", "reason": "fingerprint mismatch"}
+{"witness": "w_bl-receipt_2147483647_203.json", "verdict": "FAIL", "reason": "fingerprint mismatch"}
+
+=== on a second system (67 rows, not shown), 36 of 52 valid witnesses were reported FAIL with reason 'identity does not hold'. One of them: ===
+{"c": {"52": 34, "53": 43, "57": 14}, "family": "synthetic", "identity": "sum_i lam[i]*R_i == e_target - sum_m c[m]*e_m (mod p)", "kind": "lambda-witness", "lam": {"idx": [49, 66], "n_rows": 67, "val": [1, 1]}, "p": 2147483647, "point": {}, "receipt_version": "1.0", "system": {"n_rows": 67, "source": "second_checker.synth"}, "target": {"col": 16}}

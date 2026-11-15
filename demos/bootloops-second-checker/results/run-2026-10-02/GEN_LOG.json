@@ -1,0 +1,71 @@
+{
+ "fixture_testcore": {
+  "CERTIFIED": 3
+ },
+ "int-l_2147483629_bl-winnow-native": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483629_bl-winnow-retrofit": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483629_sc-synth": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483647_bl-winnow-native": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483647_bl-winnow-retrofit": {
+  "CERTIFIED": 1460
+ },
+ "int-l_2147483647_sc-synth": {
+  "CERTIFIED": 1460
+ },
+ "int-m_2147483629_bl-winnow-native": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483629_bl-winnow-retrofit": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483629_sc-synth": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483647_bl-winnow-native": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483647_bl-winnow-retrofit": {
+  "CERTIFIED": 376
+ },
+ "int-m_2147483647_sc-synth": {
+  "CERTIFIED": 376
+ },
+ "int-msq_2147483629_bl-receipt": {
+  "CERTIFIED": 376
+ },
+ "int-msq_2147483647_bl-receipt": {
+  "CERTIFIED": 376
+ },
+ "int-s_2147483629_bl-winnow-native": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483629_bl-winnow-retrofit": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483629_sc-synth": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483647_bl-winnow-native": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483647_bl-winnow-retrofit": {
+  "CERTIFIED": 52
+ },
+ "int-s_2147483647_sc-synth": {
+  "CERTIFIED": 52
+ },
+ "int-ssq_2147483629_bl-receipt": {
+  "CERTIFIED": 52
+ },
+ "int-ssq_2147483647_bl-receipt": {
+  "CERTIFIED": 52
+ }
+}

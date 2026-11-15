@@ -1,0 +1,86 @@
+{
+  "header": {
+    "name": "model-provenance-validator",
+    "role": "where a claim came from, in a shape you can check",
+    "tagline": "A claim, its source, and the date somebody actually looked.",
+    "words": ["envelope", "source", "reference", "redact", "packet"]
+  },
+  "flows": [
+    {
+      "file": "envelope-lane.svg",
+      "kicker": "one envelope, one verdict",
+      "title": "What the validator reads before a provenance claim is publishable",
+      "footnote": "The validator reports errors and publishes nothing. Every message it prints has been through the redactor first, so a malformed envelope cannot leak the value that made it malformed.",
+      "alt": "Eight stages of validating one provenance envelope: envelope, root shape, subject and source, references, calendar check, validation block, scrub, and exit code. An envelope is a single JSON object with five required fields. The root refuses unexpected fields by naming them rather than ignoring them, and the same rule applies to every nested object at every depth. Subject says which claim the envelope is about; source says what kind of thing it came from, drawn from five kinds: official documentation, a paper, a release note, a local fixture, or other. References must carry at least one entry, and each entry needs a name, a locator, and a retrieval date. The date is checked twice: once against the ten-character pattern and once against the calendar, so a well-shaped date that never existed is still an error. The validation block carries a status of verified, partial, or unknown. Every message is scrubbed before it is printed. A batch exits zero only when nothing in it was invalid. Three outcomes: valid, invalid, and no schema.",
+      "stages": [
+        {"title": "Envelope", "note": "One JSON object, five required fields."},
+        {"title": "Root shape", "note": "An unexpected field is named, not ignored."},
+        {"title": "Subject and source", "note": "Which claim, and which of five source kinds."},
+        {"title": "References", "note": "At least one. Name, locator, retrieval date."},
+        {"title": "Calendar check", "note": "The pattern passes; the date may not exist."},
+        {"title": "Validation", "note": "Verified, partial, or unknown. Nothing else."},
+        {"title": "Scrub", "note": "Every message goes through the redactor."},
+        {"title": "Exit code", "note": "One bad file, and the batch reports failure."}
+      ],
+      "returns": [
+        {"from": 3, "to": 1, "label": "EVERY NESTED OBJECT IS CHECKED ALIKE"},
+        {"from": 7, "to": 5, "label": "A STATUS IS NOT A VERDICT ABOUT THE CLAIM"}
+      ],
+      "outcomes": [
+        {"label": "VALID", "note": "every field matched, nothing left over", "tone": "verified"},
+        {"label": "INVALID", "note": "one path and one message per error", "tone": "drift"},
+        {"label": "NO SCHEMA", "note": "the schema itself would not load", "tone": "none"}
+      ]
+    },
+    {
+      "file": "packet-lane.svg",
+      "kicker": "many envelopes, one packet",
+      "title": "How a batch of envelopes becomes a packet another tool can read",
+      "footnote": "The packet is validated against the shared contract before it is printed, and a packet that fails is not printed at all. The contract lives in the proof-surface package, so this tool cannot quietly drift away from it.",
+      "alt": "Eight stages of a batch run: batch, per file, tally, action items, status, packet, self-check, and handoff. One command takes many envelope files. A file that cannot be read, or that is not JSON, becomes a single error attached to the root rather than a crash, so it still counts toward the tally. The tally records four numbers: total, valid, invalid, and the total error count. Action items are one line per invalid file, capped at the first eight, so a large broken batch produces a readable list rather than a wall. Status is ready when nothing was invalid and blocked otherwise. The packet carries three claims and one check. Before printing, the packet is validated against the shared proof-surface contract, and a packet that fails that check is written to standard error rather than standard output. The result is readable by the proof index without this tool present. Three outcomes: ready, blocked, and not printed.",
+      "stages": [
+        {"title": "Batch", "note": "Many envelope files, one command."},
+        {"title": "Per file", "note": "An unreadable file is an error, not a crash."},
+        {"title": "Tally", "note": "Total, valid, invalid, error count."},
+        {"title": "Action items", "note": "One line per bad file, first eight only."},
+        {"title": "Status", "note": "Ready when nothing was invalid. Else blocked."},
+        {"title": "Packet", "note": "Three claims and one check, always."},
+        {"title": "Self-check", "note": "Validated against the shared contract."},
+        {"title": "Handoff", "note": "The index reads it without this tool."}
+      ],
+      "returns": [
+        {"from": 3, "to": 1, "label": "A FILE THAT WILL NOT READ STILL COUNTS"},
+        {"from": 6, "to": 4, "label": "A PACKET THAT FAILS IS NEVER PRINTED"}
+      ],
+      "outcomes": [
+        {"label": "READY", "note": "no envelope in the batch was invalid", "tone": "verified"},
+        {"label": "BLOCKED", "note": "at least one envelope did not validate", "tone": "drift"},
+        {"label": "NOT PRINTED", "note": "the packet failed its own contract", "tone": "none"}
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "redaction-rules.svg",
+      "kicker": "what the scrubber takes out",
+      "title": "The shapes a message may not carry into a log",
+      "source": "model_provenance_validator.validator.scrub_text",
+      "heads": ["shape", "becomes", "why it is on the list"],
+      "fields": [
+        {"key": "null byte", "value": "a space", "note": "Replaced first, before any other rule runs, so a null cannot split a message or cut a log line short."},
+        {"key": "private key block", "value": "redacted", "note": "A PEM block from its opening line to its closing line. The only rule that reaches across more than one line."},
+        {"key": "AKIA and ASIA", "value": "redacted", "note": "Long-term and temporary cloud access key ids. Sixteen uppercase characters after either prefix, on a word boundary."},
+        {"key": "ghp_", "value": "redacted", "note": "A classic personal access token, twenty characters or more after the prefix, so a short lookalike is left alone."},
+        {"key": "github_pat_", "value": "redacted", "note": "The fine-grained token prefix. A different shape from the classic one, with the same consequence in a log."},
+        {"key": "sk-", "value": "redacted", "note": "The secret key prefix used by one vendor and copied by several others since. Twenty characters or more."},
+        {"key": "named secret", "value": "redacted", "tone": "drift", "note": "Bearer, token, api key, password or secret, any case, followed by a colon or an equals sign. The rule that catches a shape nobody has catalogued."},
+        {"key": "drive-letter path", "value": "redacted", "note": "A drive letter, a backslash, and everything up to whitespace or a quote. A stack trace is the usual way one escapes."},
+        {"key": "absolute path", "value": "redacted", "note": "Six prefixes below the root, reached by a slash that no word character precedes, so a URL path is not swept up."},
+        {"key": "whitespace run", "value": "one space", "note": "Collapsed after redaction, never before. A token broken across two lines is matched by no prefix rule and survives."},
+        {"key": "over 240 chars", "value": "an ellipsis", "note": "Cut at 237 and closed. Truncation runs last, so a long message is redacted before any of it is thrown away."}
+      ],
+      "alt": "Eleven redaction rules, one to a row, with what each shape becomes and why it is on the list. A null byte becomes a space, and it is replaced first so nothing downstream can be split by it. A private key block is redacted from its opening line to its closing line, the only rule that spans more than one line. Cloud access key ids are matched by two prefixes and sixteen uppercase characters. Three token prefixes are matched by shape, each requiring twenty characters or more so that a short lookalike is left alone. The accented row is the named-secret rule: bearer, token, api key, password or secret in any case, followed by a colon or an equals sign, which is the only rule that catches a secret whose shape nobody has catalogued in advance. Two path rules remove drive-letter paths and six absolute prefixes below the root, with the second written so that a URL path is not swept up. Whitespace is collapsed after redaction, never before, which is a real gap: a token broken across two lines matches no prefix rule and survives, and the row says so. Messages over two hundred and forty characters are cut at two hundred and thirty-seven and closed with an ellipsis, and because truncation runs last, a long message is redacted before any of it is discarded.",
+      "footnote": "Order is load-bearing, and it cuts both ways. Nulls are replaced first so nothing downstream can be split by one, and truncation runs last so a long message is redacted before any of it is discarded. Collapsing whitespace after redaction is the cost side: a prefix rule never sees across the line break."
+    }
+  ]
+}

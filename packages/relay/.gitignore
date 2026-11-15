@@ -1,0 +1,35 @@
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+build/
+dist/
+
+# agent state / sessions (never commit a run ledger by accident)
+*.jsonl
+!tests/**/*.jsonl
+
+# secrets / env
+.env
+.env.*
+!.env.example
+*.key
+*.token
+
+# os / editor
+.DS_Store
+Thumbs.db
+*.swp
+
+# Local-only Claude instructions (global standard: never commit)
+CLAUDE.local.md
+
+# The committed template must survive the .env.* rule above (global standard)
+!.env.example
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

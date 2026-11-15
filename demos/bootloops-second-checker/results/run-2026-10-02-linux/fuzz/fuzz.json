@@ -1,0 +1,7585 @@
+{
+ "buckets": [
+  {
+   "base_id": 15,
+   "case_id": "r1007",
+   "id": "B000",
+   "min_mutations": [
+    "sys_blank_line",
+    "p_bool"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_bool",
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_float_int",
+    "c_huge",
+    "c_key_float",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_negative",
+    "c_null",
+    "c_on_target",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_str_int",
+    "c_zero_entry",
+    "extra_field",
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_idx_dup_split",
+    "lam_idx_float",
+    "lam_idx_negative",
+    "lam_idx_oob",
+    "lam_idx_str",
+    "lam_len_mismatch",
+    "lam_nrows_float",
+    "lam_nrows_str",
+    "lam_val_float",
+    "lam_val_inf",
+    "lam_val_nan",
+    "lam_val_negative",
+    "lam_val_str",
+    "p_bool",
+    "p_float",
+    "p_negative",
+    "p_one",
+    "p_str",
+    "row_key_alias"
+   ],
+   "n_cases": 225,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "p not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 2: "
+    ],
+    "check3_v1": [
+     "C",
+     "rc 2: "
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/3595cac25cde3181/w_x.json: p=1 is not a modulus"
+    ],
+    "sc_js": [
+     "R",
+     "p: not an integer"
+    ],
+    "sc_py": [
+     "R",
+     "p: boolean is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "b11",
+   "id": "B001",
+   "min_mutations": [],
+   "min_size": null,
+   "mutations_seen": [
+    "c_huge",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_negative",
+    "c_plus_p",
+    "c_raw_dup",
+    "extra_field",
+    "lam_extra_zero",
+    "lam_val_negative",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "sys_crlf"
+   ],
+   "n_cases": 136,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 15,
+   "case_id": "b15",
+   "id": "B002",
+   "min_mutations": [],
+   "min_size": [
+    2,
+    4
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_key_lead0",
+    "c_key_space",
+    "c_negative",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_zero_entry",
+    "extra_field",
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_val_negative",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "sys_crlf",
+    "ver_1",
+    "ver_1_1",
+    "ver_2",
+    "ver_space"
+   ],
+   "n_cases": 121,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 6,
+   "case_id": "r1001",
+   "id": "B003",
+   "min_mutations": [
+    "lam_val_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_key_lead0",
+    "c_key_space",
+    "c_negative",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_str_int",
+    "c_zero_entry",
+    "extra_field",
+    "lam_extra_zero",
+    "lam_idx_str",
+    "lam_nrows_str",
+    "lam_val_negative",
+    "lam_val_str",
+    "p_str",
+    "row_float_frac",
+    "row_negative",
+    "row_plus_p",
+    "sys_blank_line",
+    "sys_nrows_wrong",
+    "target_str",
+    "ver_1"
+   ],
+   "n_cases": 99,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 7,
+   "case_id": "r1000",
+   "id": "B004",
+   "min_mutations": [
+    "ver_num"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_float_int",
+    "c_huge",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_str_int",
+    "c_zero_entry",
+    "extra_field",
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_nrows_float",
+    "lam_nrows_str",
+    "lam_val_float",
+    "lam_val_negative",
+    "p_float",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "target_float",
+    "target_str",
+    "ver_1",
+    "ver_1_1",
+    "ver_2",
+    "ver_num",
+    "ver_v"
+   ],
+   "n_cases": 95,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "missing/invalid receipt_version"
+    ],
+    "check3_v0": [
+     "R",
+     "wrong receipt version"
+    ],
+    "check3_v1": [
+     "R",
+     "wrong receipt version"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "unsupported or missing receipt_version"
+    ],
+    "sc_py": [
+     "R",
+     "receipt_version must be a string, got float"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 9,
+   "case_id": "r1029",
+   "id": "B005",
+   "min_mutations": [
+    "lam_idx_dup_split"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "c_huge",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_on_target",
+    "c_plus_p",
+    "c_raw_dup",
+    "extra_field",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_idx_dup_split",
+    "lam_idx_negative",
+    "lam_len_mismatch",
+    "lam_val_float",
+    "lam_val_negative",
+    "row_key_alias",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "sys_crlf"
+   ],
+   "n_cases": 94,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "duplicate lam.idx"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/ec060bd303d53a8e/w_x.json: duplicate lam indices"
+    ],
+    "sc_js": [
+     "R",
+     "duplicate lam.idx"
+    ],
+    "sc_py": [
+     "R",
+     "duplicate lam.idx 0"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 7,
+   "case_id": "r1006",
+   "id": "B006",
+   "min_mutations": [
+    "sys_bom"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_as_list",
+    "c_bool",
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_huge",
+    "c_key_float",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_on_target",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_str_int",
+    "extra_field",
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_idx_dup_split",
+    "lam_idx_float",
+    "lam_idx_negative",
+    "lam_idx_oob",
+    "lam_idx_str",
+    "lam_nrows_str",
+    "lam_val_float",
+    "lam_val_inf",
+    "lam_val_nan",
+    "lam_val_negative",
+    "lam_val_str",
+    "p_float",
+    "p_negative",
+    "p_one",
+    "p_str",
+    "row_float",
+    "row_float_frac",
+    "row_key_alias",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_str_val",
+    "row_zero_entry"
+   ],
+   "n_cases": 81,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 1: bad JSON"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 2: "
+    ],
+    "check3_v1": [
+     "C",
+     "rc 2: "
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/fb8c985f878b6fbc/system.jsonl: unreadable system snapshot (Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0))"
+    ],
+    "sc_js": [
+     "C",
+     "rc 1: Node.js v25.2.1"
+    ],
+    "sc_py": [
+     "R",
+     "<out>/fuzz/_work/fb8c985f878b6fbc/system.jsonl:1: bad JSON (Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0))"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_js": "C",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 19,
+   "case_id": "r1021",
+   "id": "B007",
+   "min_mutations": [
+    "c_float_int"
+   ],
+   "min_size": [
+    2,
+    4
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "c_key_lead0",
+    "c_key_space",
+    "c_plus_p",
+    "c_raw_dup",
+    "extra_field",
+    "lam_idx_bool",
+    "lam_nrows_float",
+    "lam_val_float",
+    "lam_val_negative",
+    "p_float",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "sys_crlf",
+    "sys_nrows_wrong",
+    "target_float"
+   ],
+   "n_cases": 78,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "c value not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "c[569871]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 2,
+   "case_id": "r1097",
+   "id": "B008",
+   "min_mutations": [
+    "table_eq_p"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_huge",
+    "c_key_lead0",
+    "c_key_underscore",
+    "c_plus_p",
+    "c_raw_dup",
+    "extra_field",
+    "lam_extra_zero",
+    "lam_val_negative",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "sys_crlf",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_true",
+    "table_zero",
+    "ver_1",
+    "ver_1_1"
+   ],
+   "n_cases": 72,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "claimed table row != certified row"
+    ],
+    "check3_v1": [
+     "R",
+     "claimed table row != certified row"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 13,
+   "case_id": "r1024",
+   "id": "B009",
+   "min_mutations": [
+    "sys_blank_line",
+    "lam_val_inf"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_as_list",
+    "c_bool",
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_float_int",
+    "c_huge",
+    "c_key_float",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_negative",
+    "c_null",
+    "c_raw_dup",
+    "c_str_int",
+    "c_zero_entry",
+    "extra_field",
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_idx_dup_split",
+    "lam_idx_oob",
+    "lam_idx_str",
+    "lam_len_mismatch",
+    "lam_nrows_float",
+    "lam_nrows_str",
+    "lam_val_float",
+    "lam_val_inf",
+    "lam_val_nan",
+    "p_float",
+    "p_str",
+    "row_key_lead0",
+    "row_negative",
+    "row_zero_entry",
+    "sem_coef_plus1",
+    "sem_lam_plus1",
+    "sem_row_plus1",
+    "sem_target_swap",
+    "sys_blank_line",
+    "sys_crlf"
+   ],
+   "n_cases": 70,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 2: "
+    ],
+    "check3_v1": [
+     "C",
+     "rc 2: "
+    ],
+    "core": [
+     "C",
+     "OverflowError: cannot convert float infinity to integer"
+    ],
+    "sc_js": [
+     "R",
+     "Unexpected token 'I', ...\", \"val\": [Infinity]}\"... is not valid JSON"
+    ],
+    "sc_py": [
+     "R",
+     "lam.val entry: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "C",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 17,
+   "case_id": "r1009",
+   "id": "B010",
+   "min_mutations": [
+    "target_bare_int"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_frac",
+    "c_float_int",
+    "c_key_float",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_space",
+    "c_on_target",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_str_int",
+    "c_zero_entry",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_idx_float",
+    "lam_idx_negative",
+    "lam_idx_oob",
+    "lam_nrows_float",
+    "lam_nrows_str",
+    "lam_val_float",
+    "lam_val_negative",
+    "lam_val_str",
+    "p_str",
+    "row_float",
+    "row_key_alias",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "sem_extra_c",
+    "sem_lam_plus1",
+    "sem_target_swap",
+    "sys_blank_line",
+    "sys_crlf",
+    "sys_nrows_wrong",
+    "target_bare_int",
+    "target_float",
+    "target_str",
+    "ver_1",
+    "ver_1_1"
+   ],
+   "n_cases": 65,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "missing target"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: AttributeError: 'int' object has no attribute 'get'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: AttributeError: 'int' object has no attribute 'get'"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/221db35f59e03406/w_x.json: bad field content ('int' object is not subscriptable)"
+    ],
+    "sc_js": [
+     "C",
+     "rc 1: Node.js v25.2.1"
+    ],
+    "sc_py": [
+     "R",
+     "target.col missing"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_js": "C",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 8,
+   "case_id": "r1053",
+   "id": "B011",
+   "min_mutations": [
+    "target_float",
+    "c_key_underscore"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "c_huge",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_negative",
+    "c_plus_p",
+    "c_raw_dup",
+    "extra_field",
+    "lam_idx_bool",
+    "lam_nrows_float",
+    "lam_val_float",
+    "p_float",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "sys_crlf",
+    "sys_nrows_wrong",
+    "target_float"
+   ],
+   "n_cases": 65,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "target.col not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "c key: not an integer"
+    ],
+    "sc_py": [
+     "R",
+     "target.col: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 12,
+   "case_id": "r100",
+   "id": "B012",
+   "min_mutations": [
+    "lam_val_inf"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_as_list",
+    "c_bool",
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_key_lead0",
+    "c_key_space",
+    "c_key_underscore",
+    "c_on_target",
+    "c_raw_dup",
+    "c_str_int",
+    "fp_garbage",
+    "lam_idx_bool",
+    "lam_len_mismatch",
+    "lam_nrows_float",
+    "lam_val_float",
+    "lam_val_inf",
+    "lam_val_str",
+    "p_bool",
+    "p_float",
+    "p_negative",
+    "p_one",
+    "row_key_alias",
+    "row_zero_entry",
+    "sem_coef_plus1",
+    "sem_row_plus1",
+    "sem_target_swap",
+    "sys_nrows_wrong",
+    "target_str",
+    "ver_1_1",
+    "ver_num"
+   ],
+   "n_cases": 61,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "C",
+     "OverflowError: cannot convert float infinity to integer"
+    ],
+    "sc_js": [
+     "R",
+     "Unexpected token 'I', ...\", \"val\": [Infinity]}\"... is not valid JSON"
+    ],
+    "sc_py": [
+     "R",
+     "lam.val entry: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "C",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "r1173",
+   "id": "B013",
+   "min_mutations": [
+    "target_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_key_lead0",
+    "c_on_target",
+    "c_plus_p",
+    "c_zero_entry",
+    "extra_field",
+    "lam_extra_zero",
+    "lam_idx_str",
+    "lam_nrows_str",
+    "lam_val_str",
+    "p_str",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "sys_crlf",
+    "sys_nrows_wrong",
+    "target_str",
+    "ver_1",
+    "ver_1_1"
+   ],
+   "n_cases": 60,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "target.col not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 18,
+   "case_id": "r1025",
+   "id": "B014",
+   "min_mutations": [
+    "ver_01"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_key_plus",
+    "c_key_underscore",
+    "c_negative",
+    "c_raw_dup",
+    "c_zero_entry",
+    "extra_field",
+    "fp_garbage",
+    "lam_extra_zero",
+    "row_negative",
+    "row_plus_p",
+    "sys_crlf",
+    "ver_01",
+    "ver_missing",
+    "ver_space"
+   ],
+   "n_cases": 58,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "wrong receipt version"
+    ],
+    "check3_v1": [
+     "R",
+     "wrong receipt version"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/296935458287f00c/w_x.json: unsupported receipt_version '01.0'"
+    ],
+    "sc_js": [
+     "R",
+     "unsupported or missing receipt_version"
+    ],
+    "sc_py": [
+     "R",
+     "unsupported receipt_version '01.0'"
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 19,
+   "case_id": "r1079",
+   "id": "B015",
+   "min_mutations": [
+    "c_key_underscore",
+    "c_entry_eq_p"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_huge",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_negative",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_zero_entry",
+    "fp_garbage",
+    "lam_extra_zero",
+    "row_key_lead0",
+    "row_negative",
+    "row_plus_p",
+    "row_zero_entry",
+    "sys_crlf",
+    "ver_1",
+    "ver_1_1",
+    "ver_2"
+   ],
+   "n_cases": 57,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "c key: not an integer"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 9,
+   "case_id": "r1049",
+   "id": "B016",
+   "min_mutations": [
+    "p_float",
+    "lam_val_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "c_key_space",
+    "c_negative",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_str_int",
+    "c_zero_entry",
+    "extra_field",
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_idx_float",
+    "lam_idx_str",
+    "lam_nrows_float",
+    "lam_val_float",
+    "lam_val_negative",
+    "lam_val_str",
+    "p_float",
+    "p_str",
+    "row_float",
+    "row_float_frac",
+    "row_key_alias",
+    "row_key_lead0",
+    "row_plus_p",
+    "row_str_val",
+    "row_zero_entry",
+    "sem_row_plus1",
+    "sys_blank_line",
+    "sys_crlf",
+    "sys_nrows_wrong",
+    "target_float",
+    "target_str"
+   ],
+   "n_cases": 46,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "p not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "p: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 2,
+   "case_id": "r1041",
+   "id": "B017",
+   "min_mutations": [
+    "row_float_frac"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_huge",
+    "c_key_space",
+    "c_key_underscore",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_zero_entry",
+    "extra_field",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_nrows_float",
+    "lam_val_float",
+    "row_float",
+    "row_float_frac",
+    "row_key_lead0",
+    "row_plus_p",
+    "sys_crlf",
+    "target_float",
+    "ver_1",
+    "ver_num"
+   ],
+   "n_cases": 44,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 1 value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "row 0 value: not an integer"
+    ],
+    "sc_py": [
+     "R",
+     "system row 0[352283]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 12,
+   "case_id": "r1143",
+   "id": "B018",
+   "min_mutations": [
+    "lam_val_str"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_negative",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_str_int",
+    "c_zero_entry",
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_idx_dup_split",
+    "lam_idx_str",
+    "lam_nrows_str",
+    "lam_val_str",
+    "p_bool",
+    "p_str",
+    "row_key_lead0",
+    "row_negative",
+    "sys_crlf"
+   ],
+   "n_cases": 42,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 0,
+   "case_id": "r1067",
+   "id": "B019",
+   "min_mutations": [
+    "row_float_frac",
+    "sem_extra_c"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_as_list",
+    "c_bool",
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_float_int",
+    "c_huge",
+    "c_key_float",
+    "c_key_lead0",
+    "c_plus_p",
+    "lam_idx_bool",
+    "lam_idx_dup_split",
+    "lam_idx_negative",
+    "lam_len_mismatch",
+    "lam_nrows_str",
+    "lam_val_nan",
+    "lam_val_negative",
+    "p_bool",
+    "p_negative",
+    "p_one",
+    "row_float",
+    "row_float_frac",
+    "row_key_alias",
+    "row_plus_p",
+    "row_str_val",
+    "sem_coef_plus1",
+    "sem_extra_c",
+    "sem_lam_plus1",
+    "sem_row_plus1",
+    "target_float",
+    "ver_01",
+    "ver_1_1",
+    "ver_2",
+    "ver_missing",
+    "ver_num",
+    "ver_space",
+    "ver_v",
+    "wit_bom"
+   ],
+   "n_cases": 42,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 1 value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "R",
+     "row 0 value: not an integer"
+    ],
+    "sc_py": [
+     "R",
+     "system row 0[216945]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 15,
+   "case_id": "r1087",
+   "id": "B020",
+   "min_mutations": [
+    "c_float_int"
+   ],
+   "min_size": [
+    2,
+    4
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_float_int",
+    "c_key_lead0",
+    "c_key_space",
+    "c_plus_p",
+    "c_zero_entry",
+    "extra_field",
+    "lam_idx_float",
+    "lam_idx_str",
+    "lam_nrows_float",
+    "lam_nrows_str",
+    "lam_val_float",
+    "lam_val_str",
+    "p_float",
+    "p_str",
+    "row_negative",
+    "row_plus_p",
+    "sys_crlf",
+    "sys_nrows_wrong",
+    "target_float",
+    "target_str",
+    "ver_1",
+    "ver_1_1"
+   ],
+   "n_cases": 41,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "c value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "c[901667]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 14,
+   "case_id": "r1089",
+   "id": "B021",
+   "min_mutations": [
+    "table_key_lead0",
+    "row_str_val"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_huge",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_plus_p",
+    "c_str_int",
+    "extra_field",
+    "lam_val_str",
+    "row_key_lead0",
+    "row_plus_p",
+    "row_str_val",
+    "row_zero_entry",
+    "sys_blank_line",
+    "sys_crlf",
+    "sys_nrows_wrong",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_str_val",
+    "table_true",
+    "table_zero"
+   ],
+   "n_cases": 39,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 9,
+   "case_id": "r1088",
+   "id": "B022",
+   "min_mutations": [
+    "target_bare_int",
+    "table_wrong"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_frac",
+    "c_key_float",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_null",
+    "c_on_target",
+    "c_zero_entry",
+    "lam_idx_bool",
+    "lam_idx_dup_split",
+    "lam_idx_float",
+    "lam_idx_oob",
+    "lam_idx_str",
+    "lam_len_mismatch",
+    "lam_val_inf",
+    "lam_val_nan",
+    "p_str",
+    "row_key_alias",
+    "row_key_lead0",
+    "sem_coef_plus1",
+    "sem_extra_c",
+    "sem_row_plus1",
+    "sem_target_swap",
+    "sys_blank_line",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_true",
+    "table_wrong",
+    "table_zero",
+    "target_bare_int",
+    "target_float",
+    "ver_missing"
+   ],
+   "n_cases": 38,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "missing target"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: AttributeError: 'int' object has no attribute 'get'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: AttributeError: 'int' object has no attribute 'get'"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/ec060bd303d53a8e/w_x.json: bad field content ('int' object is not subscriptable)"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "target.col missing"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 6,
+   "case_id": "r1034",
+   "id": "B023",
+   "min_mutations": [
+    "table_str_val",
+    "p_bool"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_bool",
+    "c_entry_eq_p",
+    "c_float_frac",
+    "c_huge",
+    "c_key_float",
+    "c_on_target",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_zero_entry",
+    "lam_idx_negative",
+    "lam_val_float",
+    "lam_val_str",
+    "p_bool",
+    "p_negative",
+    "p_one",
+    "row_float",
+    "row_float_frac",
+    "row_key_alias",
+    "row_plus_p",
+    "row_zero_entry",
+    "sem_extra_c",
+    "sem_lam_plus1",
+    "sem_target_swap",
+    "sys_nrows_wrong",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_str_val",
+    "table_true",
+    "table_wrong",
+    "table_zero",
+    "target_str",
+    "ver_01",
+    "ver_v",
+    "wit_bom"
+   ],
+   "n_cases": 28,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed table input: table value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "invalid p"
+    ],
+    "check3_v1": [
+     "R",
+     "invalid p"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/08ed1412de88116e/w_x.json: p=1 is not a modulus"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "p: boolean is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 13,
+   "case_id": "r1236",
+   "id": "B024",
+   "min_mutations": [
+    "row_str_val"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_key_lead0",
+    "c_plus_p",
+    "c_str_int",
+    "lam_extra_zero",
+    "lam_val_negative",
+    "lam_val_str",
+    "p_str",
+    "row_negative",
+    "row_plus_p",
+    "row_str_val",
+    "row_zero_entry",
+    "sys_blank_line",
+    "sys_crlf",
+    "sys_nrows_wrong"
+   ],
+   "n_cases": 28,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 1 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "r1019",
+   "id": "B025",
+   "min_mutations": [
+    "p_float",
+    "c_str_int"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_float_frac",
+    "c_float_int",
+    "c_huge",
+    "c_key_plus",
+    "c_key_underscore",
+    "c_raw_dup",
+    "c_str_int",
+    "extra_field",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_idx_float",
+    "lam_idx_str",
+    "lam_nrows_str",
+    "lam_val_float",
+    "p_float",
+    "p_str",
+    "row_plus_p",
+    "sys_blank_line",
+    "ver_1_1"
+   ],
+   "n_cases": 25,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "p not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: not all arguments converted during string formatting"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: not all arguments converted during string formatting"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "R",
+     "p: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 3,
+   "case_id": "r1365",
+   "id": "B026",
+   "min_mutations": [
+    "sys_blank_line"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_key_lead0",
+    "c_zero_entry",
+    "fp_garbage",
+    "row_key_lead0",
+    "row_plus_p",
+    "sys_blank_line",
+    "ver_1"
+   ],
+   "n_cases": 22,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 2: "
+    ],
+    "check3_v1": [
+     "C",
+     "rc 2: "
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 19,
+   "case_id": "r1050",
+   "id": "B027",
+   "min_mutations": [
+    "target_float",
+    "sem_lam_plus1",
+    "c_on_target"
+   ],
+   "min_size": [
+    2,
+    4
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "c_key_space",
+    "c_on_target",
+    "lam_val_float",
+    "p_float",
+    "row_key_alias",
+    "row_negative",
+    "sem_lam_plus1",
+    "sys_nrows_wrong",
+    "target_float"
+   ],
+   "n_cases": 20,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "target.col not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "target.col: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 13,
+   "case_id": "r1232",
+   "id": "B028",
+   "min_mutations": [
+    "sys_nrows_wrong"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_key_space",
+    "extra_field",
+    "row_key_lead0",
+    "row_plus_p",
+    "sys_crlf",
+    "sys_nrows_wrong"
+   ],
+   "n_cases": 19,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "system.n_rows contradicts lam.n_rows"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 8,
+   "case_id": "r1210",
+   "id": "B029",
+   "min_mutations": [
+    "fp_garbage"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_key_lead0",
+    "c_plus_p",
+    "extra_field",
+    "fp_garbage",
+    "row_key_lead0"
+   ],
+   "n_cases": 17,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 1,
+   "case_id": "r1290",
+   "id": "B030",
+   "min_mutations": [
+    "table_str_val",
+    "c_on_target"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_bool",
+    "c_float_frac",
+    "c_key_float",
+    "c_null",
+    "c_on_target",
+    "c_str_int",
+    "lam_idx_negative",
+    "lam_len_mismatch",
+    "lam_val_nan",
+    "lam_val_str",
+    "row_float",
+    "row_key_alias",
+    "row_negative",
+    "row_plus_p",
+    "row_str_val",
+    "sys_bom",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_str_val",
+    "table_true",
+    "table_wrong",
+    "table_zero",
+    "target_bare_int",
+    "target_str"
+   ],
+   "n_cases": 17,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed table input: table value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: not all arguments converted during string formatting"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: not all arguments converted during string formatting"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "claimed table row != certified row"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 13,
+   "case_id": "r118",
+   "id": "B031",
+   "min_mutations": [
+    "row_float",
+    "c_entry_eq_p"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_key_space",
+    "c_plus_p",
+    "c_raw_dup",
+    "c_zero_entry",
+    "lam_extra_zero",
+    "lam_nrows_str",
+    "p_float",
+    "row_float",
+    "row_float_frac",
+    "row_negative",
+    "ver_1"
+   ],
+   "n_cases": 16,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 1 value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "system row 0[25620]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 12,
+   "case_id": "r1",
+   "id": "B032",
+   "min_mutations": [
+    "table_zero",
+    "row_float"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_frac",
+    "c_float_int",
+    "c_negative",
+    "c_raw_dup",
+    "lam_extra_zero",
+    "lam_val_negative",
+    "row_float",
+    "row_float_frac",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_str_val",
+    "table_true",
+    "table_zero",
+    "ver_1_1",
+    "ver_num"
+   ],
+   "n_cases": 15,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "claimed table row != certified row"
+    ],
+    "check3_v1": [
+     "R",
+     "claimed table row != certified row"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "system row 1[280205]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 2,
+   "case_id": "r1036",
+   "id": "B033",
+   "min_mutations": [
+    "c_str_int",
+    "ver_1",
+    "c_key_underscore"
+   ],
+   "min_size": [
+    2,
+    4
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_huge",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_raw_dup",
+    "c_str_int",
+    "lam_extra_zero",
+    "lam_idx_negative",
+    "lam_nrows_str",
+    "target_str",
+    "ver_1"
+   ],
+   "n_cases": 15,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "c value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "wrong receipt version"
+    ],
+    "check3_v1": [
+     "R",
+     "wrong receipt version"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "c key: not an integer"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 3,
+   "case_id": "r1552",
+   "id": "B034",
+   "min_mutations": [
+    "row_float"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "c_plus_p",
+    "p_float",
+    "row_float",
+    "row_negative",
+    "sys_crlf",
+    "target_float"
+   ],
+   "n_cases": 15,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "system row 1[841999]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 6,
+   "case_id": "r1867",
+   "id": "B035",
+   "min_mutations": [
+    "c_on_target"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_on_target",
+    "lam_extra_zero",
+    "row_negative",
+    "sys_crlf"
+   ],
+   "n_cases": 14,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 10,
+   "case_id": "r1002",
+   "id": "B036",
+   "min_mutations": [
+    "table_true",
+    "ver_num"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_frac",
+    "c_float_int",
+    "c_negative",
+    "lam_extra_zero",
+    "lam_idx_bool",
+    "lam_idx_str",
+    "lam_val_float",
+    "row_zero_entry",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_true",
+    "table_zero",
+    "target_float",
+    "target_str",
+    "ver_missing",
+    "ver_num"
+   ],
+   "n_cases": 14,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "missing/invalid receipt_version"
+    ],
+    "check3_v0": [
+     "R",
+     "wrong receipt version"
+    ],
+    "check3_v1": [
+     "R",
+     "wrong receipt version"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "receipt_version must be a string, got float"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 6,
+   "case_id": "r1062",
+   "id": "B037",
+   "min_mutations": [
+    "table_true",
+    "lam_idx_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_huge",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_str_int",
+    "lam_idx_str",
+    "lam_val_negative",
+    "lam_val_str",
+    "p_str",
+    "row_negative",
+    "row_plus_p",
+    "sys_crlf",
+    "sys_nrows_wrong",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_true",
+    "table_zero"
+   ],
+   "n_cases": 14,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.idx entry not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: list indices must be integers or slices, not str"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: list indices must be integers or slices, not str"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "r1165",
+   "id": "B038",
+   "min_mutations": [
+    "lam_idx_negative",
+    "row_str_val"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_frac",
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_null",
+    "c_str_int",
+    "lam_extra_zero",
+    "lam_idx_dup_split",
+    "lam_idx_negative",
+    "lam_val_negative",
+    "row_float",
+    "row_float_frac",
+    "row_key_alias",
+    "row_str_val",
+    "sem_coef_plus1",
+    "sem_extra_c",
+    "sem_target_swap",
+    "sys_blank_line",
+    "sys_crlf"
+   ],
+   "n_cases": 13,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/56c1b2d7ae33236c/w_x.json: lam index out of range [0,2)"
+    ],
+    "sc_js": [
+     "R",
+     "lam.idx out of range"
+    ],
+    "sc_py": [
+     "R",
+     "lam.idx -2 out of range [0, 2)"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 3,
+   "case_id": "r1084",
+   "id": "B039",
+   "min_mutations": [
+    "table_key_lead0",
+    "ver_01"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_huge",
+    "c_key_lead0",
+    "c_plus_p",
+    "c_raw_dup",
+    "lam_extra_zero",
+    "sys_crlf",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_negative",
+    "table_true",
+    "table_zero",
+    "ver_01",
+    "ver_space"
+   ],
+   "n_cases": 12,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "wrong receipt version"
+    ],
+    "check3_v1": [
+     "R",
+     "wrong receipt version"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/9625a1a307bb2bcf/w_x.json: unsupported receipt_version '01.0'"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "unsupported receipt_version '01.0'"
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 10,
+   "case_id": "r106",
+   "id": "B040",
+   "min_mutations": [
+    "c_key_plus",
+    "c_str_int",
+    "row_float"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_frac",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_underscore",
+    "c_raw_dup",
+    "c_str_int",
+    "fp_garbage",
+    "lam_idx_bool",
+    "lam_idx_float",
+    "lam_val_str",
+    "p_float",
+    "row_float",
+    "row_float_frac",
+    "row_str_val",
+    "sys_blank_line",
+    "sys_nrows_wrong"
+   ],
+   "n_cases": 12,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: not all arguments converted during string formatting"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: not all arguments converted during string formatting"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "c key: not an integer"
+    ],
+    "sc_py": [
+     "R",
+     "system row 1[873992]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 0,
+   "case_id": "r1258",
+   "id": "B041",
+   "min_mutations": [
+    "table_negative",
+    "lam_val_float"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_key_space",
+    "c_raw_dup",
+    "lam_idx_bool",
+    "lam_nrows_float",
+    "lam_val_float",
+    "lam_val_negative",
+    "p_float",
+    "row_plus_p",
+    "table_eq_p",
+    "table_negative",
+    "table_true",
+    "table_zero",
+    "target_float"
+   ],
+   "n_cases": 11,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "lam.val entry: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 16,
+   "case_id": "r1016",
+   "id": "B042",
+   "min_mutations": [
+    "sys_nrows_wrong"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_huge",
+    "c_key_lead0",
+    "c_key_plus",
+    "c_key_underscore",
+    "sys_crlf",
+    "sys_nrows_wrong"
+   ],
+   "n_cases": 11,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "system.n_rows contradicts lam.n_rows"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "r1208",
+   "id": "B043",
+   "min_mutations": [
+    "row_str_val"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_key_plus",
+    "c_key_space",
+    "c_key_underscore",
+    "c_on_target",
+    "c_zero_entry",
+    "extra_field",
+    "lam_val_str",
+    "row_key_lead0",
+    "row_str_val"
+   ],
+   "n_cases": 11,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 3 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 19,
+   "case_id": "r1239",
+   "id": "B044",
+   "min_mutations": [
+    "table_str_val",
+    "target_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_huge",
+    "c_key_space",
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_nrows_str",
+    "row_plus_p",
+    "row_str_val",
+    "table_str_val",
+    "table_zero",
+    "target_str"
+   ],
+   "n_cases": 8,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed table input: table value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 16,
+   "case_id": "r1484",
+   "id": "B045",
+   "min_mutations": [
+    "row_float"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_key_underscore",
+    "c_plus_p",
+    "c_raw_dup",
+    "lam_extra_zero",
+    "lam_val_negative",
+    "row_float"
+   ],
+   "n_cases": 8,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 3 value not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "R",
+     "system row 2[1942109207577345145]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 13,
+   "case_id": "r1023",
+   "id": "B046",
+   "min_mutations": [
+    "table_negative",
+    "c_as_list"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_as_list",
+    "c_plus_p",
+    "lam_idx_str",
+    "sem_extra_c",
+    "table_negative",
+    "table_wrong",
+    "table_zero"
+   ],
+   "n_cases": 7,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "missing c"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "core": [
+     "C",
+     "AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "c is not an object"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "C",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 17,
+   "case_id": "r104",
+   "id": "B047",
+   "min_mutations": [
+    "c_on_target",
+    "c_huge"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_huge",
+    "c_on_target"
+   ],
+   "n_cases": 7,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 19,
+   "case_id": "r1046",
+   "id": "B048",
+   "min_mutations": [
+    "c_entry_eq_p",
+    "c_on_target"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_bool",
+    "c_entry_eq_p",
+    "c_key_lead0",
+    "c_on_target",
+    "row_key_lead0",
+    "row_zero_entry"
+   ],
+   "n_cases": 7,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 16,
+   "case_id": "r1782",
+   "id": "B049",
+   "min_mutations": [
+    "sys_blank_line"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "row_negative",
+    "sys_blank_line",
+    "ver_1"
+   ],
+   "n_cases": 7,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 2: "
+    ],
+    "check3_v1": [
+     "C",
+     "rc 2: "
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 16,
+   "case_id": "r1340",
+   "id": "B050",
+   "min_mutations": [
+    "lam_len_mismatch",
+    "table_key_lead0"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "lam_idx_dup_split",
+    "lam_len_mismatch",
+    "p_float",
+    "row_key_alias",
+    "table_key_lead0",
+    "table_negative",
+    "table_true",
+    "table_wrong",
+    "target_float"
+   ],
+   "n_cases": 6,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.idx/val length mismatch"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/327bb0d4cafa34ed/w_x.json: lam idx/val length mismatch"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "lam.idx and lam.val lengths differ"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "r710",
+   "id": "B051",
+   "min_mutations": [
+    "fp_garbage"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "fp_garbage",
+    "row_zero_entry",
+    "sys_crlf"
+   ],
+   "n_cases": 6,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 18,
+   "case_id": "r1163",
+   "id": "B052",
+   "min_mutations": [
+    "lam_val_str",
+    "row_key_alias"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_on_target",
+    "c_str_int",
+    "lam_idx_float",
+    "lam_val_str",
+    "p_str",
+    "row_key_alias",
+    "row_key_lead0",
+    "sys_blank_line",
+    "ver_1"
+   ],
+   "n_cases": 6,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "system row 0: duplicate column 227102"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 10,
+   "case_id": "r1044",
+   "id": "B053",
+   "min_mutations": [
+    "row_key_alias",
+    "target_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_on_target",
+    "lam_nrows_str",
+    "p_float",
+    "row_key_alias",
+    "row_key_lead0",
+    "target_str",
+    "ver_1_1"
+   ],
+   "n_cases": 6,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "target.col not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "system row 1: duplicate column 294212"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 17,
+   "case_id": "r1308",
+   "id": "B054",
+   "min_mutations": [
+    "row_float",
+    "table_str_val"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_plus_p",
+    "lam_idx_str",
+    "lam_nrows_float",
+    "lam_val_float",
+    "row_float",
+    "sys_blank_line",
+    "table_str_val"
+   ],
+   "n_cases": 5,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: not all arguments converted during string formatting"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: not all arguments converted during string formatting"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "system row 1[789286]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 5,
+   "case_id": "r1027",
+   "id": "B055",
+   "min_mutations": [
+    "table_eq_p",
+    "ver_1",
+    "lam_idx_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "lam_idx_str",
+    "lam_nrows_str",
+    "p_str",
+    "sys_nrows_wrong",
+    "table_eq_p",
+    "table_zero",
+    "ver_1",
+    "ver_1_1"
+   ],
+   "n_cases": 5,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.idx entry not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "wrong receipt version"
+    ],
+    "check3_v1": [
+     "R",
+     "wrong receipt version"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 10,
+   "case_id": "r143",
+   "id": "B056",
+   "min_mutations": [
+    "table_str_val",
+    "c_as_list"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_as_list",
+    "c_float_int",
+    "c_key_plus",
+    "c_str_int",
+    "lam_idx_float",
+    "lam_val_inf",
+    "p_str",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_str_val",
+    "table_true",
+    "target_str"
+   ],
+   "n_cases": 5,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed table input: table value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "core": [
+     "C",
+     "AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "c is not an object"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "C",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 9,
+   "case_id": "r164",
+   "id": "B057",
+   "min_mutations": [
+    "lam_idx_float",
+    "table_key_lead0"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_key_underscore",
+    "lam_idx_bool",
+    "lam_idx_float",
+    "table_key_lead0",
+    "table_negative",
+    "table_true",
+    "table_zero"
+   ],
+   "n_cases": 5,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.idx entry not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: list indices must be integers or slices, not float"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: list indices must be integers or slices, not float"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "lam.idx entry: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 17,
+   "case_id": "r1310",
+   "id": "B058",
+   "min_mutations": [
+    "c_float_int",
+    "row_str_val"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_float_int",
+    "lam_idx_str",
+    "lam_nrows_float",
+    "p_float",
+    "row_float",
+    "row_str_val",
+    "row_zero_entry",
+    "sys_blank_line"
+   ],
+   "n_cases": 5,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "c[789286]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 0,
+   "case_id": "r128",
+   "id": "B059",
+   "min_mutations": [
+    "lam_val_float",
+    "fp_garbage"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "c_key_lead0",
+    "fp_garbage",
+    "lam_val_float",
+    "p_float",
+    "sys_crlf"
+   ],
+   "n_cases": 4,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "lam.val entry: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 0,
+   "case_id": "r217",
+   "id": "B060",
+   "min_mutations": [
+    "table_true",
+    "lam_val_inf"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "fp_garbage",
+    "lam_idx_bool",
+    "lam_val_inf",
+    "table_key_lead0",
+    "table_true",
+    "table_wrong",
+    "ver_1_1"
+   ],
+   "n_cases": 4,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "C",
+     "OverflowError: cannot convert float infinity to integer"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "lam.val entry: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "C",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 16,
+   "case_id": "r138",
+   "id": "B061",
+   "min_mutations": [
+    "row_str_val",
+    "c_as_list"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_as_list",
+    "lam_extra_zero",
+    "p_str",
+    "row_float",
+    "row_key_alias",
+    "row_str_val"
+   ],
+   "n_cases": 4,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "core": [
+     "C",
+     "AttributeError: 'list' object has no attribute 'items'"
+    ],
+    "sc_js": [
+     "R",
+     "c: not an object"
+    ],
+    "sc_py": [
+     "R",
+     "c is not an object"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "C",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 15,
+   "case_id": "r1435",
+   "id": "B062",
+   "min_mutations": [
+    "ver_01",
+    "sys_blank_line"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_huge",
+    "c_key_underscore",
+    "row_plus_p",
+    "sys_blank_line",
+    "ver_01",
+    "ver_space"
+   ],
+   "n_cases": 4,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 2: "
+    ],
+    "check3_v1": [
+     "C",
+     "rc 2: "
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/3595cac25cde3181/w_x.json: unsupported receipt_version '01.0'"
+    ],
+    "sc_js": [
+     "R",
+     "unsupported or missing receipt_version"
+    ],
+    "sc_py": [
+     "R",
+     "unsupported receipt_version '01.0'"
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 19,
+   "case_id": "r1322",
+   "id": "B063",
+   "min_mutations": [
+    "row_float",
+    "lam_val_inf"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "lam_nrows_str",
+    "lam_val_inf",
+    "row_float",
+    "row_float_frac",
+    "sys_crlf",
+    "target_str"
+   ],
+   "n_cases": 4,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "C",
+     "OverflowError: cannot convert float infinity to integer"
+    ],
+    "sc_js": [
+     "R",
+     "Unexpected token 'I', ...\", \"val\": [Infinity, \"... is not valid JSON"
+    ],
+    "sc_py": [
+     "R",
+     "lam.val entry: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "C",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 2,
+   "case_id": "r1064",
+   "id": "B064",
+   "min_mutations": [
+    "c_on_target",
+    "lam_idx_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_on_target",
+    "c_zero_entry",
+    "lam_idx_str",
+    "target_str"
+   ],
+   "n_cases": 3,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.idx entry not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: list indices must be integers or slices, not str"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: list indices must be integers or slices, not str"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 13,
+   "case_id": "r1248",
+   "id": "B065",
+   "min_mutations": [
+    "fp_garbage",
+    "sys_nrows_wrong"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_key_space",
+    "fp_garbage",
+    "sys_nrows_wrong"
+   ],
+   "n_cases": 3,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "system.n_rows contradicts lam.n_rows"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "r1198",
+   "id": "B066",
+   "min_mutations": [
+    "c_zero_entry",
+    "table_negative"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_zero_entry",
+    "row_negative",
+    "table_key_lead0",
+    "table_negative",
+    "table_true"
+   ],
+   "n_cases": 3,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "R",
+     "claimed table row != certified row (witness holds; the TABLE is wrong)"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 12,
+   "case_id": "r1583",
+   "id": "B067",
+   "min_mutations": [
+    "row_str_val",
+    "c_zero_entry",
+    "table_zero"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "c_zero_entry",
+    "row_str_val",
+    "table_eq_p",
+    "table_key_lead0",
+    "table_zero"
+   ],
+   "n_cases": 3,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "R",
+     "claimed table row != certified row (witness holds; the TABLE is wrong)"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 19,
+   "case_id": "r1557",
+   "id": "B068",
+   "min_mutations": [
+    "table_str_val",
+    "row_key_alias",
+    "target_float"
+   ],
+   "min_size": [
+    2,
+    4
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "lam_len_mismatch",
+    "row_key_alias",
+    "table_negative",
+    "table_str_val",
+    "target_float"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed table input: table value not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "target.col: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 3,
+   "case_id": "r1230",
+   "id": "B069",
+   "min_mutations": [
+    "c_bool",
+    "table_str_val"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_bool",
+    "sem_row_plus1",
+    "table_str_val",
+    "ver_num"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed table input: table value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "C",
+     "ValueError: invalid literal for int() with base 10: 'True'"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "c[424244]: boolean is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "C",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 3,
+   "case_id": "r1467",
+   "id": "B070",
+   "min_mutations": [
+    "lam_idx_dup_split",
+    "fp_garbage"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "fp_garbage",
+    "lam_idx_dup_split",
+    "lam_len_mismatch"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "duplicate lam.idx"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/9625a1a307bb2bcf/w_x.json: duplicate lam indices"
+    ],
+    "sc_js": [
+     "R",
+     "duplicate lam.idx"
+    ],
+    "sc_py": [
+     "R",
+     "duplicate lam.idx 1"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "r253",
+   "id": "B071",
+   "min_mutations": [
+    "table_negative",
+    "fp_garbage"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "fp_garbage",
+    "table_key_lead0",
+    "table_negative",
+    "table_zero"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 13,
+   "case_id": "r1988",
+   "id": "B072",
+   "min_mutations": [
+    "fp_garbage",
+    "lam_idx_oob"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "fp_garbage",
+    "lam_idx_float",
+    "lam_idx_negative",
+    "lam_idx_oob"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.idx out of range"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: IndexError: list index out of range"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/8e434575c6ccc173/w_x.json: lam index out of range [0,2)"
+    ],
+    "sc_js": [
+     "R",
+     "lam.idx out of range"
+    ],
+    "sc_py": [
+     "R",
+     "lam.idx 2 out of range [0, 2)"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "C",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 16,
+   "case_id": "r1584",
+   "id": "B073",
+   "min_mutations": [
+    "lam_val_float",
+    "fp_garbage"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "fp_garbage",
+    "lam_nrows_float",
+    "lam_val_float"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "R",
+     "lam.val entry: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 16,
+   "case_id": "r409",
+   "id": "B074",
+   "min_mutations": [
+    "sys_nrows_wrong",
+    "fp_garbage"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_key_plus",
+    "fp_garbage",
+    "sys_nrows_wrong"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "system.n_rows contradicts lam.n_rows"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 7,
+   "case_id": "r38",
+   "id": "B075",
+   "min_mutations": [
+    "table_key_lead0",
+    "row_float"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_float_int",
+    "lam_nrows_float",
+    "row_float",
+    "table_key_lead0",
+    "table_true"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "system row 1[187553]: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 18,
+   "case_id": "r1227",
+   "id": "B076",
+   "min_mutations": [
+    "c_on_target",
+    "table_key_lead0"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_on_target",
+    "row_key_lead0",
+    "table_key_lead0",
+    "table_negative",
+    "table_true"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 18,
+   "case_id": "r1840",
+   "id": "B077",
+   "min_mutations": [
+    "fp_garbage",
+    "row_str_val"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "fp_garbage",
+    "lam_extra_zero",
+    "lam_val_str",
+    "row_str_val"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 1 value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 8,
+   "case_id": "r1091",
+   "id": "B078",
+   "min_mutations": [
+    "table_eq_p",
+    "sys_blank_line"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "row_key_lead0",
+    "sys_blank_line",
+    "table_eq_p",
+    "table_negative",
+    "table_str_val"
+   ],
+   "n_cases": 2,
+   "repro_verdicts": {
+    "check3_abl": [
+     "A",
+     "identity holds"
+    ],
+    "check3_v0": [
+     "C",
+     "rc 2: "
+    ],
+    "check3_v1": [
+     "C",
+     "rc 2: "
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "A",
+    "check3_v0": "C",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 4,
+   "case_id": "r1544",
+   "id": "B079",
+   "min_mutations": [
+    "c_entry_eq_p",
+    "table_zero",
+    "lam_nrows_str"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_entry_eq_p",
+    "lam_nrows_str",
+    "table_zero"
+   ],
+   "n_cases": 1,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.n_rows not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "lam n_rows mismatch"
+    ],
+    "check3_v1": [
+     "R",
+     "lam n_rows mismatch"
+    ],
+    "core": [
+     "R",
+     "claimed table row != certified row (witness holds; the TABLE is wrong)"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 8,
+   "case_id": "r1250",
+   "id": "B080",
+   "min_mutations": [
+    "table_str_val",
+    "c_zero_entry"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_zero_entry",
+    "table_str_val"
+   ],
+   "n_cases": 1,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed table input: table value not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "identity does not hold"
+    ],
+    "check3_v1": [
+     "R",
+     "identity does not hold"
+    ],
+    "core": [
+     "R",
+     "claimed table row != certified row (witness holds; the TABLE is wrong)"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 11,
+   "case_id": "r257",
+   "id": "B081",
+   "min_mutations": [
+    "sys_nrows_wrong",
+    "c_on_target",
+    "table_negative"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "c_on_target",
+    "sys_nrows_wrong",
+    "table_negative"
+   ],
+   "n_cases": 1,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "system.n_rows contradicts lam.n_rows"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 15,
+   "case_id": "r381",
+   "id": "B082",
+   "min_mutations": [
+    "lam_val_str",
+    "fp_garbage"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "fp_garbage",
+    "lam_val_str"
+   ],
+   "n_cases": 1,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.val entry not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "C",
+     "rc 1: TypeError: unsupported operand type(s) for +: 'int' and 'str'"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "C",
+    "core": "A",
+    "sc_js": "A",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 16,
+   "case_id": "r895",
+   "id": "B083",
+   "min_mutations": [
+    "lam_nrows_str",
+    "c_on_target"
+   ],
+   "min_size": null,
+   "mutations_seen": [
+    "c_key_underscore",
+    "c_on_target",
+    "lam_nrows_str"
+   ],
+   "n_cases": 1,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "lam.n_rows not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "lam n_rows mismatch"
+    ],
+    "check3_v1": [
+     "R",
+     "lam n_rows mismatch"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "R",
+     "identity failed"
+    ],
+    "sc_py": [
+     "A",
+     ""
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "R",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "A"
+   }
+  },
+  {
+   "base_id": 19,
+   "case_id": "r1245",
+   "id": "B084",
+   "min_mutations": [
+    "fp_garbage",
+    "target_float",
+    "table_key_lead0"
+   ],
+   "min_size": [
+    2,
+    4
+   ],
+   "mutations_seen": [
+    "fp_garbage",
+    "table_key_lead0",
+    "target_float"
+   ],
+   "n_cases": 1,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "target.col not an integer"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "A",
+     ""
+    ],
+    "sc_js": [
+     "n/a",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "target.col: float is not an integer"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "A",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 10,
+   "case_id": "r1271",
+   "id": "B085",
+   "min_mutations": [
+    "row_float",
+    "lam_idx_negative"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "extra_field",
+    "lam_idx_negative",
+    "row_float"
+   ],
+   "n_cases": 1,
+   "repro_verdicts": {
+    "check3_abl": [
+     "C",
+     "rc 2: malformed system input: system line 2 value not an integer"
+    ],
+    "check3_v0": [
+     "A",
+     "PASS"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "<out>/fuzz/_work/04ba282ca1a90de9/w_x.json: lam index out of range [0,2)"
+    ],
+    "sc_js": [
+     "R",
+     "lam.idx out of range"
+    ],
+    "sc_py": [
+     "R",
+     "lam.idx -1 out of range [0, 2)"
+    ]
+   },
+   "signature": {
+    "check3_abl": "C",
+    "check3_v0": "A",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_js": "R",
+    "sc_py": "R"
+   }
+  },
+  {
+   "base_id": 0,
+   "case_id": "r1038",
+   "id": "B086",
+   "min_mutations": [
+    "row_key_alias",
+    "fp_garbage"
+   ],
+   "min_size": [
+    2,
+    3
+   ],
+   "mutations_seen": [
+    "fp_garbage",
+    "row_key_alias"
+   ],
+   "n_cases": 1,
+   "repro_verdicts": {
+    "check3_abl": [
+     "R",
+     "residual mismatch"
+    ],
+    "check3_v0": [
+     "R",
+     "fingerprint mismatch"
+    ],
+    "check3_v1": [
+     "A",
+     "PASS"
+    ],
+    "core": [
+     "R",
+     "identity failed: residual != e_t - sum c_m e_m"
+    ],
+    "sc_js": [
+     "A",
+     ""
+    ],
+    "sc_py": [
+     "R",
+     "system row 1: duplicate column 216945"
+    ]
+   },
+   "signature": {
+    "check3_abl": "R",
+    "check3_v0": "R",
+    "check3_v1": "A",
+    "core": "R",
+    "sc_js": "A",
+    "sc_py": "R"
+   }
+  }
+ ],
+ "checkers": [
+  "check3_abl",
+  "check3_v0",
+  "check3_v1",
+  "core",
+  "sc_js",
+  "sc_py"
+ ],
+ "controls_unmutated": {
+  "b0": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b1": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b10": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b11": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "R",
+    "identity failed"
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b12": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "R",
+    "identity failed"
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b13": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b14": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b15": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "R",
+    "identity does not hold"
+   ],
+   "check3_v1": [
+    "R",
+    "identity does not hold"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b16": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "R",
+    "identity failed"
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b17": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b18": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b19": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b2": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b3": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b4": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "R",
+    "identity failed"
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b5": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b6": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b7": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "R",
+    "identity failed"
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b8": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  },
+  "b9": {
+   "check3_abl": [
+    "A",
+    "identity holds"
+   ],
+   "check3_v0": [
+    "A",
+    "PASS"
+   ],
+   "check3_v1": [
+    "A",
+    "PASS"
+   ],
+   "core": [
+    "A",
+    ""
+   ],
+   "sc_js": [
+    "A",
+    ""
+   ],
+   "sc_py": [
+    "A",
+    ""
+   ]
+  }
+ },
+ "n_cases": 3540,
+ "pairwise_disagreements": {
+  "check3_abl|check3_v0": {
+   "cases": 3540,
+   "disagree": 1530
+  },
+  "check3_abl|check3_v1": {
+   "cases": 3540,
+   "disagree": 1521
+  },
+  "check3_abl|core": {
+   "cases": 3540,
+   "disagree": 1305
+  },
+  "check3_abl|sc_js": {
+   "cases": 2982,
+   "disagree": 932
+  },
+  "check3_abl|sc_py": {
+   "cases": 3540,
+   "disagree": 764
+  },
+  "check3_v0|check3_v1": {
+   "cases": 3540,
+   "disagree": 45
+  },
+  "check3_v0|core": {
+   "cases": 3540,
+   "disagree": 1638
+  },
+  "check3_v0|sc_js": {
+   "cases": 2982,
+   "disagree": 1223
+  },
+  "check3_v0|sc_py": {
+   "cases": 3540,
+   "disagree": 1589
+  },
+  "check3_v1|core": {
+   "cases": 3540,
+   "disagree": 1606
+  },
+  "check3_v1|sc_js": {
+   "cases": 2982,
+   "disagree": 1212
+  },
+  "check3_v1|sc_py": {
+   "cases": 3540,
+   "disagree": 1571
+  },
+  "core|sc_js": {
+   "cases": 2982,
+   "disagree": 880
+  },
+  "core|sc_py": {
+   "cases": 3540,
+   "disagree": 709
+  },
+  "sc_js|sc_py": {
+   "cases": 2982,
+   "disagree": 679
+  }
+ },
+ "seed": 20261002,
+ "single_mutation_classes": {
+  "c_as_list": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "C": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "c_bool": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "c_entry_eq_p": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_float_frac": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "c_float_int": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "c_huge": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_key_float": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "c_key_lead0": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_key_plus": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_key_space": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_key_underscore": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_negative": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_null": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "c_on_target": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 2,
+    "R": 18
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_plus_p": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_raw_dup": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_str_int": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "c_zero_entry": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "extra_field": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "fp_garbage": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "lam_extra_zero": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 7,
+    "R": 13
+   },
+   "check3_v1": {
+    "A": 7,
+    "R": 13
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "lam_idx_bool": {
+   "check3_abl": {
+    "A": 6,
+    "R": 14
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 6,
+    "R": 14
+   },
+   "sc_py": {
+    "A": 6,
+    "R": 14
+   }
+  },
+  "lam_idx_dup_split": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_idx_float": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_idx_negative": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_idx_oob": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_idx_str": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "lam_len_mismatch": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_nrows_float": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_nrows_str": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "lam_val_float": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 13,
+    "R": 7
+   },
+   "check3_v1": {
+    "A": 13,
+    "R": 7
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_val_inf": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "C": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_val_nan": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "lam_val_negative": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "lam_val_str": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "p_bool": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "p_float": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 13,
+    "R": 7
+   },
+   "check3_v1": {
+    "A": 13,
+    "R": 7
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "p_negative": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "p_one": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "p_str": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "row_float": {
+   "check3_abl": {
+    "C": 20
+   },
+   "check3_v0": {
+    "A": 13,
+    "R": 7
+   },
+   "check3_v1": {
+    "A": 13,
+    "R": 7
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "row_float_frac": {
+   "check3_abl": {
+    "C": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "row_key_alias": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "row_key_lead0": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "row_negative": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "row_plus_p": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "row_str_val": {
+   "check3_abl": {
+    "C": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "row_zero_entry": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 9,
+    "R": 11
+   },
+   "check3_v1": {
+    "A": 9,
+    "R": 11
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "sem_coef_plus1": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "sem_extra_c": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "sem_lam_plus1": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "sem_row_plus1": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "sem_target_swap": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "sys_blank_line": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "sys_bom": {
+   "check3_abl": {
+    "C": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "C": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "sys_crlf": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "sys_nrows_wrong": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "table_eq_p": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "n/a": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "table_key_lead0": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "n/a": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "table_negative": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "n/a": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "table_str_val": {
+   "check3_abl": {
+    "C": 20
+   },
+   "check3_v0": {
+    "C": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "C": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "n/a": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "table_true": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "A": 19,
+    "R": 1
+   },
+   "check3_v1": {
+    "A": 19,
+    "R": 1
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "n/a": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "table_wrong": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "n/a": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "table_zero": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "n/a": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "target_bare_int": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "C": 20
+   },
+   "check3_v1": {
+    "C": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "C": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "target_float": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "A": 14,
+    "R": 6
+   },
+   "check3_v1": {
+    "A": 14,
+    "R": 6
+   },
+   "core": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "target_str": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 20
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "ver_01": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "ver_1": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "ver_1_1": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "A": 15,
+    "R": 5
+   },
+   "sc_py": {
+    "A": 20
+   }
+  },
+  "ver_2": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "ver_missing": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "ver_num": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "A": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "ver_space": {
+   "check3_abl": {
+    "A": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "ver_v": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  },
+  "wit_bom": {
+   "check3_abl": {
+    "R": 20
+   },
+   "check3_v0": {
+    "R": 20
+   },
+   "check3_v1": {
+    "R": 20
+   },
+   "core": {
+    "R": 20
+   },
+   "sc_js": {
+    "R": 20
+   },
+   "sc_py": {
+    "R": 20
+   }
+  }
+ }
+}

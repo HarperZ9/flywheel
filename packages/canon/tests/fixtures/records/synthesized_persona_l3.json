@@ -1,0 +1,26 @@
+{
+  "canon_schema": "canon.record/v1",
+  "kind": "synthesized-persona-l3",
+  "id": "persona-operator-0004",
+  "scope": "global",
+  "data": {
+    "layer": "L3",
+    "text": "Verification-first operator. Truth over approval. Ships receipts, not claims.",
+    "source_ids": ["mem-000123", "mem-000188", "mem-000201"],
+    "extractor": "persona-synth-v1",
+    "criterion": "l2-cluster-summary"
+  },
+  "provenance": {
+    "harness": "mneme",
+    "source_hash": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "native_id": "mneme:persona-operator-0004",
+    "session_id": null,
+    "create_ord": 205,
+    "create_time": null,
+    "model_slug": null
+  },
+  "temporal": {
+    "valid_until": null,
+    "supersedes": "persona-operator-0003"
+  }
+}

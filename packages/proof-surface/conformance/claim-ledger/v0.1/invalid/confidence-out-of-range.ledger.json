@@ -1,0 +1,14 @@
+{
+  "ledger_version": "0.1",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "statement": "Accuracy is excellent.",
+      "source": "agent:evaluator",
+      "confidence": 1.5,
+      "evidence_refs": [],
+      "depends_on": [],
+      "conflicts_with": []
+    }
+  ]
+}

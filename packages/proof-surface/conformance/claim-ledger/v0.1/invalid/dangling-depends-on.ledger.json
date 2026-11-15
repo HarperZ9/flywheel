@@ -1,0 +1,14 @@
+{
+  "ledger_version": "0.1",
+  "claims": [
+    {
+      "claim_id": "c1",
+      "statement": "Derived conclusion that points at a claim which is not in this ledger.",
+      "source": "agent:reasoner",
+      "confidence": 0.8,
+      "evidence_refs": [],
+      "depends_on": ["c-missing"],
+      "conflicts_with": []
+    }
+  ]
+}

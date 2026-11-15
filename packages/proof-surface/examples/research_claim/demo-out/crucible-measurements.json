@@ -1,0 +1,13 @@
+{
+  "measurements": [
+    {
+      "claim": "The statement holds under the numeric-probe check.",
+      "deviation": 0.0,
+      "tolerance": 0.5,
+      "method": "numeric-probe",
+      "evidence": [
+        "n=1..1000: sum_{k} k == n(n+1)/2 for every n"
+      ]
+    }
+  ]
+}

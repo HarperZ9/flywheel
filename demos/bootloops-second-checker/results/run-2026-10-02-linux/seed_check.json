@@ -1,0 +1,8 @@
+{
+ "compared": "first-run corpus (Windows) vs Linux regeneration from seeds",
+ "files_a": 19809,
+ "files_b": 19809,
+ "identical": 19809,
+ "witness_files_identical": 12187,
+ "witness_tree_digest": "a20d3a4fec860308d229aa35b2df964a3fd914d45efba97ca7d0a2ca7d387d67"
+}

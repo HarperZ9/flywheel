@@ -1,0 +1,74 @@
+[
+ {
+  "probe": "valid",
+  "rc": 0,
+  "rc_spec": 0,
+  "traceback": false,
+  "stderr_last": "",
+  "stdout_head": "{\n \"tool\": \"RECEIPT\",\n \"cmd\": \"verify\",\n \"n_rows\": 1,\n \"n_pass\": 1,\n \"n_fail\": 0,\n \"all_pass\": true,\n \"verify_wall_s\": 0.0,\n \"verify_ms_per_row\": 0.01\n}"
+ },
+ {
+  "probe": "c_as_list",
+  "rc": 1,
+  "rc_spec": 2,
+  "traceback": true,
+  "stderr_last": "AttributeError: 'list' object has no attribute 'items'",
+  "stdout_head": ""
+ },
+ {
+  "probe": "lam_val_inf",
+  "rc": 1,
+  "rc_spec": 2,
+  "traceback": true,
+  "stderr_last": "OverflowError: cannot convert float infinity to integer",
+  "stdout_head": ""
+ },
+ {
+  "probe": "lam_val_nan",
+  "rc": 2,
+  "rc_spec": 2,
+  "traceback": false,
+  "stderr_last": "",
+  "stdout_head": "{\"tool\": \"RECEIPT\", \"rc\": 2, \"error\": \"<out>/cli_probe/lam_val_nan/w_x.json: bad field content (cannot convert float NaN to integer)\"}"
+ },
+ {
+  "probe": "lam_idx_bool",
+  "rc": 0,
+  "rc_spec": null,
+  "traceback": false,
+  "stderr_last": "",
+  "stdout_head": "{\n \"tool\": \"RECEIPT\",\n \"cmd\": \"verify\",\n \"n_rows\": 1,\n \"n_pass\": 1,\n \"n_fail\": 0,\n \"all_pass\": true,\n \"verify_wall_s\": 0.0,\n \"verify_ms_per_row\": 0.01\n}"
+ },
+ {
+  "probe": "row_key_alias",
+  "rc": 1,
+  "rc_spec": null,
+  "traceback": false,
+  "stderr_last": "",
+  "stdout_head": "{\n \"tool\": \"RECEIPT\",\n \"cmd\": \"verify\",\n \"n_rows\": 1,\n \"n_pass\": 0,\n \"n_fail\": 1,\n \"all_pass\": false,\n \"verify_wall_s\": 0.0,\n \"verify_ms_per_row\": 0.01\n}"
+ },
+ {
+  "probe": "row_float_frac",
+  "rc": 0,
+  "rc_spec": 2,
+  "traceback": false,
+  "stderr_last": "",
+  "stdout_head": "{\n \"tool\": \"RECEIPT\",\n \"cmd\": \"verify\",\n \"n_rows\": 1,\n \"n_pass\": 1,\n \"n_fail\": 0,\n \"all_pass\": true,\n \"verify_wall_s\": 0.0,\n \"verify_ms_per_row\": 0.014\n}"
+ },
+ {
+  "probe": "table_not_json",
+  "rc": 1,
+  "rc_spec": 2,
+  "traceback": true,
+  "stderr_last": "core.MalformedInput: <case>/table.json: unreadable table (Expecting value: line 1 column 1 (char 0))",
+  "stdout_head": ""
+ },
+ {
+  "probe": "table_row_not_object",
+  "rc": 1,
+  "rc_spec": 2,
+  "traceback": true,
+  "stderr_last": "AttributeError: 'str' object has no attribute 'items'",
+  "stdout_head": ""
+ }
+]

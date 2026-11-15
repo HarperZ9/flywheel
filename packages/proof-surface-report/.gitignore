@@ -1,0 +1,35 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Test / tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+
+# Editor / OS
+.vscode/
+.idea/
+.DS_Store
+
+# Local environment
+.env
+.env.*
+CLAUDE.local.md
+
+# The committed template must survive the .env.* rule above (global standard)
+!.env.example
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

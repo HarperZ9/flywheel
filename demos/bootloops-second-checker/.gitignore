@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.lake/
+lean/**/.lake/
+out/
+.env
+.env.*
+!.env.example
+.envrc
+.envrc.local
+node_modules/
+dist/
+CLAUDE.local.md
+lean/ReceiptLean/Gen/

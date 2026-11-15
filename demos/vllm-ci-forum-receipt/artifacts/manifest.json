@@ -1,0 +1,26 @@
+{
+  "files": {
+    "artifacts/analysis.json": "7f40d6400c64de80301986e52b418397089c32913deb829080bd6093f3ba3e77",
+    "artifacts/forum-record.json": "73f19d97db0d0428f55f89e65a005e8aa4531e130a138392613c9eae1847890f",
+    "artifacts/forum-trace.json": "e642bc426328e6eb4a77e9bf5dfa06601c1079f96f519c1c92a6491cf294958e",
+    "forum-ledger/entries.jsonl": "2da0da8b9496235fd0a1e8d3eaff5f6a3903226ccd3e0a299d019accfa422796",
+    "forum-ledger/payloads.jsonl": "f2a2a7d91f5ad386f159a68b1522bf993eb4c32ac2b49b56712281c1d051bc49"
+  },
+  "forum_merkle_root": "fb317553850755f029505402a44fbe1019fc803f174f11367498183bb4f13642",
+  "manifest_self_hash": "excluded to avoid a circular digest",
+  "schema": "vllm-ci-receipt-manifest/1",
+  "source_files": {
+    "macos-jobs.json": "55afd1dd16d6fed7b078ec9b9a2db04c4120857cf965f6a1fdc5f61e559be8e9",
+    "macos-runs.json": "8847a06550c658e014da0523aceafeaf9266c56acd1da89320fa71ec6114f8d5",
+    "macos-smoke-test.yml": "5b051a942a5f940db8e71f49462e29b7705eb492a6c039bce74ac72b004cf6fa",
+    "pre-commit.yml": "17980e8c244ca39fa0db29aac6193229e88bf862da342e9b91d8f149f3fd8a09",
+    "precommit-cancelled-jobs.json": "d78b93374f0a743f4403c52a73afa8aa2df4799bb3520cdc530e8093274fdfc0",
+    "precommit-runs.json": "89b2d2edeacb1ae792c7fa7a2f0f282436c517f7f4ac3fdc9f0190d34bd62457",
+    "precommit-success-jobs.json": "c432927c138fdda81c7160960224990ebc20554485ef618bbdc9e5059e1414b5",
+    "representative-runs.json": "bf079eec2d3da6f038d55a9b632984a0a38d5c462ad12983dc668c392cce85fd",
+    "workflow-manifest.json": "97b4a788051aba7857ec0aa6cd294cca48384fc7f6eddd529daaa5b0b3376829"
+  },
+  "upstream_licenses": {
+    "UPSTREAM-LICENSE-vLLM.txt": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+  }
+}

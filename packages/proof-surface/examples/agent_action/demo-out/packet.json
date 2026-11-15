@@ -1,0 +1,70 @@
+{
+  "version": "agent-action-proof-packet/v0",
+  "packet_id": "reverify",
+  "claim": "verify",
+  "scope": "verify",
+  "sources": [
+    {
+      "ref": "trace:trace-demo-write",
+      "sha256": "99f3841dcdc6b1bc7673798c63873190ffd80aa1a9044bacf0a67c8da71ca686"
+    }
+  ],
+  "context": {
+    "service": "demo-config-agent",
+    "trace_id": "trace-demo-write",
+    "tool_authority": "grant-fs-write-work"
+  },
+  "actions": [
+    {
+      "action_id": "span-write-config",
+      "actor": "user:zain",
+      "agent": "agent:claude-opus-4-8",
+      "model": "claude-opus-4-8",
+      "tool": "fs",
+      "action_kind": "fs.write",
+      "target": "/work/config.json",
+      "cost": {
+        "tokens": 60,
+        "wall_ms": 3200
+      },
+      "span_digest": "c5e75b443591426b025259260ea198cac971910c08a1e9e9797d0630c2fa960d"
+    }
+  ],
+  "admission": [
+    {
+      "action_id": "span-write-config",
+      "decision": "allow",
+      "reasons": [],
+      "authorization_ref": "grant-fs-write-work"
+    }
+  ],
+  "side_effects": [
+    {
+      "action_id": "span-write-config",
+      "class": "write",
+      "idempotency_key": "9f2c1a7b4e6d8f03a1b2c3d4e5f60718293a4b5c6d7e8f9019a2b3c4d5e6f708",
+      "compensation": {
+        "reversible": true,
+        "rollback_ref": "backup:/work/config.json@span-write-config"
+      },
+      "before_digest": "0000000000000000000000000000000000000000000000000000000000000000",
+      "after_digest": "9f2c1a7b4e6d8f03a1b2c3d4e5f60718293a4b5c6d7e8f9019a2b3c4d5e6f708"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "/work/config.json",
+      "sha256": "9f2c1a7b4e6d8f03a1b2c3d4e5f60718293a4b5c6d7e8f9019a2b3c4d5e6f708"
+    }
+  ],
+  "verdicts": {
+    "overall": "MATCH",
+    "per_action": [
+      {
+        "action_id": "span-write-config",
+        "status": "MATCH"
+      }
+    ]
+  },
+  "uncertainty": []
+}

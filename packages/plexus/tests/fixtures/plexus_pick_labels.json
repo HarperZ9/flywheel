@@ -1,0 +1,606 @@
+{
+ "schema": "plexus.pick-labels/1",
+ "author": "independent labeller, tool descriptions only",
+ "items": [
+  {
+   "id": "p001",
+   "text": "pull the last two weeks of arxiv papers on speculative decoding and give me a digest I can cite",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p002",
+   "text": "I need the FastAPI docs plus a couple of blog posts collected, with a note of where each one came from",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p003",
+   "text": "scrape a few pages about the new EU AI Act guidance and keep a receipt for every page",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p004",
+   "text": "is this quote really from the paper it says it is from, or did someone invent it?",
+   "gold": "gather",
+   "alt": "crucible"
+  },
+  {
+   "id": "p005",
+   "text": "set up one run that hits the web, vendor docs and arxiv for RAG evaluation methods",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p006",
+   "text": "collect background reading on CRDTs",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p007",
+   "text": "lock down the research digest so nobody can quietly swap a source later",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p008",
+   "text": "find me papers that cite the Chinchilla scaling result",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p009",
+   "text": "grab the Postgres 17 release notes and changelog, and keep track of the URLs",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p010",
+   "text": "what are competitors saying publicly about pricing for agent tracing, with sources",
+   "gold": "gather",
+   "alt": null
+  },
+  {
+   "id": "p011",
+   "text": "I claim our cache cuts p95 latency by 30 percent, check that against the benchmark numbers",
+   "gold": "crucible",
+   "alt": null
+  },
+  {
+   "id": "p012",
+   "text": "judge whether this hypothesis holds up given the numbers in results.csv",
+   "gold": "crucible",
+   "alt": null
+  },
+  {
+   "id": "p013",
+   "text": "write my hypothesis up as a structured thesis so it can be scored",
+   "gold": "crucible",
+   "alt": null
+  },
+  {
+   "id": "p014",
+   "text": "make a replay bundle so a reviewer can rerun the whole assessment on their machine",
+   "gold": "crucible",
+   "alt": null
+  },
+  {
+   "id": "p015",
+   "text": "block the release unless measured accuracy clears 0.9",
+   "gold": "crucible",
+   "alt": "flywheel-infra"
+  },
+  {
+   "id": "p016",
+   "text": "use the sources I pulled yesterday as evidence for the main claim in the blog draft",
+   "gold": "crucible",
+   "alt": "gather"
+  },
+  {
+   "id": "p017",
+   "text": "give me a measurement for each statement in the README benchmark section",
+   "gold": "crucible",
+   "alt": null
+  },
+  {
+   "id": "p018",
+   "text": "does the data honestly support saying model B beats model A?",
+   "gold": "crucible",
+   "alt": null
+  },
+  {
+   "id": "p019",
+   "text": "publish the claim we're testing before the run so outsiders can see what we committed to",
+   "gold": "crucible",
+   "alt": null
+  },
+  {
+   "id": "p020",
+   "text": "rerun last month's assessment from its template and tell me if the verdict changed",
+   "gold": "crucible",
+   "alt": null
+  },
+  {
+   "id": "p021",
+   "text": "split this refactor across three agents and keep a ledger of who did what",
+   "gold": "forum",
+   "alt": null
+  },
+  {
+   "id": "p022",
+   "text": "turn our LangSmith traces into something tamper-evident",
+   "gold": "forum",
+   "alt": null
+  },
+  {
+   "id": "p023",
+   "text": "import the OpenTelemetry trace from yesterday's agent run and make it verifiable",
+   "gold": "forum",
+   "alt": null
+  },
+  {
+   "id": "p024",
+   "text": "route this ticket to whichever agent fits best and record the decision",
+   "gold": "forum",
+   "alt": null
+  },
+  {
+   "id": "p025",
+   "text": "I want a receipt every time an agent submits its work",
+   "gold": "forum",
+   "alt": null
+  },
+  {
+   "id": "p026",
+   "text": "package the planning room's context so the next agent sees what was decided",
+   "gold": "forum",
+   "alt": "canon"
+  },
+  {
+   "id": "p027",
+   "text": "run a debate between a planner agent and a critic agent",
+   "gold": "forum",
+   "alt": null
+  },
+  {
+   "id": "p028",
+   "text": "AgentOps export -> ledger please",
+   "gold": "forum",
+   "alt": null
+  },
+  {
+   "id": "p029",
+   "text": "coordinate a reviewer agent and a coder agent on PR 412",
+   "gold": "forum",
+   "alt": null
+  },
+  {
+   "id": "p030",
+   "text": "who changed the plan mid-run? I need a witnessed log of the multi-agent session",
+   "gold": "forum",
+   "alt": "relay"
+  },
+  {
+   "id": "p031",
+   "text": "build a wiki of this repo pinned to the current commit",
+   "gold": "index",
+   "alt": null
+  },
+  {
+   "id": "p032",
+   "text": "give me a context bundle for the auth module that fits in 8k tokens",
+   "gold": "index",
+   "alt": null
+  },
+  {
+   "id": "p033",
+   "text": "is it true that every handler goes through the rate-limit middleware?",
+   "gold": "index",
+   "alt": "crucible"
+  },
+  {
+   "id": "p034",
+   "text": "has the code drifted since we generated the wiki?",
+   "gold": "index",
+   "alt": null
+  },
+  {
+   "id": "p035",
+   "text": "map out the repo structure for a new hire",
+   "gold": "index",
+   "alt": null
+  },
+  {
+   "id": "p036",
+   "text": "where is parse_config defined and who calls it",
+   "gold": "index",
+   "alt": null
+  },
+  {
+   "id": "p037",
+   "text": "re-check that the sealed wiki from the last release still matches the code",
+   "gold": "index",
+   "alt": null
+  },
+  {
+   "id": "p038",
+   "text": "pin a snapshot so I can diff it against the working tree later",
+   "gold": "index",
+   "alt": null
+  },
+  {
+   "id": "p039",
+   "text": "feed repo context into the envelopes the other tools consume",
+   "gold": "index",
+   "alt": "telos"
+  },
+  {
+   "id": "p040",
+   "text": "index the monorepo",
+   "gold": "index",
+   "alt": null
+  },
+  {
+   "id": "p041",
+   "text": "remember that we decided to drop Python 3.9 support",
+   "gold": "mneme",
+   "alt": null
+  },
+  {
+   "id": "p042",
+   "text": "what did I tell the agent about the deploy window last week, and where did that come from?",
+   "gold": "mneme",
+   "alt": null
+  },
+  {
+   "id": "p043",
+   "text": "check whether the agent's stored memories still match the source docs",
+   "gold": "mneme",
+   "alt": null
+  },
+  {
+   "id": "p044",
+   "text": "save these chat turns so the agent can recall them later",
+   "gold": "mneme",
+   "alt": null
+  },
+  {
+   "id": "p045",
+   "text": "the agent keeps remembering a config value that changed months ago, find the drift",
+   "gold": "mneme",
+   "alt": null
+  },
+  {
+   "id": "p046",
+   "text": "turn this remembered fact into a thesis we can test",
+   "gold": "mneme",
+   "alt": "crucible"
+  },
+  {
+   "id": "p047",
+   "text": "is the file behind this memory still current?",
+   "gold": "mneme",
+   "alt": null
+  },
+  {
+   "id": "p048",
+   "text": "recall the key rotation policy we discussed, and show me proof of where it came from",
+   "gold": "mneme",
+   "alt": null
+  },
+  {
+   "id": "p049",
+   "text": "audit the agent's memory for things it made up",
+   "gold": "mneme",
+   "alt": null
+  },
+  {
+   "id": "p050",
+   "text": "ingest the meeting notes into agent memory",
+   "gold": "mneme",
+   "alt": "canon"
+  },
+  {
+   "id": "p051",
+   "text": "carry my working context from Claude into a Codex session tomorrow",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p052",
+   "text": "snapshot where I am before I close this session so I can pick it back up",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p053",
+   "text": "is this host ready to load a context capsule?",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p054",
+   "text": "verify the markdown capsule file hasn't been edited",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p055",
+   "text": "build a provider-neutral context record from these three spec files",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p056",
+   "text": "expose our context records to other clients over read-only MCP",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p057",
+   "text": "start a fresh session and prove it booted from the right context",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p058",
+   "text": "switching from GPT to Claude halfway through the project, how do I not lose state?",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p059",
+   "text": "check whether the capsule is ready to hand off",
+   "gold": "canon",
+   "alt": null
+  },
+  {
+   "id": "p060",
+   "text": "hand off context between sessions",
+   "gold": "canon",
+   "alt": "mneme"
+  },
+  {
+   "id": "p061",
+   "text": "run a coding agent against my local llama.cpp server",
+   "gold": "relay",
+   "alt": null
+  },
+  {
+   "id": "p062",
+   "text": "fall back to an online endpoint if the local model is down",
+   "gold": "relay",
+   "alt": null
+  },
+  {
+   "id": "p063",
+   "text": "reopen yesterday's agent session",
+   "gold": "relay",
+   "alt": null
+  },
+  {
+   "id": "p064",
+   "text": "list my saved agent sessions",
+   "gold": "relay",
+   "alt": null
+  },
+  {
+   "id": "p065",
+   "text": "verify that certificate offline, no network",
+   "gold": "relay",
+   "alt": null
+  },
+  {
+   "id": "p066",
+   "text": "expose the local agent as a remote MCP endpoint",
+   "gold": "relay",
+   "alt": null
+  },
+  {
+   "id": "p067",
+   "text": "run the agent with a bounded budget and only accept the result if it passes the gate",
+   "gold": "relay",
+   "alt": null
+  },
+  {
+   "id": "p068",
+   "text": "hash-chained log of a single local agent session",
+   "gold": "relay",
+   "alt": "forum"
+  },
+  {
+   "id": "p069",
+   "text": "try Qwen on ollama for this task",
+   "gold": "relay",
+   "alt": null
+  },
+  {
+   "id": "p070",
+   "text": "I want a correctness certificate for the patch the agent wrote",
+   "gold": "relay",
+   "alt": "crucible"
+  },
+  {
+   "id": "p071",
+   "text": "teach me the pumping lemma step by step",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p072",
+   "text": "turn this proof into a lesson",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p073",
+   "text": "did the student really master recursion or just guess right?",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p074",
+   "text": "which misconceptions about pointers are most common across the class",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p075",
+   "text": "record that I finished the linear algebra unit",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p076",
+   "text": "make a lesson out of the Cauchy-Schwarz proof and check the claims in it",
+   "gold": "learn",
+   "alt": "crucible"
+  },
+  {
+   "id": "p077",
+   "text": "tutor me on Bayes",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p078",
+   "text": "lock the next module until I pass the quiz",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p079",
+   "text": "rank the mistakes students make on induction proofs",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p080",
+   "text": "log a mastery credential for today's tutoring session",
+   "gold": "learn",
+   "alt": null
+  },
+  {
+   "id": "p081",
+   "text": "what's the state of all my tools and what should I do next",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p082",
+   "text": "summarize what the five flagship tools are up to",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p083",
+   "text": "run the end-to-end golden workflow check",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p084",
+   "text": "do one thing that touches gather, crucible and index together",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p085",
+   "text": "is my workbench ready",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p086",
+   "text": "one action spanning several tools with a single receipt",
+   "gold": "telos",
+   "alt": "forum"
+  },
+  {
+   "id": "p087",
+   "text": "dashboard of everything",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p088",
+   "text": "after the upgrade, verify the main workflow still works across the tools",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p089",
+   "text": "next actions?",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p090",
+   "text": "room summary",
+   "gold": "telos",
+   "alt": null
+  },
+  {
+   "id": "p091",
+   "text": "did the agent try to send data to a host it shouldn't?",
+   "gold": "flywheel-infra",
+   "alt": null
+  },
+  {
+   "id": "p092",
+   "text": "a token showed up in the logs, give me a sealed exposure report",
+   "gold": "flywheel-infra",
+   "alt": null
+  },
+  {
+   "id": "p093",
+   "text": "halt the pipeline only when two independent monitors agree something is wrong",
+   "gold": "flywheel-infra",
+   "alt": null
+  },
+  {
+   "id": "p094",
+   "text": "produce a bill of materials for this run",
+   "gold": "flywheel-infra",
+   "alt": null
+  },
+  {
+   "id": "p095",
+   "text": "receipt every tool call the agent makes",
+   "gold": "flywheel-infra",
+   "alt": null
+  },
+  {
+   "id": "p096",
+   "text": "test that the sandbox boundary holds",
+   "gold": "flywheel-infra",
+   "alt": null
+  },
+  {
+   "id": "p097",
+   "text": "correlate alerts across the network and process layers",
+   "gold": "flywheel-infra",
+   "alt": null
+  },
+  {
+   "id": "p098",
+   "text": "write up an organizational lesson from last night's incident",
+   "gold": "flywheel-infra",
+   "alt": "learn"
+  },
+  {
+   "id": "p099",
+   "text": "governance state across lanes",
+   "gold": "flywheel-infra",
+   "alt": null
+  },
+  {
+   "id": "p100",
+   "text": "grade these failures so we can learn from them",
+   "gold": "flywheel-infra",
+   "alt": "learn"
+  }
+ ]
+}

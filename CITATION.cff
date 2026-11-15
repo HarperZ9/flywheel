@@ -4,7 +4,7 @@ type: software
 title: "Flywheel"
 abstract: "Run AI tasks on any hosted or local model, check answers against the sources that decide them, and keep a record of every step."
 version: "2.0.0"
-date-released: 2026-11-14
+date-released: 2026-11-15
 authors:
   - family-names: "Harper"
     given-names: "Zain Dana"

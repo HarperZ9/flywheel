@@ -1,0 +1,13 @@
+{
+  "statement": "For all n >= 1, sum_{k=1}^n k = n(n+1)/2.",
+  "sources": [
+    { "ref": "OEIS A000217 (triangular numbers)", "url": "https://oeis.org/A000217" }
+  ],
+  "attempts": [
+    { "attempt_id": "a1", "method": "numeric-probe", "result": "bounded", "notes": "checked n=1..1000 exhaustively" }
+  ],
+  "checks": [
+    { "checker": "numeric-probe", "status": "pass", "evidence": ["n=1..1000: sum_{k} k == n(n+1)/2 for every n"] }
+  ],
+  "uncertainty": ["bounded probe only; not a general proof for all n"]
+}

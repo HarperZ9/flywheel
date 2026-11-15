@@ -1,0 +1,49 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "proof-surface"
+version = "0.2.0"
+description = "The stdlib-only accountability contract: evidence packets, work-record receipts, and witness validators that reject authority-shaped content."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Zain Dana Harper" }]
+keywords = ["json", "proof", "provenance", "receipt", "accountability", "schema"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Software Development :: Quality Assurance",
+]
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/proof-surface"
+Repository = "https://github.com/HarperZ9/proof-surface"
+Issues = "https://github.com/HarperZ9/proof-surface/issues"
+
+[project.optional-dependencies]
+test = ["pytest>=8", "jsonschema>=4.18"]
+
+[project.scripts]
+telos-proof = "proof_surface.cli:main"
+proof-surface-agent-action = "proof_surface.agent_action.cli:main"
+proof-surface-visual-measurement = "proof_surface.visual_measurement.cli:main"
+proof-surface-research-claim = "proof_surface.research_claim.cli:main"
+proof-surface-model-eval = "proof_surface.model_eval.cli:main"
+proof-surface-optimization = "proof_surface.optimization_workflow.cli:main"
+proof-surface-rollout-receipt = "proof_surface.rollout_receipt.cli:main"
+proof-surface-eval-attempt = "proof_surface.eval_attempt.cli:main"
+proof-surface-ai4science = "proof_surface.ai4science.cli:main"
+proof-surface-conservation = "proof_surface.conservation.cli:main"
+proof-surface-control-certificate = "proof_surface.control_certificate.cli:main"
+proof-surface-competition-attempt = "proof_surface.competition_attempt.cli:main"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]

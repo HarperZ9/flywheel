@@ -1,0 +1,9 @@
+# The Witnessing Spine -- SHA-256 manifest (2026-09-03)
+# Each line is '<sha256>  <file>'. Verify with: Get-FileHash -Algorithm SHA256
+e439e73253e6931d3f1f094df8b59a2f096b131f3c37d9550bd4633fc3dfd1bc  README.md
+ce30dbf3d777cd98ce1cc1f77a89d83cfc413e45069b261b00a650247fc01191  SYNTHESIS-the-witnessing-spine.md
+5bbf69611a101f5b2577f7d750c9ef46317cdfcc8d4888f5986154fd9c8e447b  RUN-001-verifiable-provenance-financial-ai.md
+40dd3ce8d7d832ba9dd1b09653d5af912259c4c2145021bcd19a57024deda73b  RUN-002-genai-cobol-modernization-equivalence.md
+ac8c16f03751650acc5c8e64d05e5d30c564ba11b8bf2e3a61d0cd364caddff4  RUN-003-quant-ml-out-of-sample-steelman.md
+1f3a9c71bb608ad673006623ac1ec8f6b983fe52ffeeee14636e4ef1320354dd  RUN-004-defi-trustlessness-steelman.md
+2682e4017597d366ba587198b8db40ef31a00de940736cc68390099ca28bba7b  RUN-005-enterprise-attestation-assurance-steelman.md

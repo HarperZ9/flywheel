@@ -1,0 +1,15 @@
+{
+ "model": "abliterated-model-large-v2",
+ "usage": null,
+ "finish_reason": "length",
+ "content": "",
+ "reasoning_chars": 228997,
+ "_wall_s": 269.0,
+ "_request": {
+  "model": "abliterated-model-large-v2",
+  "temperature": 0,
+  "seed": 20261002,
+  "max_tokens": 60000,
+  "stream": true
+ }
+}

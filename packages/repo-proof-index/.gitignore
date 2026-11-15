@@ -1,0 +1,19 @@
+.env
+.env.*
+!.env.example
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+.release-check/
+build/
+dist/
+*.egg-info/
+
+# Local-only Claude instructions (global standard: never commit)
+CLAUDE.local.md
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

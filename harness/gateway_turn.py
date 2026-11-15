@@ -17,9 +17,9 @@ Neutral usage is {"input", "output", "cache_read", "cache_write"}. "input" is
 the input the provider did not serve from cache, which is Anthropic's meaning
 of input_tokens. A count the provider did not send is None, never an estimate.
 
-Ledger. A served call appends `endpoint_call` with the meta keys the
-OpenAI-chat path writes (endpoint, model_ref, seed, prompt_sha, response_sha)
-plus `interface`, `usage_reported` and the caller: `key` is `owner` for the
+Ledger. A call appends `endpoint_call_started` before the upstream is
+contacted (gateway_calls); its end entry carries the same `call` id. A served
+call appends `endpoint_call` with the meta keys the (endpoint, model_ref, seed, prompt_sha, response_sha) plus `interface`, `usage_reported` and the caller: `key` is `owner` for the
 gateway token, or a virtual key's name with `key_fp`, `charged_tokens` and,
 when the charge is the word estimate, `estimated`. A call that fails after
 the upstream was contacted appends `endpoint_call_failed` with the caller. A
@@ -85,6 +85,7 @@ class Turn:
     stream: bool = False
     uncarried: list = field(default_factory=list)   # content only the same dialect carries
     caller: object = None               # gateway_key_gate.Caller; None is the owner
+    call: str = ""                      # the id of its started entry (gateway_calls)
     _form: "tuple | None" = field(default=None, repr=False)
 
     def text_form(self) -> tuple:
@@ -214,6 +215,11 @@ def prompt_sha(turn: Turn) -> str:
     return prompt_hash(turn.text_form()[1])
 
 
+def call_meta(turn: Turn) -> dict:
+    """The `call` field every end entry carries: the id of the call's started entry."""
+    return {"call": turn.call} if getattr(turn, "call", "") else {}
+
+
 def reply_text(reply: Reply) -> str:
     """The reply as the ledger and the receipt hash it: prose, then TOOL lines."""
     from .endpoints_tools import canonical
@@ -234,7 +240,8 @@ def record(ledger, upstream: Upstream, turn: Turn, reply: Reply, delivered=False
     meta = {"endpoint": upstream.name, "interface": turn.interface,
             "model_ref": reply.model_ref, "seed": 0,
             "prompt_sha": prompt_sha(turn), "response_sha": sha,
-            "usage_reported": reply.usage_reported, **provider_tools(reply), **bill.meta}
+            "usage_reported": reply.usage_reported, **provider_tools(reply), **bill.meta,
+            **call_meta(turn)}
     try:
         bill.settle()
     except Exception as exc:  # noqa: BLE001 - whatever stopped the debit, the call is recorded
@@ -261,7 +268,7 @@ def record_failed(ledger, upstream: Upstream, turn: Turn, reason: str, detail=""
         from .gateway_key_gate import OWNER
         meta = {"endpoint": upstream.name, "interface": turn.interface,
                 "prompt_sha": prompt_sha(turn), "reason": reason,
-                **(turn.caller or OWNER).meta}
+                **(turn.caller or OWNER).meta, **call_meta(turn)}
         if reason == "client_disconnected":
             meta["abandoned"] = True    # the client left; the provider was still called
         if partial is not None:

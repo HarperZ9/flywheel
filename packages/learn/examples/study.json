@@ -1,0 +1,16 @@
+{
+  "topic": "derivatives",
+  "sessionObjectives": ["power-rule", "product-rule", "chain-rule"],
+  "conceptMap": [
+    { "id": "power-rule", "text": "differentiate a power of x", "requires": [] },
+    { "id": "product-rule", "text": "differentiate a product of two functions", "requires": ["power-rule"] },
+    { "id": "chain-rule", "text": "differentiate a composition of functions", "requires": ["power-rule", "product-rule"] }
+  ],
+  "attempts": [
+    { "objective": "power-rule", "prompt": "d/dx x^3", "answer": "3x^2", "correct": true, "feedback": "" },
+    { "objective": "power-rule", "prompt": "d/dx x^5", "answer": "5x^4", "correct": true, "feedback": "" },
+    { "objective": "power-rule", "prompt": "d/dx x^7", "answer": "7x^6", "correct": true, "feedback": "" },
+    { "objective": "product-rule", "prompt": "d/dx (x^2 * sin x)", "answer": "2x sin x", "correct": false, "feedback": "dropped the second term, forgot + x^2 cos x" },
+    { "objective": "product-rule", "prompt": "d/dx (x * cos x)", "answer": "cos x - x sin x", "correct": true, "feedback": "" }
+  ]
+}

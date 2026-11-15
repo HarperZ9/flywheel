@@ -1,0 +1,110 @@
+{
+  "schema": "project-telos.action-receipt/v1",
+  "action_id": "act_crewai_kfe_replay_b3aaaab_20260725_public",
+  "action_intent_id": "intent_crewai_kfe_replay_b3aaaab_20260725_public",
+  "event_id": "evt_crewai_kfe_replay_b3aaaab_completed_20260725_public",
+  "event_type": "execution_completed",
+  "idempotency_key": "idem_crewai_kfe_replay_b3aaaab_20260725_public_v1",
+  "action": {
+    "kind": "source_audit",
+    "destination_class": "isolated_checkout",
+    "args_hash": "sha256:6626ed41dddd633c37dc71780e90a137fda06f9c2cf21c22e24506d58312b321",
+    "risk_class": "local_read_and_test"
+  },
+  "intent_ref": "audit-intent:crewai-kickoff-for-each-latest-run-replay",
+  "authority_ref": "authority:operator-approved-local-audit",
+  "execution_ref": "local-execution:crewai-replay-audit/b3aaaab/20260725",
+  "evidence_ref": "artifact:canonical-result.json",
+  "review_ref": "review:independent-source-and-receipt-validation",
+  "compensation_ref": null,
+  "trace": {
+    "receipt_is_trace_span": false,
+    "span_ref": "trace:none/public-source-audit-crewai-b3aaaab-20260725",
+    "span_observed": false,
+    "session_ref": "session:public-audit-export/20260725"
+  },
+  "execution": {
+    "external_request_id": "local-read:crewai-b3aaaab-20260725",
+    "external_request_id_applicable": false,
+    "idempotency_key": "idem_crewai_kfe_replay_b3aaaab_20260725_public_v1",
+    "terminal_status": "completed",
+    "redacted_before_ref": "git:b3aaaab023a53a08db4d36c9430b3463f1efcc7d:lib/crewai/src/crewai/crew.py",
+    "redacted_after_ref": "artifact:candidate.patch",
+    "result_hash": "sha256:2c9a17d1c6f049cecb8ef10917d4369ff68e626011f8fe222d329407d21e63aa",
+    "result_ref": "artifact:canonical-result.json"
+  },
+  "agent": {
+    "principal": "agent:codex.replay-audit"
+  },
+  "component": {
+    "name": "crewai.kickoff-for-each-replay-audit-public-export",
+    "version": "1",
+    "config_hash": "sha256:6626ed41dddd633c37dc71780e90a137fda06f9c2cf21c22e24506d58312b321"
+  },
+  "input_materials": [
+    {
+      "ref": "artifact:canonical-result.json",
+      "digest": "sha256:2c9a17d1c6f049cecb8ef10917d4369ff68e626011f8fe222d329407d21e63aa"
+    },
+    {
+      "ref": "git:https://github.com/crewAIInc/crewAI.git@b3aaaab023a53a08db4d36c9430b3463f1efcc7d:docs/edge/en/learn/replay-tasks-from-latest-crew-kickoff.mdx",
+      "digest": "sha256:5cc02ff62d16dfc79bbcbe0b37497f76a665c507cb548ccc96eb8049c2ededa0"
+    },
+    {
+      "ref": "git:https://github.com/crewAIInc/crewAI.git@b3aaaab023a53a08db4d36c9430b3463f1efcc7d:lib/crewai/src/crewai/crew.py",
+      "digest": "sha256:222bb703662c70d58c4f11fbffa4d500544befadea05158628194ed806e56140"
+    },
+    {
+      "ref": "artifact:AUDIT.md",
+      "digest": "sha256:a832faaa3667fe59984e7d79ae2f9be8e6083c802a421ac010037d2dfbd3dfb5"
+    },
+    {
+      "ref": "artifact:candidate.patch",
+      "digest": "sha256:755a6ae5d186c83b8d448e8089fdc0121e7610467282a446b4c458cc29fd0f5f"
+    }
+  ],
+  "side_effect": {
+    "class": "read",
+    "reversible": true,
+    "classification_scope": "The audited target interaction is a source read and local test; bundle files are receipt-adapter artifacts."
+  },
+  "policy": {
+    "decision": "allow",
+    "ref": "policy:operator-approved-local-read-test"
+  },
+  "verification": {
+    "verdict": "DRIFT",
+    "subject": "Unmodified pinned implementation versus documented synchronous kickoff_for_each latest-run replay contract.",
+    "candidate_verdict": "MATCH",
+    "ref": "artifact:canonical-result.json#conclusion"
+  },
+  "result": {
+    "state": "completed",
+    "stop_reason": "completed",
+    "output_ref": "artifact:canonical-result.json"
+  },
+  "retry": {
+    "attempt": 1,
+    "max_attempts": 1
+  },
+  "receipts": [
+    {
+      "kind": "experiment_result",
+      "hash": "sha256:2c9a17d1c6f049cecb8ef10917d4369ff68e626011f8fe222d329407d21e63aa"
+    }
+  ],
+  "persistence": {
+    "append_only": true,
+    "storage_ref": "bundle:action-receipt.json#evt_crewai_kfe_replay_b3aaaab_completed_20260725_public",
+    "adapter_enforcement": "manifest-and-procedure",
+    "correction_policy": "Corrections are new joined receipt events; this sealed event is not mutated."
+  },
+  "privacy": {
+    "raw_prompt_required": false,
+    "raw_tool_args_required": false,
+    "raw_external_payload_required": false,
+    "secrets_included": false,
+    "absolute_local_paths_included": false
+  },
+  "created_at": "2026-07-25T23:02:40Z"
+}

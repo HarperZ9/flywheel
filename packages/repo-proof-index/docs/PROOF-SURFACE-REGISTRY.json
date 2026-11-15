@@ -1,0 +1,38 @@
+{
+  "contract": "proof-surface-packet",
+  "current_version": "0.1",
+  "versions": [
+    {
+      "version": "0.1",
+      "status": "draft",
+      "spec": "docs/PROOF-SURFACE-PACKET-v0.1.md",
+      "schema": "schemas/proof-surface-packet.schema.json",
+      "conformance": "conformance/proof-surface/v0.1/manifest.json"
+    }
+  ],
+  "known_producers": [
+    {
+      "name": "public-surface-sweeper",
+      "command": "public-surface-sweeper <root> --proof-packet",
+      "surface": "public release hygiene"
+    },
+    {
+      "name": "model-provenance-validator",
+      "command": "model-provenance-validator <envelopes> --proof-packet",
+      "surface": "model/reference provenance"
+    }
+  ],
+  "known_consumers": [
+    {
+      "name": "repo-proof-index",
+      "command": "repo-proof-index <packets> --summary",
+      "role": "packet indexing and validation"
+    },
+    {
+      "name": "proof-surface-report",
+      "command": "proof-surface-report <artifacts>",
+      "role": "Markdown handoff report rendering"
+    }
+  ],
+  "boundary": "Packets are evidence carriers, not trust, safety, authorization, compliance, or certification verdicts."
+}

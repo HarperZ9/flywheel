@@ -1,0 +1,50 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  environment-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          pip install datasets pytest
+          pip install -e environments/mlflow_terminal_state
+      - name: Test mlflow-terminal-state
+        working-directory: environments/mlflow_terminal_state
+        run: pytest tests/ -q
+
+  art:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: The card still matches the code it describes
+        run: python tools/check_repo_facts.py
+      - name: The artwork still matches its spec
+        run: python tools/check_repo_art.py
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py
+  metr-task-standard-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test METR terminal-state TaskFamily
+        run: uv run --project environments/metr_terminal_state_runs python -m pytest environments/metr_terminal_state_runs/tests -q --task-standard-task-family-name metr_terminal_state_runs --task-standard-task-name run_000

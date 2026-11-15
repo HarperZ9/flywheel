@@ -1,0 +1,22 @@
+{
+  "merge_note": "Fragment only. Merge the hooks.UserPromptSubmit entry into an existing Codex hooks configuration and keep every existing UserPromptSubmit hook entry already present.",
+  "example_metadata_note": "The required_environment object is illustrative documentation, not a valid hook-root configuration key. Set these variables in the host environment or wrapper script.",
+  "required_environment": {
+    "CANON_CONTEXT_DB": "<absolute path in a per-user folder>/canon-context.sqlite",
+    "CANON_CONTEXT_WORKSPACE_ID": "<workspace>",
+    "CANON_CONTEXT_PROJECT_ID": "<project>",
+    "CANON_CONTEXT_CONTAINER_ID": "shared"
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python -m canon.client_capture --client codex"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,234 @@
+{
+  "header": {
+    "name": "canon",
+    "role": "one memory record, rendered into every tool's own file",
+    "tagline": "Own one region of the file. Leave every byte outside it alone.",
+    "words": [
+      "record",
+      "layer",
+      "render",
+      "region",
+      "verdict"
+    ]
+  },
+  "flows": [
+    {
+      "file": "surface-lane.svg",
+      "kicker": "a tool file is somebody's working file first, and canon is a guest in it",
+      "title": "How one record becomes the file each of your tools reads",
+      "footnote": "The allow-list and the region are the two rules that make this safe to run against a file you already care about. canon writes seven paths and refuses every other one, and inside those seven it rewrites only the span between its own markers. A file with no canon region is left exactly as it was, which means opting in is a thing you do to a file rather than a thing canon does to you.",
+      "alt": "Eight stages taking one record to the file a tool reads: record, validate, layer, resolve, render, region, allow-list, write. Every entry is one envelope in one of eight kinds: an authored personality block, an episodic memory, a synthesized persona, a decision record, a reference to an external research artifact, and three workspace-state kinds for a project's focus, its work items and its environment constraints. The validator checks every field and refuses a record it cannot vouch for. A workspace block overrides a global block carrying the same id, and the resolve step keeps current entries only, ordered by a clock-free ordinal so a rebuild is byte-identical. The block set is rendered to text and spliced into the span between the canon begin and end markers, and every byte outside that span is preserved. The write allow-list holds seven surfaces: a global and a workspace file for Claude Code, an AGENTS.md for Codex, a workspace SOUL.md for Hermes, a GEMINI.md for Gemini CLI, the repository instructions file for GitHub Copilot, and one canon-owned Cursor rule. A path outside that list is refused, and so is a file with no canon region. Three outcomes: written inside the markers canon owns, a surface that drifted and needs a human, and a file canon declines to write at all.",
+      "stages": [
+        {
+          "title": "Record",
+          "note": "One envelope, eight kinds."
+        },
+        {
+          "title": "Validate",
+          "note": "Every field checked, or refused."
+        },
+        {
+          "title": "Layer",
+          "note": "Workspace over global, same id."
+        },
+        {
+          "title": "Resolve",
+          "note": "Current entries, clock-free order."
+        },
+        {
+          "title": "Render",
+          "note": "The block set becomes text."
+        },
+        {
+          "title": "Region",
+          "note": "Only between canon's own markers."
+        },
+        {
+          "title": "Allow-list",
+          "note": "Seven surfaces. Every other path refused."
+        },
+        {
+          "title": "Write",
+          "note": "Bytes outside the region kept."
+        }
+      ],
+      "returns": [
+        {
+          "from": 2,
+          "to": 0,
+          "label": "WORKSPACE OVERRIDES GLOBAL BY ID"
+        },
+        {
+          "from": 6,
+          "to": 4,
+          "label": "NO CANON REGION, NO WRITE"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "WRITTEN",
+          "note": "only between canon's markers",
+          "tone": "verified"
+        },
+        {
+          "label": "NEEDS A HUMAN",
+          "note": "the file and the record disagree",
+          "tone": "drift"
+        },
+        {
+          "label": "NOT WRITTEN",
+          "note": "no region, or not allow-listed",
+          "tone": "none"
+        }
+      ]
+    },
+    {
+      "file": "verdict-lane.svg",
+      "kicker": "a field that quietly fails to survive the trip is the whole failure mode",
+      "title": "How a rendered file is checked back against the record it came from",
+      "footnote": "A round-trip that loses a field is only acceptable when the loss was named first. Each storage adapter declares in advance which fields it cannot carry, the gate classifies every observed loss against that declaration, and a loss nobody declared is a refusal rather than a warning. The aggregate check folds four legs and a leg whose seam is not wired sits out instead of voting a pass it did not earn.",
+      "alt": "Eight stages checking a rendered file back against its record: read, extract, ingest, canonical, compare, drops, legs, verdict. The file is read as it sits on disk and the region between the canon markers is extracted byte exactly. The region text is ingested back into records, each reduced to one canonical form so the comparison is against a single shape rather than a formatting accident. The rendered form and the ingested form are compared field by field. Every field that failed to survive is classified against the losses that storage adapter declared in advance, and a loss nobody declared is a refusal. The aggregate check folds four legs: surface drift, the vault round-trip, the vault read symmetry, and the persona assessment. A leg whose seam is not wired reports nothing and does not affect the result. The verdict is one exit code, zero when every wired leg passed and one otherwise, and all four gate functions in the codebase share that signature so a build keys on them the same way. Three outcomes: the record survives the file, a declared drop that was named in advance, and a refusal that returns a nonzero code.",
+      "stages": [
+        {
+          "title": "Read",
+          "note": "The file as it sits on disk."
+        },
+        {
+          "title": "Extract",
+          "note": "The region, byte exact."
+        },
+        {
+          "title": "Ingest",
+          "note": "Region text back into records."
+        },
+        {
+          "title": "Canonical",
+          "note": "One canonical form per record."
+        },
+        {
+          "title": "Compare",
+          "note": "Rendered against ingested."
+        },
+        {
+          "title": "Drops",
+          "note": "Every lost field declared first."
+        },
+        {
+          "title": "Legs",
+          "note": "Drift, vault, symmetry, persona."
+        },
+        {
+          "title": "Verdict",
+          "note": "One exit code, zero or one."
+        }
+      ],
+      "returns": [
+        {
+          "from": 2,
+          "to": 0,
+          "label": "AN UNDECLARED DROP IS A REFUSAL"
+        },
+        {
+          "from": 6,
+          "to": 4,
+          "label": "A LEG WITH NO SEAM DOES NOT VOTE"
+        }
+      ],
+      "outcomes": [
+        {
+          "label": "ROUND-TRIPS",
+          "note": "the record survives the file",
+          "tone": "verified"
+        },
+        {
+          "label": "DECLARED DROP",
+          "note": "named first, never silent",
+          "tone": "drift"
+        },
+        {
+          "label": "REFUSED",
+          "note": "the gate returns a nonzero code",
+          "tone": "none"
+        }
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "file": "record-table.svg",
+      "kicker": "counts, not adjectives",
+      "title": "What canon carries, and where each number is read from",
+      "source": "src/canon and tests, on this checkout",
+      "heads": [
+        "what canon carries",
+        "how many",
+        "where the number comes from"
+      ],
+      "alt": "A table of twelve rows: what canon carries, how many of it there are, and where each number is read from. Eight record kinds share one envelope: five under the v1 record tag and three workspace-state kinds under their own tag. Two scopes layer, workspace over global. Seven surfaces sit on the write allow-list: a global and a workspace file for Claude Code, an AGENTS.md for Codex, a workspace SOUL.md for Hermes, a GEMINI.md, the Copilot instructions file, and one Cursor rule. Four storage adapters implement the backend protocol, and five capability tokens describe what each one can carry. Twenty-two schema pins name the seams that carry a version. The aggregate check folds four legs, and four gate functions share the same zero or one exit code. 170 source modules hold 28,553 lines, and 110 test files hold 1869 tests. Two surfaces named in the roadmap are absent from the catalog, a global SOUL.md and a global GEMINI.md, so canon does not render them.",
+      "footnote": "Every count here was read from the module that defines it rather than typed in. The marked row is the honest null: the README names a global SOUL.md and a global GEMINI.md as later phases, and the write allow-list does not carry them, so those two files are ones canon will not touch today.",
+      "fields": [
+        {
+          "key": "record kinds",
+          "value": "eight of them",
+          "note": "KINDS in schema.py: personality-block, episodic-memory, synthesized-persona-l3, adr-decision, research-artifact-ref. WORKSPACE_KINDS adds three on their own tag."
+        },
+        {
+          "key": "scopes",
+          "value": "two, layered",
+          "note": "A global block is the default everywhere. A workspace block carrying the same id overrides it where that workspace applies, and resolve keeps current entries only."
+        },
+        {
+          "key": "rendered surfaces",
+          "value": "seven files",
+          "note": "SURFACE_CATALOG in registry.py: CLAUDE.md twice, AGENTS.md, SOUL.md, GEMINI.md, the Copilot file and a Cursor rule."
+        },
+        {
+          "key": "storage adapters",
+          "value": "four of them",
+          "note": "A local file store, a zero-drop SQLite reference, and injected-handle adapters for a memory fact-engine and an authored-block store, all behind one protocol."
+        },
+        {
+          "key": "capabilities",
+          "value": "five tokens",
+          "note": "relations, temporal, audit-chain, arbitrary-kind and foreign-provenance. An adapter declares what it carries, so a drop is known before a write."
+        },
+        {
+          "key": "schema pins",
+          "value": "twenty-two seams",
+          "note": "SEAM_PINS in versions_pin.py. Each pin names a seam, its version, and the decision record behind it, so a shape change is a version change."
+        },
+        {
+          "key": "check legs",
+          "value": "four of them",
+          "note": "canon_check folds surface drift, the vault round-trip, the vault read symmetry, and the persona assessment. An unwired leg reports nothing."
+        },
+        {
+          "key": "gate exit codes",
+          "value": "four functions",
+          "note": "drift, reconcile, vault read and the aggregate check each return zero on a clean run and one otherwise, so a build gates on all four the same way."
+        },
+        {
+          "key": "source modules",
+          "value": "170 files",
+          "note": "Python modules under src/canon, including backends, transport, MCP, context capture/query and continuity export/bootstrap seams."
+        },
+        {
+          "key": "source lines",
+          "value": "28,603 lines",
+          "note": "Counted across those modules. No runtime dependencies: the record, codecs, context capture/query, continuity CLI and gates are standard library only."
+        },
+        {
+          "key": "python tests",
+          "value": "1876 cases",
+          "note": "pytest over 110 files: 1296 test functions plus their parametrized cases, covering records, backends, MCP, context, continuity export and every number here."
+        },
+        {
+          "key": "surfaces not rendered",
+          "value": "two named",
+          "note": "A global SOUL.md and a global GEMINI.md are named in the README as later phases and are absent from the write allow-list, so canon does not write them.",
+          "tone": "drift"
+        }
+      ]
+    }
+  ]
+}

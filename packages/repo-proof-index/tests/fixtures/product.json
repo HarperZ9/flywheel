@@ -1,0 +1,12 @@
+{
+  "manifest_id": "product-demo",
+  "product": "demo",
+  "maturity": "alpha",
+  "verification": [
+    {
+      "status": "pass",
+      "evidence": "unit tests"
+    }
+  ]
+}
+

@@ -1,0 +1,9 @@
+{
+  "task_id": "merge-intervals.v1",
+  "prompt": "Implement merge_intervals(intervals) in solution.py. Given a list of [start, end] integer intervals, return the list of merged, non-overlapping intervals sorted by start. Adjacent intervals that touch (for example [1,2] and [2,3]) merge into one.",
+  "oracle": "pytest",
+  "oracle_cmd": "python -m pytest test_merge_intervals.py",
+  "workdir_name": "workdir",
+  "candidate_path": "solution.py",
+  "seed": 0
+}

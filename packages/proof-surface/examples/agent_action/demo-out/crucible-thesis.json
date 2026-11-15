@@ -1,0 +1,10 @@
+{
+  "title": "Agent-action proof packet reverify",
+  "disposition": "publishable",
+  "claims": [
+    {
+      "text": "Action span-write-config (fs.write on /work/config.json) was admitted under its grant and its effect was verified.",
+      "falsification": "the admission decision was not 'allow', or the after-state digest is absent (the effect could not be observed)."
+    }
+  ]
+}

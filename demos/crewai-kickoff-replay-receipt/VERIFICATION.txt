@@ -1,0 +1,10 @@
+COMMAND: python verify_public.py
+EXIT_CODE: 0
+
+verification=MATCH
+checks=362
+canonical_sha256=2c9a17d1c6f049cecb8ef10917d4369ff68e626011f8fe222d329407d21e63aa
+action_receipt_sha256=e5b000658a704f1e099296a3005ddc13a8f3e6f620554c3c23365a7e38062aec
+files=19
+local_path_leaks=0
+secret_pattern_matches=0

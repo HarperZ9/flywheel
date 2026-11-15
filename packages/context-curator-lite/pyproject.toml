@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "context-curator-lite"
+version = "0.2.0"
+description = "Build token-efficient context bundles with redaction, source refs, hashes, and Telos envelopes."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Zain Dana Harper" }]
+keywords = ["context", "curator", "privacy", "cli", "tooling", "telos", "provenance"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: Utilities",
+]
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8", "build>=1.2", "hatchling>=1.25"]
+
+[project.scripts]
+context-curator-lite = "context_curator_lite.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/HarperZ9/context-curator-lite"
+Repository = "https://github.com/HarperZ9/context-curator-lite"
+Issues = "https://github.com/HarperZ9/context-curator-lite/issues"
+
+[tool.pytest.ini_options]
+addopts = "-q"
+pythonpath = ["src"]
+testpaths = ["tests"]
+
+[tool.hatch.build.targets.sdist]
+only-include = [
+  ".github",
+  ".gitignore",
+  "AGENTS.md",
+  "AUTHORS.md",
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "LICENSE",
+  "README.md",
+  "RELEASE.md",
+  "USAGE.md",
+  "docs",
+  "examples",
+  "pyproject.toml",
+  "src",
+  "tests",
+]

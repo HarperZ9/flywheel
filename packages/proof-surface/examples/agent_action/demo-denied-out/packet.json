@@ -1,0 +1,72 @@
+{
+  "version": "agent-action-proof-packet/v0",
+  "packet_id": "demo-denied",
+  "claim": "The agent attempted to write /etc/passwd; the grant only covers /work/config.json.",
+  "scope": "Grant limited to fs.write on /work/config.json.",
+  "sources": [
+    {
+      "ref": "trace:trace-demo-denied",
+      "sha256": "c588e83673f321b577d426e2b20b8ac741bb3504e9682a8fb6fe4e290c34821e"
+    }
+  ],
+  "context": {
+    "service": "demo-config-agent",
+    "trace_id": "trace-demo-denied",
+    "tool_authority": "grant-fs-write-work"
+  },
+  "actions": [
+    {
+      "action_id": "span-write-passwd",
+      "actor": "user:zain",
+      "agent": "agent:claude-opus-4-8",
+      "model": "claude-opus-4-8",
+      "tool": "fs",
+      "action_kind": "fs.write",
+      "target": "/etc/passwd",
+      "cost": {
+        "tokens": 40,
+        "wall_ms": 1900
+      },
+      "span_digest": "a08182900f9dd64b12565362d8a8aa20e94e0fb516201146ed781d6c7955b412"
+    }
+  ],
+  "admission": [
+    {
+      "action_id": "span-write-passwd",
+      "decision": "deny",
+      "reasons": [
+        "target '/etc/passwd' is outside the grant scope"
+      ],
+      "authorization_ref": "grant-fs-write-work"
+    }
+  ],
+  "side_effects": [
+    {
+      "action_id": "span-write-passwd",
+      "class": "write",
+      "idempotency_key": "dead0000beef0000dead0000beef0000dead0000beef0000dead0000beef0000",
+      "compensation": {
+        "reversible": false,
+        "rollback_ref": null
+      },
+      "before_digest": "1111111111111111111111111111111111111111111111111111111111111111",
+      "after_digest": "dead0000beef0000dead0000beef0000dead0000beef0000dead0000beef0000"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "/etc/passwd",
+      "sha256": "dead0000beef0000dead0000beef0000dead0000beef0000dead0000beef0000"
+    }
+  ],
+  "verdicts": {
+    "overall": "DRIFT",
+    "per_action": [
+      {
+        "action_id": "span-write-passwd",
+        "status": "DRIFT"
+      }
+    ]
+  },
+  "uncertainty": []
+}

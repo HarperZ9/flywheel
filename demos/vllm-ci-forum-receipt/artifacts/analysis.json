@@ -1,0 +1,261 @@
+{
+  "claims": [
+    {
+      "estimated_savings_seconds": null,
+      "id": "precommit-snapshot",
+      "state": "verified",
+      "text": "The pinned latest-100 pre-commit snapshot contains 35 cancelled outcomes; this is an outcome count, not a billed-time or waste estimate."
+    },
+    {
+      "estimated_savings_seconds": null,
+      "id": "cancelled-run-job",
+      "state": "verified",
+      "text": "Run 29858770343 concluded cancelled while its self-hosted pre-commit job concluded success after 263 elapsed seconds, including 245 seconds in the pre-commit action."
+    },
+    {
+      "estimated_savings_seconds": null,
+      "id": "cancellation-experiment",
+      "state": "inference",
+      "text": "Instrumenting cancellation request, runner receipt, process exit, and job completion timestamps could determine whether runner occupancy is reducible."
+    },
+    {
+      "estimated_savings_seconds": null,
+      "id": "macos-parallel-preview",
+      "state": "verified",
+      "text": "In run 29799057515, required macos-15 and non-blocking macos-26 jobs ran in parallel for 1326 and 1329 elapsed seconds."
+    },
+    {
+      "estimated_savings_seconds": null,
+      "id": "macos-cadence-experiment",
+      "state": "inference",
+      "text": "A controlled cadence experiment for the preview macos-26 lane could measure coverage value against runner occupancy before any schedule change."
+    },
+    {
+      "estimated_savings_seconds": null,
+      "id": "billing-and-savings",
+      "state": "unknown",
+      "text": "Billed minutes, queue time decomposition, self-hosted capacity cost, and attributable avoidable time are not established by these public snapshots."
+    }
+  ],
+  "limitations": [
+    "The latest-N API windows are a time-bounded convenience sample, not a randomized sample.",
+    "The workflow Git blob was bound to the representative runs, not to every head in the 100-run aggregate window.",
+    "updated_at minus run_started_at includes more than runner execution and cannot be billed as job time.",
+    "Job and step timestamps have one-second granularity in these captures.",
+    "A cancelled workflow with a successful job does not by itself prove a cancellation defect or avoidable work.",
+    "macos-15 and macos-26 elapsed times overlap; adding them is not a workflow latency estimate.",
+    "No proposed policy change was executed, so no savings, regression rate, or coverage impact was measured."
+  ],
+  "macos": {
+    "attributable_avoidable_time_seconds": null,
+    "billed_runner_time_seconds": null,
+    "completed_records": 10,
+    "conclusions": {
+      "success": 10
+    },
+    "representative_run": {
+      "head_sha": "6bcda970fde272b06cff0d8f397224dbac96d7ad",
+      "jobs": {
+        "macos-15": {
+          "build_elapsed_seconds": 297,
+          "job_conclusion": "success",
+          "job_elapsed_seconds": 1326,
+          "job_url": "https://github.com/vllm-project/vllm/actions/runs/29799057515/job/88536338554",
+          "runner_labels": [
+            "macos-15"
+          ],
+          "smoke_elapsed_seconds": 1007
+        },
+        "macos-26": {
+          "build_elapsed_seconds": 299,
+          "job_conclusion": "success",
+          "job_elapsed_seconds": 1329,
+          "job_url": "https://github.com/vllm-project/vllm/actions/runs/29799057515/job/88536338551",
+          "runner_labels": [
+            "macos-26"
+          ],
+          "smoke_elapsed_seconds": 1008
+        }
+      },
+      "parallel_job_overlap_seconds": 1323,
+      "run_id": 29799057515,
+      "run_url": "https://github.com/vllm-project/vllm/actions/runs/29799057515",
+      "workflow_conclusion": "success",
+      "workflow_elapsed_seconds": 1340,
+      "workflow_id": 207055592,
+      "workflow_path": ".github/workflows/macos-smoke-test.yml"
+    },
+    "run_elapsed_seconds": {
+      "definition": "updated_at minus run_started_at",
+      "maximum": 1668,
+      "median": 1499.5,
+      "minimum": 1340,
+      "p90": 1573,
+      "p90_method": "nearest-rank",
+      "sum": 14846
+    },
+    "sample_size": 10,
+    "scheduled_records": 10,
+    "workflow_controls": {
+      "macos-15_required": true,
+      "macos-26_continue_on_error": true,
+      "macos-26_required": false,
+      "schedule": "daily at 02:30 UTC",
+      "uv_cache_enabled": true
+    },
+    "workflow_id": 207055592
+  },
+  "measurement_contract": {
+    "billed_runner_time": "not present in the captured public API fields",
+    "estimate_policy": "no efficiency or billing estimate is calculated",
+    "job_elapsed_seconds": "GitHub job completed_at minus started_at; wall-clock job elapsed, not a billing record",
+    "run_elapsed_seconds": "GitHub run updated_at minus run_started_at; end-to-end wall-clock elapsed, not billed runner time",
+    "step_elapsed_seconds": "GitHub step completed_at minus started_at; rounded to whole seconds"
+  },
+  "precommit": {
+    "attributable_avoidable_time_seconds": null,
+    "billed_runner_time_seconds": null,
+    "completed_records": 100,
+    "conclusions": {
+      "action_required": 2,
+      "cancelled": 35,
+      "failure": 17,
+      "success": 46
+    },
+    "representative_runs": {
+      "cancelled_workflow": {
+        "head_sha": "3b08ca64354bb4c4f595809b03fb63982545832e",
+        "job_conclusion": "success",
+        "job_elapsed_seconds": 263,
+        "jobs_api_url": "https://api.github.com/repos/vllm-project/vllm/actions/runs/29858770343/jobs?per_page=100",
+        "precommit_action_elapsed_seconds": 245,
+        "run_id": 29858770343,
+        "run_url": "https://github.com/vllm-project/vllm/actions/runs/29858770343",
+        "runner_labels": [
+          "linux",
+          "self-hosted",
+          "vllm-runners",
+          "x64"
+        ],
+        "workflow_conclusion": "cancelled",
+        "workflow_elapsed_seconds": 434,
+        "workflow_id": 137737330,
+        "workflow_path": ".github/workflows/pre-commit.yml"
+      },
+      "successful_workflow": {
+        "head_sha": "9e7f984693d9a960ea83e5d1daa0f034d42b2513",
+        "job_conclusion": "success",
+        "job_elapsed_seconds": 277,
+        "jobs_api_url": "https://api.github.com/repos/vllm-project/vllm/actions/runs/29857602498/jobs?per_page=100",
+        "precommit_action_elapsed_seconds": 259,
+        "run_id": 29857602498,
+        "run_url": "https://github.com/vllm-project/vllm/actions/runs/29857602498",
+        "runner_labels": [
+          "linux",
+          "self-hosted",
+          "vllm-runners",
+          "x64"
+        ],
+        "workflow_conclusion": "success",
+        "workflow_elapsed_seconds": 604,
+        "workflow_id": 137737330,
+        "workflow_path": ".github/workflows/pre-commit.yml"
+      }
+    },
+    "run_elapsed_seconds": {
+      "definition": "updated_at minus run_started_at",
+      "maximum": 839,
+      "median": 350.0,
+      "minimum": 0,
+      "p90": 591,
+      "p90_method": "nearest-rank",
+      "sum": 27826
+    },
+    "sample_size": 100,
+    "workflow_controls": {
+      "precommit_scope": "--all-files --hook-stage manual",
+      "pull_request_cancel_in_progress": true,
+      "runner": [
+        "self-hosted",
+        "linux",
+        "x64",
+        "vllm-runners"
+      ]
+    },
+    "workflow_id": 137737330
+  },
+  "provenance": {
+    "inputs": {
+      "macos-jobs.json": "55afd1dd16d6fed7b078ec9b9a2db04c4120857cf965f6a1fdc5f61e559be8e9",
+      "macos-runs.json": "8847a06550c658e014da0523aceafeaf9266c56acd1da89320fa71ec6114f8d5",
+      "macos-smoke-test.yml": "5b051a942a5f940db8e71f49462e29b7705eb492a6c039bce74ac72b004cf6fa",
+      "pre-commit.yml": "17980e8c244ca39fa0db29aac6193229e88bf862da342e9b91d8f149f3fd8a09",
+      "precommit-cancelled-jobs.json": "d78b93374f0a743f4403c52a73afa8aa2df4799bb3520cdc530e8093274fdfc0",
+      "precommit-runs.json": "89b2d2edeacb1ae792c7fa7a2f0f282436c517f7f4ac3fdc9f0190d34bd62457",
+      "precommit-success-jobs.json": "c432927c138fdda81c7160960224990ebc20554485ef618bbdc9e5059e1414b5",
+      "representative-runs.json": "bf079eec2d3da6f038d55a9b632984a0a38d5c462ad12983dc668c392cce85fd",
+      "workflow-manifest.json": "97b4a788051aba7857ec0aa6cd294cca48384fc7f6eddd529daaa5b0b3376829"
+    },
+    "representative_runs": {
+      "29799057515": {
+        "head_sha": "6bcda970fde272b06cff0d8f397224dbac96d7ad",
+        "run_url": "https://github.com/vllm-project/vllm/actions/runs/29799057515",
+        "workflow_id": 207055592,
+        "workflow_path": ".github/workflows/macos-smoke-test.yml"
+      },
+      "29857602498": {
+        "head_sha": "9e7f984693d9a960ea83e5d1daa0f034d42b2513",
+        "run_url": "https://github.com/vllm-project/vllm/actions/runs/29857602498",
+        "workflow_id": 137737330,
+        "workflow_path": ".github/workflows/pre-commit.yml"
+      },
+      "29858770343": {
+        "head_sha": "3b08ca64354bb4c4f595809b03fb63982545832e",
+        "run_url": "https://github.com/vllm-project/vllm/actions/runs/29858770343",
+        "workflow_id": 137737330,
+        "workflow_path": ".github/workflows/pre-commit.yml"
+      }
+    },
+    "retrieved_at": {
+      "macos_jobs": "2026-07-21T21:30:59.0014014Z",
+      "macos_runs": "2026-07-21T21:30:58.9941691Z",
+      "precommit_cancelled_jobs": "2026-07-21T21:30:59.0019281Z",
+      "precommit_runs": "2026-07-21T21:30:23.5487021Z",
+      "precommit_success_jobs": "2026-07-21T21:30:58.9536097Z",
+      "representative_runs": "2026-07-21T21:50:01.4968690Z",
+      "workflow_manifest": "2026-07-21T21:31:35.0932143Z"
+    },
+    "snapshot_urls": {
+      "macos_jobs": "https://api.github.com/repos/vllm-project/vllm/actions/runs/29799057515/jobs?per_page=100",
+      "macos_runs": "https://api.github.com/repos/vllm-project/vllm/actions/workflows/207055592/runs?per_page=10",
+      "precommit_cancelled_jobs": "https://api.github.com/repos/vllm-project/vllm/actions/runs/29858770343/jobs?per_page=100",
+      "precommit_runs": "https://api.github.com/repos/vllm-project/vllm/actions/workflows/137737330/runs?per_page=100",
+      "precommit_success_jobs": "https://api.github.com/repos/vllm-project/vllm/actions/runs/29857602498/jobs?per_page=100",
+      "representative_runs": "https://api.github.com/repos/vllm-project/vllm/actions/runs/{run_id}"
+    },
+    "workflows": {
+      "macos": {
+        "canonical_capture_ref": "6bcda970fde272b06cff0d8f397224dbac96d7ad",
+        "git_blob_sha": "011bf84feb326aa889c52abb5f064985b617de14",
+        "path": ".github/workflows/macos-smoke-test.yml",
+        "source_sha256": "5b051a942a5f940db8e71f49462e29b7705eb492a6c039bce74ac72b004cf6fa",
+        "source_url": "https://raw.githubusercontent.com/vllm-project/vllm/6bcda970fde272b06cff0d8f397224dbac96d7ad/.github/workflows/macos-smoke-test.yml",
+        "workflow_id": 207055592
+      },
+      "precommit": {
+        "canonical_capture_ref": "fca252d59efdb627549e5677263c69709590c982",
+        "git_blob_sha": "143fc427a49ee1736b00d2b3788f956709b67609",
+        "path": ".github/workflows/pre-commit.yml",
+        "representative_run_refs": [
+          "9e7f984693d9a960ea83e5d1daa0f034d42b2513",
+          "3b08ca64354bb4c4f595809b03fb63982545832e"
+        ],
+        "source_sha256": "17980e8c244ca39fa0db29aac6193229e88bf862da342e9b91d8f149f3fd8a09",
+        "source_url": "https://raw.githubusercontent.com/vllm-project/vllm/fca252d59efdb627549e5677263c69709590c982/.github/workflows/pre-commit.yml",
+        "workflow_id": 137737330
+      }
+    }
+  },
+  "repository": "vllm-project/vllm",
+  "schema": "vllm-ci-efficiency-analysis/1"
+}

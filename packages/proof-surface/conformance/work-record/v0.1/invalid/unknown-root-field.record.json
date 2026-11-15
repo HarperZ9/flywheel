@@ -1,0 +1,12 @@
+{
+  "work_record_version": "0.1",
+  "record_id": "wr-unknown-root-field",
+  "direction": "output-only",
+  "intent": "Unknown root field must fail closed.",
+  "inputs": [],
+  "actions": [],
+  "evidence": [],
+  "outcome": "completed",
+  "cost": { "tokens": 0, "wall_ms": 0 },
+  "extra_field": "should be rejected"
+}

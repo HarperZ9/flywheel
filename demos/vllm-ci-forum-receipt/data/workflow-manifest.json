@@ -1,0 +1,45 @@
+{
+  "schema": "pinned-workflow-manifest/1",
+  "retrieved_at": "2026-07-21T21:31:35.0932143Z",
+  "repository": "vllm-project/vllm",
+  "workflows": [
+    {
+      "workflow_id": 137737330,
+      "path": ".github/workflows/pre-commit.yml",
+      "canonical_capture_ref": "fca252d59efdb627549e5677263c69709590c982",
+      "captures": [
+        {
+          "ref": "fca252d59efdb627549e5677263c69709590c982",
+          "git_blob_sha": "143fc427a49ee1736b00d2b3788f956709b67609",
+          "size": 2774,
+          "download_url": "https://raw.githubusercontent.com/vllm-project/vllm/fca252d59efdb627549e5677263c69709590c982/.github/workflows/pre-commit.yml"
+        },
+        {
+          "ref": "9e7f984693d9a960ea83e5d1daa0f034d42b2513",
+          "git_blob_sha": "143fc427a49ee1736b00d2b3788f956709b67609",
+          "size": 2774,
+          "download_url": "https://raw.githubusercontent.com/vllm-project/vllm/9e7f984693d9a960ea83e5d1daa0f034d42b2513/.github/workflows/pre-commit.yml"
+        },
+        {
+          "ref": "3b08ca64354bb4c4f595809b03fb63982545832e",
+          "git_blob_sha": "143fc427a49ee1736b00d2b3788f956709b67609",
+          "size": 2774,
+          "download_url": "https://raw.githubusercontent.com/vllm-project/vllm/3b08ca64354bb4c4f595809b03fb63982545832e/.github/workflows/pre-commit.yml"
+        }
+      ]
+    },
+    {
+      "workflow_id": 207055592,
+      "path": ".github/workflows/macos-smoke-test.yml",
+      "canonical_capture_ref": "6bcda970fde272b06cff0d8f397224dbac96d7ad",
+      "captures": [
+        {
+          "ref": "6bcda970fde272b06cff0d8f397224dbac96d7ad",
+          "git_blob_sha": "011bf84feb326aa889c52abb5f064985b617de14",
+          "size": 2931,
+          "download_url": "https://raw.githubusercontent.com/vllm-project/vllm/6bcda970fde272b06cff0d8f397224dbac96d7ad/.github/workflows/macos-smoke-test.yml"
+        }
+      ]
+    }
+  ]
+}

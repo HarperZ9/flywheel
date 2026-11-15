@@ -1,0 +1,1269 @@
+"""Falsifiers for Mneme-owned production of Crucible replay packs."""
+from __future__ import annotations
+
+import gc
+import hashlib
+import json
+import os
+import sqlite3
+import sys
+import threading
+from copy import deepcopy
+from pathlib import Path
+
+import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from mneme import AgentMemory
+import mneme.cli as cli_module
+from mneme.cli import main
+from mneme.replay import ReplayBindingError, replay_crucible
+
+
+def _sha(value: str) -> str:
+    return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def _measurement_seal_from_rows(rows: list[dict]) -> str:
+    """Independent pin of Crucible's descriptor-bearing measurement seal."""
+    fields = (
+        "claim_id", "claim_sha256", "deviation", "tolerance", "method",
+        "measured_at", "evidence", "recheck",
+    )
+    objects = []
+    for row in rows:
+        objects.append({key: row.get(key) for key in fields})
+    objects.sort(key=lambda value: json.dumps(value, sort_keys=True, ensure_ascii=False))
+    canonical = json.dumps(objects, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _replay_binding(rows: list[dict], *, skipped_count: int = 0) -> dict:
+    objects = [{
+        "recheck": row["recheck"],
+        "expected_measurement": row["expected_measurement"],
+    } for row in rows]
+    objects.sort(key=lambda value: json.dumps(
+        value, sort_keys=True, ensure_ascii=False, separators=(",", ":")))
+    canonical = json.dumps(
+        objects, sort_keys=True, ensure_ascii=False, separators=(",", ":"))
+    return {
+        "schema": "crucible.replay-set/1",
+        "descriptor_count": len(objects),
+        "skipped_count": skipped_count,
+        "sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
+    }
+
+
+def _store_id(path: Path) -> str:
+    conn = sqlite3.connect(path)
+    try:
+        return conn.execute("SELECT value FROM meta WHERE key='store_id'").fetchone()[0]
+    finally:
+        conn.close()
+
+
+def _state(path: Path) -> AgentMemory:
+    memory = AgentMemory(path)
+    for index in range(1, 6):
+        turn_id = f"turn-{index}"
+        memory.store.add_turn(
+            turn_id,
+            "qcr",
+            "user",
+            f"Source statement {index}" if index < 5 else "Source statement \u03c0",
+        )
+        memory.store.add_memory(
+            f"memory-{index}",
+            "L1",
+            f"Derived statement {index}",
+            [turn_id],
+            "fixture/v1",
+            "QCR replay fixture",
+            session="qcr",
+            user="operator",
+        )
+    return memory
+
+
+def _template(memory: AgentMemory) -> dict:
+    export = memory.to_crucible("qcr")
+    rows = []
+    for index, measurement in enumerate(export["measurements"], 1):
+        claim_id = measurement["claim"]
+        claim_sha = _sha(f"claim:{claim_id}")
+        expected = {
+            "claim_id": claim_id,
+            "claim_sha256": claim_sha,
+            "deviation": measurement["deviation"],
+            "tolerance": measurement["tolerance"],
+            "method": measurement["method"],
+            "measured_at": 1_700_000_000.0 + index,
+            "evidence": measurement["evidence"],
+        }
+        rows.append({
+            "claim": {
+                "id": claim_id,
+                "sha256": claim_sha,
+                "text": f"claim {index}",
+                "status": "MATCH",
+            },
+            "recheck": measurement["recheck"],
+            "expected_measurement": expected,
+            "measurement": {
+                **expected,
+                "deviation": None,
+                "measured_at": None,
+                "evidence": [],
+            },
+        })
+    sealed_rows = [
+        {**row["expected_measurement"], "recheck": row["recheck"]}
+        for row in rows
+    ]
+    return {
+        "schema": "crucible.replay-template/1",
+        "assessment": {
+            "thesis_id": "fixture-thesis",
+            "assessment_seal": _sha("assessment"),
+            "measurement_seal": _measurement_seal_from_rows(sealed_rows),
+        },
+        "replay_binding": _replay_binding(rows),
+        "instructions": "Crucible-generated replay template fixture",
+        "replays": rows,
+    }
+
+
+def test_replay_produces_complete_assessment_bound_five_row_pack(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+
+    pack = replay_crucible(memory.store, template)
+
+    assert pack["schema"] == "crucible.replay-pack/1"
+    assert pack["assessment"] == template["assessment"]
+    assert pack["replay_binding"] == template["replay_binding"]
+    assert "measurement_seal_rows" not in pack
+    assert len(pack["replays"]) == 5
+    assert [r["recheck"] for r in pack["replays"]] == [
+        r["recheck"] for r in template["replays"]
+    ]
+    for replay, source in zip(pack["replays"], template["replays"], strict=True):
+        actual = replay["measurement"]
+        expected = source["expected_measurement"]
+        assert actual == expected
+        assert actual["claim_sha256"] == expected["claim_sha256"]
+        assert actual["measured_at"] == expected["measured_at"]
+        assert actual["tolerance"] == expected["tolerance"]
+        assert actual["method"] == expected["method"]
+        assert actual["evidence"] == expected["evidence"]
+        assert replay["mneme_verdict"] == "MATCH"
+        assert replay["mneme_reason"]
+
+
+@pytest.mark.parametrize("missing", ["thesis_id", "assessment_seal", "measurement_seal"])
+def test_replay_rejects_incomplete_assessment_binding(tmp_path, missing):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    del template["assessment"][missing]
+
+    with pytest.raises(ReplayBindingError, match="assessment binding"):
+        replay_crucible(memory.store, template)
+
+
+@pytest.mark.parametrize("assessment", [None, {}, "not-an-object"])
+def test_replay_rejects_null_or_invalid_assessment(tmp_path, assessment):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["assessment"] = assessment
+
+    with pytest.raises(ReplayBindingError, match="assessment binding"):
+        replay_crucible(memory.store, template)
+
+
+@pytest.mark.parametrize("schema", [None, "crucible.replay-template/999", 1])
+def test_replay_rejects_missing_or_unsupported_template_schema(tmp_path, schema):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    if schema is None:
+        template.pop("schema")
+    else:
+        template["schema"] = schema
+
+    with pytest.raises(ReplayBindingError, match="unsupported replay template schema"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_duplicate_rows(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"].append(deepcopy(template["replays"][0]))
+
+    with pytest.raises(ReplayBindingError, match="duplicate memory_id"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_omitted_row_against_replay_binding(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"].pop()
+
+    with pytest.raises(ReplayBindingError, match="replay binding"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_omitted_row_with_recomputed_zero_skip_binding(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"].pop()
+    template["replay_binding"] = _replay_binding(
+        template["replays"], skipped_count=0)
+
+    with pytest.raises(
+            ReplayBindingError,
+            match="assessment measurement seal binding"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_omitted_row_with_recomputed_positive_skip_binding(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"].pop()
+    template["replay_binding"] = _replay_binding(
+        template["replays"], skipped_count=1)
+
+    with pytest.raises(
+            ReplayBindingError,
+            match="skipped rows require a verifier-enforced full denominator"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_mixed_assessment_without_full_denominator_seal(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replay_binding"] = _replay_binding(
+        template["replays"], skipped_count=1)
+    # The complete mixed assessment seal is opaque to Mneme and deliberately
+    # cannot be reproduced from the five disclosed descriptor rows.
+    template["assessment"]["measurement_seal"] = _sha("opaque mixed assessment")
+
+    with pytest.raises(
+            ReplayBindingError,
+            match="skipped rows require a verifier-enforced full denominator"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_private_measurement_seal_rows_context(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["measurement_seal_rows"] = [{
+        **template["replays"][0]["expected_measurement"],
+        "recheck": template["replays"][0]["recheck"],
+    }]
+
+    with pytest.raises(ReplayBindingError, match="measurement_seal_rows.*not accepted"):
+        replay_crucible(memory.store, template)
+
+
+def test_old_pure_descriptor_template_remains_supported(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template.pop("replay_binding")
+
+    pack = replay_crucible(memory.store, template)
+
+    assert len(pack["replays"]) == 5
+    assert "replay_binding" not in pack
+
+
+def test_schema_less_legacy_template_remains_supported(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template.pop("replay_binding")
+    template.pop("schema")
+
+    pack = replay_crucible(memory.store, template)
+
+    assert pack["schema"] == "crucible.replay-pack/1"
+    assert len(pack["replays"]) == 5
+    assert "replay_binding" not in pack
+
+
+def test_schema_less_legacy_template_rejects_omitted_row_against_global_seal(
+        tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template.pop("replay_binding")
+    template.pop("schema")
+    template["replays"].pop()
+
+    with pytest.raises(ReplayBindingError, match="assessment measurement seal binding"):
+        replay_crucible(memory.store, template)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("schema", "crucible.replay-set/999"),
+        ("descriptor_count", 4),
+        ("descriptor_count", True),
+        ("skipped_count", -1),
+        ("skipped_count", False),
+        ("sha256", "0" * 64),
+    ],
+)
+def test_replay_rejects_tampered_replay_binding(tmp_path, field, value):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replay_binding"][field] = value
+
+    with pytest.raises(ReplayBindingError, match="replay binding"):
+        replay_crucible(memory.store, template)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "message"),
+    [
+        ("schema", "mneme.recheck/999", "unsupported recheck schema"),
+        ("oracle", "shell:exec/v1", "unsupported recheck oracle"),
+    ],
+)
+def test_replay_rejects_unsupported_descriptor_protocol(tmp_path, field, value, message):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"][0]["recheck"][field] = value
+
+    with pytest.raises(ReplayBindingError, match=message):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_descriptor_with_execution_fields(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"][0]["recheck"]["command"] = "anything"
+
+    with pytest.raises(ReplayBindingError, match="descriptor fields"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_swapped_descriptors(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"][0]["recheck"], template["replays"][1]["recheck"] = (
+        template["replays"][1]["recheck"], template["replays"][0]["recheck"])
+
+    with pytest.raises(ReplayBindingError, match="claim/descriptor binding"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_changed_target_grounding(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    memory.update("memory-1", "Changed derived statement", reason="fixture")
+
+    with pytest.raises(ReplayBindingError, match="grounding binding"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_raw_target_tamper_even_when_expected_state_is_already_drift(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    # Establish a legitimate DRIFT/1.0 measurement before template generation.
+    memory.store.add_turn("turn-1", "qcr", "user", "Changed source statement")
+    template = _template(memory)
+    assert template["replays"][0]["expected_measurement"]["deviation"] == 1.0
+    # Tamper with the target bytes while preserving its stored content hash.
+    memory.store.conn.execute(
+        "UPDATE memories SET text=? WHERE id=?",
+        ("Changed target bytes hidden behind the same DRIFT deviation", "memory-1"),
+    )
+    memory.store.conn.commit()
+
+    with pytest.raises(ReplayBindingError, match="grounding binding"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_uses_one_sqlite_snapshot_across_binding_and_drift_reads(tmp_path):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    memory.store.conn.execute("PRAGMA journal_mode=WAL")
+    memory.store.add_turn("turn-1", "qcr", "user", "Changed source statement")
+    template = _template(memory)
+    before = next(
+        row for row in memory.drift()["verdicts"]
+        if row["memory_id"] == "memory-1"
+    )
+    assert before["verdict"] == "DRIFT"
+
+    writer = sqlite3.connect(state_path)
+    original_memory = memory.store.memory
+    writer_committed = False
+
+    def memory_with_interleaved_writer(memory_id):
+        nonlocal writer_committed
+        row = original_memory(memory_id)
+        if memory_id == "memory-1" and not writer_committed:
+            writer.execute(
+                "UPDATE memories SET text=? WHERE id=?",
+                ("Concurrent target bytes hidden behind the old hash", "memory-1"),
+            )
+            writer.commit()
+            writer_committed = True
+        return row
+
+    memory.store.memory = memory_with_interleaved_writer
+    try:
+        pack = replay_crucible(memory.store, template)
+    finally:
+        memory.store.memory = original_memory
+        writer.close()
+
+    replay = pack["replays"][0]
+    assert writer_committed is True
+    assert replay["mneme_verdict"] == before["verdict"]
+    assert replay["mneme_reason"] == before["reason"]
+    after = next(
+        row for row in memory.drift()["verdicts"]
+        if row["memory_id"] == "memory-1"
+    )
+    assert after["reason"] != before["reason"]
+
+
+@pytest.mark.parametrize("target", ["claim_id", "claim_sha256"])
+def test_replay_rejects_claim_measurement_mismatch(tmp_path, target):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"][0]["expected_measurement"][target] = "wrong"
+
+    with pytest.raises(ReplayBindingError, match="claim/measurement binding"):
+        replay_crucible(memory.store, template)
+
+
+def test_replay_rejects_tampered_measurement_contract(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    template["replays"][0]["expected_measurement"]["method"] = "tampered"
+
+    with pytest.raises(ReplayBindingError, match="measurement contract binding"):
+        replay_crucible(memory.store, template)
+
+
+def test_source_drift_and_missing_source_become_replayed_deviations(tmp_path):
+    memory = _state(tmp_path / "mneme.db")
+    template = _template(memory)
+    memory.store.add_turn("turn-1", "qcr", "user", "Changed source statement")
+    memory.store.conn.execute("DELETE FROM turns WHERE id=?", ("turn-2",))
+    memory.store.conn.commit()
+
+    pack = replay_crucible(memory.store, template)
+    by_id = {row["measurement"]["claim_id"]: row for row in pack["replays"]}
+
+    assert by_id["memory-1"]["measurement"]["deviation"] == 1.0
+    assert by_id["memory-1"]["mneme_verdict"] == "DRIFT"
+    assert by_id["memory-2"]["measurement"]["deviation"] is None
+    assert by_id["memory-2"]["mneme_verdict"] == "UNVERIFIABLE"
+
+
+def test_cli_writes_strict_utf8_pack_and_refuses_overwrite(tmp_path, capsys):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    pack_path = tmp_path / "pack.json"
+    template_path.write_text(json.dumps(template, ensure_ascii=False), encoding="utf-8")
+    memory.close()
+    state_sha_before = hashlib.sha256(state_path.read_bytes()).hexdigest()
+
+    args = ["--state", str(state_path), "replay-crucible", str(template_path),
+            "--out", str(pack_path)]
+    assert main(args) == 0
+    assert hashlib.sha256(state_path.read_bytes()).hexdigest() == state_sha_before
+    raw = pack_path.read_bytes()
+    decoded = raw.decode("utf-8", errors="strict")
+    decoded_pack = json.loads(decoded)
+    assert decoded_pack["schema"] == "crucible.replay-pack/1"
+    assert decoded_pack["replays"][4]["measurement"]["claim_id"] == "memory-5"
+    published = pack_path.read_bytes()
+    assert main(args) != 0
+    assert "already exists" in capsys.readouterr().err
+    assert pack_path.read_bytes() == published
+    assert list(tmp_path.glob(f".{pack_path.name}.*.tmp")) == []
+    assert not Path(f"{state_path}-wal").exists()
+    assert not Path(f"{state_path}-shm").exists()
+    assert not Path(f"{state_path}-journal").exists()
+
+
+def test_cli_cleans_partial_temp_and_retry_succeeds_after_write_error(
+        tmp_path, capsys, monkeypatch):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    pack_path = tmp_path / "pack.json"
+    args = ["--state", str(state_path), "replay-crucible", str(template_path),
+            "--out", str(pack_path)]
+
+    real_write = os.write
+    writes = 0
+
+    def fail_after_partial_write(fd, data):
+        nonlocal writes
+        writes += 1
+        if writes == 1:
+            halfway = max(1, len(data) // 2)
+            return real_write(fd, data[:halfway])
+        raise OSError("simulated mid-write failure")
+
+    monkeypatch.setattr(os, "write", fail_after_partial_write)
+    assert main(args) != 0
+    captured = capsys.readouterr()
+    assert "simulated mid-write failure" in captured.err
+    assert "Traceback" not in captured.err
+    assert not pack_path.exists()
+    assert list(tmp_path.glob(f".{pack_path.name}.*.tmp")) == []
+
+    monkeypatch.setattr(os, "write", real_write)
+    assert main(args) == 0
+    assert json.loads(pack_path.read_text(encoding="utf-8"))["schema"] == (
+        "crucible.replay-pack/1")
+
+
+def test_cli_cleans_temp_when_staged_file_close_fails(tmp_path, capsys, monkeypatch):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    pack_path = tmp_path / "pack.json"
+
+    real_close = os.close
+    staged_fds: set[int] = set()
+
+    def close_staged_then_fail(fd):
+        # Only fail for the descriptor the atomic publisher staged. A bare
+        # "fail the first os.close" patch fires inside Store.__init__ instead,
+        # so it never exercises _publish_new_file at all.
+        if fd in staged_fds:
+            staged_fds.discard(fd)
+            real_close(fd)
+            raise OSError("simulated staged close failure")
+        return real_close(fd)
+
+    real_mkstemp = cli_module.tempfile.mkstemp
+
+    def tracking_mkstemp(*args, **kwargs):
+        fd, name = real_mkstemp(*args, **kwargs)
+        staged_fds.add(fd)
+        return fd, name
+
+    monkeypatch.setattr(cli_module.tempfile, "mkstemp", tracking_mkstemp)
+    monkeypatch.setattr(os, "close", close_staged_then_fail)
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(pack_path)])
+
+    captured = capsys.readouterr()
+    monkeypatch.setattr(os, "close", real_close)
+    assert rc != 0
+    assert "simulated staged close failure" in captured.err
+    assert "Traceback" not in captured.err
+    assert not pack_path.exists()
+    assert list(tmp_path.glob(f".{pack_path.name}.*.tmp")) == []
+
+
+def test_atomic_publisher_uses_no_replace_rename_on_windows(tmp_path, monkeypatch):
+    output = tmp_path / "pack.json"
+    real_rename = os.rename
+    calls = []
+
+    def rename(source, destination):
+        calls.append((Path(source), Path(destination)))
+        return real_rename(source, destination)
+
+    def unexpected_link(*_args, **_kwargs):
+        raise AssertionError("Windows publication must not require hard links")
+
+    monkeypatch.setattr(cli_module, "_WINDOWS", True, raising=False)
+    monkeypatch.setattr(cli_module.os, "rename", rename)
+    monkeypatch.setattr(cli_module.os, "link", unexpected_link)
+
+    warning = cli_module._publish_new_file(output, b"complete")
+
+    assert warning is None
+    assert output.read_bytes() == b"complete"
+    assert len(calls) == 1
+
+
+def test_atomic_publisher_reports_cleanup_warning_after_committed_link(
+        tmp_path, monkeypatch):
+    output = tmp_path / "pack.json"
+    real_unlink = Path.unlink
+
+    def fail_temp_unlink(path, *args, **kwargs):
+        if path.suffix == ".tmp":
+            raise OSError("simulated committed-temp cleanup failure")
+        return real_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(cli_module, "_WINDOWS", False, raising=False)
+    monkeypatch.setattr(Path, "unlink", fail_temp_unlink)
+
+    warning = cli_module._publish_new_file(output, b"complete")
+
+    assert output.read_bytes() == b"complete"
+    assert "published" in warning
+    assert "cleanup failure" in warning
+
+
+def test_atomic_publisher_preserves_destination_conflict_when_cleanup_fails(
+        tmp_path, monkeypatch):
+    output = tmp_path / "pack.json"
+    output.write_bytes(b"existing")
+    real_unlink = Path.unlink
+
+    def fail_temp_unlink(path, *args, **kwargs):
+        if path.suffix == ".tmp":
+            raise OSError("simulated conflict-temp cleanup failure")
+        return real_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(cli_module, "_WINDOWS", False, raising=False)
+    monkeypatch.setattr(Path, "unlink", fail_temp_unlink)
+
+    with pytest.raises(FileExistsError):
+        cli_module._publish_new_file(output, b"replacement")
+
+    assert output.read_bytes() == b"existing"
+
+
+def test_cli_rejects_invalid_utf8_without_traceback(tmp_path, capsys):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    memory.close()
+    template_path = tmp_path / "invalid-utf8.json"
+    template_path.write_bytes(b'{"assessment":"\xff"}')
+    output_path = tmp_path / "pack.json"
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "replay-crucible failed: template is not valid UTF-8" in captured.err
+    assert "Traceback" not in captured.err
+    assert not output_path.exists()
+
+
+@pytest.mark.parametrize("missing_column", [
+    "source_hashes",
+    "created_ord",
+    "valid_until",
+])
+def test_cli_names_incompatible_read_only_schema_without_mutation(
+        tmp_path, capsys, missing_column):
+    state_path = tmp_path / "legacy.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    connection = sqlite3.connect(state_path)
+    connection.execute(f"ALTER TABLE memories DROP COLUMN {missing_column}")
+    connection.commit()
+    connection.close()
+    state_sha_before = hashlib.sha256(state_path.read_bytes()).hexdigest()
+    output_path = tmp_path / "pack.json"
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "read-only Store schema incompatible" in captured.err
+    assert missing_column in captured.err
+    assert "Traceback" not in captured.err
+    assert not output_path.exists()
+    assert hashlib.sha256(state_path.read_bytes()).hexdigest() == state_sha_before
+
+
+def _directory_receipt(path: Path) -> dict[str, tuple[int, int, str]]:
+    return {
+        item.name: (
+            item.stat().st_size,
+            item.stat().st_mtime_ns,
+            hashlib.sha256(item.read_bytes()).hexdigest(),
+        )
+        for item in sorted(path.iterdir())
+        if item.is_file()
+    }
+
+
+def test_cli_rejects_live_wal_state_without_touching_any_database_file(
+        tmp_path, capsys):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    assert memory.store.conn.execute("PRAGMA journal_mode=WAL").fetchone()[0] == "wal"
+    memory.store.add_turn("wal-sentinel", "qcr", "user", "live WAL bytes")
+    assert Path(f"{state_path}-wal").exists()
+    assert Path(f"{state_path}-shm").exists()
+    before = _directory_receipt(tmp_path)
+    output_path = tmp_path / "pack.json"
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    after = _directory_receipt(tmp_path)
+    assert rc != 0
+    assert "quiescent snapshot" in captured.err
+    assert "Traceback" not in captured.err
+    assert before == after
+    assert not output_path.exists()
+    memory.close()
+
+
+@pytest.mark.parametrize("output_name", [
+    "mneme.db",
+    "mneme.db-wal",
+    "mneme.db-shm",
+    "mneme.db-journal",
+])
+def test_cli_rejects_state_and_sqlite_sidecar_output_aliases(
+        tmp_path, capsys, output_name):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    before = _directory_receipt(tmp_path)
+    output_path = tmp_path / output_name
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "reserved SQLite state path" in captured.err
+    assert "Traceback" not in captured.err
+    assert _directory_receipt(tmp_path) == before
+
+
+@pytest.mark.skipif(os.name != "nt", reason="Win32 aliases are Windows-only")
+@pytest.mark.parametrize("output_name", [
+    "MNEME.DB-WAL",
+    "mneme.db-wal.",
+    "mneme.db-wal ",
+    "mneme.db-wal:stream",
+])
+def test_cli_rejects_windows_sqlite_sidecar_output_aliases(
+        tmp_path, capsys, output_name):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(tmp_path / output_name)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    # Two distinct mechanisms guard this, and the message must name the right
+    # one. A casefolded spelling resolves onto the reserved name; a trailing
+    # dot, trailing space, or stream separator does not resolve there at all,
+    # it is normalized there by Win32. Sharing one message asserts something
+    # untrue about whichever path did not apply.
+    win32_normalized = output_name.endswith((".", " ")) or ":" in output_name
+    if win32_normalized:
+        assert "normalizes onto a different file" in captured.err
+    else:
+        assert "resolves to a reserved SQLite state path" in captured.err
+    assert "Traceback" not in captured.err
+    assert not (tmp_path / output_name).exists()
+
+
+@pytest.mark.parametrize("relative_out", [
+    "pack.json",
+    "./pack.json",
+    os.path.join(".", "pack.json"),
+    os.path.join("sub", "..", "pack.json"),
+])
+def test_cli_accepts_ordinary_relative_output_paths(
+        tmp_path, capsys, monkeypatch, relative_out):
+    """A '.' or '..' component is ordinary path syntax, not a Win32 alias.
+
+    `pack.json` and `./pack.json` resolve to the identical absolute path, so
+    rejecting one while accepting the other is incoherent. PowerShell tab
+    completion emits `.\\name`, and os.path.relpath() routinely returns '..'.
+    """
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    (tmp_path / "sub").mkdir(exist_ok=True)
+    monkeypatch.chdir(tmp_path)
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", relative_out])
+
+    captured = capsys.readouterr()
+    assert rc == 0, captured.err
+    assert "reserved SQLite state path" not in captured.err
+    assert Path(relative_out).resolve() == (tmp_path / "pack.json").resolve()
+    assert (tmp_path / "pack.json").exists()
+
+
+def test_cli_still_refuses_win32_sidecar_aliases_that_use_dot_components(
+        tmp_path, capsys, monkeypatch):
+    """Relaxing '.' and '..' must not reopen the sidecar-alias hole."""
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    monkeypatch.chdir(tmp_path)
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", os.path.join(".", "mneme.db-wal")])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "reserved SQLite state path" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_private_snapshot_leaves_no_temp_file_when_staging_fails(
+        tmp_path, monkeypatch, snapshot_root):
+    """The snapshot file is owned from the moment it exists, not from the try block.
+
+    mkstemp() creates the file; if anything between creation and the guarded
+    body raises, that file is orphaned in the per-user snapshot directory.
+    """
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    memory.close()
+
+    real_close = os.close
+    failed = False
+
+    def close_then_fail(fd):
+        nonlocal failed
+        if not failed:
+            failed = True
+            real_close(fd)
+            raise OSError("simulated staged close failure")
+        return real_close(fd)
+
+    monkeypatch.setattr(os, "close", close_then_fail)
+
+    with pytest.raises(OSError, match="simulated staged close failure"):
+        AgentMemory(state_path, read_only=True, immutable_snapshot=True)
+
+    monkeypatch.setattr(os, "close", real_close)
+    assert [p.name for p in snapshot_root.iterdir()] == [_store_id(state_path)]
+    assert list(snapshot_root.rglob("mneme-replay-*")) == []
+
+
+def test_full_replay_leaves_no_private_snapshot_behind(tmp_path, capsys, snapshot_root):
+    """A successful replay must own and remove every file it created."""
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(tmp_path / "pack.json")])
+
+    assert rc == 0, capsys.readouterr().err
+    assert (snapshot_root / _store_id(state_path)).is_dir()     # it was made there
+    assert list(snapshot_root.rglob("mneme-replay-*")) == []
+    assert list(tmp_path.glob("mneme-replay-*")) == []
+
+
+def test_cli_reserves_casefolded_sidecar_spelling_portably(tmp_path, capsys):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    output_path = tmp_path / "MNEME.DB-WAL"
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "reserved SQLite state path" in captured.err
+    assert not output_path.exists()
+
+
+def test_cli_rejects_memory_state_without_traceback(tmp_path, capsys):
+    template_path = tmp_path / "template.json"
+    template_path.write_text("{}", encoding="utf-8")
+    output_path = tmp_path / "pack.json"
+
+    rc = main(["--state", ":memory:", "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "filesystem snapshot" in captured.err
+    assert "Traceback" not in captured.err
+    assert not output_path.exists()
+
+
+def test_library_replay_requires_an_immutable_read_only_instance(tmp_path):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+
+    with pytest.raises(ValueError, match="read_only=True"):
+        memory.replay_crucible(template)
+    memory.close()
+
+    ordinary_reader = AgentMemory(state_path, read_only=True)
+    with pytest.raises(ValueError, match="immutable_snapshot=True"):
+        ordinary_reader.replay_crucible(template)
+    ordinary_reader.close()
+
+
+def test_generic_read_only_store_still_accepts_a_live_wal_database(tmp_path):
+    state_path = tmp_path / "mneme.db"
+    writer = _state(state_path)
+    assert writer.store.conn.execute("PRAGMA journal_mode=WAL").fetchone()[0] == "wal"
+    writer.store.add_turn("wal-sentinel", "qcr", "user", "live WAL bytes")
+
+    reader = AgentMemory(state_path, read_only=True)
+
+    assert reader.store.turn("wal-sentinel")["text"] == "live WAL bytes"
+    reader.close()
+    writer.close()
+
+
+def test_immutable_replay_snapshot_rejects_a_live_wal_hardlink(tmp_path):
+    state_path = tmp_path / "mneme.db"
+    writer = _state(state_path)
+    assert writer.store.conn.execute("PRAGMA journal_mode=WAL").fetchone()[0] == "wal"
+    writer.store.add_turn("wal-sentinel", "qcr", "user", "live WAL bytes")
+    alias_path = tmp_path / "snapshot.db"
+    os.link(state_path, alias_path)
+    assert not Path(f"{alias_path}-wal").exists()
+
+    with pytest.raises(sqlite3.DatabaseError, match="single-link|hardlink"):
+        AgentMemory(
+            alias_path,
+            read_only=True,
+            immutable_snapshot=True,
+        )
+
+    writer.close()
+
+
+def test_immutable_replay_uses_a_private_snapshot_during_a_source_write(
+        tmp_path, monkeypatch):
+    import mneme.replay as replay_module
+
+    state_path = tmp_path / "mneme.db"
+    writer = _state(state_path)
+    template = _template(writer)
+    writer.close()
+    replay_memory = AgentMemory(
+        state_path,
+        read_only=True,
+        immutable_snapshot=True,
+    )
+    private_path = replay_memory.store.private_snapshot_path
+    assert private_path is not None
+    assert private_path != state_path.resolve()
+    assert private_path.is_file()
+
+    replay_started = threading.Event()
+    source_changed = threading.Event()
+    writer_errors: list[BaseException] = []
+    original_replay = replay_module.replay_crucible
+
+    def delayed_replay(store, value):
+        replay_started.set()
+        assert source_changed.wait(5), "concurrent source writer did not finish"
+        return original_replay(store, value)
+
+    def change_source():
+        try:
+            assert replay_started.wait(5), "replay did not reach the handoff"
+            source = sqlite3.connect(state_path)
+            source.execute(
+                "UPDATE turns SET text=? WHERE id=?",
+                ("changed during replay", "turn-1"),
+            )
+            source.commit()
+            source.close()
+        except BaseException as exc:  # surfaced on the test thread below
+            writer_errors.append(exc)
+        finally:
+            source_changed.set()
+
+    monkeypatch.setattr(replay_module, "replay_crucible", delayed_replay)
+    writer = threading.Thread(target=change_source)
+    writer.start()
+
+    pack = replay_memory.replay_crucible(template)
+
+    writer.join(timeout=5)
+    assert not writer.is_alive()
+    assert writer_errors == []
+    assert {row["mneme_verdict"] for row in pack["replays"]} == {"MATCH"}
+    replay_memory.close()
+    assert not private_path.exists()
+
+
+def test_abandoned_immutable_reader_cleans_its_private_snapshot(tmp_path):
+    state_path = tmp_path / "mneme.db"
+    writer = _state(state_path)
+    writer.close()
+    replay_memory = AgentMemory(
+        state_path,
+        read_only=True,
+        immutable_snapshot=True,
+    )
+    private_path = replay_memory.store.private_snapshot_path
+    assert private_path is not None and private_path.is_file()
+
+    del replay_memory
+    gc.collect()
+
+    assert not private_path.exists()
+
+
+def test_agent_memory_initialization_failure_cleans_private_snapshot(
+        tmp_path, snapshot_root):
+    state_path = tmp_path / "mneme.db"
+    writer = _state(state_path)
+    writer.close()
+
+    with pytest.raises(ValueError):
+        AgentMemory(
+            state_path,
+            read_only=True,
+            immutable_snapshot=True,
+            embed="invalid",
+        )
+
+    # the embedder is resolved before the store opens, so no snapshot is made
+    assert not snapshot_root.exists()
+
+
+def test_private_snapshot_deadline_includes_source_fingerprinting(
+        tmp_path, monkeypatch, snapshot_root):
+    import mneme.store as store_module
+
+    state_path = tmp_path / "mneme.db"
+    writer = _state(state_path)
+    writer.close()
+    ticks = iter((0.0, 11.0))
+    monkeypatch.setattr(
+        store_module.time,
+        "monotonic",
+        lambda: next(ticks, 11.0),
+    )
+
+    with pytest.raises(sqlite3.DatabaseError, match="timed out"):
+        AgentMemory(
+            state_path,
+            read_only=True,
+            immutable_snapshot=True,
+        )
+
+    assert list(snapshot_root.rglob("mneme-replay-*.db*")) == []
+
+
+def test_source_change_during_private_snapshot_handoff_fails_and_cleans(
+        tmp_path, monkeypatch, capsys, snapshot_root):
+    import mneme.store as store_module
+
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    memory.close()
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    output_path = tmp_path / "pack.json"
+    original_fingerprint = store_module._snapshot_fingerprint
+    calls = 0
+
+    def fingerprint_then_change(path, *args, **kwargs):
+        nonlocal calls
+        fingerprint = original_fingerprint(path, *args, **kwargs)
+        calls += 1
+        if calls == 1:
+            source = sqlite3.connect(path)
+            source.execute(
+                "UPDATE turns SET text=? WHERE id=?",
+                ("changed during snapshot handoff", "turn-1"),
+            )
+            source.commit()
+            source.close()
+        return fingerprint
+
+    monkeypatch.setattr(store_module, "_snapshot_fingerprint", fingerprint_then_change)
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "source changed while its private snapshot was created" in captured.err
+    assert not output_path.exists()
+    assert (snapshot_root / _store_id(state_path)).is_dir()     # it was made there
+    assert list(snapshot_root.rglob("mneme-replay-*.db*")) == []
+
+
+def test_cleanup_failure_warns_without_retracting_published_pack(
+        tmp_path, monkeypatch, capsys, snapshot_root):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    memory.close()
+    template_path = tmp_path / "template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    output_path = tmp_path / "pack.json"
+    original_unlink = Path.unlink
+
+    def fail_private_unlink(path, *args, **kwargs):
+        if path.name.startswith("mneme-replay-"):
+            raise OSError("injected cleanup failure")
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", fail_private_unlink)
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc == 0
+    assert output_path.is_file()
+    assert "warning: private replay cleanup incomplete" in captured.err
+    leaked = list(snapshot_root.rglob("mneme-replay-*.db*"))
+    assert leaked
+    monkeypatch.setattr(Path, "unlink", original_unlink)
+    for path in leaked:
+        path.unlink()
+
+
+@pytest.mark.parametrize("duplicate", ["schema", "replay_binding"])
+def test_cli_rejects_duplicate_template_keys_without_output(
+        tmp_path, capsys, duplicate):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template_text = json.dumps(template)
+    if duplicate == "schema":
+        template_text = template_text.replace(
+            '"schema": "crucible.replay-template/1"',
+            '"schema": "crucible.replay-template/999", '
+            '"schema": "crucible.replay-template/1"',
+            1,
+        )
+    else:
+        template_text = template_text.replace(
+            '"replay_binding": {',
+            '"replay_binding": null, "replay_binding": {',
+            1,
+        )
+    template_path = tmp_path / "duplicate-template.json"
+    template_path.write_text(template_text, encoding="utf-8")
+    memory.close()
+    output_path = tmp_path / "pack.json"
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert f"duplicate JSON key {duplicate!r}" in captured.err
+    assert "Traceback" not in captured.err
+    assert not output_path.exists()
+
+
+def test_cli_does_not_leave_partial_pack_for_unencodable_json(tmp_path, capsys):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template["assessment"]["thesis_id"] = "\ud800"
+    template_path = tmp_path / "surrogate-template.json"
+    # Default ensure_ascii=True makes this a valid UTF-8 JSON input containing
+    # an escaped surrogate that cannot be emitted by ensure_ascii=False.
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    state_sha_before = hashlib.sha256(state_path.read_bytes()).hexdigest()
+    output_path = tmp_path / "pack.json"
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "replay-crucible failed: replay pack is not valid UTF-8" in captured.err
+    assert "Traceback" not in captured.err
+    assert not output_path.exists()
+    assert hashlib.sha256(state_path.read_bytes()).hexdigest() == state_sha_before
+
+
+def test_cli_names_unencodable_legacy_measurement_seal_binding(tmp_path, capsys):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template.pop("replay_binding")
+    template["replays"][0]["claim"]["sha256"] = "\ud800"
+    template["replays"][0]["expected_measurement"]["claim_sha256"] = "\ud800"
+    template_path = tmp_path / "legacy-surrogate-template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+    output_path = tmp_path / "pack.json"
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(output_path)])
+
+    captured = capsys.readouterr()
+    assert rc != 0
+    assert "assessment measurement seal binding is not canonically encodable" in captured.err
+    assert "Traceback" not in captured.err
+    assert not output_path.exists()
+
+
+def test_cli_names_binding_failure_and_returns_nonzero(tmp_path, capsys):
+    state_path = tmp_path / "mneme.db"
+    memory = _state(state_path)
+    template = _template(memory)
+    template["assessment"] = None
+    template_path = tmp_path / "bad-template.json"
+    template_path.write_text(json.dumps(template), encoding="utf-8")
+    memory.close()
+
+    rc = main(["--state", str(state_path), "replay-crucible", str(template_path),
+               "--out", str(tmp_path / "pack.json")])
+
+    assert rc != 0
+    assert "replay-crucible failed: assessment binding" in capsys.readouterr().err
+
+
+def test_interop_manifest_uses_canonical_crucible_replay_ports():
+    manifest = json.loads(
+        (Path(__file__).resolve().parents[1] / "mneme.interop.json").read_text(
+            encoding="utf-8"))
+    emitted = {row["capability"] for row in manifest["emits"]}
+    consumed = {row["capability"] for row in manifest["consumes"]}
+
+    assert "crucible.replay-pack/1" in emitted
+    assert "crucible.replay-template/1" in consumed
+    assert "crucible.recheck-pack/1" not in json.dumps(manifest, sort_keys=True)

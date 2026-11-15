@@ -1,0 +1,23 @@
+# Globs the publish-metadata check skips, one per line. Only fixtures and
+# tests whose bytes are frozen or that assert on a path literal belong here.
+# proof-surface v0.1 conformance vectors are byte-frozen and name an example
+# workspace target; the three tests assert on that literal.
+packages/behavior-transform.io/tests/test_channel_router.py
+packages/proof-surface/conformance/authorization-receipt/v0.1/valid/minimal.receipt.json
+packages/proof-surface/conformance/pre-execution-gate/v0.1/invalid/bad-digest-format.request.json
+packages/proof-surface/conformance/pre-execution-gate/v0.1/invalid/forbidden-field-nested-in-authorization.request.json
+packages/proof-surface/conformance/pre-execution-gate/v0.1/invalid/forbidden-prefire-root.request.json
+packages/proof-surface/conformance/pre-execution-gate/v0.1/invalid/invalid-state-verdict.request.json
+packages/proof-surface/conformance/pre-execution-gate/v0.1/invalid/negative-estimated-cost.request.json
+packages/proof-surface/conformance/pre-execution-gate/v0.1/invalid/unknown-root-field.request.json
+packages/proof-surface/conformance/pre-execution-gate/v0.1/valid/minimal.request.json
+packages/proof-surface/tests/test_authorization_receipt.py
+packages/proof-surface/tests/test_pre_execution_gate.py
+packages/proof-surface/tests/test_public_surface_gate.py
+# relay's labelled failure tails: the numbers in packages/relay/docs/CASCADE.md are
+# reproduced from these bytes. One synthetic jest log holds an address made by a
+# test-data generator.
+packages/relay/tests/fixtures/flaky_failure_labels.json
+# canon's capture test feeds a hook payload whose cwd is a made-up worktree path and
+# asserts on the locator it records; the literal is test input, not a real folder.
+packages/canon/tests/test_client_capture.py

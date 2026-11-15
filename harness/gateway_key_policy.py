@@ -21,9 +21,12 @@ that check alone does not bound are bounded here.
                     the date suffix), and `mcp_servers` needs `mcp`. A new key
                     has none of them. `*` on a list allows everything.
 
-  suspension        `suspend` stops a key whose delivered reply could not be
-                    charged or recorded, in this process and in the key list,
-                    until `flywheel gateway-key clear NAME`.
+  suspension        `suspend` stops a key, in this process and in the key
+                    list, until `flywheel gateway-key clear NAME`. One rule
+                    decides when: a call of the key reached the provider and
+                    was not fully accounted, which means its debit or its
+                    ledger entry failed, for any reason, whether or not the
+                    reply was delivered (gateway_unaccounted, gateway_account).
 
 The gateway token is the owner and is never limited here. The counts are held
 in this process: two gateways on two machines do not share them.
@@ -45,7 +48,7 @@ from . import gateway_keys
 
 _LOG = logging.getLogger(__name__)
 DEFAULT_IN_FLIGHT = 4
-_HELD, _HELD_LOCK = {}, threading.Lock()    # key fingerprint -> when it was stopped
+_HELD, _HELD_LOCK = {}, threading.Lock()    # key fingerprint -> (when it was stopped, why)
 DEFAULT_OUTPUT = 4096                   # reserved when a request names no output limit
 _LOCK, _RUNNING = threading.RLock(), {}     # key fingerprint -> [[input, output], ...]
 # Held by gateway_key_gate.enter from the second read of a key's row to `admit`.
@@ -184,7 +187,7 @@ def suspend(caller, reason: str) -> str:
         return ""
     now = time.time()
     with _HELD_LOCK:
-        _HELD[caller.fingerprint] = now
+        _HELD[caller.fingerprint] = (now, reason)
     try:
         caller.keys.mark(caller.name, suspended={"reason": reason, "at": int(now)})
     except Exception as exc:  # noqa: BLE001 - the in-process stop stands either way
@@ -200,11 +203,11 @@ def suspended(caller) -> "str | None":
     if isinstance(row.get("suspended"), dict):
         return str(row["suspended"].get("reason") or "suspended")
     with _HELD_LOCK:
-        at = _HELD.get(caller.fingerprint)
-        if at is not None and (row.get("cleared") or 0) >= at:
+        held = _HELD.get(caller.fingerprint)
+        if held is not None and (row.get("cleared") or 0) >= held[0]:
             del _HELD[caller.fingerprint]
-            at = None
-    return None if at is None else "delivered_unrecorded_charge"
+            held = None
+    return None if held is None else held[1]
 
 
 def fields(args) -> dict:

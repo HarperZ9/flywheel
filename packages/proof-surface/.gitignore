@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+
+# Test/build caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Local-only Claude instructions (global standard: never commit)
+CLAUDE.local.md
+
+# Environment files (global standard: never commit)
+.env
+.env.*
+# ...but the committed template must survive the .env.* rule above
+!.env.example
+
+# direnv environment files (can hold exported secrets)
+.envrc
+.envrc.local

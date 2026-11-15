@@ -1,0 +1,9 @@
+{
+  "proof_surface_version": "0.1",
+  "packet_id": "empty-claims-checks",
+  "surface": "invalid public release surface",
+  "status": "unknown",
+  "claims": [],
+  "checks": [],
+  "action_items": []
+}
