@@ -1,0 +1,508 @@
+# Changelog
+
+All notable changes to crucible. Versions follow semantic versioning; each minor release is built
+behind a feature branch and reviewed before merge.
+
+## Unreleased
+
+- `crucible import CONFIG` converts a promptfoo config into a thesis JSON that `register` and
+  `assess` read. Each assertion becomes a claim with a falsification condition, identical
+  assertions collapse to one claim, and an unknown assertion type is imported as a generic claim.
+  JSON is read in full. YAML is read as a block-style subset (mappings, sequences, plain and
+  quoted scalars, comments); flow collections, anchors, block scalars, tabs and backslash escapes
+  are refused with a message that says to convert the config to JSON. An import produces no
+  verdict: every imported claim is UNVERIFIABLE until a measurement is supplied.
+- `crucible view DIR` renders a registry as one offline HTML page. A bundled JavaScript SHA-256
+  recomputes each claim body's hash in the browser and compares it with the stored hash, after a
+  self-test on two known vectors. The page checks a body against the hash beside it and shows the
+  seal status computed when the page was built; it does not recompute seals in the browser, and
+  `crucible registry verify` remains the check that gates on integrity. `--json` emits the pack
+  (`crucible.view/1`).
+
+## 1.6.0, 2026-10-22
+
+Documentation and package metadata only. The code is the same as 1.5.0.
+
+- The README opens with what Crucible decides, who uses it, a first run checked in a clean
+  environment, a comparison with promptfoo, DeepEval, Inspect, OpenAI Evals and Ragas, and its limits.
+- The licence section states the FSL-1.1-MIT terms, and README images use absolute URLs so the
+  PyPI page shows them.
+- The PyPI summary is rewritten, and the author entry gains a contact address.
+- The release build accepts only versions that end in `.0`, so this documentation release is a
+  minor version.
+
+## 1.5.0, 2026-10-03
+
+Adds judging modes for when a model or a panel does the judging, measured once with a 2B local
+judge. Both-order pairwise lost to pointwise scoring for that judge; decomposition made the named
+weakest claim more stable across reruns.
+
+- Pairwise judging in both orders: `crucible.pairwise` asks a comparator with each answer first and
+  returns a winner only when both orders agree; a split is `ORDER_DISAGREE`, never a preference.
+  `pairwise_report` gives order-swap consistency and the first-slot rate with Wilson intervals, and
+  `PairwiseMeasure` puts the check on the measure seam.
+- Decomposed claims: `crucible.decompose` splits a claim into typed sub-questions (yes or no, number,
+  choice), decides each with the same pure verdict function, combines them demote-only and names the
+  single weakest sub-question. The parent claim's hash is unchanged.
+- Minority views kept: `crucible.views` and `report --views` list the majority beside every minority
+  position with its sources, and `dissent_survival` scores any summary on the minorities it kept.
+- New CLI commands `pairwise`, `decompose` and `views`, and MCP tools `crucible.pairwise`,
+  `crucible.decompose` and `crucible.views` (17 tools in all).
+- Measured with a 2B local judge in `docs/benchmarks/judging-v1`: order-swap consistency 0.07, so
+  both-order pairwise (0.07 accuracy) lost to pointwise scoring (0.87) for that judge; decomposition
+  raised rerun agreement on the weakest claim from 0.20 to 0.70. Human-preference agreement is untested.
+- MCP tool schemas move to `crucible.mcp_schema`; `mcp_tools` re-exports them. The status envelope
+  now lists MCP tools from the schema instead of a second hand-kept list.
+- Claude plugin listing: the Claude manifest in `client-plugin/` gains a display name, keywords,
+  homepage, documentation, support, privacy and terms links, and a 1024 px icon. The workspace,
+  measurement-command consent and measurement command now come from `userConfig`, so Claude Code
+  asks for them when you enable the plugin and the launch arguments carry no placeholder. The
+  portable and Codex manifests are unchanged.
+- The client README gains a data and network table, and the client privacy note names the two
+  temporary files the optional measurement command uses.
+- The client README and privacy note gain a "What this plugin runs and handles" section: hooks,
+  the exact Claude launch command, network use, files written and the environment variables read.
+- The environment section now lists what a traced run of the server read, split into Crucible's
+  own reads and Python's standard library reads (argument parser and `tempfile`).
+- The server code now ships inside the plugin folder at `client-plugin/server/src/`, so a plugin
+  installed from that folder alone starts. `python scripts/build_client_package.py --sync-vendored`
+  rewrites it from `src/`, and a test fails when the copy drifts. The launcher no longer falls back
+  to the repository's `src/`; a missing copy exits with a one-line message.
+- `crucible.measurement_gate` describes itself in plain terms, and the client privacy note says the
+  measurement command gets two temporary files per run.
+
+## 1.4.0 (2026-10-01)
+
+Adds local client packages with explicit launch permissions. Client-specific installation
+and marketplace acceptance remain separate qualification steps.
+
+- Add a local MCP profile with an explicit readable workspace, typed permission refusals, and process/network denial at launch. The full CLI/MCP remains available separately.
+- Add portable source plugins for Claude/Codex-compatible clients and Windows x64 ZIP/MCPB packages containing the runtime, licenses, source hashes and checksums.
+- Check actual stdio behavior before packaging, reject untracked or credential-like release payloads, and attach checked client assets to the same product release.
+- Add an explicit launch-time grant for one fixed measurement command. Reuse bounded subprocess measurement and witnessed assessment; tool arguments and ambient environment cannot grant execution. The approved child has OS user permissions, not sandboxed access.
+- Keep network retrieval and persistent-state operations on the full CLI/MCP. The client profile provides local assessment and explicitly approved measurement commands.
+
+## 1.3.0 (2026-09-26)
+
+Verdict-integrity fixes, a release that carries them, and the files a user needs after
+`pip install`. Upgrade from 1.2.0 or earlier: the fixes below change verdicts that 1.2.0 accepted.
+
+### Security and verdict integrity
+
+Items marked "1.2.0 and earlier" shipped in a release; a GitHub security advisory for 1.2.0
+accompanies this release. Items marked "unreleased" were defects in code added after 1.2.0 and
+fixed before any release carried them.
+
+- HIGH, 1.2.0 and earlier. A measurement could widen the tolerance that decides MATCH or DRIFT and
+  still re-derive MATCH: the deciding number was bound by no seal, a `tolerance` on a thesis claim
+  was ignored, and `verify_assessment` and `recheck_assessment` recomputed from the stored
+  tolerance. A claim may now seal its tolerance (`"tolerance"` on a thesis claim, or
+  `make_claim(..., tolerance=)`), and `verdict_for` refuses a measurement carrying any other
+  tolerance with UNVERIFIABLE. A hand-forged MATCH with recomputed seals fails
+  `verdicts_rederive`. Reproduction: a claim that seals tolerance 0.5, a measured deviation of 8
+  and a measurement tolerance of 10 returned MATCH on 1.2.0 and returns UNVERIFIABLE now
+  (`tests/fixtures/sealed-tolerance/`). Claims without a sealed tolerance keep their hashes and the
+  old behavior; seal the tolerance on every new claim.
+- HIGH, 1.2.0 and earlier. `doctor` emitted MATCH for three checks it never ran, and the status and
+  demo envelopes defaulted to MATCH. Informational envelopes now use the operational token `OK`,
+  and `doctor` resolves each capability's entry point and reports `available` or `absent`.
+- MEDIUM, 1.2.0 and earlier. `verify_browser_evidence` turned a packet's own carried MATCH into
+  crucible's MATCH after a shape check. A well-formed packet carrying MATCH is now UNVERIFIABLE,
+  with the packet's claim kept under `carried_verdict`; a carried DRIFT or UNVERIFIABLE still
+  passes through.
+- MEDIUM, 1.2.0 and earlier. CLI oracle replay packs must carry the template's top-level
+  assessment binding. A missing, malformed or mismatched thesis ID, assessment seal or measurement
+  seal now fails closed before replay instead of letting an unbound pack run.
+- LOW, 1.2.0 and earlier. The Telos content check accepted content on a 32-bit FNV-1a match alone.
+  When a descriptor carries a SHA-256 (`content_sha256`), that digest decides and a mismatch is
+  refused; FNV stays for protocol parity and is documented as accident-evident only.
+- Unreleased. `refine` graded correctness against the measurement's tolerance instead of the
+  claim's sealed tolerance, so a widened tolerance read as "cohesively verified" while
+  `verdict_for` refused it. The grader now honors the seal the same way.
+- Unreleased. `export`, the bundle `spec.json` and the cleanroom review reconstruction dropped a
+  sealed tolerance, so a thesis with a sealed tolerance failed its own review. The tolerance is now
+  carried on all three surfaces when sealed; unsealed rows stay byte-identical.
+
+### Added
+
+- `ProofMeasure`: a proof or type checker (Lean, Coq, any command) as a measurement oracle. An
+  accepted proof is MATCH, a rejected one DRIFT, and an absent or failing checker UNVERIFIABLE. The
+  measurement carries a recheck descriptor with the command and the artifact's SHA-256. A checker
+  command must be a non-empty list of non-empty strings, or the claim is UNVERIFIABLE. Library
+  only; the CLI and MCP server do not start it.
+- MCP: `crucible.recheck_template` returns `crucible.replay-template/1` over stdio, and
+  `crucible.recheck` accepts `template: true` while keeping `pack` and `template` exclusive. Replay
+  packs that recheck to `ok: false` are normal tool results, not transport errors.
+- Replay interop: `crucible.replay-template/1` outputs carry a privacy-bounded
+  `crucible.replay-set/1` binding over the descriptor-bearing replay contracts, without exporting
+  descriptorless rows or their evidence. `crucible.replay-pack/1` inputs preserve that binding;
+  supplied bindings are checked exactly, while older bound packs may omit them. A present pack
+  schema must be exactly `crucible.replay-pack/1`; schema-less legacy packs stay compatible.
+- `crucible examples --out DIR` writes the quickstart inputs, which now ship inside the package, to
+  a new folder, so the README's first run works after `pip install` without a clone. The command
+  refuses a folder that already exists.
+- `verify_seals.py` at the repository root: a stdlib-only verifier that re-derives an assessment
+  artifact's three seals without importing crucible.
+- Organ-bundle interop (`crucible.interop`) and `crucible.interop.json`, the manifest plexus reads
+  to wire crucible into the tool mesh.
+
+### Changed
+
+- License: FSL-1.1-MIT (`LicenseRef-FSL-1.1-MIT`) replaces the crucible Fair-Source License 1.0
+  for this and later versions. Versions already published keep the license they shipped with.
+- `SECURITY.md` names the private reporting route and the supported versions.
+- One version, checked everywhere: `scripts/check_version_sites.py` fails when `pyproject.toml`,
+  `crucible.__version__`, the README or the latest changelog heading disagree, and the release
+  workflow runs it against the tag. `status` derives its version text from the package.
+- Release workflow: every action is pinned by commit. A read-only build job checks the tag and
+  version sites, builds, runs `twine check`, and smoke-tests the wheel in a fresh environment
+  (version, sealed-tolerance probe, packaged examples, MCP server). Only the upload job can mint a
+  publishing token, and its upload tolerates a re-run (`skip-existing`). A third job attaches the
+  wheel, the sdist and `SHA256SUMS.txt` to the GitHub Release, downloaded from PyPI and checked
+  against PyPI's digests and this run's build.
+- CI runs the version guard and the wheel smoke test.
+- README: the install section shows the packaged quickstart, and presentation surfaces carry the
+  status, doctor, MCP and CI commands.
+
+## 1.2.0 (2026-07-07)
+
+CI regression gate, LLM-as-judge on the Measure seam, provenance gates over witnessed MATCH
+verdicts, and a visual-identity and docs refresh.
+
+- CI regression gate: a new `crucible ci REGISTRY` command turns a registry into a pull-request gate.
+  `--write-baseline FILE` captures the current verified-latest verdict per (thesis, claim) as a sealed
+  baseline snapshot (`crucible.ci-baseline/v1`); `--baseline FILE` re-derives the current verdicts,
+  compares them against the baseline, and exits nonzero on regression (a claim moving `MATCH -> DRIFT`,
+  becoming `UNVERIFIABLE`, or dropping out of the verified-latest set, which is fail-closed). The pure
+  layer (`crucible.ci_gate`) ranks the recorded verdict statuses over two snapshots and the render layer
+  (`crucible.ci_report`) emits a deterministic PR-comment-ready Markdown matrix; every cell references
+  the assessment seal it was read from, so a reviewer re-derives any packet with
+  `crucible verdicts REGISTRY --verify`. The baseline file seals its own cells, so a hand-edited
+  baseline is rejected on load. `--out FILE` writes the summary while preserving the gate exit code, and
+  `--json` emits the full gate report. The gate rides on the existing witnessed assessments: it re-reads
+  the same verified-latest state `registry stats` uses and never opens a second verdict path. README
+  documents the command and ships a ready-to-copy GitHub Action snippet.
+- Missing-evidence explanations: every UNVERIFIABLE verdict now arrives with a typed
+  `{claim_id, missing, needed}` explanation naming the exact evidence class it lacks
+  (`falsification_condition`, `measurement`, `claim_binding`, `trusted_deviation`, or
+  `positive_tolerance`) and the one-line concrete action that would supply it. `crucible assess`
+  prints an `evidence needed` section whenever UNVERIFIABLE > 0 and carries `explanations` in
+  `--json`. The pure layer (`crucible.explain`) is gated on `verdict_for` itself, so an
+  explanation exists exactly when the verdict is UNVERIFIABLE and is never emitted for a claim
+  that verifies.
+- Ill-posed measurement warnings: a pre-assessment validation pass (`crucible.wellposed`) emits
+  typed, non-fatal warnings before assessment when measurement rows are ill-posed:
+  `non_positive_tolerance`, `untrusted_deviation` (negative, non-finite, or non-numeric),
+  `boolean_value` (a boolean that would silently coerce), `unbound_claim`, and
+  `duplicate_claim_binding`. `crucible assess` and `crucible run` print the warnings to stderr,
+  carry them in JSON output (`measurement_warnings`, including the run record), and accept
+  `--strict` to turn any warning into exit 1. Warnings never change a verdict.
+- MCP parity: `crucible.assess` now returns `measurement_warnings` and `explanations` alongside
+  the witnessed verdicts and accepts a `strict` flag that refuses ill-posed measurement files.
+- MATCH provenance: `crucible registry stats` now reports `match_provenance`
+  (`witnessed` / `asserted` / `asserted_zero`), splitting each latest MATCH verdict by whether its
+  measurement carries a replayable `recheck` descriptor or rests on an author-supplied deviation
+  alone. `--require-witnessed-match` turns the split into a gate: exit 1 when any MATCH is
+  asserted-only, so a registry showing 100 percent MATCH with zero executable refutations can no
+  longer be cited as verification.
+- Witnessed measurements from the CLI: `crucible assess --measurements FILE` now carries a
+  per-row `recheck` descriptor through to the sealed measurement record (previously silently
+  dropped), so the manual-measurements path can author witnessed MATCH verdicts; a non-object
+  `recheck` is rejected.
+- LLM-as-judge on the Measure seam: `JudgeMeasure` scores a freeform artifact (a model answer, a
+  RAG response, a document) against a natural-language rubric through an injected judge and emits
+  a grounded numeric deviation that flows through the same pure `verdict_for` spine, so no model
+  sits in the verdict step. The judge is injectable: a deterministic stub in tests, a live LLM
+  behind `LLMJudgeFunc`, and `make_null_judge` as the standing UNVERIFIABLE default. A missing
+  artifact, a non-numeric score, or a judge that raises fails closed. Each judged measurement
+  persists a `judge:llm` recheck descriptor sealing the rubric and the artifact hash, so a
+  silently flipped deviation is caught on assessment replay; `ArtifactStore` is a SHA-256-keyed
+  artifact cache so descriptors carry only the hash.
+- Browser evidence packets: `verify_browser_evidence` verifies Telos
+  `project-telos.browser-evidence/v1` packets locally over the packet shape, the carried verifier
+  verdict, artifact hashes, and the side-effect record. Raw DOM, screenshots, and session data
+  stay outside the model boundary unless a later tool explicitly dereferences them.
+- Visual identity refresh: the README leads with the Project Telos spectrum banner and a
+  feature-first header, and gains a live PyPI downloads badge.
+- Docs overhaul: a new `docs/INTRODUCTION.md` walks the core concepts and the first ten minutes,
+  the README body is rewritten feature-first around the highlights, and the delivery contract
+  follows the new visual identity.
+
+## 1.1.0
+
+Operator run surface.
+
+- CLI: `crucible run THESIS --registry DIR (--measurements FILE | --substrate FILE)` runs the
+  steelman, measurement, witnessed assessment, and disk recheck path as one session.
+- `crucible run --json` emits a complete run record with thesis metadata, refutations, assessment,
+  verdicts, disk recheck status, and optional report path.
+- `crucible run --report FILE` writes the deterministic Markdown assessment report for the same
+  witnessed assessment, while `--out FILE` writes the JSON run record with exclusive creation.
+- `crucible run --bundle DIR` creates a self-contained cleanroom review packet containing
+  `spec.json`, `run.json`, `report.md`, and `review.md`, refusing pre-existing packet directories.
+- Bundle run records carry a machine-readable verifier boundary: cleanroom mode, allowed packet
+  inputs, excluded worker context, and the checkability rule for underspecified specs.
+- CLI: `crucible review BUNDLE` validates the cleanroom packet before verifier handoff, including
+  required files, absence of extra context, verifier boundary metadata, and spec/run agreement.
+- CLI: `crucible recheck REGISTRY [--template FILE] [--pack FILE]` lists descriptor-bearing
+  measurement rows, writes replay pack templates, and validates finished oracle replay packs without
+  creating a second verdict path.
+- Replay packs that return the template assessment block are checked against the selected thesis id,
+  assessment seal, and measurement seal before oracle replay starts.
+- Cleanroom review now recomputes the expected `report.md` artifact from `spec.json` plus `run.json`
+  and fails closed when the human report is tampered or stale.
+- Cleanroom review now also checks that `review.md` is the canonical verifier instruction sheet, so
+  packet-local instructions cannot widen the verifier's context.
+- Bundle run records now use packet-relative artifact names, avoiding local workspace paths inside
+  cleanroom verifier packets.
+- Cleanroom review now validates those `run.json` artifact path fields and fails closed if they are
+  absolute, local, or renamed away from the packet-relative contract.
+- Cleanroom review now requires `run.json` to declare passing embedded integrity checks before
+  verifier handoff.
+- CLI compatibility: `python -m crucible` now dispatches the normal Crucible CLI, so source
+  checkouts, MCP hosts, IDE harnesses, and automation runners can use the same command surface as
+  the installed `crucible` script.
+- Creative measurement gate: adds `crucible measurement-gate PACKET [--criteria FILE]` and the
+  `crucible.measurement_gate` MCP tool for verifying Telos histogram, dither, Gaussian-splat,
+  clustered-lighting, and audio-spectral measurement packets without exporting raw pixels, assets,
+  prompts, tool arguments, or full payloads.
+- Gate verdicts: keeps `decision_outcome` (`allow`, `require_review`, `block`) separate from
+  `verification_verdict` (MATCH, DRIFT, UNVERIFIABLE) and emits normalized failure codes for operator
+  alerting, including raw payload leaks, cluster budget overruns, dither-pattern gaps, provenance
+  gaps, pixel-dimension mismatches, and audio-spectrum gaps.
+- MCP parity: expands the stdio MCP server beyond status/doctor/assess/recheck to host-call the run, review, report, batch, registry, drift, refine, and verdicts workflows through the existing CLI contract.
+- Enterprise readiness: adds `docs/ENTERPRISE-READINESS.md` for context envelopes, action receipts, readability gates, and host-neutral operation.
+- Operator surface: the status payload now advertises shared Project Telos CLI/MCP/plugin/IDE/TUI/app contracts for enterprise, research, creative, scientific, and education workflows.
+- README: brings Crucible up to the shared five-flagship presentation shape with title-case product naming, current CI badge, consistent navigation, and a current-status block.
+- Status copy: updates the visible status from the old 1.0 flagship floor to the 1.1 operator floor.
+- Status payload: exposes the primary workflow commands, current operator commands, integration surfaces, presentation freshness, MCP tool names, and the 1.1 operator-floor summary under `native`.
+- MCP tools: records native availability for `crucible.status`, `crucible.doctor`, `crucible.assess`, `crucible.measurement_gate`, `crucible.recheck`, `crucible.run`, `crucible.review`, `crucible.report`, `crucible.batch`, `crucible.registry`, `crucible.drift`, `crucible.refine`, and `crucible.verdicts`.
+
+## 1.0.0
+
+Stable flagship floor.
+
+- Assessment integrity now seals verdict margin and grounds, and `recheck_assessment` rejects stored
+  verdict rows or summary counts that do not re-derive from the thesis and measurements.
+- Measurement rows now persist and seal `measured_at`, and Telos-backed measurements persist a
+  `telos:<verifier>` replay descriptor so oracle-level reassessment checks a real stored row.
+- Drift and registry status/search now use the latest verified assessments, falling back past invalid
+  tail rows instead of trusting or hiding history.
+- Registry body verification now reports non-file or unreadable object paths as CORRUPT instead of
+  raising, and registration rejects pre-existing non-file object paths.
+- Registry prune now applies the registry realpath guard before scanning or deleting object paths, so
+  escaped, symlinked, or junctioned object roots are refused before unlink.
+- Assessment and verdict records, CLI JSON, and Markdown reports now carry the sealed thesis
+  disposition, keeping publication posture visible in witnessed outputs.
+- `refine.margin()` is public and reused by grading, matching the documented normalized-margin
+  contract.
+- Index/Gather interop canonical hashing now uses unescaped sorted JSON (`ensure_ascii=False`) for
+  non-ASCII graph-pack content.
+- The registry rejects duplicate thesis ids with different seals, refuses symlinked storage paths,
+  and keeps object writes on unique temp files inside the registry root.
+- Batch manifests keep thesis, measurement, and substrate paths inside the manifest bundle; path-like
+  missing refs fail closed without rejecting dotted registry ids; report writes use index-prefixed
+  filenames and exclusive creation.
+- Subprocess-backed edges use a clean default environment, discard unbounded stderr, write stdout to a
+  temporary file, actively terminate children that exceed the response cap, and still reject shell
+  strings.
+- CLI JSON loaders reject non-object top-level payloads with clean errors, ambiguous claim text refs
+  are rejected, and refine thresholds reject negative or non-finite values cleanly.
+- Release workflows remove manual PyPI dispatch, pin external GitHub Actions by commit SHA, and
+  install pinned build tooling plus the pinned build backend from `requirements-release.txt`.
+- README and readiness docs record the clean verifier rule: verifier receives only the original spec
+  and artifact, never the worker context or reasoning trace.
+
+## 0.14.1
+
+Batch hardening patch.
+
+- Batch report filenames now include the manifest job index, so duplicate or colliding job IDs do not
+  overwrite earlier reports.
+- Batch thesis, measurement, and substrate references now fail closed when a manifest-relative or
+  absolute file is missing instead of falling back to the caller's current working directory.
+
+## 0.14.0
+
+Batch assessment workflow.
+
+- `crucible.batch_cmd`: adds a manifest runner that assesses multiple thesis jobs into one
+  content-addressed registry.
+- Manifest jobs accept either explicit measurements or a substrate oracle file, preserving the same
+  grounded measurement -> verdict spine as the single-thesis commands.
+- CLI: `crucible batch MANIFEST --registry DIR [--reports DIR] [--json]` emits a row per job and can
+  write one deterministic Markdown report per assessment.
+- Readiness coverage now runs the batch command through the bundled example thesis surface.
+
+## 0.13.0
+
+Markdown assessment reports.
+
+- `crucible.report`: adds `render_assessment_report`, a deterministic Markdown renderer for one
+  witnessed assessment and its thesis.
+- Reports include assessment/thesis seals, outcome counts, integrity checks, per-claim verdicts,
+  measurement evidence, optional recheck descriptors, and unmeasured claims.
+- CLI: `crucible report REGISTRY [--index N] [--out FILE]` renders the latest assessment by default
+  and can write the Markdown body to disk.
+- Public API: exports `render_assessment_report`.
+
+## 0.12.0
+
+Measurement recheck descriptors.
+
+- `Measurement` now accepts an optional `recheck` descriptor, preserved at the end of the dataclass so
+  existing positional construction stays compatible.
+- Assessments persist and seal `measured_at` plus `recheck` descriptors when present; legacy
+  assessment rows without descriptors keep their previous replay shape and still verify.
+- `recheck_measurements` replays descriptor-bearing measurement rows through a caller-supplied oracle
+  registry and reports checked, skipped, missing, mismatched, and failed replays.
+- `recheck_assessment(..., measurement_replayers=...)` can include an oracle-level measurement replay
+  result alongside the existing seal/thesis/verdict re-derivation checks.
+- Public API: exports `recheck_measurements`.
+
+## 0.11.0
+
+Gather/index protocol interop preview.
+
+- `crucible.ecosystem_measure`: adds `verify_gather_digest`, `receipt_matches`,
+  `verify_index_verification`, and `canonical_sha` for consuming sibling-product JSON contracts
+  without importing sibling packages.
+- `GatherDigestMeasure` maps a verified Gather digest plus receipt selector into a crucible
+  `Measurement`: receipt present -> MATCH input, receipt absent -> DRIFT input, malformed or missing
+  digest -> UNVERIFIABLE input.
+- `IndexMeasure` maps an `index.verification/1` record plus supplied graph pack into a crucible
+  `Measurement`: reproduced MATCH -> MATCH input, reproduced REFUTED/DRIFT -> DRIFT input, missing
+  or unreplayable pack -> UNVERIFIABLE input.
+- Public API: exports `GatherDigestMeasure`, `IndexMeasure`, `verify_gather_digest`,
+  `verify_index_verification`, `receipt_matches`, and `canonical_sha`.
+
+## 0.10.0
+
+Telos witnessed-artifact interop preview.
+
+- `crucible.telos_measure`: adds `verify_telos_artifact`, `is_telos_artifact`, `check_content`, and
+  `TelosMeasure` for consuming `telos.witnessed-artifact/v1` envelopes through the Measure seam.
+- `TelosMeasure` maps a re-run Telos verifier result into a crucible `Measurement`: verified -> MATCH
+  input, refuted or drifted -> DRIFT input, absent or unregistered proof -> UNVERIFIABLE input.
+- Public API: exports `TelosMeasure`, `verify_telos_artifact`, `is_telos_artifact`, and
+  `check_content`.
+
+## 0.9.0
+
+1.0-readiness hardening.
+
+- Examples: the bundled demo and JSON examples are now regression-tested through the public CLI.
+- CLI surface: help output is covered for the shipped commands and registry actions.
+- Docs: adds a release-readiness checklist for the 1.0 review gate.
+
+## 0.8.0
+
+Optional subprocess-backed seam adapters.
+
+- `crucible.subprocess_edges`: adds `SubprocessSteelman` and `SubprocessMeasure`, stdlib-only adapters
+  for configured commands that exchange bounded JSON over stdin/stdout.
+- Safety posture: commands must be argv sequences rather than shell strings; request and response
+  sizes are bounded; timeouts are enforced; claim identity and producer labels are stamped locally.
+- Public API: exports `SubprocessSteelman` and `SubprocessMeasure`.
+
+## 0.7.0
+
+Registry operations for a growing corpus.
+
+- `crucible.registry_ops`: adds `registry_stats`, `search_theses`, and `prune_objects` for registry
+  health, recall, and object-store hygiene without changing the durable storage contract.
+- CLI: `crucible registry stats`, `crucible registry search`, and `crucible registry prune` summarize
+  the corpus, search by scope/status/latest verdict, and report orphaned claim bodies. Prune is
+  dry-run by default and deletes only with `--apply`.
+- Public API: exports `registry_stats`, `search_theses`, and `prune_objects`.
+
+## 0.6.0
+
+Publication-gated thesis export.
+
+- `crucible.gate`: adds `gate_check`, `export_guard`, and `export_thesis`. Fenced disposition and
+  explicit fenced/restricted markers fail closed at the public export edge.
+- CLI: `crucible export THESIS` emits the public thesis contract for publishable theses, resolves
+  thesis ids from a registry with `--registry`, and refuses fenced theses with a clean error.
+- Public API: exports `gate_check`, `export_guard`, and `export_thesis`.
+
+## 0.5.0
+
+Drift tracking across witnessed assessment rounds.
+
+- `crucible.drift`: compares two assessments of the same thesis and classifies each claim as held,
+  moved, improved, or regressed. Numeric margins decide direction; unrankable transitions such as
+  UNVERIFIABLE to MATCH are reported as moved.
+- CLI: `crucible drift REGISTRY` compares the latest two stored assessments, with human and JSON
+  output and clean errors for too-short or mixed-thesis histories.
+- Public API: exports `DriftRow`, `DriftReport`, and `drift_track`.
+
+## 0.4.0
+
+The refine loop: margin, cohesion, reflection, and re-iteration over a thesis.
+
+- `crucible.refine`: a zero-dependency refinement primitive with graded criteria, harmonic-mean
+  cohesion, reflect-weakest feedback, and fail-closed handling for broken generators, adjusters, and
+  non-numeric measurements.
+- `refine_thesis`: points the primitive at a thesis and a `Measure` oracle, grading each claim by its
+  normalized measurement margin and returning a `RefineReport` with final verdicts and the cohesion
+  trajectory.
+- CLI: `crucible refine <config.json>` runs ordered substrate rounds, stops on a cohesively verified
+  thesis, or reports the weakest claim when the budget is spent.
+- Public API: exports `GradedCriterion`, `Reflection`, `RefineOutcome`, `RefineReport`, `cohesion`,
+  `refine`, and `refine_thesis`.
+
+## 0.3.0
+
+The measure seam: a sound oracle decides a claim against a substrate. This is where the verdict is
+grounded, the half the differentiator names.
+
+- `crucible.measure`: a `Measure` protocol and a `MetricSpec` (the value a claim predicts, the
+  tolerance, the substrate key to observe, and the metric). `verdict_for` already consumes the
+  `Measurement` an oracle produces, so there is still no model in the verdict step.
+- `NullMeasure`: the standing default, produces no measurement (UNVERIFIABLE); it invents nothing.
+- `TableMeasure`: a deterministic, offline oracle. The deviation is the absolute or relative
+  difference between the observed value (from the substrate) and the value the claim predicts. An
+  unknown claim or a missing observation is UNVERIFIABLE, fail-closed. The shape a real oracle (the
+  Telos verifier, a proof or type checker) plugs into.
+- `measure_thesis` runs an oracle over every claim in a thesis.
+- CLI: `crucible measure <thesis> --substrate FILE` measures each claim and witnesses the verdicts; the
+  oracle-produced measurements re-derive from disk via `verdicts --verify`.
+- Refactor: the registry-inspecting commands moved to `crucible.registry_cmd` so no module exceeds the
+  size budget.
+
+## 0.2.0
+
+The steelman seam: adversarial refutation as a pluggable shape, the conjecture-and-attack half of
+judgment.
+
+- `crucible.steelman`: a `Steelman` protocol and a `Refutation` (the proposed attack plus the
+  measurable test that would settle it). Adversaries propose what to test; they do not decide.
+- `NullSteelman`: the standing default. Deterministic and invents nothing: it surfaces the claim's own
+  stated falsification as the test, or flags a claim that states no falsification as unrefutable.
+  Custom refuters plug in through the same protocol.
+- `steelman_thesis` runs a steelman over every claim in a thesis, returning the proposed tests in
+  claim order, ready to feed the measurement step.
+- CLI: `crucible steelman <thesis>` prints each claim's challenge and the test it proposes.
+
+## 0.1.0
+
+The P1 foundation: the verdict spine and the witnessed, re-derivable record.
+
+- `crucible.claim`: a `Claim` carrying a content-hash receipt over its assertion and falsification
+  condition; `make_claim` computes it and `Claim.verify()` re-hashes to catch tampering.
+- `crucible.thesis`: a `Thesis` with a seal binding its claims, title, and disposition (so a fenced
+  thesis cannot be relabelled publishable undetected); the seal is over the set, so reordering is not
+  a change.
+- `crucible.verdict`: the differentiator. `verdict_for` is a pure MATCH / DRIFT / UNVERIFIABLE
+  decision from a `Measurement`, with no model in the verdict step. UNVERIFIABLE is fail-closed
+  (no measurement, an unmeasurable deviation, a non-positive tolerance, an unfalsifiable claim, or a
+  measurement bound to a different claim all read as UNVERIFIABLE, never as holding).
+- `crucible.registry`: a content-addressed registry. Claim bodies are deduped and traversal-guarded;
+  `verify` reports MATCH / MISSING / CORRUPT; `verify_seals` catches a swapped or relabelled claim a
+  body check would miss; a tampered thesis is refused on load; re-registration is idempotent.
+- `crucible.assess`: a witnessed `Assessment` that persists its verdicts and measurements.
+  `verify_assessment` recomputes the seals from the stored data; `recheck_assessment` re-derives each
+  verdict from the thesis and the measurements, so a verdict cannot be asserted, only computed.
+- `crucible.cli`: `register`, `assess`, `registry list|verify`, and `verdicts [--verify]`.
+- Zero third-party dependencies; an offline `examples/demo.py`; ruff and mypy clean.
