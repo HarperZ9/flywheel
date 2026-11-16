@@ -15,8 +15,9 @@ class FakeBridge:
     def __init__(self):
         self.calls = []
 
-    def health(self):
-        return {"schema": "flywheel.context-memory-status/v1", "ok": True}
+    def health(self, owner_ref=None):
+        self.calls.append(("health", owner_ref, None))
+        return {"schema": "flywheel.context-memory-status/v1", "owner_ref": owner_ref}
 
     def capture(self, owner_ref, req):
         self.calls.append(("capture", owner_ref, req))
@@ -49,6 +50,19 @@ def test_capture_and_preflight_route_to_same_backend_with_owner():
     assert preflight["status"] == "not_found_in_searched_sources"
     assert [call[0] for call in bridge.calls] == ["capture", "preflight"]
     assert {call[1] for call in bridge.calls} == {OWNER}
+
+
+def test_status_route_is_owner_bound():
+    bridge = FakeBridge()
+
+    body, status = route.context_memory_post(
+        "/api/context-memory/status",
+        b"{}",
+        owner_ref=OWNER, state_root="unused", clock=lambda: NOW, bridge=bridge)
+
+    assert status == 200
+    assert body["owner_ref"] == OWNER
+    assert bridge.calls == [("health", OWNER, None)]
 
 
 def test_route_reports_bridge_errors_not_empty_results():

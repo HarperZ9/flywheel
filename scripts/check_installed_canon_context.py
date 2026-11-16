@@ -14,7 +14,7 @@ SCHEMA = "flywheel.installed-canon-context-smoke/v1"
 SUMMARY_SCHEMA = SCHEMA + "-summary"
 FROZEN_CONTEXT_SCHEMA = "flywheel.frozen-context-memory-smoke/v1"
 FROZEN_PAYLOAD_SCHEMA = "flywheel.frozen-canon-context-payload/v1"
-CANON_PIN = "ba13fc3fc7582fbc1ae1a720e5cd86ea124d7675"
+CANON_PIN = "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff"
 ENGINE_RELATIVE = Path("engine") / "flywheel-gateway.exe"
 _SHA256_RE = re.compile(r"[0-9a-f]{64}\Z")
 _SOURCE_RE = re.compile(r"[0-9a-f]{40}\Z")
@@ -216,6 +216,10 @@ def _validate_context(context: dict[str, Any]) -> None:
         raise SmokeFailure("CONTEXT_OWNER_DENIAL_MISSING")
     if context.get("tampered_evidence_code") != "CANON_CONTEXT_TOOL_ERROR":
         raise SmokeFailure("CONTEXT_TAMPER_RESULT_MISSING")
+    if context.get("destination_binding_checked") is not True:
+        raise SmokeFailure("CONTEXT_DESTINATION_BINDING_MISSING")
+    if not _store_id(context.get("canon_store_id_bound")):
+        raise SmokeFailure("CONTEXT_STORE_ID_MISSING")
     if not _event_record_id(context.get("event_record_id")):
         raise SmokeFailure("CONTEXT_EVENT_RECORD_ID_MISSING")
     if not _plain_sha256(context.get("source_hash")):
@@ -242,6 +246,8 @@ def _bounded_context(context: dict[str, Any]) -> dict[str, Any]:
         "denied_project_code": context["denied_project_code"],
         "denied_owner_code": context["denied_owner_code"],
         "tampered_evidence_code": context["tampered_evidence_code"],
+        "destination_binding_checked": True,
+        "canon_store_id_bound_present": bool(context.get("canon_store_id_bound")),
         "event_record_id": context["event_record_id"],
         "source_hash": context["source_hash"],
         "owner_ref_bound_present": bool(context.get("owner_ref_bound")),
@@ -274,6 +280,9 @@ def _sha256_uri(value: object) -> bool:
 
 def _event_record_id(value: object) -> bool:
     return isinstance(value, str) and re.fullmatch(r"context-event-[0-9a-f]{64}", value) is not None
+
+def _store_id(value: object) -> bool:
+    return isinstance(value, str) and re.fullmatch(r"ctxstore_[0-9a-f]{32}", value) is not None
 
 
 def _exception_code(exc: Exception) -> str:

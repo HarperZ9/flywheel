@@ -13,7 +13,7 @@ if str(ROOT) not in sys.path:
 
 from scripts import check_installed_canon_context as installed
 
-PIN = "ba13fc3fc7582fbc1ae1a720e5cd86ea124d7675"
+PIN = "8c6a8228ce2117112c5dad74ddb0450ba80aa8ff"
 COMMIT = "a" * 40
 VERSION = "1.0.0"
 
@@ -79,6 +79,8 @@ def fill_success(receipt: dict, *, version: str = VERSION):
             "denied_project_code": "CONTEXT_SCOPE_NOT_BOUND",
             "denied_owner_code": "CONTEXT_OWNER_NOT_BOUND",
             "tampered_evidence_code": "CANON_CONTEXT_TOOL_ERROR",
+            "destination_binding_checked": True,
+            "canon_store_id_bound": "ctxstore_" + "6" * 32,
             "event_record_id": "context-event-" + "3" * 64,
             "source_hash": "4" * 64,
             "owner_ref_bound": "owner_" + "5" * 32,
@@ -266,6 +268,8 @@ def test_success_calls_checker_with_installed_engine_and_writes_bounded_receipt(
     assert receipt["canon"]["owner_commit"] == PIN
     assert receipt["context_memory"]["denied_owner_code"] == "CONTEXT_OWNER_NOT_BOUND"
     assert receipt["context_memory"]["owner_ref_bound_present"] is True
+    assert receipt["context_memory"]["destination_binding_checked"] is True
+    assert receipt["context_memory"]["canon_store_id_bound_present"] is True
     assert receipt["limits"]
     assert str(tmp_path) not in text
     assert not Path(receipt["canon"]["license_path"]).is_absolute()

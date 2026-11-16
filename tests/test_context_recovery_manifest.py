@@ -13,7 +13,14 @@ def test_live_task_set_registers_context_recovery_as_scorable():
     assert PILOT_TASKS[CHECKER] == TASK_ID
     assert row["provisionable"] is True and row["scorable"] is True
     assert row["measured"] is True
-    assert record["counts"] == {"declared": 18, "provisionable": 18, "scorable": 8, "measured": 8}
+    shared_v2_row = next(
+        item for item in record["tasks"] if item["task_id"] == "agt-003-shared-task-artifact-v2-diagnostic"
+    )
+    assert PILOT_TASKS["shared_task_artifact/v2"] == "agt-003-shared-task-artifact-v2-diagnostic"
+    assert shared_v2_row["checker_id"] == "shared_task_artifact/v2"
+    assert shared_v2_row["provisionable"] is True and shared_v2_row["scorable"] is True
+    assert shared_v2_row["measured"] is True
+    assert record["counts"] == {"declared": 19, "provisionable": 19, "scorable": 9, "measured": 9}
 
 
 def test_manifest_binds_context_recovery_fixture_and_response_contract():
