@@ -1,0 +1,513 @@
+{
+ "schema": "flywheel.effort-gate-log/v1",
+ "registry": "hard",
+ "model_ref": "ollama:flywheel-local-coder-14b",
+ "temps": [
+  0.0,
+  0.4,
+  0.8,
+  1.1
+ ],
+ "rows": [
+  {
+   "task_id": "merge_intervals",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 35.004,
+    "prompt_tokens": 100,
+    "completion_tokens": 85
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.026,
+     "prompt_tokens": 100,
+     "completion_tokens": 85
+    },
+    {
+     "secs": 0.996,
+     "prompt_tokens": 100,
+     "completion_tokens": 85
+    },
+    {
+     "secs": 1.048,
+     "prompt_tokens": 100,
+     "completion_tokens": 89
+    },
+    {
+     "secs": 1.009,
+     "prompt_tokens": 100,
+     "completion_tokens": 86
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "roman_to_int",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.695,
+    "prompt_tokens": 85,
+    "completion_tokens": 125
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.493,
+     "prompt_tokens": 85,
+     "completion_tokens": 125
+    },
+    {
+     "secs": 1.429,
+     "prompt_tokens": 85,
+     "completion_tokens": 122
+    },
+    {
+     "secs": 1.486,
+     "prompt_tokens": 85,
+     "completion_tokens": 125
+    },
+    {
+     "secs": 1.69,
+     "prompt_tokens": 85,
+     "completion_tokens": 141
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "is_balanced",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.169,
+    "prompt_tokens": 68,
+    "completion_tokens": 83
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.992,
+     "prompt_tokens": 68,
+     "completion_tokens": 83
+    },
+    {
+     "secs": 1.052,
+     "prompt_tokens": 68,
+     "completion_tokens": 88
+    },
+    {
+     "secs": 0.93,
+     "prompt_tokens": 68,
+     "completion_tokens": 76
+    },
+    {
+     "secs": 0.989,
+     "prompt_tokens": 68,
+     "completion_tokens": 83
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "two_sum",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 0.868,
+    "prompt_tokens": 78,
+    "completion_tokens": 53
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.628,
+     "prompt_tokens": 78,
+     "completion_tokens": 53
+    },
+    {
+     "secs": 0.626,
+     "prompt_tokens": 78,
+     "completion_tokens": 53
+    },
+    {
+     "secs": 0.649,
+     "prompt_tokens": 78,
+     "completion_tokens": 53
+    },
+    {
+     "secs": 0.686,
+     "prompt_tokens": 78,
+     "completion_tokens": 58
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    true,
+    false
+   ]
+  },
+  {
+   "task_id": "run_length_encode",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.288,
+    "prompt_tokens": 83,
+    "completion_tokens": 98
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.164,
+     "prompt_tokens": 83,
+     "completion_tokens": 98
+    },
+    {
+     "secs": 1.06,
+     "prompt_tokens": 83,
+     "completion_tokens": 90
+    },
+    {
+     "secs": 1.061,
+     "prompt_tokens": 83,
+     "completion_tokens": 89
+    },
+    {
+     "secs": 1.025,
+     "prompt_tokens": 83,
+     "completion_tokens": 85
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "flatten_nested",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 0.718,
+    "prompt_tokens": 56,
+    "completion_tokens": 47
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.558,
+     "prompt_tokens": 56,
+     "completion_tokens": 47
+    },
+    {
+     "secs": 0.558,
+     "prompt_tokens": 56,
+     "completion_tokens": 47
+    },
+    {
+     "secs": 0.555,
+     "prompt_tokens": 56,
+     "completion_tokens": 47
+    },
+    {
+     "secs": 0.558,
+     "prompt_tokens": 56,
+     "completion_tokens": 47
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "my_atoi",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.475,
+    "prompt_tokens": 81,
+    "completion_tokens": 109
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.301,
+     "prompt_tokens": 81,
+     "completion_tokens": 109
+    },
+    {
+     "secs": 1.249,
+     "prompt_tokens": 81,
+     "completion_tokens": 106
+    },
+    {
+     "secs": 1.193,
+     "prompt_tokens": 81,
+     "completion_tokens": 100
+    },
+    {
+     "secs": 1.162,
+     "prompt_tokens": 81,
+     "completion_tokens": 98
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "spiral_order",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 0.69,
+    "prompt_tokens": 66,
+    "completion_tokens": 41
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 0.488,
+     "prompt_tokens": 66,
+     "completion_tokens": 41
+    },
+    {
+     "secs": 0.486,
+     "prompt_tokens": 66,
+     "completion_tokens": 41
+    },
+    {
+     "secs": 2.216,
+     "prompt_tokens": 66,
+     "completion_tokens": 189
+    },
+    {
+     "secs": 2.22,
+     "prompt_tokens": 66,
+     "completion_tokens": 187
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "longest_common_prefix",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.205,
+    "prompt_tokens": 65,
+    "completion_tokens": 83
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.031,
+     "prompt_tokens": 65,
+     "completion_tokens": 83
+    },
+    {
+     "secs": 0.839,
+     "prompt_tokens": 65,
+     "completion_tokens": 67
+    },
+    {
+     "secs": 0.831,
+     "prompt_tokens": 65,
+     "completion_tokens": 67
+    },
+    {
+     "secs": 0.931,
+     "prompt_tokens": 65,
+     "completion_tokens": 77
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "binary_search",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.203,
+    "prompt_tokens": 61,
+    "completion_tokens": 85
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.009,
+     "prompt_tokens": 61,
+     "completion_tokens": 85
+    },
+    {
+     "secs": 1.051,
+     "prompt_tokens": 61,
+     "completion_tokens": 89
+    },
+    {
+     "secs": 1.018,
+     "prompt_tokens": 61,
+     "completion_tokens": 85
+    },
+    {
+     "secs": 1.002,
+     "prompt_tokens": 61,
+     "completion_tokens": 85
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    true,
+    true
+   ]
+  }
+ ]
+}

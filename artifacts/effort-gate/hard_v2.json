@@ -1,0 +1,5513 @@
+{
+ "schema": "flywheel.effort-gate-log/v1",
+ "registry": "hard_v2",
+ "model_ref": "ollama:flywheel-local-coder-14b",
+ "temps": [
+  0.0,
+  0.4,
+  0.8,
+  1.1
+ ],
+ "rows": [
+  {
+   "task_id": "interval_intersection",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.572,
+    "prompt_tokens": 103,
+    "completion_tokens": 111
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.318,
+     "prompt_tokens": 103,
+     "completion_tokens": 111
+    },
+    {
+     "secs": 1.298,
+     "prompt_tokens": 103,
+     "completion_tokens": 111
+    },
+    {
+     "secs": 1.362,
+     "prompt_tokens": 103,
+     "completion_tokens": 115
+    },
+    {
+     "secs": 1.267,
+     "prompt_tokens": 103,
+     "completion_tokens": 106
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "search_rotated",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.115,
+    "prompt_tokens": 93,
+    "completion_tokens": 162
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.904,
+     "prompt_tokens": 93,
+     "completion_tokens": 162
+    },
+    {
+     "secs": 1.869,
+     "prompt_tokens": 93,
+     "completion_tokens": 160
+    },
+    {
+     "secs": 1.653,
+     "prompt_tokens": 93,
+     "completion_tokens": 139
+    },
+    {
+     "secs": 2.772,
+     "prompt_tokens": 93,
+     "completion_tokens": 235
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "parse_range_list",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.133,
+    "prompt_tokens": 130,
+    "completion_tokens": 240
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.829,
+     "prompt_tokens": 130,
+     "completion_tokens": 238
+    },
+    {
+     "secs": 2.218,
+     "prompt_tokens": 130,
+     "completion_tokens": 186
+    },
+    {
+     "secs": 2.089,
+     "prompt_tokens": 130,
+     "completion_tokens": 175
+    },
+    {
+     "secs": 2.578,
+     "prompt_tokens": 130,
+     "completion_tokens": 218
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "sliding_window_max",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.797,
+    "prompt_tokens": 81,
+    "completion_tokens": 133
+   },
+   "visible": [
+    false,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.571,
+     "prompt_tokens": 81,
+     "completion_tokens": 133
+    },
+    {
+     "secs": 1.146,
+     "prompt_tokens": 81,
+     "completion_tokens": 97
+    },
+    {
+     "secs": 0.782,
+     "prompt_tokens": 81,
+     "completion_tokens": 65
+    },
+    {
+     "secs": 1.512,
+     "prompt_tokens": 81,
+     "completion_tokens": 129
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "topo_sort",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.893,
+    "prompt_tokens": 100,
+    "completion_tokens": 141
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    true,
+    false,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.671,
+     "prompt_tokens": 100,
+     "completion_tokens": 141
+    },
+    {
+     "secs": 1.973,
+     "prompt_tokens": 100,
+     "completion_tokens": 168
+    },
+    {
+     "secs": 1.662,
+     "prompt_tokens": 100,
+     "completion_tokens": 140
+    },
+    {
+     "secs": 1.801,
+     "prompt_tokens": 100,
+     "completion_tokens": 152
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "rle_decode",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.782,
+    "prompt_tokens": 119,
+    "completion_tokens": 139
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.662,
+     "prompt_tokens": 119,
+     "completion_tokens": 139
+    },
+    {
+     "secs": 1.749,
+     "prompt_tokens": 119,
+     "completion_tokens": 142
+    },
+    {
+     "secs": 1.287,
+     "prompt_tokens": 119,
+     "completion_tokens": 108
+    },
+    {
+     "secs": 1.732,
+     "prompt_tokens": 119,
+     "completion_tokens": 146
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "matrix_rotate_inplace",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.905,
+    "prompt_tokens": 71,
+    "completion_tokens": 147
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.743,
+     "prompt_tokens": 71,
+     "completion_tokens": 147
+    },
+    {
+     "secs": 1.646,
+     "prompt_tokens": 71,
+     "completion_tokens": 140
+    },
+    {
+     "secs": 1.289,
+     "prompt_tokens": 71,
+     "completion_tokens": 108
+    },
+    {
+     "secs": 1.444,
+     "prompt_tokens": 71,
+     "completion_tokens": 121
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "evaluate_rpn",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.099,
+    "prompt_tokens": 104,
+    "completion_tokens": 153
+   },
+   "visible": [
+    true,
+    false,
+    false,
+    true
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.812,
+     "prompt_tokens": 104,
+     "completion_tokens": 153
+    },
+    {
+     "secs": 1.365,
+     "prompt_tokens": 104,
+     "completion_tokens": 116
+    },
+    {
+     "secs": 2.103,
+     "prompt_tokens": 104,
+     "completion_tokens": 177
+    },
+    {
+     "secs": 3.418,
+     "prompt_tokens": 104,
+     "completion_tokens": 272
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "lis_length",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.087,
+    "prompt_tokens": 72,
+    "completion_tokens": 78
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.951,
+     "prompt_tokens": 72,
+     "completion_tokens": 78
+    },
+    {
+     "secs": 0.933,
+     "prompt_tokens": 72,
+     "completion_tokens": 78
+    },
+    {
+     "secs": 0.966,
+     "prompt_tokens": 72,
+     "completion_tokens": 82
+    },
+    {
+     "secs": 1.162,
+     "prompt_tokens": 72,
+     "completion_tokens": 97
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "valid_ipv4",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.27,
+    "prompt_tokens": 87,
+    "completion_tokens": 78
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.915,
+     "prompt_tokens": 87,
+     "completion_tokens": 77
+    },
+    {
+     "secs": 1.037,
+     "prompt_tokens": 87,
+     "completion_tokens": 87
+    },
+    {
+     "secs": 1.431,
+     "prompt_tokens": 87,
+     "completion_tokens": 121
+    },
+    {
+     "secs": 1.148,
+     "prompt_tokens": 87,
+     "completion_tokens": 96
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "josephus",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 0.99,
+    "prompt_tokens": 103,
+    "completion_tokens": 63
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.734,
+     "prompt_tokens": 103,
+     "completion_tokens": 63
+    },
+    {
+     "secs": 1.117,
+     "prompt_tokens": 103,
+     "completion_tokens": 95
+    },
+    {
+     "secs": 0.73,
+     "prompt_tokens": 103,
+     "completion_tokens": 62
+    },
+    {
+     "secs": 0.755,
+     "prompt_tokens": 103,
+     "completion_tokens": 63
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "merge_sorted_streams",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 0.63,
+    "prompt_tokens": 112,
+    "completion_tokens": 33
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.405,
+     "prompt_tokens": 112,
+     "completion_tokens": 33
+    },
+    {
+     "secs": 1.738,
+     "prompt_tokens": 112,
+     "completion_tokens": 149
+    },
+    {
+     "secs": 1.491,
+     "prompt_tokens": 112,
+     "completion_tokens": 124
+    },
+    {
+     "secs": 0.434,
+     "prompt_tokens": 112,
+     "completion_tokens": 33
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "task_id": "first_missing_positive",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.368,
+    "prompt_tokens": 82,
+    "completion_tokens": 104
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.298,
+     "prompt_tokens": 82,
+     "completion_tokens": 104
+    },
+    {
+     "secs": 1.225,
+     "prompt_tokens": 82,
+     "completion_tokens": 104
+    },
+    {
+     "secs": 1.256,
+     "prompt_tokens": 82,
+     "completion_tokens": 104
+    },
+    {
+     "secs": 1.009,
+     "prompt_tokens": 82,
+     "completion_tokens": 85
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "count_islands",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.205,
+    "prompt_tokens": 87,
+    "completion_tokens": 175
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.092,
+     "prompt_tokens": 87,
+     "completion_tokens": 175
+    },
+    {
+     "secs": 2.051,
+     "prompt_tokens": 87,
+     "completion_tokens": 175
+    },
+    {
+     "secs": 2.107,
+     "prompt_tokens": 87,
+     "completion_tokens": 178
+    },
+    {
+     "secs": 2.192,
+     "prompt_tokens": 87,
+     "completion_tokens": 187
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "csv_field_split",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 4.324,
+    "prompt_tokens": 367,
+    "completion_tokens": 327
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.825,
+     "prompt_tokens": 367,
+     "completion_tokens": 327
+    },
+    {
+     "secs": 4.096,
+     "prompt_tokens": 367,
+     "completion_tokens": 349
+    },
+    {
+     "secs": 3.738,
+     "prompt_tokens": 367,
+     "completion_tokens": 319
+    },
+    {
+     "secs": 9.087,
+     "prompt_tokens": 367,
+     "completion_tokens": 768
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "duration_hms_strict",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 5.585,
+    "prompt_tokens": 380,
+    "completion_tokens": 451
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.617,
+     "prompt_tokens": 380,
+     "completion_tokens": 385
+    },
+    {
+     "secs": 6.235,
+     "prompt_tokens": 380,
+     "completion_tokens": 515
+    },
+    {
+     "secs": 6.17,
+     "prompt_tokens": 380,
+     "completion_tokens": 499
+    },
+    {
+     "secs": 5.406,
+     "prompt_tokens": 380,
+     "completion_tokens": 452
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "shellish_tokenize",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 5.179,
+    "prompt_tokens": 404,
+    "completion_tokens": 396
+   },
+   "visible": [
+    true,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.656,
+     "prompt_tokens": 404,
+     "completion_tokens": 396
+    },
+    {
+     "secs": 5.296,
+     "prompt_tokens": 404,
+     "completion_tokens": 454
+    },
+    {
+     "secs": 4.486,
+     "prompt_tokens": 404,
+     "completion_tokens": 378
+    },
+    {
+     "secs": 8.958,
+     "prompt_tokens": 404,
+     "completion_tokens": 768
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "header_unfold",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.498,
+    "prompt_tokens": 331,
+    "completion_tokens": 269
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.112,
+     "prompt_tokens": 331,
+     "completion_tokens": 265
+    },
+    {
+     "secs": 3.075,
+     "prompt_tokens": 331,
+     "completion_tokens": 264
+    },
+    {
+     "secs": 3.764,
+     "prompt_tokens": 331,
+     "completion_tokens": 324
+    },
+    {
+     "secs": 5.247,
+     "prompt_tokens": 331,
+     "completion_tokens": 453
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "canonical_decimal",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 6.217,
+    "prompt_tokens": 432,
+    "completion_tokens": 509
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 6.364,
+     "prompt_tokens": 432,
+     "completion_tokens": 533
+    },
+    {
+     "secs": 6.508,
+     "prompt_tokens": 432,
+     "completion_tokens": 551
+    },
+    {
+     "secs": 6.067,
+     "prompt_tokens": 432,
+     "completion_tokens": 511
+    },
+    {
+     "secs": 6.823,
+     "prompt_tokens": 432,
+     "completion_tokens": 566
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "template_fields",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 4.82,
+    "prompt_tokens": 361,
+    "completion_tokens": 373
+   },
+   "visible": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.857,
+     "prompt_tokens": 361,
+     "completion_tokens": 373
+    },
+    {
+     "secs": 4.235,
+     "prompt_tokens": 361,
+     "completion_tokens": 352
+    },
+    {
+     "secs": 5.088,
+     "prompt_tokens": 361,
+     "completion_tokens": 432
+    },
+    {
+     "secs": 5.326,
+     "prompt_tokens": 361,
+     "completion_tokens": 444
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "partition_three_inplace",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.624,
+    "prompt_tokens": 253,
+    "completion_tokens": 111
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.336,
+     "prompt_tokens": 253,
+     "completion_tokens": 111
+    },
+    {
+     "secs": 2.096,
+     "prompt_tokens": 253,
+     "completion_tokens": 174
+    },
+    {
+     "secs": 1.328,
+     "prompt_tokens": 253,
+     "completion_tokens": 111
+    },
+    {
+     "secs": 1.275,
+     "prompt_tokens": 253,
+     "completion_tokens": 107
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "merge_tallies",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.999,
+    "prompt_tokens": 279,
+    "completion_tokens": 143
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.967,
+     "prompt_tokens": 279,
+     "completion_tokens": 169
+    },
+    {
+     "secs": 1.338,
+     "prompt_tokens": 279,
+     "completion_tokens": 115
+    },
+    {
+     "secs": 3.252,
+     "prompt_tokens": 279,
+     "completion_tokens": 280
+    },
+    {
+     "secs": 2.793,
+     "prompt_tokens": 279,
+     "completion_tokens": 240
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "apply_edits",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 4.162,
+    "prompt_tokens": 304,
+    "completion_tokens": 335
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.955,
+     "prompt_tokens": 304,
+     "completion_tokens": 335
+    },
+    {
+     "secs": 4.586,
+     "prompt_tokens": 304,
+     "completion_tokens": 395
+    },
+    {
+     "secs": 5.159,
+     "prompt_tokens": 304,
+     "completion_tokens": 440
+    },
+    {
+     "secs": 4.328,
+     "prompt_tokens": 304,
+     "completion_tokens": 364
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "group_pairs",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.192,
+    "prompt_tokens": 224,
+    "completion_tokens": 79
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 0.94,
+     "prompt_tokens": 224,
+     "completion_tokens": 79
+    },
+    {
+     "secs": 1.509,
+     "prompt_tokens": 224,
+     "completion_tokens": 128
+    },
+    {
+     "secs": 1.654,
+     "prompt_tokens": 224,
+     "completion_tokens": 139
+    },
+    {
+     "secs": 1.572,
+     "prompt_tokens": 224,
+     "completion_tokens": 133
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "purge_in_place",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.464,
+    "prompt_tokens": 265,
+    "completion_tokens": 98
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.164,
+     "prompt_tokens": 265,
+     "completion_tokens": 98
+    },
+    {
+     "secs": 1.172,
+     "prompt_tokens": 265,
+     "completion_tokens": 99
+    },
+    {
+     "secs": 1.77,
+     "prompt_tokens": 265,
+     "completion_tokens": 151
+    },
+    {
+     "secs": 1.076,
+     "prompt_tokens": 265,
+     "completion_tokens": 92
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "splice_pure",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.013,
+    "prompt_tokens": 318,
+    "completion_tokens": 151
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.752,
+     "prompt_tokens": 318,
+     "completion_tokens": 151
+    },
+    {
+     "secs": 1.841,
+     "prompt_tokens": 318,
+     "completion_tokens": 157
+    },
+    {
+     "secs": 2.253,
+     "prompt_tokens": 318,
+     "completion_tokens": 194
+    },
+    {
+     "secs": 2.059,
+     "prompt_tokens": 318,
+     "completion_tokens": 178
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "sat_add_nbit",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.981,
+    "prompt_tokens": 211,
+    "completion_tokens": 225
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.728,
+     "prompt_tokens": 211,
+     "completion_tokens": 227
+    },
+    {
+     "secs": 2.193,
+     "prompt_tokens": 211,
+     "completion_tokens": 182
+    },
+    {
+     "secs": 2.056,
+     "prompt_tokens": 211,
+     "completion_tokens": 174
+    },
+    {
+     "secs": 3.464,
+     "prompt_tokens": 211,
+     "completion_tokens": 293
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "div_round_half_away",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.815,
+    "prompt_tokens": 218,
+    "completion_tokens": 214
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 2.382,
+     "prompt_tokens": 218,
+     "completion_tokens": 201
+    },
+    {
+     "secs": 2.526,
+     "prompt_tokens": 218,
+     "completion_tokens": 215
+    },
+    {
+     "secs": 1.583,
+     "prompt_tokens": 218,
+     "completion_tokens": 134
+    },
+    {
+     "secs": 1.863,
+     "prompt_tokens": 218,
+     "completion_tokens": 157
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "add_months_clamp",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.856,
+    "prompt_tokens": 304,
+    "completion_tokens": 304
+   },
+   "visible": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.567,
+     "prompt_tokens": 304,
+     "completion_tokens": 304
+    },
+    {
+     "secs": 4.228,
+     "prompt_tokens": 304,
+     "completion_tokens": 361
+    },
+    {
+     "secs": 4.255,
+     "prompt_tokens": 304,
+     "completion_tokens": 358
+    },
+    {
+     "secs": 3.176,
+     "prompt_tokens": 304,
+     "completion_tokens": 265
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "bucket_histogram_mixed",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.624,
+    "prompt_tokens": 246,
+    "completion_tokens": 214
+   },
+   "visible": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.492,
+     "prompt_tokens": 246,
+     "completion_tokens": 214
+    },
+    {
+     "secs": 9.039,
+     "prompt_tokens": 246,
+     "completion_tokens": 768
+    },
+    {
+     "secs": 3.424,
+     "prompt_tokens": 246,
+     "completion_tokens": 286
+    },
+    {
+     "secs": 4.524,
+     "prompt_tokens": 246,
+     "completion_tokens": 386
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "mini_editor_undo",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 4.813,
+    "prompt_tokens": 452,
+    "completion_tokens": 386
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 5.104,
+     "prompt_tokens": 452,
+     "completion_tokens": 437
+    },
+    {
+     "secs": 3.793,
+     "prompt_tokens": 452,
+     "completion_tokens": 323
+    },
+    {
+     "secs": 7.286,
+     "prompt_tokens": 452,
+     "completion_tokens": 612
+    },
+    {
+     "secs": 4.246,
+     "prompt_tokens": 452,
+     "completion_tokens": 346
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "frame_checksum_decode",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.896,
+    "prompt_tokens": 369,
+    "completion_tokens": 207
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.449,
+     "prompt_tokens": 369,
+     "completion_tokens": 207
+    },
+    {
+     "secs": 2.482,
+     "prompt_tokens": 369,
+     "completion_tokens": 207
+    },
+    {
+     "secs": 2.461,
+     "prompt_tokens": 369,
+     "completion_tokens": 209
+    },
+    {
+     "secs": 2.41,
+     "prompt_tokens": 369,
+     "completion_tokens": 200
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "kv_event_fold",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 4.6,
+    "prompt_tokens": 347,
+    "completion_tokens": 356
+   },
+   "visible": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.21,
+     "prompt_tokens": 347,
+     "completion_tokens": 347
+    },
+    {
+     "secs": 4.061,
+     "prompt_tokens": 347,
+     "completion_tokens": 343
+    },
+    {
+     "secs": 5.085,
+     "prompt_tokens": 347,
+     "completion_tokens": 427
+    },
+    {
+     "secs": 5.318,
+     "prompt_tokens": 347,
+     "completion_tokens": 441
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "outline_leaf_paths",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 0.706,
+    "prompt_tokens": 358,
+    "completion_tokens": 28
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 0.36,
+     "prompt_tokens": 358,
+     "completion_tokens": 28
+    },
+    {
+     "secs": 0.395,
+     "prompt_tokens": 358,
+     "completion_tokens": 32
+    },
+    {
+     "secs": 3.141,
+     "prompt_tokens": 358,
+     "completion_tokens": 263
+    },
+    {
+     "secs": 1.505,
+     "prompt_tokens": 358,
+     "completion_tokens": 124
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "tilde_unescape",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.804,
+    "prompt_tokens": 420,
+    "completion_tokens": 293
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    false,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.441,
+     "prompt_tokens": 420,
+     "completion_tokens": 293
+    },
+    {
+     "secs": 3.243,
+     "prompt_tokens": 420,
+     "completion_tokens": 266
+    },
+    {
+     "secs": 3.415,
+     "prompt_tokens": 420,
+     "completion_tokens": 282
+    },
+    {
+     "secs": 3.48,
+     "prompt_tokens": 420,
+     "completion_tokens": 277
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "largest_remainder_apportion",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.35,
+    "prompt_tokens": 235,
+    "completion_tokens": 183
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.968,
+     "prompt_tokens": 235,
+     "completion_tokens": 166
+    },
+    {
+     "secs": 3.099,
+     "prompt_tokens": 235,
+     "completion_tokens": 260
+    },
+    {
+     "secs": 2.905,
+     "prompt_tokens": 235,
+     "completion_tokens": 244
+    },
+    {
+     "secs": 4.109,
+     "prompt_tokens": 235,
+     "completion_tokens": 349
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "format_signed_duration",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.807,
+    "prompt_tokens": 241,
+    "completion_tokens": 128
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.51,
+     "prompt_tokens": 241,
+     "completion_tokens": 128
+    },
+    {
+     "secs": 1.645,
+     "prompt_tokens": 241,
+     "completion_tokens": 136
+    },
+    {
+     "secs": 1.701,
+     "prompt_tokens": 241,
+     "completion_tokens": 146
+    },
+    {
+     "secs": 1.623,
+     "prompt_tokens": 241,
+     "completion_tokens": 137
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "varint_zigzag_decode",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.348,
+    "prompt_tokens": 471,
+    "completion_tokens": 249
+   },
+   "visible": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.08,
+     "prompt_tokens": 471,
+     "completion_tokens": 255
+    },
+    {
+     "secs": 3.229,
+     "prompt_tokens": 471,
+     "completion_tokens": 271
+    },
+    {
+     "secs": 3.931,
+     "prompt_tokens": 471,
+     "completion_tokens": 331
+    },
+    {
+     "secs": 6.942,
+     "prompt_tokens": 471,
+     "completion_tokens": 580
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "word_wrap_greedy",
+   "single_visible": false,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.885,
+    "prompt_tokens": 240,
+    "completion_tokens": 210
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.537,
+     "prompt_tokens": 240,
+     "completion_tokens": 210
+    },
+    {
+     "secs": 2.147,
+     "prompt_tokens": 240,
+     "completion_tokens": 176
+    },
+    {
+     "secs": 1.487,
+     "prompt_tokens": 240,
+     "completion_tokens": 123
+    },
+    {
+     "secs": 1.737,
+     "prompt_tokens": 240,
+     "completion_tokens": 136
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "identifier_words",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 5.321,
+    "prompt_tokens": 224,
+    "completion_tokens": 417
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 5.344,
+     "prompt_tokens": 224,
+     "completion_tokens": 417
+    },
+    {
+     "secs": 5.285,
+     "prompt_tokens": 224,
+     "completion_tokens": 425
+    },
+    {
+     "secs": 4.076,
+     "prompt_tokens": 224,
+     "completion_tokens": 337
+    },
+    {
+     "secs": 8.135,
+     "prompt_tokens": 224,
+     "completion_tokens": 678
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "tab_expand_columns",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.881,
+    "prompt_tokens": 193,
+    "completion_tokens": 131
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.574,
+     "prompt_tokens": 193,
+     "completion_tokens": 131
+    },
+    {
+     "secs": 1.655,
+     "prompt_tokens": 193,
+     "completion_tokens": 137
+    },
+    {
+     "secs": 1.509,
+     "prompt_tokens": 193,
+     "completion_tokens": 123
+    },
+    {
+     "secs": 2.189,
+     "prompt_tokens": 193,
+     "completion_tokens": 182
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "interval_subtract",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.484,
+    "prompt_tokens": 234,
+    "completion_tokens": 265
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.28,
+     "prompt_tokens": 234,
+     "completion_tokens": 265
+    },
+    {
+     "secs": 2.272,
+     "prompt_tokens": 234,
+     "completion_tokens": 183
+    },
+    {
+     "secs": 3.785,
+     "prompt_tokens": 234,
+     "completion_tokens": 285
+    },
+    {
+     "secs": 5.221,
+     "prompt_tokens": 234,
+     "completion_tokens": 410
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "rect_overlap_area",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.465,
+    "prompt_tokens": 212,
+    "completion_tokens": 256
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 3.191,
+     "prompt_tokens": 212,
+     "completion_tokens": 256
+    },
+    {
+     "secs": 3.11,
+     "prompt_tokens": 212,
+     "completion_tokens": 255
+    },
+    {
+     "secs": 2.479,
+     "prompt_tokens": 212,
+     "completion_tokens": 198
+    },
+    {
+     "secs": 3.183,
+     "prompt_tokens": 212,
+     "completion_tokens": 263
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "covered_integer_count",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.87,
+    "prompt_tokens": 225,
+    "completion_tokens": 121
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.598,
+     "prompt_tokens": 225,
+     "completion_tokens": 131
+    },
+    {
+     "secs": 1.266,
+     "prompt_tokens": 225,
+     "completion_tokens": 105
+    },
+    {
+     "secs": 1.024,
+     "prompt_tokens": 225,
+     "completion_tokens": 83
+    },
+    {
+     "secs": 1.399,
+     "prompt_tokens": 225,
+     "completion_tokens": 116
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "turtle_walk_program",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 4.414,
+    "prompt_tokens": 259,
+    "completion_tokens": 360
+   },
+   "visible": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.748,
+     "prompt_tokens": 259,
+     "completion_tokens": 393
+    },
+    {
+     "secs": 4.388,
+     "prompt_tokens": 259,
+     "completion_tokens": 362
+    },
+    {
+     "secs": 5.361,
+     "prompt_tokens": 259,
+     "completion_tokens": 426
+    },
+    {
+     "secs": 4.749,
+     "prompt_tokens": 259,
+     "completion_tokens": 375
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "token_bucket_grants",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.091,
+    "prompt_tokens": 300,
+    "completion_tokens": 237
+   },
+   "visible": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.712,
+     "prompt_tokens": 300,
+     "completion_tokens": 229
+    },
+    {
+     "secs": 2.59,
+     "prompt_tokens": 300,
+     "completion_tokens": 219
+    },
+    {
+     "secs": 2.492,
+     "prompt_tokens": 300,
+     "completion_tokens": 209
+    },
+    {
+     "secs": 2.479,
+     "prompt_tokens": 300,
+     "completion_tokens": 205
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "stopwatch_fsm",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.894,
+    "prompt_tokens": 296,
+    "completion_tokens": 289
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.439,
+     "prompt_tokens": 296,
+     "completion_tokens": 289
+    },
+    {
+     "secs": 2.992,
+     "prompt_tokens": 296,
+     "completion_tokens": 250
+    },
+    {
+     "secs": 3.451,
+     "prompt_tokens": 296,
+     "completion_tokens": 289
+    },
+    {
+     "secs": 4.08,
+     "prompt_tokens": 296,
+     "completion_tokens": 343
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "matrix_shape_strict",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.128,
+    "prompt_tokens": 247,
+    "completion_tokens": 157
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    false,
+    false,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.876,
+     "prompt_tokens": 247,
+     "completion_tokens": 157
+    },
+    {
+     "secs": 1.646,
+     "prompt_tokens": 247,
+     "completion_tokens": 138
+    },
+    {
+     "secs": 1.89,
+     "prompt_tokens": 247,
+     "completion_tokens": 163
+    },
+    {
+     "secs": 2.114,
+     "prompt_tokens": 247,
+     "completion_tokens": 181
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "money_cents_strict",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 4.504,
+    "prompt_tokens": 323,
+    "completion_tokens": 362
+   },
+   "visible": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.285,
+     "prompt_tokens": 323,
+     "completion_tokens": 362
+    },
+    {
+     "secs": 2.558,
+     "prompt_tokens": 323,
+     "completion_tokens": 219
+    },
+    {
+     "secs": 3.613,
+     "prompt_tokens": 323,
+     "completion_tokens": 309
+    },
+    {
+     "secs": 5.542,
+     "prompt_tokens": 323,
+     "completion_tokens": 465
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "cron_field_expand",
+   "single_visible": false,
+   "single_held": true,
+   "single_cost": {
+    "secs": 4.81,
+    "prompt_tokens": 323,
+    "completion_tokens": 378
+   },
+   "visible": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.815,
+     "prompt_tokens": 323,
+     "completion_tokens": 401
+    },
+    {
+     "secs": 4.329,
+     "prompt_tokens": 323,
+     "completion_tokens": 358
+    },
+    {
+     "secs": 4.85,
+     "prompt_tokens": 323,
+     "completion_tokens": 402
+    },
+    {
+     "secs": 4.537,
+     "prompt_tokens": 323,
+     "completion_tokens": 377
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "int_to_base",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.02,
+    "prompt_tokens": 191,
+    "completion_tokens": 148
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.761,
+     "prompt_tokens": 191,
+     "completion_tokens": 148
+    },
+    {
+     "secs": 1.806,
+     "prompt_tokens": 191,
+     "completion_tokens": 152
+    },
+    {
+     "secs": 1.839,
+     "prompt_tokens": 191,
+     "completion_tokens": 153
+    },
+    {
+     "secs": 2.009,
+     "prompt_tokens": 191,
+     "completion_tokens": 167
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "parse_base",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.938,
+    "prompt_tokens": 213,
+    "completion_tokens": 226
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.94,
+     "prompt_tokens": 213,
+     "completion_tokens": 243
+    },
+    {
+     "secs": 2.856,
+     "prompt_tokens": 213,
+     "completion_tokens": 237
+    },
+    {
+     "secs": 2.794,
+     "prompt_tokens": 213,
+     "completion_tokens": 229
+    },
+    {
+     "secs": 3.157,
+     "prompt_tokens": 213,
+     "completion_tokens": 261
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "roman_encode",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.495,
+    "prompt_tokens": 235,
+    "completion_tokens": 182
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 2.182,
+     "prompt_tokens": 235,
+     "completion_tokens": 182
+    },
+    {
+     "secs": 2.195,
+     "prompt_tokens": 235,
+     "completion_tokens": 183
+    },
+    {
+     "secs": 2.525,
+     "prompt_tokens": 235,
+     "completion_tokens": 213
+    },
+    {
+     "secs": 2.214,
+     "prompt_tokens": 235,
+     "completion_tokens": 185
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "col_label",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.302,
+    "prompt_tokens": 180,
+    "completion_tokens": 82
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.98,
+     "prompt_tokens": 180,
+     "completion_tokens": 81
+    },
+    {
+     "secs": 0.991,
+     "prompt_tokens": 180,
+     "completion_tokens": 82
+    },
+    {
+     "secs": 0.956,
+     "prompt_tokens": 180,
+     "completion_tokens": 79
+    },
+    {
+     "secs": 1.06,
+     "prompt_tokens": 180,
+     "completion_tokens": 83
+    }
+   ],
+   "same_as_single": [
+    false,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "col_number",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 0.991,
+    "prompt_tokens": 157,
+    "completion_tokens": 77
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.944,
+     "prompt_tokens": 157,
+     "completion_tokens": 77
+    },
+    {
+     "secs": 0.967,
+     "prompt_tokens": 157,
+     "completion_tokens": 78
+    },
+    {
+     "secs": 1.15,
+     "prompt_tokens": 157,
+     "completion_tokens": 94
+    },
+    {
+     "secs": 1.117,
+     "prompt_tokens": 157,
+     "completion_tokens": 93
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "luhn_valid",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.433,
+    "prompt_tokens": 187,
+    "completion_tokens": 110
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.352,
+     "prompt_tokens": 187,
+     "completion_tokens": 110
+    },
+    {
+     "secs": 1.35,
+     "prompt_tokens": 187,
+     "completion_tokens": 110
+    },
+    {
+     "secs": 1.687,
+     "prompt_tokens": 187,
+     "completion_tokens": 135
+    },
+    {
+     "secs": 1.228,
+     "prompt_tokens": 187,
+     "completion_tokens": 102
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "isbn10_check",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.469,
+    "prompt_tokens": 204,
+    "completion_tokens": 176
+   },
+   "visible": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.602,
+     "prompt_tokens": 204,
+     "completion_tokens": 212
+    },
+    {
+     "secs": 2.467,
+     "prompt_tokens": 204,
+     "completion_tokens": 197
+    },
+    {
+     "secs": 1.841,
+     "prompt_tokens": 204,
+     "completion_tokens": 149
+    },
+    {
+     "secs": 2.186,
+     "prompt_tokens": 204,
+     "completion_tokens": 176
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "days_in_month",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.55,
+    "prompt_tokens": 213,
+    "completion_tokens": 183
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 2.297,
+     "prompt_tokens": 213,
+     "completion_tokens": 183
+    },
+    {
+     "secs": 1.831,
+     "prompt_tokens": 213,
+     "completion_tokens": 151
+    },
+    {
+     "secs": 2.057,
+     "prompt_tokens": 213,
+     "completion_tokens": 173
+    },
+    {
+     "secs": 1.802,
+     "prompt_tokens": 213,
+     "completion_tokens": 150
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "ordinal_day",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.973,
+    "prompt_tokens": 228,
+    "completion_tokens": 240
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 2.903,
+     "prompt_tokens": 228,
+     "completion_tokens": 240
+    },
+    {
+     "secs": 2.998,
+     "prompt_tokens": 228,
+     "completion_tokens": 252
+    },
+    {
+     "secs": 2.741,
+     "prompt_tokens": 228,
+     "completion_tokens": 225
+    },
+    {
+     "secs": 3.31,
+     "prompt_tokens": 228,
+     "completion_tokens": 273
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "weekday_name",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 4.715,
+    "prompt_tokens": 220,
+    "completion_tokens": 361
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    true
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 3.779,
+     "prompt_tokens": 220,
+     "completion_tokens": 305
+    },
+    {
+     "secs": 4.342,
+     "prompt_tokens": 220,
+     "completion_tokens": 319
+    },
+    {
+     "secs": 7.432,
+     "prompt_tokens": 220,
+     "completion_tokens": 548
+    },
+    {
+     "secs": 3.92,
+     "prompt_tokens": 220,
+     "completion_tokens": 289
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "days_between",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 4.498,
+    "prompt_tokens": 218,
+    "completion_tokens": 335
+   },
+   "visible": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.22,
+     "prompt_tokens": 218,
+     "completion_tokens": 335
+    },
+    {
+     "secs": 5.004,
+     "prompt_tokens": 218,
+     "completion_tokens": 411
+    },
+    {
+     "secs": 9.295,
+     "prompt_tokens": 218,
+     "completion_tokens": 768
+    },
+    {
+     "secs": 9.234,
+     "prompt_tokens": 218,
+     "completion_tokens": 768
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "semver_compare",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 6.587,
+    "prompt_tokens": 277,
+    "completion_tokens": 517
+   },
+   "visible": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 6.916,
+     "prompt_tokens": 277,
+     "completion_tokens": 571
+    },
+    {
+     "secs": 7.091,
+     "prompt_tokens": 277,
+     "completion_tokens": 587
+    },
+    {
+     "secs": 6.418,
+     "prompt_tokens": 277,
+     "completion_tokens": 489
+    },
+    {
+     "secs": 6.84,
+     "prompt_tokens": 277,
+     "completion_tokens": 568
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "natural_compare",
+   "single_visible": false,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.899,
+    "prompt_tokens": 210,
+    "completion_tokens": 214
+   },
+   "visible": [
+    false,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.59,
+     "prompt_tokens": 210,
+     "completion_tokens": 214
+    },
+    {
+     "secs": 4.434,
+     "prompt_tokens": 210,
+     "completion_tokens": 360
+    },
+    {
+     "secs": 3.15,
+     "prompt_tokens": 210,
+     "completion_tokens": 251
+    },
+    {
+     "secs": 4.48,
+     "prompt_tokens": 210,
+     "completion_tokens": 377
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "percent_decode",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.622,
+    "prompt_tokens": 200,
+    "completion_tokens": 207
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.55,
+     "prompt_tokens": 200,
+     "completion_tokens": 207
+    },
+    {
+     "secs": 2.276,
+     "prompt_tokens": 200,
+     "completion_tokens": 193
+    },
+    {
+     "secs": 2.238,
+     "prompt_tokens": 200,
+     "completion_tokens": 190
+    },
+    {
+     "secs": 4.133,
+     "prompt_tokens": 200,
+     "completion_tokens": 347
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "csv_quote",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 0.801,
+    "prompt_tokens": 173,
+    "completion_tokens": 58
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.68,
+     "prompt_tokens": 173,
+     "completion_tokens": 58
+    },
+    {
+     "secs": 0.842,
+     "prompt_tokens": 173,
+     "completion_tokens": 72
+    },
+    {
+     "secs": 0.849,
+     "prompt_tokens": 173,
+     "completion_tokens": 73
+    },
+    {
+     "secs": 0.76,
+     "prompt_tokens": 173,
+     "completion_tokens": 64
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "round_half_even",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.683,
+    "prompt_tokens": 207,
+    "completion_tokens": 126
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.498,
+     "prompt_tokens": 207,
+     "completion_tokens": 126
+    },
+    {
+     "secs": 1.594,
+     "prompt_tokens": 207,
+     "completion_tokens": 134
+    },
+    {
+     "secs": 2.468,
+     "prompt_tokens": 207,
+     "completion_tokens": 207
+    },
+    {
+     "secs": 2.954,
+     "prompt_tokens": 207,
+     "completion_tokens": 255
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "reverse_bits",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.564,
+    "prompt_tokens": 211,
+    "completion_tokens": 105
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.251,
+     "prompt_tokens": 211,
+     "completion_tokens": 105
+    },
+    {
+     "secs": 1.248,
+     "prompt_tokens": 211,
+     "completion_tokens": 105
+    },
+    {
+     "secs": 1.259,
+     "prompt_tokens": 211,
+     "completion_tokens": 106
+    },
+    {
+     "secs": 1.252,
+     "prompt_tokens": 211,
+     "completion_tokens": 105
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    true
+   ]
+  },
+  {
+   "task_id": "reduce_fraction",
+   "single_visible": false,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.83,
+    "prompt_tokens": 157,
+    "completion_tokens": 121
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.375,
+     "prompt_tokens": 157,
+     "completion_tokens": 116
+    },
+    {
+     "secs": 1.442,
+     "prompt_tokens": 157,
+     "completion_tokens": 122
+    },
+    {
+     "secs": 1.439,
+     "prompt_tokens": 157,
+     "completion_tokens": 121
+    },
+    {
+     "secs": 1.379,
+     "prompt_tokens": 157,
+     "completion_tokens": 116
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "top_k_frequent",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.665,
+    "prompt_tokens": 179,
+    "completion_tokens": 122
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.443,
+     "prompt_tokens": 179,
+     "completion_tokens": 122
+    },
+    {
+     "secs": 1.441,
+     "prompt_tokens": 179,
+     "completion_tokens": 123
+    },
+    {
+     "secs": 1.367,
+     "prompt_tokens": 179,
+     "completion_tokens": 112
+    },
+    {
+     "secs": 2.186,
+     "prompt_tokens": 179,
+     "completion_tokens": 186
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "uniq_counts",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.521,
+    "prompt_tokens": 154,
+    "completion_tokens": 108
+   },
+   "visible": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    false,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.281,
+     "prompt_tokens": 154,
+     "completion_tokens": 108
+    },
+    {
+     "secs": 4.359,
+     "prompt_tokens": 154,
+     "completion_tokens": 371
+    },
+    {
+     "secs": 1.468,
+     "prompt_tokens": 154,
+     "completion_tokens": 118
+    },
+    {
+     "secs": 1.248,
+     "prompt_tokens": 154,
+     "completion_tokens": 102
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "eval_bool_expr",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.124,
+    "prompt_tokens": 198,
+    "completion_tokens": 249
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.318,
+     "prompt_tokens": 198,
+     "completion_tokens": 249
+    },
+    {
+     "secs": 4.831,
+     "prompt_tokens": 198,
+     "completion_tokens": 402
+    },
+    {
+     "secs": 3.662,
+     "prompt_tokens": 198,
+     "completion_tokens": 300
+    },
+    {
+     "secs": 3.435,
+     "prompt_tokens": 198,
+     "completion_tokens": 286
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "glob_match",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 1.678,
+    "prompt_tokens": 183,
+    "completion_tokens": 122
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.468,
+     "prompt_tokens": 183,
+     "completion_tokens": 122
+    },
+    {
+     "secs": 1.385,
+     "prompt_tokens": 183,
+     "completion_tokens": 116
+    },
+    {
+     "secs": 1.444,
+     "prompt_tokens": 183,
+     "completion_tokens": 121
+    },
+    {
+     "secs": 0.244,
+     "prompt_tokens": 183,
+     "completion_tokens": 19
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "sliding_windows",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.658,
+    "prompt_tokens": 194,
+    "completion_tokens": 119
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.438,
+     "prompt_tokens": 194,
+     "completion_tokens": 119
+    },
+    {
+     "secs": 1.531,
+     "prompt_tokens": 194,
+     "completion_tokens": 128
+    },
+    {
+     "secs": 1.379,
+     "prompt_tokens": 194,
+     "completion_tokens": 115
+    },
+    {
+     "secs": 1.65,
+     "prompt_tokens": 194,
+     "completion_tokens": 140
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "summarize_ranges",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.132,
+    "prompt_tokens": 187,
+    "completion_tokens": 158
+   },
+   "visible": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.856,
+     "prompt_tokens": 187,
+     "completion_tokens": 158
+    },
+    {
+     "secs": 2.21,
+     "prompt_tokens": 187,
+     "completion_tokens": 187
+    },
+    {
+     "secs": 1.898,
+     "prompt_tokens": 187,
+     "completion_tokens": 159
+    },
+    {
+     "secs": 2.175,
+     "prompt_tokens": 187,
+     "completion_tokens": 183
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "matrix_transpose",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.413,
+    "prompt_tokens": 177,
+    "completion_tokens": 101
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.192,
+     "prompt_tokens": 177,
+     "completion_tokens": 101
+    },
+    {
+     "secs": 1.207,
+     "prompt_tokens": 177,
+     "completion_tokens": 98
+    },
+    {
+     "secs": 1.178,
+     "prompt_tokens": 177,
+     "completion_tokens": 98
+    },
+    {
+     "secs": 1.424,
+     "prompt_tokens": 177,
+     "completion_tokens": 121
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "json_string_escape",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.217,
+    "prompt_tokens": 216,
+    "completion_tokens": 162
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.904,
+     "prompt_tokens": 216,
+     "completion_tokens": 162
+    },
+    {
+     "secs": 1.952,
+     "prompt_tokens": 216,
+     "completion_tokens": 166
+    },
+    {
+     "secs": 1.99,
+     "prompt_tokens": 216,
+     "completion_tokens": 167
+    },
+    {
+     "secs": 2.406,
+     "prompt_tokens": 216,
+     "completion_tokens": 203
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "normalize_path",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.73,
+    "prompt_tokens": 183,
+    "completion_tokens": 120
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.412,
+     "prompt_tokens": 183,
+     "completion_tokens": 120
+    },
+    {
+     "secs": 1.514,
+     "prompt_tokens": 183,
+     "completion_tokens": 129
+    },
+    {
+     "secs": 1.504,
+     "prompt_tokens": 183,
+     "completion_tokens": 126
+    },
+    {
+     "secs": 1.486,
+     "prompt_tokens": 183,
+     "completion_tokens": 125
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "ipv4_to_int",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.931,
+    "prompt_tokens": 246,
+    "completion_tokens": 142
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.693,
+     "prompt_tokens": 246,
+     "completion_tokens": 142
+    },
+    {
+     "secs": 1.741,
+     "prompt_tokens": 246,
+     "completion_tokens": 146
+    },
+    {
+     "secs": 1.95,
+     "prompt_tokens": 246,
+     "completion_tokens": 165
+    },
+    {
+     "secs": 1.729,
+     "prompt_tokens": 246,
+     "completion_tokens": 144
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "multiset_diff",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.511,
+    "prompt_tokens": 176,
+    "completion_tokens": 104
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.221,
+     "prompt_tokens": 176,
+     "completion_tokens": 104
+    },
+    {
+     "secs": 1.238,
+     "prompt_tokens": 176,
+     "completion_tokens": 103
+    },
+    {
+     "secs": 1.429,
+     "prompt_tokens": 176,
+     "completion_tokens": 121
+    },
+    {
+     "secs": 1.061,
+     "prompt_tokens": 176,
+     "completion_tokens": 88
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "parse_a1_ref",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.338,
+    "prompt_tokens": 218,
+    "completion_tokens": 257
+   },
+   "visible": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.324,
+     "prompt_tokens": 218,
+     "completion_tokens": 279
+    },
+    {
+     "secs": 1.949,
+     "prompt_tokens": 218,
+     "completion_tokens": 161
+    },
+    {
+     "secs": 1.919,
+     "prompt_tokens": 218,
+     "completion_tokens": 163
+    },
+    {
+     "secs": 3.28,
+     "prompt_tokens": 218,
+     "completion_tokens": 279
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "linked_cycle",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.896,
+    "prompt_tokens": 209,
+    "completion_tokens": 125
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.499,
+     "prompt_tokens": 209,
+     "completion_tokens": 125
+    },
+    {
+     "secs": 1.977,
+     "prompt_tokens": 209,
+     "completion_tokens": 156
+    },
+    {
+     "secs": 1.542,
+     "prompt_tokens": 209,
+     "completion_tokens": 128
+    },
+    {
+     "secs": 1.37,
+     "prompt_tokens": 209,
+     "completion_tokens": 114
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "manhattan_tour",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.19,
+    "prompt_tokens": 174,
+    "completion_tokens": 256
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.008,
+     "prompt_tokens": 174,
+     "completion_tokens": 256
+    },
+    {
+     "secs": 1.662,
+     "prompt_tokens": 174,
+     "completion_tokens": 143
+    },
+    {
+     "secs": 2.642,
+     "prompt_tokens": 174,
+     "completion_tokens": 227
+    },
+    {
+     "secs": 2.311,
+     "prompt_tokens": 174,
+     "completion_tokens": 193
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "parse_kv_pairs",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.405,
+    "prompt_tokens": 207,
+    "completion_tokens": 177
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.204,
+     "prompt_tokens": 207,
+     "completion_tokens": 177
+    },
+    {
+     "secs": 2.267,
+     "prompt_tokens": 207,
+     "completion_tokens": 192
+    },
+    {
+     "secs": 1.79,
+     "prompt_tokens": 207,
+     "completion_tokens": 151
+    },
+    {
+     "secs": 2.198,
+     "prompt_tokens": 207,
+     "completion_tokens": 178
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "rotate_list",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.194,
+    "prompt_tokens": 175,
+    "completion_tokens": 81
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 0.971,
+     "prompt_tokens": 175,
+     "completion_tokens": 81
+    },
+    {
+     "secs": 0.987,
+     "prompt_tokens": 175,
+     "completion_tokens": 81
+    },
+    {
+     "secs": 0.952,
+     "prompt_tokens": 175,
+     "completion_tokens": 81
+    },
+    {
+     "secs": 0.932,
+     "prompt_tokens": 175,
+     "completion_tokens": 79
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    true,
+    false
+   ]
+  },
+  {
+   "task_id": "group_anagrams",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.419,
+    "prompt_tokens": 171,
+    "completion_tokens": 97
+   },
+   "visible": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.145,
+     "prompt_tokens": 171,
+     "completion_tokens": 97
+    },
+    {
+     "secs": 1.087,
+     "prompt_tokens": 171,
+     "completion_tokens": 90
+    },
+    {
+     "secs": 0.947,
+     "prompt_tokens": 171,
+     "completion_tokens": 79
+    },
+    {
+     "secs": 1.05,
+     "prompt_tokens": 171,
+     "completion_tokens": 90
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "stock_spans",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.553,
+    "prompt_tokens": 181,
+    "completion_tokens": 112
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.315,
+     "prompt_tokens": 181,
+     "completion_tokens": 112
+    },
+    {
+     "secs": 1.551,
+     "prompt_tokens": 181,
+     "completion_tokens": 132
+    },
+    {
+     "secs": 1.326,
+     "prompt_tokens": 181,
+     "completion_tokens": 113
+    },
+    {
+     "secs": 1.915,
+     "prompt_tokens": 181,
+     "completion_tokens": 165
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "perm_rank",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.128,
+    "prompt_tokens": 240,
+    "completion_tokens": 160
+   },
+   "visible": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.868,
+     "prompt_tokens": 240,
+     "completion_tokens": 160
+    },
+    {
+     "secs": 2.012,
+     "prompt_tokens": 240,
+     "completion_tokens": 171
+    },
+    {
+     "secs": 1.767,
+     "prompt_tokens": 240,
+     "completion_tokens": 150
+    },
+    {
+     "secs": 3.097,
+     "prompt_tokens": 240,
+     "completion_tokens": 264
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "gray_rank",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 1.597,
+    "prompt_tokens": 305,
+    "completion_tokens": 113
+   },
+   "visible": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.337,
+     "prompt_tokens": 305,
+     "completion_tokens": 113
+    },
+    {
+     "secs": 1.077,
+     "prompt_tokens": 305,
+     "completion_tokens": 91
+    },
+    {
+     "secs": 1.649,
+     "prompt_tokens": 305,
+     "completion_tokens": 126
+    },
+    {
+     "secs": 1.788,
+     "prompt_tokens": 305,
+     "completion_tokens": 152
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "kth_combination",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.921,
+    "prompt_tokens": 291,
+    "completion_tokens": 229
+   },
+   "visible": [
+    false,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.681,
+     "prompt_tokens": 291,
+     "completion_tokens": 229
+    },
+    {
+     "secs": 2.815,
+     "prompt_tokens": 291,
+     "completion_tokens": 244
+    },
+    {
+     "secs": 2.784,
+     "prompt_tokens": 291,
+     "completion_tokens": 239
+    },
+    {
+     "secs": 3.272,
+     "prompt_tokens": 291,
+     "completion_tokens": 281
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "look_and_say_bounded",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.027,
+    "prompt_tokens": 245,
+    "completion_tokens": 211
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 2.49,
+     "prompt_tokens": 245,
+     "completion_tokens": 211
+    },
+    {
+     "secs": 2.91,
+     "prompt_tokens": 245,
+     "completion_tokens": 246
+    },
+    {
+     "secs": 2.501,
+     "prompt_tokens": 245,
+     "completion_tokens": 211
+    },
+    {
+     "secs": 2.486,
+     "prompt_tokens": 245,
+     "completion_tokens": 213
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "longest_digit_run",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.039,
+    "prompt_tokens": 208,
+    "completion_tokens": 153
+   },
+   "visible": [
+    true,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.814,
+     "prompt_tokens": 208,
+     "completion_tokens": 153
+    },
+    {
+     "secs": 2.171,
+     "prompt_tokens": 208,
+     "completion_tokens": 168
+    },
+    {
+     "secs": 1.743,
+     "prompt_tokens": 208,
+     "completion_tokens": 148
+    },
+    {
+     "secs": 1.881,
+     "prompt_tokens": 208,
+     "completion_tokens": 160
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "collatz_trace",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.181,
+    "prompt_tokens": 255,
+    "completion_tokens": 153
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.786,
+     "prompt_tokens": 255,
+     "completion_tokens": 153
+    },
+    {
+     "secs": 1.77,
+     "prompt_tokens": 255,
+     "completion_tokens": 151
+    },
+    {
+     "secs": 1.782,
+     "prompt_tokens": 255,
+     "completion_tokens": 151
+    },
+    {
+     "secs": 2.078,
+     "prompt_tokens": 255,
+     "completion_tokens": 177
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "knight_min_moves",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 4.162,
+    "prompt_tokens": 248,
+    "completion_tokens": 337
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 3.983,
+     "prompt_tokens": 248,
+     "completion_tokens": 337
+    },
+    {
+     "secs": 4.328,
+     "prompt_tokens": 248,
+     "completion_tokens": 373
+    },
+    {
+     "secs": 4.711,
+     "prompt_tokens": 248,
+     "completion_tokens": 400
+    },
+    {
+     "secs": 4.233,
+     "prompt_tokens": 248,
+     "completion_tokens": 354
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "grid_bfs_steps",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.821,
+    "prompt_tokens": 251,
+    "completion_tokens": 300
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.524,
+     "prompt_tokens": 251,
+     "completion_tokens": 300
+    },
+    {
+     "secs": 3.769,
+     "prompt_tokens": 251,
+     "completion_tokens": 324
+    },
+    {
+     "secs": 3.887,
+     "prompt_tokens": 251,
+     "completion_tokens": 315
+    },
+    {
+     "secs": 0.234,
+     "prompt_tokens": 251,
+     "completion_tokens": 13
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "union_component_count",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.836,
+    "prompt_tokens": 214,
+    "completion_tokens": 221
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 2.617,
+     "prompt_tokens": 214,
+     "completion_tokens": 221
+    },
+    {
+     "secs": 3.251,
+     "prompt_tokens": 214,
+     "completion_tokens": 279
+    },
+    {
+     "secs": 3.056,
+     "prompt_tokens": 214,
+     "completion_tokens": 245
+    },
+    {
+     "secs": 4.521,
+     "prompt_tokens": 214,
+     "completion_tokens": 384
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "bipartite_strict",
+   "single_visible": false,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.1,
+    "prompt_tokens": 263,
+    "completion_tokens": 228
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.634,
+     "prompt_tokens": 263,
+     "completion_tokens": 225
+    },
+    {
+     "secs": 2.887,
+     "prompt_tokens": 263,
+     "completion_tokens": 241
+    },
+    {
+     "secs": 2.905,
+     "prompt_tokens": 263,
+     "completion_tokens": 244
+    },
+    {
+     "secs": 3.189,
+     "prompt_tokens": 263,
+     "completion_tokens": 265
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "portal_min_moves",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 5.206,
+    "prompt_tokens": 338,
+    "completion_tokens": 411
+   },
+   "visible": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 5.086,
+     "prompt_tokens": 338,
+     "completion_tokens": 411
+    },
+    {
+     "secs": 5.03,
+     "prompt_tokens": 338,
+     "completion_tokens": 419
+    },
+    {
+     "secs": 5.275,
+     "prompt_tokens": 338,
+     "completion_tokens": 421
+    },
+    {
+     "secs": 0.336,
+     "prompt_tokens": 338,
+     "completion_tokens": 20
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "spread_radius",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 4.56,
+    "prompt_tokens": 263,
+    "completion_tokens": 371
+   },
+   "visible": [
+    false,
+    true,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.582,
+     "prompt_tokens": 263,
+     "completion_tokens": 371
+    },
+    {
+     "secs": 4.506,
+     "prompt_tokens": 263,
+     "completion_tokens": 369
+    },
+    {
+     "secs": 3.889,
+     "prompt_tokens": 263,
+     "completion_tokens": 321
+    },
+    {
+     "secs": 6.74,
+     "prompt_tokens": 263,
+     "completion_tokens": 556
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "lru_trace",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.158,
+    "prompt_tokens": 261,
+    "completion_tokens": 235
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.758,
+     "prompt_tokens": 261,
+     "completion_tokens": 235
+    },
+    {
+     "secs": 4.298,
+     "prompt_tokens": 261,
+     "completion_tokens": 355
+    },
+    {
+     "secs": 3.139,
+     "prompt_tokens": 261,
+     "completion_tokens": 242
+    },
+    {
+     "secs": 2.745,
+     "prompt_tokens": 261,
+     "completion_tokens": 228
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "min_stack_trace",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.231,
+    "prompt_tokens": 217,
+    "completion_tokens": 244
+   },
+   "visible": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.802,
+     "prompt_tokens": 217,
+     "completion_tokens": 236
+    },
+    {
+     "secs": 4.259,
+     "prompt_tokens": 217,
+     "completion_tokens": 355
+    },
+    {
+     "secs": 3.177,
+     "prompt_tokens": 217,
+     "completion_tokens": 259
+    },
+    {
+     "secs": 3.037,
+     "prompt_tokens": 217,
+     "completion_tokens": 248
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "ring_buffer_trace",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 2.327,
+    "prompt_tokens": 243,
+    "completion_tokens": 171
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.134,
+     "prompt_tokens": 243,
+     "completion_tokens": 171
+    },
+    {
+     "secs": 2.051,
+     "prompt_tokens": 243,
+     "completion_tokens": 171
+    },
+    {
+     "secs": 2.77,
+     "prompt_tokens": 243,
+     "completion_tokens": 236
+    },
+    {
+     "secs": 2.866,
+     "prompt_tokens": 243,
+     "completion_tokens": 245
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "k_smallest_names",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.207,
+    "prompt_tokens": 218,
+    "completion_tokens": 163
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    true
+   ],
+   "cost": [
+    {
+     "secs": 1.97,
+     "prompt_tokens": 218,
+     "completion_tokens": 163
+    },
+    {
+     "secs": 2.672,
+     "prompt_tokens": 218,
+     "completion_tokens": 222
+    },
+    {
+     "secs": 1.963,
+     "prompt_tokens": 218,
+     "completion_tokens": 163
+    },
+    {
+     "secs": 1.97,
+     "prompt_tokens": 218,
+     "completion_tokens": 168
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "bank_ledger",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.181,
+    "prompt_tokens": 271,
+    "completion_tokens": 163
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 1.899,
+     "prompt_tokens": 271,
+     "completion_tokens": 163
+    },
+    {
+     "secs": 1.913,
+     "prompt_tokens": 271,
+     "completion_tokens": 163
+    },
+    {
+     "secs": 1.752,
+     "prompt_tokens": 271,
+     "completion_tokens": 151
+    },
+    {
+     "secs": 1.872,
+     "prompt_tokens": 271,
+     "completion_tokens": 160
+    }
+   ],
+   "same_as_single": [
+    true,
+    true,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "inventory_reserve",
+   "single_visible": true,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.134,
+    "prompt_tokens": 309,
+    "completion_tokens": 238
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.818,
+     "prompt_tokens": 309,
+     "completion_tokens": 237
+    },
+    {
+     "secs": 3.413,
+     "prompt_tokens": 309,
+     "completion_tokens": 285
+    },
+    {
+     "secs": 3.089,
+     "prompt_tokens": 309,
+     "completion_tokens": 266
+    },
+    {
+     "secs": 4.005,
+     "prompt_tokens": 309,
+     "completion_tokens": 342
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "url_split_strict",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 5.079,
+    "prompt_tokens": 388,
+    "completion_tokens": 405
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 4.893,
+     "prompt_tokens": 388,
+     "completion_tokens": 412
+    },
+    {
+     "secs": 5.532,
+     "prompt_tokens": 388,
+     "completion_tokens": 467
+    },
+    {
+     "secs": 4.692,
+     "prompt_tokens": 388,
+     "completion_tokens": 396
+    },
+    {
+     "secs": 6.419,
+     "prompt_tokens": 388,
+     "completion_tokens": 545
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "qp_decode",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.107,
+    "prompt_tokens": 254,
+    "completion_tokens": 240
+   },
+   "visible": [
+    true,
+    false,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.797,
+     "prompt_tokens": 254,
+     "completion_tokens": 240
+    },
+    {
+     "secs": 2.474,
+     "prompt_tokens": 254,
+     "completion_tokens": 211
+    },
+    {
+     "secs": 2.585,
+     "prompt_tokens": 254,
+     "completion_tokens": 220
+    },
+    {
+     "secs": 2.743,
+     "prompt_tokens": 254,
+     "completion_tokens": 234
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "ini_section_parse",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 3.634,
+    "prompt_tokens": 339,
+    "completion_tokens": 286
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.34,
+     "prompt_tokens": 339,
+     "completion_tokens": 286
+    },
+    {
+     "secs": 3.43,
+     "prompt_tokens": 339,
+     "completion_tokens": 291
+    },
+    {
+     "secs": 3.469,
+     "prompt_tokens": 339,
+     "completion_tokens": 282
+    },
+    {
+     "secs": 3.931,
+     "prompt_tokens": 339,
+     "completion_tokens": 331
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "lcs_diff_ops",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.51,
+    "prompt_tokens": 307,
+    "completion_tokens": 257
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 3.092,
+     "prompt_tokens": 307,
+     "completion_tokens": 257
+    },
+    {
+     "secs": 3.126,
+     "prompt_tokens": 307,
+     "completion_tokens": 258
+    },
+    {
+     "secs": 3.737,
+     "prompt_tokens": 307,
+     "completion_tokens": 308
+    },
+    {
+     "secs": 4.406,
+     "prompt_tokens": 307,
+     "completion_tokens": 372
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "fletcher16_checksum",
+   "single_visible": true,
+   "single_held": true,
+   "single_cost": {
+    "secs": 2.461,
+    "prompt_tokens": 264,
+    "completion_tokens": 180
+   },
+   "visible": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "held": [
+    true,
+    true,
+    true,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.123,
+     "prompt_tokens": 264,
+     "completion_tokens": 180
+    },
+    {
+     "secs": 2.227,
+     "prompt_tokens": 264,
+     "completion_tokens": 189
+    },
+    {
+     "secs": 2.936,
+     "prompt_tokens": 264,
+     "completion_tokens": 249
+    },
+    {
+     "secs": 2.888,
+     "prompt_tokens": 264,
+     "completion_tokens": 244
+    }
+   ],
+   "same_as_single": [
+    true,
+    false,
+    false,
+    false
+   ]
+  },
+  {
+   "task_id": "md_outline_number",
+   "single_visible": false,
+   "single_held": false,
+   "single_cost": {
+    "secs": 3.449,
+    "prompt_tokens": 340,
+    "completion_tokens": 261
+   },
+   "visible": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "held": [
+    false,
+    false,
+    false,
+    false
+   ],
+   "cost": [
+    {
+     "secs": 2.963,
+     "prompt_tokens": 340,
+     "completion_tokens": 250
+    },
+    {
+     "secs": 0.315,
+     "prompt_tokens": 340,
+     "completion_tokens": 25
+    },
+    {
+     "secs": 0.477,
+     "prompt_tokens": 340,
+     "completion_tokens": 38
+    },
+    {
+     "secs": 0.223,
+     "prompt_tokens": 340,
+     "completion_tokens": 16
+    }
+   ],
+   "same_as_single": [
+    false,
+    false,
+    false,
+    false
+   ]
+  }
+ ]
+}
