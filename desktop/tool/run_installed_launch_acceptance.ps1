@@ -5,6 +5,7 @@ param(
   [string]$ExpectedAppSha256 = "", [string]$ExpectedEngineSha256 = "",
   [string]$BuildManifest = "", [switch]$ExpectInstallerPayload,
   [switch]$RequireDesktopShortcut, [switch]$StartEngine,
+  [switch]$InspectImport, [string]$InspectFixture = "",
   [switch]$IncludeLocalPaths, [switch]$SelfTest
 )
 
@@ -45,7 +46,7 @@ function Join-WindowsCommandLine([string[]]$Arguments) { return (@($Arguments | 
 
 function Convert-LocalError($Message) {
   if ($IncludeLocalPaths) { return $Message }
-  $known = @($InstallRoot, $ValidationDir, $Out, $BuildManifest, $PythonPath)
+  $known = @($InstallRoot, $ValidationDir, $Out, $BuildManifest, $PythonPath, $InspectFixture)
   foreach ($name in @("repoRoot", "desktopRoot", "scriptRoot", "validationRoot", "resolvedInstallRoot", "outPath")) {
     $var = Get-Variable -Name $name -Scope Script -ErrorAction SilentlyContinue
     if ($null -ne $var) { $known += @([string]$var.Value) }
@@ -85,6 +86,8 @@ if (![string]::IsNullOrWhiteSpace($ExpectedAppSha256)) { $pythonArgs += @("--exp
 if (![string]::IsNullOrWhiteSpace($ExpectedEngineSha256)) { $pythonArgs += @("--expected-engine-sha256", $ExpectedEngineSha256) }
 if (![string]::IsNullOrWhiteSpace($BuildManifest)) { $pythonArgs += @("--build-manifest", (Resolve-Path -LiteralPath $BuildManifest).Path) }
 if ($ExpectInstallerPayload) { $pythonArgs += "--expect-installer-payload" }; if ($RequireDesktopShortcut) { $pythonArgs += "--require-desktop-shortcut" }
+if ($InspectImport) { $pythonArgs += "--inspect-import"; $StartEngine = $true }
+if (![string]::IsNullOrWhiteSpace($InspectFixture)) { $pythonArgs += @("--inspect-fixture", (Resolve-Path -LiteralPath $InspectFixture).Path) }
 if ($StartEngine) { $pythonArgs += "--start-engine" }; if ($IncludeLocalPaths) { $pythonArgs += "--include-local-paths" }
 $exitCode = Invoke-HiddenProcess $python ([string[]]$pythonArgs) $repoRoot $stdout $stderr
 if ($exitCode -ne 0) { throw "Installed-launch harness failed with exit $exitCode. See $(Convert-SummaryPath $stderr $validationRoot 'validation_root')" }

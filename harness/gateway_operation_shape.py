@@ -8,7 +8,6 @@ from .gateway_operation import (
     PROPOSAL_REF_PATTERN, OPERATION_REF_PATTERN, _relative_path, _text)
 from .journey_types import SHA256_PATTERN
 
-
 def validate_operation_shape(action: str, value: dict) -> None:
     if action == "output.check":
         from .output_check_gateway import validate_output_check_operation as v
@@ -130,6 +129,8 @@ def validate_operation_shape(action: str, value: dict) -> None:
         raise ValueError
     if action == "infra.kill":
         _kill_shape(value)
+    if action == "import.inspect":
+        from .inspect_upload_metadata import validate_inspect_operation as v; v(value)
 
 
 def _kill_shape(value: dict) -> None:
@@ -152,11 +153,9 @@ def _kill_shape(value: dict) -> None:
                 or len(set(wanted)) != len(wanted)):
             raise ValueError
 
-
 def _bounded_int(value: object, low: int, high: int) -> None:
     if type(value) is not int or not low <= value <= high:
         raise ValueError
-
 
 def _continuation_agent_shape(value: object) -> None:
     fields = {"schema", "preview_ref", "preview_sha256",
@@ -173,7 +172,6 @@ def _continuation_agent_shape(value: object) -> None:
             or len(set(files)) != len(files)
             or any(not _relative_path(item) for item in files)):
         raise ValueError
-
 
 def destination_for(action: str, value: dict) -> dict:
     if action == "operation.cancel":
@@ -214,6 +212,8 @@ def destination_for(action: str, value: dict) -> dict:
         return {"kind": "store", "ref": value["kind"]}
     if action == "import.config":
         return {"kind": "workspace", "ref": value["root"]}
+    if action == "import.inspect":
+        return {"kind": "import", "ref": f"inspect-json:{value['source']['sha256'][:16]}"}
     if action == "hook.register":
         return {"kind": "hook", "ref": value["hook_id"]}
     if action == "hook.run":
@@ -269,7 +269,7 @@ def derived_scopes(action: str, value: dict, secrets: bool) -> tuple:
         selected.add("exec")
     if action == "lane.call":
         selected.update(("exec", "network", "plugin"))
-    if action in {"packs.admit", "store.put", "import.config"}:
+    if action in {"packs.admit", "store.put", "import.config", "import.inspect"}:
         selected.add("write")
     if action == "hook.register":
         selected.add("write")

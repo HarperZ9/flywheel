@@ -8,6 +8,11 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Mapping
 
+try:
+    from .installed_launch_inspect_contract import INSPECT_ASSERTION_IDS, INSPECT_PHASE_ASSERTIONS, INSPECT_REQUIRED_ASSERTIONS
+except ImportError:
+    from installed_launch_inspect_contract import INSPECT_ASSERTION_IDS, INSPECT_PHASE_ASSERTIONS, INSPECT_REQUIRED_ASSERTIONS  # type: ignore
+
 BUILD_MANIFEST_SCHEMA = "flywheel.installed-build-manifest/v1"
 BUILD_MANIFEST_TRUST_BOUNDARY = (
     "operator-supplied integrity binding; not external attestation"
@@ -34,7 +39,7 @@ ASSERTION_IDS = (
     "H18_known_unavailable_lanes_not_live",
     "H19_standalone_cli_separated_from_installed_engine",
     "H20_receipt_fresh_complete_and_source_bound",
-)
+) + INSPECT_ASSERTION_IDS
 
 PHASE_ASSERTIONS = {
     "P0_payload_manifest_preflight": (
@@ -67,9 +72,10 @@ PHASE_ASSERTIONS = {
         "H18_known_unavailable_lanes_not_live",
         "H19_standalone_cli_separated_from_installed_engine",
     ),
+    **INSPECT_PHASE_ASSERTIONS,
 }
 PHASE_IDS = tuple(PHASE_ASSERTIONS)
-VALID_MODES = {"preflight", "metadata", "engine", "full"}
+VALID_MODES = {"preflight", "metadata", "engine", "full", "inspect"}
 MODE_REQUIRED_ASSERTIONS = {
     "preflight": {
         "H01_app_exe_exists", "H02_engine_exe_exists_under_install_root",
@@ -103,6 +109,7 @@ MODE_REQUIRED_ASSERTIONS = {
         "H16_restart_same_isolated_profile",
         "H20_receipt_fresh_complete_and_source_bound",
     },
+    "inspect": INSPECT_REQUIRED_ASSERTIONS,
 }
 VALID_ASSERTION_STATES = {
     "PASS", "FAIL", "NOT_CHECKED", "UNTESTED", "UNSUPPORTED", "SKIP",

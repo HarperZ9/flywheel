@@ -840,6 +840,9 @@ class _Handler(BaseHTTPRequestHandler):
     def _get(self):
         p = self.path.split("?", 1)[0]
         qs = self.path.split("?", 1)[1] if "?" in self.path else ""
+        if p == "/api/import/inspect" or p.startswith("/api/import/inspect/"):  # list or reopen owner-bound Inspect evidence
+            from harness.import_route import handle_import_get
+            return self._json(*handle_import_get(p, self, qs))
         if p == "/api/operations":  # discover owner/Journey operation metadata
             from harness.gateway_operation_route import route_gateway_operation
             service, factory = self._operation_components()
@@ -1224,6 +1227,9 @@ class _Handler(BaseHTTPRequestHandler):
         return self._json(body, code)
     def _post(self):
         p = self.path.split("?", 1)[0]
+        if p == "/api/import/inspect":              # raw exact-byte Inspect upload
+            from harness.import_route import handle_import_post
+            return self._json(*handle_import_post(p, self))
         if p.startswith("/api/plan/"): return self._plan_request(p)  # a plan request, private custody
         if p.startswith("/api/session-tokens/"):   # mint or revoke a session token
             length = self._content_length()
@@ -1282,7 +1288,7 @@ class _Handler(BaseHTTPRequestHandler):
                         pack_contracts=[], containment={"process": False}))
                 else:
                     try:
-                        req = parse_json(self.rfile.read(length))
+                        req = parse_json(raw)
                     except Exception:
                         req = {}
                     empty = _empty_doc(
@@ -1609,20 +1615,8 @@ class _Handler(BaseHTTPRequestHandler):
                     doc["stored"] = f"store unavailable: {type(e).__name__}"
             return self._json(doc)
         if p == "/api/import":                        # arrive with your whole setup, keep the proof
-            req, bad = self._req_json()
-            if bad:
-                return bad
-            root, err = _resolve_workspace_root(req.get("root"), self.root)
-            if err:
-                return self._json({"error": err}, 400)
-            from harness.import_adapters import import_config
-            doc = import_config(root)
-            try:
-                from harness.store import put_entity
-                doc["stored"] = put_entity("import-manifest", doc).get("eid", "")
-            except Exception as e:
-                doc["stored"] = f"store unavailable: {type(e).__name__}"
-            return self._json(doc)
+            from harness.import_route import handle_import_post
+            return self._json(*handle_import_post(p, self))
         if p == "/api/lean":                          # the apex oracle: the kernel decides
             req, bad = self._req_json()
             if bad:
