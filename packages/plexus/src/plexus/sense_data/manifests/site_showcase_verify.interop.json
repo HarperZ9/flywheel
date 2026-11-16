@@ -1,0 +1,34 @@
+{
+  "organ": "site_showcase_verify",
+  "invoke": {
+    "exact_call": "node system/showcase/verify-cli.mjs 1 kepler"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "portfolio-site system/showcase/verify-cli.mjs"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "site showcase verify",
+    "family": "check",
+    "home": "portfolio-site system/showcase/verify-cli.mjs",
+    "accepts": [
+      "seed"
+    ],
+    "returns": "a seeded system's hash MATCH without a browser",
+    "angle": "check",
+    "agent_entry": "command line",
+    "exact_call": "node system/showcase/verify-cli.mjs 1 kepler",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

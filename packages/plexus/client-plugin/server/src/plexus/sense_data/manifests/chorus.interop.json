@@ -1,0 +1,35 @@
+{
+  "organ": "chorus",
+  "invoke": {
+    "exact_call": "mcp chorus_run"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/chorus (MCP chorus)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "chorus",
+    "family": "check",
+    "home": "flywheel packages/chorus (MCP chorus)",
+    "accepts": [
+      "prose",
+      "claim"
+    ],
+    "returns": "multi-model runs over corpora with digests and decisions",
+    "angle": "compare",
+    "agent_entry": "MCP tool; command line",
+    "exact_call": "mcp chorus_run",
+    "verified": "listed from code",
+    "cost": "model calls",
+    "run": null,
+    "match_ext": [],
+    "network": true,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

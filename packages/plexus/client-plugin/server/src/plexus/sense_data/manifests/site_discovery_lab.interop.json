@@ -1,0 +1,35 @@
+{
+  "organ": "site_discovery_lab",
+  "invoke": {
+    "exact_call": "node system/discovery/run-discovery.mjs TARGET [model]"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "portfolio-site system/discovery"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "site discovery lab",
+    "family": "check",
+    "home": "portfolio-site system/discovery",
+    "accepts": [
+      "law",
+      "series"
+    ],
+    "returns": "hidden-law discovery with Noether checks over simulated systems",
+    "angle": "simulate; check",
+    "agent_entry": "command line",
+    "exact_call": "node system/discovery/run-discovery.mjs TARGET [model]",
+    "verified": "listed from code",
+    "cost": "seconds to minutes",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

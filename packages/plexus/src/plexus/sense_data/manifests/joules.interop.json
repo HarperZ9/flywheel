@@ -1,0 +1,34 @@
+{
+  "organ": "joules",
+  "invoke": {
+    "exact_call": "python packages/joules/joules.py log --out PATH"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/joules"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "joules",
+    "family": "signal",
+    "home": "superframe packages/joules",
+    "accepts": [
+      "series"
+    ],
+    "returns": "CPU package, core and GPU power, joules per study",
+    "angle": "measure",
+    "agent_entry": "command line",
+    "exact_call": "python packages/joules/joules.py log --out PATH",
+    "verified": "listed from code",
+    "cost": "runs while sampling",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

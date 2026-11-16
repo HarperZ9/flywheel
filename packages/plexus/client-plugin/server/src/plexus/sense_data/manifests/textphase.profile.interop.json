@@ -1,0 +1,50 @@
+{
+  "organ": "textphase.profile",
+  "invoke": {
+    "exact_call": "cd packages/decompose/textphase && python -c \"import numpy as np; from textphase import phase,symbols; print(phase.profile(symbols.chars(open(P).read()), symbols.N_CHAR, np.random.default_rng(0))['phase'])\""
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/decompose/textphase"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "textphase",
+    "family": "prose",
+    "home": "superframe packages/decompose/textphase",
+    "accepts": [
+      "symbols",
+      "prose",
+      "music"
+    ],
+    "returns": "entropy rates (PPM, LZ, block), mutual-information decay, periodicity; reads the stream as gas, liquid, crystal or critical",
+    "angle": "decompose; measure",
+    "agent_entry": "python import",
+    "exact_call": "cd packages/decompose/textphase && python -c \"import numpy as np; from textphase import phase,symbols; print(phase.profile(symbols.chars(open(P).read()), symbols.N_CHAR, np.random.default_rng(0))['phase'])\"",
+    "verified": "verified 2026-11-16 on CREDO.md (2756 chars): phase critical, h_ppm 3.98 bits; chi nan below the length floor",
+    "cost": "under 1 s",
+    "run": {
+      "cli": [
+        "{python}",
+        "-c",
+        "import sys,json,numpy as np; sys.path.insert(0,'packages/decompose/textphase'); from textphase import phase,symbols; t=open(sys.argv[1],encoding='utf-8',errors='replace').read(); print(json.dumps(phase.profile(symbols.chars(t), symbols.N_CHAR, np.random.default_rng(0)), default=float))",
+        "{item}"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe"
+    },
+    "match_ext": [
+      ".md",
+      ".txt"
+    ],
+    "network": false,
+    "budget": {
+      "time_s": 20.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

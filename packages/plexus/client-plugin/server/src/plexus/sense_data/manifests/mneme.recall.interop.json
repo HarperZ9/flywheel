@@ -1,0 +1,47 @@
+{
+  "organ": "mneme.recall",
+  "invoke": {
+    "exact_call": "mcp mneme_recall {\"query\": Q, \"top_k\": 3}"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/mneme (MCP mneme; CLI not on PATH)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "mneme recall, remember, provenance, drift, entity-graph",
+    "family": "memory",
+    "home": "flywheel packages/mneme (MCP mneme; CLI not on PATH)",
+    "accepts": [
+      "memory",
+      "prose",
+      "claim"
+    ],
+    "returns": "ranked recall with bm25/vector scores and a recheck command; provenance chains; drift",
+    "angle": "remember",
+    "agent_entry": "MCP tool",
+    "exact_call": "mcp mneme_recall {\"query\": Q, \"top_k\": 3}",
+    "verified": "verified 2026-11-16: 3 hits over 22,905 memories; no embedder, keyword fallback",
+    "cost": "ms",
+    "run": {
+      "mcp": "mneme",
+      "tool": "mneme_recall",
+      "args": {
+        "query": "{text}",
+        "top_k": 3
+      },
+      "forms": [
+        "literal",
+        "path"
+      ]
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 20.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

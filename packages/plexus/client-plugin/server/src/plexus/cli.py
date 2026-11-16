@@ -6,6 +6,10 @@
   plexus route --from A --to B [...]         # capability path from A to B
   plexus pick "REQUEST" [--threshold P]      # pick a tool for a request, or abstain
   plexus validate [...]                      # manifest problems (exit 1 if any)
+  plexus kinds ITEM                          # the input kinds of a path, URL or literal
+  plexus senses [--check]                    # the sense manifests (or check them against SENSES.tsv)
+  plexus fanout ITEM [--out DIR] [...]       # run ITEM through every tool that accepts it
+  plexus fanout-verify BUNDLE                # re-hash a fanout bundle's outputs
 """
 from __future__ import annotations
 
@@ -77,6 +81,8 @@ def main(argv: "list[str] | None" = None) -> int:
     kp.add_argument("request", help="the request in plain language")
     kp.add_argument("--threshold", type=float, default=0.23,
                     help="abstain when the top tool's probability is under this")
+    kp.add_argument("--senses", action="store_true",
+                    help="also rank the sense manifests (the 0.23 threshold was calibrated without them)")
     vp = sub.add_parser("verify"); _add_source_flags(vp)
     vp.add_argument("--plan", required=True,
                     help="a plan/route JSON file (from `plexus plan`/`route`) to re-derive "
@@ -87,13 +93,22 @@ def main(argv: "list[str] | None" = None) -> int:
     up.add_argument("--goal", required=True, help="organ you want to feed")
     ep = sub.add_parser("export")
     ep.add_argument("--dir", default="manifests", help="write <organ>.interop.json files here")
-    sub.add_parser("mcp")   # stdio MCP server: discover/wiring/plan/route as tools
+    mp = sub.add_parser("mcp")   # stdio MCP server: discover/wiring/plan/route/pick/kinds/senses
+    mp.add_argument("--run", action="store_true",
+                    help="also serve plexus_fanout, which starts the tools it routes to")
+    from .cli_senses import add_parsers, run_senses
+    add_parsers(sub)
 
     args = ap.parse_args(argv)
 
     if args.cmd == "mcp":
         from .mcp import serve
+        if args.run:
+            from .runner.mcp_run import handle_run
+            return serve(handler=handle_run)
         return serve()
+    if args.cmd in ("kinds", "senses", "fanout", "fanout-verify"):
+        return run_senses(args)
     if args.cmd == "export":
         print("\n".join(export_all(args.dir)))
         return 0
@@ -114,6 +129,9 @@ def main(argv: "list[str] | None" = None) -> int:
         return 0
     if args.cmd == "pick":
         from .pick import pick
+        if args.senses:
+            from .senses import load as load_senses
+            mans = mans + load_senses()
         result = pick(discover(mans), args.request, threshold=args.threshold)
         print(json.dumps(result, indent=2))
         return 0

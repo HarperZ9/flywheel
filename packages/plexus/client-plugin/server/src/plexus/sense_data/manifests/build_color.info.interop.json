@@ -1,0 +1,43 @@
+{
+  "organ": "build_color.info",
+  "invoke": {
+    "exact_call": "build-color info HEX | difference A B | harmony --scheme S HEX | convert | adapt | spectrum | icc"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/colour/build-color (PyPI build-color, installed)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "build-color",
+    "family": "colour",
+    "home": "superframe packages/colour/build-color (PyPI build-color, installed)",
+    "accepts": [
+      "colour"
+    ],
+    "returns": "conversions across sRGB, Oklab, Lab, JzAzBz, ICtCp; Delta E; harmony; adaptation; spectrum; ICC",
+    "angle": "measure; compare; translate",
+    "agent_entry": "command line",
+    "exact_call": "build-color info HEX | difference A B | harmony --scheme S HEX | convert | adapt | spectrum | icc",
+    "verified": "verified 2026-11-16: conversions run; dominant wavelength wrong on all 5 colours tested (see GAPS)",
+    "cost": "under 1 s",
+    "run": {
+      "cli": [
+        "build-color",
+        "info",
+        "{item}"
+      ],
+      "forms": [
+        "literal"
+      ]
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 15.0,
+      "memory_mb": 512
+    },
+    "writes": []
+  }
+}

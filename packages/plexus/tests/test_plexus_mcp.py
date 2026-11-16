@@ -58,6 +58,7 @@ def test_initialize_reports_the_server():
 def test_tools_list_advertises_the_mesh_tools():
     tools = {t["name"] for t in handle(_req("tools/list"))["result"]["tools"]}
     assert tools == {"plexus_discover", "plexus_wiring", "plexus_plan", "plexus_route",
+                     "plexus_pick", "plexus_kinds", "plexus_senses",
                      "plexus.status", "plexus.doctor"}
 
 

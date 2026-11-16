@@ -1,0 +1,36 @@
+{
+  "organ": "telos_proof_and_rooms",
+  "invoke": {
+    "exact_call": "mcp telos_proof_visual | telos_measurement_layers | telos_display_calibration"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "telos MCP"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "telos proof and rooms",
+    "family": "check",
+    "home": "telos MCP",
+    "accepts": [
+      "image",
+      "claim",
+      "code"
+    ],
+    "returns": "visual proof, research proof, build proof, display calibration, rendering capabilities",
+    "angle": "check; measure",
+    "agent_entry": "MCP tool",
+    "exact_call": "mcp telos_proof_visual | telos_measurement_layers | telos_display_calibration",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

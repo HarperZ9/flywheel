@@ -136,6 +136,10 @@ plexus is the discovery layer that sits *above* an executor, not another executo
 
 <p align="center"><img src="docs/art/wiring-lane.svg" alt="Eight stages from manifest to verify, ending in still holds or drifted." width="100%"></p>
 
+## Senses: one item through every tool that takes it
+
+`plexus fanout picture.png` reads what the item is (`plexus kinds`), runs every tool whose manifest accepts that kind, each under a time and memory budget and inside a policy read from data, and writes one bundle with every answer and every failure. See [docs/SENSES.md](docs/SENSES.md).
+
 ## See it work, step by step
 
 The [animated explainer](https://harperz9.github.io/repo-explainers/plexus.html)

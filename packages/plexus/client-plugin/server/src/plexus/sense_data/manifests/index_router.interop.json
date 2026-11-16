@@ -1,0 +1,35 @@
+{
+  "organ": "index_router",
+  "invoke": {
+    "exact_call": "mcp index_router {\"root\": DIR}"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/index"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "index_router",
+    "family": "code",
+    "home": "flywheel packages/index",
+    "accepts": [
+      "folder",
+      "repo"
+    ],
+    "returns": "a CLAUDE.md/AGENTS.md workspace map",
+    "angle": "decompose",
+    "agent_entry": "MCP tool",
+    "exact_call": "mcp index_router {\"root\": DIR}",
+    "verified": "verified 2026-11-16 (see ROUTING.md: it maps documents, it does not route items)",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

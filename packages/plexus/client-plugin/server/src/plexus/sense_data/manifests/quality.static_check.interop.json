@@ -1,0 +1,48 @@
+{
+  "organ": "quality.static_check",
+  "invoke": {
+    "exact_call": "cd packages/quality && python -m quality.static_check DIR --json"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/quality"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "quality.static_check",
+    "family": "code",
+    "home": "superframe packages/quality",
+    "accepts": [
+      "code",
+      "folder"
+    ],
+    "returns": "static scan of a page folder for rule breaks",
+    "angle": "check",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/quality && python -m quality.static_check DIR --json",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": {
+      "cli": [
+        "{python}",
+        "-m",
+        "quality.static_check",
+        "{item}",
+        "--json"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe",
+      "cwd": "packages/quality"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 60.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

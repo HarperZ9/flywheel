@@ -1,0 +1,35 @@
+{
+  "organ": "gpu_trace_validator",
+  "invoke": {
+    "exact_call": "cd packages/quality/gpu-trace-validator && python -m gpu_trace_validator TRACE.json"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/quality/gpu-trace-validator"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "gpu-trace-validator",
+    "family": "code",
+    "home": "superframe packages/quality/gpu-trace-validator",
+    "accepts": [
+      "table",
+      "code"
+    ],
+    "returns": "GPU and renderer trace JSON checked against a schema, redacted receipt",
+    "angle": "check",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/quality/gpu-trace-validator && python -m gpu_trace_validator TRACE.json",
+    "verified": "listed from code",
+    "cost": "1 s",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

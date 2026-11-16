@@ -32,6 +32,9 @@ Homepage = "https://github.com/HarperZ9/plexus"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+plexus = ["sense_data/*.tsv", "sense_data/*.json", "sense_data/manifests/*.json"]
+
 [tool.pytest.ini_options]
 # Without this, pytest imports whatever copy of the package happens to be
 # installed in the environment instead of this repo's src/. That is not a

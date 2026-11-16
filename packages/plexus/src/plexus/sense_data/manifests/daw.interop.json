@@ -1,0 +1,36 @@
+{
+  "organ": "daw",
+  "invoke": {
+    "exact_call": "cd packages/daw && python -I -m daw.demo OUT_DIR [--seed S] [--seconds N]"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/daw"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "daw",
+    "family": "audio",
+    "home": "superframe packages/daw",
+    "accepts": [
+      "seed",
+      "material",
+      "music"
+    ],
+    "returns": "physical-model instruments from measured materials, arrangement, mixer, WAV and FLAC with a receipt",
+    "angle": "render; simulate",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/daw && python -I -m daw.demo OUT_DIR [--seed S] [--seconds N]",
+    "verified": "listed from code",
+    "cost": "minutes",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

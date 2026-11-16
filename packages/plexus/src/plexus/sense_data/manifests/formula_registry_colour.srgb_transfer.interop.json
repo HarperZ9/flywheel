@@ -1,0 +1,35 @@
+{
+  "organ": "formula_registry_colour.srgb_transfer",
+  "invoke": {
+    "exact_call": "cd packages && python -m kernels.formulas.check"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/kernels/formulas"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "formula registry colour.srgb_transfer, colour.xyz_to_cielab",
+    "family": "colour",
+    "home": "superframe packages/kernels/formulas",
+    "accepts": [
+      "colour",
+      "formula"
+    ],
+    "returns": "reference values checked against planted defects",
+    "angle": "check; measure",
+    "agent_entry": "command line",
+    "exact_call": "cd packages && python -m kernels.formulas.check",
+    "verified": "verified 2026-11-16 (all 9 formulas PASS on Python; BuildLang side did not compile, see GAPS)",
+    "cost": "3.5 s",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

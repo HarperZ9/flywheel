@@ -1,0 +1,45 @@
+{
+  "organ": "gather.transcribe",
+  "invoke": {
+    "exact_call": "gather transcribe PATH"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/gather"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "gather transcribe",
+    "family": "audio",
+    "home": "flywheel packages/gather",
+    "accepts": [
+      "voice",
+      "audio",
+      "video"
+    ],
+    "returns": "transcript item via the whisper CLI",
+    "angle": "hear; translate",
+    "agent_entry": "command line",
+    "exact_call": "gather transcribe PATH",
+    "verified": "listed from code; whisper CLI missing on PATH (faster_whisper exists in a local voice environment)",
+    "cost": "minutes",
+    "run": {
+      "cli": [
+        "gather",
+        "transcribe",
+        "{item}"
+      ],
+      "forms": [
+        "path"
+      ]
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 300.0,
+      "memory_mb": 4096
+    },
+    "writes": []
+  }
+}

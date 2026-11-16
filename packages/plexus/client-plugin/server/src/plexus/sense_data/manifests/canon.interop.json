@@ -1,0 +1,35 @@
+{
+  "organ": "canon",
+  "invoke": {
+    "exact_call": "mcp canon_check | canon_validate"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/canon (MCP canon, canon-context)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "canon",
+    "family": "check",
+    "home": "flywheel packages/canon (MCP canon, canon-context)",
+    "accepts": [
+      "prose",
+      "table"
+    ],
+    "returns": "record and block validation, rendering, context capsules",
+    "angle": "check",
+    "agent_entry": "MCP tool; command line",
+    "exact_call": "mcp canon_check | canon_validate",
+    "verified": "listed from code",
+    "cost": "ms",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

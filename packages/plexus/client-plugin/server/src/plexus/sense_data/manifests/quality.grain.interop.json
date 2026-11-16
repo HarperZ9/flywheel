@@ -1,0 +1,47 @@
+{
+  "organ": "quality.grain",
+  "invoke": {
+    "exact_call": "cd packages/quality && python -m quality.grain IMAGE --json"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/quality"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "quality.grain",
+    "family": "picture",
+    "home": "superframe packages/quality",
+    "accepts": [
+      "image"
+    ],
+    "returns": "grain SD, chroma ratio, grain correlation length, cell size and angle, clipping",
+    "angle": "measure",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/quality && python -m quality.grain IMAGE --json",
+    "verified": "verified 2026-11-16: grain_sd 0, cell 9.48 px, clip_low 0.72",
+    "cost": "1 s",
+    "run": {
+      "cli": [
+        "{python}",
+        "-m",
+        "quality.grain",
+        "{item}",
+        "--json"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe",
+      "cwd": "packages/quality"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 20.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

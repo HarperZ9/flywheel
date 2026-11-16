@@ -1,0 +1,35 @@
+{
+  "organ": "alive",
+  "invoke": {
+    "exact_call": "node packages/alive/tools/make_loops.mjs"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/alive"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "alive",
+    "family": "render",
+    "home": "superframe packages/alive",
+    "accepts": [
+      "image",
+      "video"
+    ],
+    "returns": "GIF and APNG writers, depth from painters' cues, breathing stills, wigglegrams, measured loop length",
+    "angle": "render; decompose",
+    "agent_entry": "command line; node import",
+    "exact_call": "node packages/alive/tools/make_loops.mjs",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

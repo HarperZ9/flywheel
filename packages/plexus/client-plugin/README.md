@@ -35,7 +35,7 @@ Portable plugin.json/mcp.json, Claude's .claude-plugin/plugin.json and .mcp.json
 
 **Network.** Plexus opens no network connection. Its code imports no networking module and starts no other program.
 
-**Files read.** Plexus reads the tool manifests built into its own code. When you or the model name a folder in a call, it also reads the `*.interop.json` files in that folder.
+**Files read.** Plexus reads the tool manifests built into its own code, including the sense manifests and the run policy under `sense_data/`. When you or the model name a folder in a call, it also reads the `*.interop.json` files in that folder. `plexus_kinds` and `plexus_senses` read at most the first 64 KiB of the file named in the call, and check whether a file with the same name and a `.md` or `.json` extension sits beside it, to tell what kind of item it is. They run none of the tools they list; running them is the separate `plexus fanout` command, which this plugin does not include.
 
 **Files written.** Plexus writes no file and no folder. Each answer is built in memory and returned to Claude Code. Nothing stays after the call returns.
 

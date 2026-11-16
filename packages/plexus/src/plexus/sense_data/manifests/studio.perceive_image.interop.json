@@ -1,0 +1,48 @@
+{
+  "organ": "studio.perceive_image",
+  "invoke": {
+    "exact_call": "node packages/studio-libs/studio-perception-mcp/server.mjs, then tools/call perceive_image {\"path\": PATH}"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/studio-libs/studio-perception-mcp"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "studio-perception-mcp perceive_image",
+    "family": "picture",
+    "home": "superframe packages/studio-libs/studio-perception-mcp",
+    "accepts": [
+      "image"
+    ],
+    "returns": "layered readout: dimensions, dominant colours in sRGB and OKLab with centroids, luma and hue histograms, edge density, multi-scale grids, plus the raw pixels",
+    "angle": "see; measure",
+    "agent_entry": "MCP server, not registered (stdio works by hand)",
+    "exact_call": "node packages/studio-libs/studio-perception-mcp/server.mjs, then tools/call perceive_image {\"path\": PATH}",
+    "verified": "verified 2026-11-16 by stdio JSON-RPC: readout in under 1 s; phash, contrast, structure, balance, coverage came back null",
+    "cost": "1 s",
+    "run": {
+      "mcp": "studio-perception",
+      "tool": "perceive_image",
+      "args": {
+        "path": "{item}"
+      },
+      "forms": [
+        "path"
+      ],
+      "launch": [
+        "{node}",
+        "packages/studio-libs/studio-perception-mcp/server.mjs"
+      ],
+      "root": "superframe"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 20.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

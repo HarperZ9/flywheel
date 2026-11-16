@@ -1,0 +1,35 @@
+{
+  "organ": "crt",
+  "invoke": {
+    "exact_call": "python -B packages/crt/study/run_frames.py ROOT NODE_RUNNER"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/crt"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "crt",
+    "family": "simulate",
+    "home": "superframe packages/crt",
+    "accepts": [
+      "image",
+      "video"
+    ],
+    "returns": "a CRT simulated from beam to phosphor to glass",
+    "angle": "simulate; render",
+    "agent_entry": "command line",
+    "exact_call": "python -B packages/crt/study/run_frames.py ROOT NODE_RUNNER",
+    "verified": "listed from code",
+    "cost": "minutes, GPU optional",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

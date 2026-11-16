@@ -1,0 +1,34 @@
+{
+  "organ": "reconcile",
+  "invoke": {
+    "exact_call": "node packages/reconcile/cli.js create ORGAN --seed N --out DIR | compose A,B | organs"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/reconcile (bin reconcile)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "reconcile",
+    "family": "render",
+    "home": "superframe packages/reconcile (bin reconcile)",
+    "accepts": [
+      "seed"
+    ],
+    "returns": "a replayable world from 10 generator organs with palette, timeline and a witness receipt; SVG preview",
+    "angle": "render; check",
+    "agent_entry": "command line",
+    "exact_call": "node packages/reconcile/cli.js create ORGAN --seed N --out DIR | compose A,B | organs",
+    "verified": "verified 2026-11-16: gyroid seed 7 in 0.14 s, cohesion 0.86, receipt written",
+    "cost": "under 1 s",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "organ": "instruments_room_meter",
+  "invoke": {
+    "exact_call": "python packages/instruments/room/roundtrip.py | receipt.py"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/instruments"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "instruments room meter",
+    "family": "audio",
+    "home": "superframe packages/instruments",
+    "accepts": [
+      "audio",
+      "law"
+    ],
+    "returns": "sweep deconvolution, bits lost per analog path, receipts",
+    "angle": "measure; check",
+    "agent_entry": "command line",
+    "exact_call": "python packages/instruments/room/roundtrip.py | receipt.py",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

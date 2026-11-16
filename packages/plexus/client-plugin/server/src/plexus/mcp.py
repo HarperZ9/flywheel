@@ -37,6 +37,23 @@ TOOLS = [
      "description": "The shortest capability path from one tool to another.",
      "inputSchema": {"type": "object", "required": ["source", "target"],
                      "properties": {"source": {"type": "string"}, "target": {"type": "string"}, **_DIR}}},
+    {"name": "plexus_pick",
+     "description": "Pick one tool for a plain-language request, or abstain: BM25 over every manifest (sense manifests included), softmax probabilities, abstain below the calibrated threshold 0.23.",
+     "inputSchema": {"type": "object", "required": ["request"],
+                     "properties": {"request": {"type": "string"},
+                                    "threshold": {"type": "number", "description": "abstain under this probability (default 0.23)"},
+                                    "senses": {"type": "boolean", "description": "also rank the sense manifests (default false; the 0.23 threshold was calibrated without them)"},
+                                    **_DIR}}},
+    {"name": "plexus_kinds",
+     "description": "The input kinds of an item (a file path, folder, URL or short literal), read from the item itself: file signature and extension, URL shape, text sniffing. Reads at most the first 64 KiB of a file; opens no connection. Says unknown when nothing fits.",
+     "inputSchema": {"type": "object", "required": ["item"],
+                     "properties": {"item": {"type": "string"}}}},
+    {"name": "plexus_senses",
+     "description": "The tools that accept an item, routed by input kind: every sense manifest whose kinds meet the item's kinds, with each tool's exact call, cost and verified status. Plans only; runs nothing (run them with `plexus fanout`).",
+     "inputSchema": {"type": "object", "required": ["item"],
+                     "properties": {"item": {"type": "string"},
+                                    "kinds": {"type": "array", "items": {"type": "string"},
+                                              "description": "kinds the bytes cannot show (geometry, claim)"}}}},
     {"name": "plexus.status",
      "description": "Liveness and identity of the plexus MCP server (name, version, protocol). Network-free health probe.",
      "inputSchema": {"type": "object", "properties": {}}},
@@ -52,6 +69,9 @@ _TITLES = {
     "plexus_wiring": "Capability wiring map",
     "plexus_plan": "Plan the pipeline for a tool",
     "plexus_route": "Route between two tools",
+    "plexus_pick": "Pick a tool or abstain",
+    "plexus_kinds": "Input kinds of an item",
+    "plexus_senses": "Tools that accept an item",
     "plexus.status": "Plexus status",
     "plexus.doctor": "Plexus readiness check",
 }
@@ -86,8 +106,19 @@ def _call(params: dict) -> dict:
             info["tools"] = [t["name"] for t in TOOLS]
         return {"content": [{"type": "text", "text": json.dumps(info, indent=2)}]}
     try:
+        if name in ("plexus_kinds", "plexus_senses"):
+            result = _sense_call(name, args)
+            return {"content": [{"type": "text", "text": json.dumps(result, indent=2, ensure_ascii=False)}]}
         mesh = _mesh(args)
-        if name == "plexus_discover":
+        if name == "plexus_pick":
+            from .pick import DEFAULT_THRESHOLD, pick
+            from .senses import load as load_senses
+            if args.get("senses"):
+                mesh = discover(list(mesh.manifests.values()) + load_senses())
+            result = pick(mesh, args.get("request", ""),
+                          threshold=float(args.get("threshold", DEFAULT_THRESHOLD)))
+            result["candidates"] = result["candidates"][:10]
+        elif name == "plexus_discover":
             result = _mesh_json(mesh)
         elif name == "plexus_wiring":
             result = mesh.wiring()
@@ -101,6 +132,25 @@ def _call(params: dict) -> dict:
         return {"content": [{"type": "text", "text": f"[error] {type(e).__name__}: {e}"}],
                 "isError": True}
     return {"content": [{"type": "text", "text": json.dumps(result, indent=2)}]}
+
+
+def _sense_call(name: str, args: dict) -> dict:
+    from .kinds import detect
+    found = detect(args.get("item", ""))
+    if name == "plexus_kinds":
+        return found
+    import os
+    from .senses import load as load_senses, match
+    kinds = list(dict.fromkeys(found["kinds"] + list(args.get("kinds") or [])))
+    item = args.get("item", "")
+    ext = os.path.splitext(item)[1].lower() if os.path.isfile(item) else ""
+    rows = [{"tool": r["tool"], "on": r["on"], "runnable": r["runnable"],
+             "exact_call": r["manifest"].sense.get("exact_call", ""),
+             "cost": r["manifest"].sense.get("cost", ""),
+             "verified": r["manifest"].sense.get("verified", ""),
+             "network": r["manifest"].sense.get("network", False)}
+            for r in match(load_senses(), kinds, ext)]
+    return {"item": item, "kinds": kinds, "unknown": found["unknown"], "tools": rows}
 
 
 def _ok(rid, result):
@@ -149,8 +199,9 @@ def handle(req: dict):
     return _err(rid, -32601, f"method not found: {method}")
 
 
-def serve(stdin=None, stdout=None) -> int:
+def serve(stdin=None, stdout=None, handler=None) -> int:
     stdin, stdout = stdin or sys.stdin, stdout or sys.stdout
+    handler = handler or handle
     for line in stdin:
         line = line.strip()
         if not line:
@@ -161,7 +212,7 @@ def serve(stdin=None, stdout=None) -> int:
             stdout.write(json.dumps(_err(None, -32700, "parse error")) + "\n")
             stdout.flush()
             continue
-        resp = handle(req)
+        resp = handler(req)
         if resp is not None:
             stdout.write(json.dumps(resp) + "\n")
             stdout.flush()

@@ -1,0 +1,47 @@
+{
+  "organ": "buildc.check",
+  "invoke": {
+    "exact_call": "buildc check FILE.bld --receipt -"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "buildlang (buildc 1.4.0 on PATH)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "buildc check",
+    "family": "code",
+    "home": "buildlang (buildc 1.4.0 on PATH)",
+    "accepts": [
+      "code"
+    ],
+    "returns": "type check with effects and capabilities; JSON receipt with source digests; receipt verify",
+    "angle": "check",
+    "agent_entry": "command line",
+    "exact_call": "buildc check FILE.bld --receipt -",
+    "verified": "verified 2026-11-16 on examples/quickstart/vignette_shader.bld: no errors, receipt written",
+    "cost": "under 1 s",
+    "run": {
+      "cli": [
+        "buildc",
+        "check",
+        "{item}",
+        "--receipt",
+        "-"
+      ],
+      "forms": [
+        "path"
+      ]
+    },
+    "match_ext": [
+      ".bld"
+    ],
+    "network": false,
+    "budget": {
+      "time_s": 20.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}
