@@ -161,10 +161,11 @@ class _FlywheelShellState extends State<FlywheelShell> {
   bool _acceptsArgument(DestinationId routeId) =>
       routeId == DestinationId.receipts || routeId == DestinationId.chat;
 
-  Future<AppExitResponse> _requestExit() async =>
-      await _guard.requestApplicationExit()
-          ? AppExitResponse.exit
-          : AppExitResponse.cancel;
+  Future<AppExitResponse> _requestExit() async {
+    final exit = await _guard.requestApplicationExit();
+    if (exit) _dependencies.gateway.stopIfOwned();
+    return exit ? AppExitResponse.exit : AppExitResponse.cancel;
+  }
 
   static const double narrowBreakpoint = 640;
 
@@ -177,6 +178,7 @@ class _FlywheelShellState extends State<FlywheelShell> {
           child: GatewayOperationScope(
             authorize:
                 journeyGatewayAuthorizer(_operations, _dependencies.journey),
+            journey: _dependencies.journey,
             child: LayoutBuilder(
               builder: (context, constraints) {
                 final narrow = constraints.maxWidth < narrowBreakpoint;
