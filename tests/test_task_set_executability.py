@@ -114,14 +114,14 @@ def test_the_live_task_set_is_provisionable_throughout_and_scorable_in_part():
     """The number this gate exists to hold, measured against the shipped set."""
     record = evaluate_task_set(ROOT, TASK_SET)
     counts = record["counts"]
-    assert counts["declared"] == 18
+    assert counts["declared"] == 19
     # Every task reaches a provider. Before the typed-reference seam was closed
     # only the four original pilot tasks did, and the rest died in the workspace
     # builder before a provider was called.
-    assert counts["provisionable"] == 18
-    # Eight tasks carry a registered checker. The other ten declare no oracle, so
+    assert counts["provisionable"] == 19
+    # Nine tasks carry a registered checker. The other ten declare no oracle, so
     # a run of them produces output nothing can read.
-    assert counts["scorable"] == 8 and counts["measured"] == 8
+    assert counts["scorable"] == 9 and counts["measured"] == 9
     assert record["verdict"] == "TASK_SET_PARTIAL"
     scored = {row["task_id"] for row in record["tasks"] if row["measured"]}
     assert scored == set(PILOT_TASKS.values())
@@ -147,8 +147,8 @@ def test_context_recovery_task_labels_static_expected_decisions_not_execution():
 
 def test_markdown_carries_both_counts_and_keeps_the_null():
     text = render_markdown(evaluate_task_set(ROOT, TASK_SET))
-    assert "- provisionable: 18 of 18" in text
-    assert "- scorable: 8 of 18" in text
+    assert "- provisionable: 19 of 19" in text
+    assert "- scorable: 9 of 19" in text
     assert "## What this does not prove" in text
     assert "C:/dev" not in text and "AppData" not in text
 
@@ -160,14 +160,14 @@ def test_cli_writes_both_artifacts_and_can_fail_on_a_floor(tmp_path):
          "--out", str(out), "--markdown-out", str(markdown), "--require-measurable"],
         capture_output=True, text=True, encoding="utf-8", check=False)
     assert done.returncode == 1, done.stderr
-    assert "not measurable: 8 of 18 tasks" in done.stderr
+    assert "not measurable: 9 of 19 tasks" in done.stderr
     record = json.loads(out.read_text(encoding="utf-8"))
-    assert record["counts"]["measured"] == 8
+    assert record["counts"]["measured"] == 9
     assert "| task |" in markdown.read_text(encoding="utf-8")
 
     passing = subprocess.run(
         [sys.executable, str(SCRIPT), "--task-set", str(TASK_SET), "--root", str(ROOT),
-         "--min-measured", "8"], capture_output=True, text=True, encoding="utf-8", check=False)
+         "--min-measured", "9"], capture_output=True, text=True, encoding="utf-8", check=False)
     assert passing.returncode == 0, passing.stderr
 
 
@@ -176,11 +176,11 @@ def test_front_controller_delegates_the_subcommand():
     from run_harness_cli import build_command, build_manifest, build_parser  # noqa: E402
 
     args = build_parser().parse_args(
-        ["task-set-executability", "--min-measured", "8", "--require-measurable"])
+        ["task-set-executability", "--min-measured", "9", "--require-measurable"])
     command = build_command(args, repo_root=ROOT)
     assert command[1] == "scripts/run_task_set_executability.py"
     assert "--require-measurable" in command
-    assert command[command.index("--min-measured") + 1] == "8"
+    assert command[command.index("--min-measured") + 1] == "9"
     # An unset optional output is omitted rather than passed empty, so the
     # delegated script keeps its own default of writing nothing.
     assert "--out" not in command and "--markdown-out" not in command

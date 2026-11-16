@@ -43,6 +43,9 @@ void main() {
       await client.contextMemoryStatus();
       await client.contextMemoryCapture(
         projectRef: 'mission-memory',
+        configGeneration:
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        canonStoreId: 'ctxstore_11111111111111111111111111111111',
         event: const {
           'event_id': 'turn-1',
           'message_text': 'Build native bridge',
@@ -50,6 +53,9 @@ void main() {
       );
       await client.contextMemoryPreflight(
         projectRef: 'mission-memory',
+        configGeneration:
+            'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+        canonStoreId: 'ctxstore_11111111111111111111111111111111',
         query: 'native bridge',
         topK: 3,
         includePendingExtraction: false,
@@ -60,6 +66,9 @@ void main() {
         '/api/context-memory/capture': {
           'schema': contextMemoryCaptureRequestSchema,
           'project_ref': 'mission-memory',
+          'config_generation':
+              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          'canon_store_id': 'ctxstore_11111111111111111111111111111111',
           'event': {
             'event_id': 'turn-1',
             'message_text': 'Build native bridge',
@@ -68,6 +77,9 @@ void main() {
         '/api/context-memory/preflight': {
           'schema': contextMemoryPreflightRequestSchema,
           'project_ref': 'mission-memory',
+          'config_generation':
+              'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd',
+          'canon_store_id': 'ctxstore_11111111111111111111111111111111',
           'query': 'native bridge',
           'top_k': 3,
           'include_pending_extraction': false,

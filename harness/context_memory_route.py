@@ -15,7 +15,7 @@ def context_memory_post(path: str, raw: bytes, *, owner_ref: str,
             raise TransportError("NOT_FOUND", "context-memory route not found", 404)
         service = bridge or ContextMemoryBridge()
         if action == "status":
-            return service.health(), 200
+            return service.health(owner_ref=owner_ref), 200
         req = parse_json(raw)
         if action == "capture":
             return service.capture(owner_ref, req), 200
