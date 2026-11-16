@@ -193,7 +193,8 @@ def _execute(row: dict, pol: dict) -> dict:
         status = "failed"
     err = r["error"] or ("" if status == "ok" else _tail(se) or f"exit code {r['exit_code']}, no output")
     return {"status": status, "exit_code": r["exit_code"], "seconds": r["seconds"],
-            "peak_mb": r["peak_mb"], "memory_exceeded": r["memory_exceeded"], "error": err,
+            "peak_mb": r["peak_mb"], "memory_exceeded": r["memory_exceeded"],
+            "memory_enforced": r["memory_enforced"], "error": err,
             "stdout": os.path.relpath(so, os.path.dirname(inv["out"])),
             "stdout_sha256": _sha(so), "stdout_bytes": os.path.getsize(so)}
 

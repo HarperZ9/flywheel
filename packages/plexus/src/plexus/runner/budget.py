@@ -6,8 +6,8 @@ started) is terminated, and the job's peak memory is read back. The process is
 assigned to the job right after it starts, so a child it spawns in its first
 instant can escape the job; plexus's own tools do not do that.
 POSIX: the process gets RLIMIT_AS in its own session; at the time limit the
-session is killed. Peak memory is the child's ru_maxrss (macOS does not enforce
-RLIMIT_AS; the limit there is recorded, not enforced).
+session is killed. Peak memory is the child's ru_maxrss. macOS refuses
+RLIMIT_AS, so there the limit is recorded with memory_enforced false.
 Output goes straight to files, so a chatty tool cannot block on a full pipe.
 """
 from __future__ import annotations
@@ -67,6 +67,7 @@ def run(argv: list, *, cwd: "str | None", env: "dict | None", time_s: float, mem
         stdout_path: str, stderr_path: str) -> dict:
     """Run argv under the budget. Never raises for the tool's own failure."""
     res = {"exit_code": None, "seconds": 0.0, "timed_out": False, "memory_limit_mb": memory_mb,
+           "memory_enforced": True,
            "peak_mb": None, "memory_exceeded": False, "error": ""}
     full_env = dict(os.environ)
     full_env.update(env or {})
@@ -77,7 +78,7 @@ def run(argv: list, *, cwd: "str | None", env: "dict | None", time_s: float, mem
                 _run_windows(argv, cwd, full_env, time_s, memory_mb, out, err, res)
             else:
                 _run_posix(argv, cwd, full_env, time_s, memory_mb, out, err, res)
-        except (OSError, ValueError) as e:
+        except (OSError, ValueError, subprocess.SubprocessError) as e:
             res["error"] = f"could not start: {type(e).__name__}: {e}"
     res["seconds"] = round(time.perf_counter() - t0, 3)
     if res["peak_mb"] is not None:
@@ -111,8 +112,11 @@ def _run_posix(argv, cwd, env, time_s, memory_mb, out, err, res):
     def limit():                                      # runs in the child before exec
         resource.setrlimit(resource.RLIMIT_AS, (memory_mb * _MB, memory_mb * _MB))
 
+    enforce = sys.platform != "darwin"                # macOS refuses RLIMIT_AS
+    res["memory_enforced"] = enforce
     proc = subprocess.Popen(argv, cwd=cwd, env=env, stdout=out, stderr=err,
-                            stdin=subprocess.DEVNULL, start_new_session=True, preexec_fn=limit)
+                            stdin=subprocess.DEVNULL, start_new_session=True,
+                            preexec_fn=limit if enforce else None)
     deadline = time.monotonic() + time_s
     while True:
         pid, status, usage = os.wait4(proc.pid, os.WNOHANG)
