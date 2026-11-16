@@ -14,6 +14,8 @@ from typing import Any
 
 DEFAULT_MODEL_REPO = "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
 DEFAULT_MODEL_REVISION = "5ecdb67327fd37bb2e042aab12ff7391903235d3"
+DEFAULT_BASE_MODEL_REPO = "Qwen/Qwen3-TTS-12Hz-1.7B-Base"
+DEFAULT_BASE_MODEL_REVISION = "fd4b254389122332181a7c3db7f27e918eec64e3"
 DEFAULT_PROFILE = "rowan-draft-adjustable-20260915"
 DEFAULT_VOICE_PROMPT = (
     "Original adult Australian male voice with a strong natural Australian "
@@ -130,15 +132,23 @@ def _validate_numeric_generation(key: str, item: Any) -> None:
         raise ValueError(f"{key} must be between {low:g} and {high:g}")
 
 
-def verify_model_dir_identity(model_dir: Path, expected_revision: str) -> dict[str, Any]:
+def verify_model_dir_identity(
+    model_dir: Path,
+    expected_revision: str,
+    *,
+    repo_id: str = DEFAULT_MODEL_REPO,
+    tts_model_type: str = "voice_design",
+) -> dict[str, Any]:
     missing = [name for name in REQUIRED_MODEL_FILES if not (model_dir / name).exists()]
     if missing:
         raise RuntimeError(f"model_dir missing required files: {missing}")
     config_path = model_dir / "config.json"
     config = json.loads(config_path.read_text(encoding="utf-8"))
+    expected_config = dict(EXPECTED_MODEL_CONFIG)
+    expected_config["tts_model_type"] = tts_model_type
     mismatches = {
         key: {"expected": expected, "actual": config.get(key)}
-        for key, expected in EXPECTED_MODEL_CONFIG.items()
+        for key, expected in expected_config.items()
         if config.get(key) != expected
     }
     if mismatches:
@@ -162,10 +172,10 @@ def verify_model_dir_identity(model_dir: Path, expected_revision: str) -> dict[s
     if bad:
         raise RuntimeError(f"model_dir metadata revision mismatch: {bad}")
     return {
-        "repo_id": DEFAULT_MODEL_REPO,
+        "repo_id": repo_id,
         "revision": expected_revision,
         "model_dir": str(model_dir),
-        "config": {key: config.get(key) for key in EXPECTED_MODEL_CONFIG},
+        "config": {key: config.get(key) for key in expected_config},
         "required_files": {
             name: {"bytes": (model_dir / name).stat().st_size}
             for name in REQUIRED_MODEL_FILES

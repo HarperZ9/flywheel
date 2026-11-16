@@ -4,9 +4,9 @@ A benchmark reports a pass rate. That rate is a measurement only if something
 exists that ought to fail it. This drives each configured checker with three
 ways of not answering and writes what each one scored.
 
-The cases come from the test suite on purpose. They are the same synthetic
-fixtures the oracle tests check, and a second copy under harness/ would let the
-measured floor drift away from the cases the suite actually exercises.
+The cases come from the runner-owned null case map. That map points at the
+source fixtures and fails by checker id when a registered checker lacks a case,
+so the denominator cannot drift silently behind the registry.
 """
 
 from __future__ import annotations
@@ -18,26 +18,25 @@ import sys
 import tempfile
 
 ROOT = Path(__file__).resolve().parent.parent
-sys.path[:0] = [str(ROOT), str(ROOT / "tests")]
+sys.path.insert(0, str(ROOT))
 
 from harness.cross_harness_null_adapters import (  # noqa: E402
     BREACHED, STRATEGIES, build_null_floor_report, rejected_at, write_null_submission,
+)
+from harness.cross_harness_null_cases import (  # noqa: E402
+    build_case as build_registered_case,
+    registered_checker_ids,
 )
 from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle  # noqa: E402
 from harness.file_backed_store import FileBackedHarnessStore  # noqa: E402
 
 
-def build_case(tmp_path: Path, checker: str):
-    from test_cross_harness_oracles import _case
-    from test_oracle_documentation_v2 import CHECKER_ID, case_v2
-
-    return case_v2(tmp_path) if checker == CHECKER_ID else _case(tmp_path, checker)
+def build_case(tmp_path: Path, checker: str, *, repo_root: Path = ROOT):
+    return build_registered_case(tmp_path, checker, repo_root=repo_root)
 
 
 def checker_ids() -> list[str]:
-    from harness.cross_harness_oracles import _CHECKERS
-
-    return sorted(_CHECKERS)
+    return registered_checker_ids()
 
 
 def score(tmp_path: Path, checker: str, strategy: str) -> dict:

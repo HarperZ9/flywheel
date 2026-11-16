@@ -25,7 +25,7 @@ final class ChatContextController {
         return ChatContextOutcome.statusFailure(
             'Context status response was invalid.');
       }
-      if (!status.configured) return ChatContextOutcome.notConfigured();
+      if (!status.configured) return ChatContextOutcome.notConfigured(status.message);
       if (!isCurrent()) return ChatContextOutcome.cancelled();
 
       final preflight = await _preflight(status, draft, stopwatch);
@@ -47,6 +47,8 @@ final class ChatContextController {
       final raw = await _within(
           () => client.contextMemoryPreflight(
               projectRef: status.projectRef,
+              configGeneration: status.destinationBinding!.configGeneration,
+              canonStoreId: status.destinationBinding!.canonStoreId,
               query: draft.text,
               topK: 10,
               includePendingExtraction: true),
@@ -70,6 +72,8 @@ final class ChatContextController {
       final raw = await _within(
           () => client.contextMemoryCapture(
               projectRef: status.projectRef,
+              configGeneration: status.destinationBinding!.configGeneration,
+              canonStoreId: status.destinationBinding!.canonStoreId,
               event: contextMemoryCaptureEvent(draft)),
           stopwatch);
       final parsed = ContextMemoryCapture.fromJson(raw, status.projectRef);
@@ -130,8 +134,9 @@ final class ChatContextOutcome {
       const ChatContextOutcome(configured: false, pending: true);
   factory ChatContextOutcome.cancelled() =>
       const ChatContextOutcome(configured: false, cancelled: true);
-  factory ChatContextOutcome.notConfigured() => const ChatContextOutcome(
-      configured: false, statusMessage: 'Canon context not configured.');
+  factory ChatContextOutcome.notConfigured([String message = 'not configured']) =>
+      ChatContextOutcome(
+          configured: false, statusMessage: 'Canon context $message.');
   factory ChatContextOutcome.statusFailure(String message) =>
       ChatContextOutcome(configured: false, statusMessage: message);
 
