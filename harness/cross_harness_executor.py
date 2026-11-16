@@ -10,7 +10,7 @@ from harness.cross_harness_oracles import OracleContext, evaluate_task_oracle
 from harness.cross_harness_policy import SHARED_TOOL_POLICY, attempt_metrics, tool_policy_for
 from harness.cross_harness_rejected_output import record_rejected_output; from harness.cross_harness_runtime_context import stage_runtime_context
 from harness.cross_harness_run_seal import seal_run, write_json as _write_json
-from harness.cross_harness_usage import recheck_inner_usage
+from harness.cross_harness_usage import recheck_inner_usage; from harness.cross_harness_output_diagnostics import diagnose_output_failure
 from harness.cross_harness_types import (AttemptRequest, metric_null_reasons, model_observation_pair_error, sanitize_evidence,
     validate_elapsed_ms)
 class _MalformedAttempt(ValueError): pass
@@ -240,7 +240,7 @@ def execute_cross_harness_manifest(
                                 if row["model_observation_basis"] == "unknown":
                                     row["limitations"].append("provider_request_accepted_not_model_attested")
                                 try: raw, artifacts = materialize_response_envelope(result.output_text, list(task.get("expected_artifacts", [])), attempt)
-                                except ValueError as exc: raise _MalformedAttempt(str(exc)) from exc
+                                except ValueError as exc: row["output_diagnostics"] = diagnose_output_failure(result.output_text, list(task.get("expected_artifacts", [])), verified_usage, plan["tool_policy"]); raise _MalformedAttempt(str(exc)) from exc
                                 files.update(artifacts); row.update(raw_output_path=str(raw), raw_output_sha256=hashlib.sha256(raw.read_bytes()).hexdigest())
                                 provider_receipt = attempt / "provider-receipt.json"; _write_json(provider_receipt, {"model_observed": row["model_observed"], "model_observation_basis": row["model_observation_basis"], "elapsed_ms": elapsed_ms}); files[provider_receipt.name] = provider_receipt
                                 core = {"workspace_root": str(workspace), "attempt_dir": str(attempt),
