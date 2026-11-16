@@ -5,18 +5,30 @@ does not execute commands, access the network, or mint EMET receipts.
 """
 from __future__ import annotations
 
+import json
 from typing import Any
 
 from .audit_receipt import build_audit_receipt, verify_audit_receipt
-from .evidence_json import canonical_sha256
+from .evidence_json import canonical_bytes, canonical_sha256
+from .institutional_access import assess_institutional_access
 from .incident_case import new_incident_case
 from .incident_proposal import compile_incident_proposal
 from .incident_sim_input import IncidentSimValidationError, work_blocking_reasons
 from .incident_sim_eval import MATCH, UNVERIFIABLE, evaluate_incident_sim
+from .incident_sim_packet_verify import (
+    packet_body_sha256,
+    packet_section_hashes,
+    verify_process_audit_packet,
+)
 from .tool_call_receipt import build_receipt, verify_chain, verify_receipt
 
 SCHEMA = "flywheel.incident-sim-process-audit/v1"
+ACCESS_COMPONENT_SCHEMA = "flywheel.institutional-access-component/v1"
 _NOW = "2026-09-13T00:00:00Z"
+
+
+def _snapshot(value: object) -> object:
+    return json.loads(canonical_bytes(value).decode("utf-8"))
 
 
 def _ptr(parts: list[str | int]) -> str:
@@ -28,23 +40,23 @@ def _ptr(parts: list[str | int]) -> str:
 def _source_values(task: dict[str, Any], trace: dict[str, Any]) -> list[dict[str, Any]]:
     rows = [
         {"source": "task", "json_pointer": "/expected_final_state",
-         "source_value": task.get("expected_final_state")},
+         "source_value": _snapshot(task.get("expected_final_state"))},
         {"source": "trace", "json_pointer": "/final_state",
-         "source_value": trace.get("final_state")},
+         "source_value": _snapshot(trace.get("final_state"))},
     ]
     for index, action in enumerate(task.get("expected_actions", []) or []):
         rows.append({"source": "task",
                      "json_pointer": _ptr(["expected_actions", index, "id"]),
-                     "source_value": action.get("id")})
+                     "source_value": _snapshot(action.get("id"))})
     for index, action in enumerate(trace.get("observed_actions", []) or []):
         rows.append({"source": "trace",
                      "json_pointer": _ptr(["observed_actions", index, "id"]),
-                     "source_value": action.get("id")})
+                     "source_value": _snapshot(action.get("id"))})
     for index, score in enumerate(trace.get("claimed_scores", []) or []):
         if isinstance(score, dict):
             rows.append({"source": "trace",
                          "json_pointer": _ptr(["claimed_scores", index, "value"]),
-                         "source_value": score.get("value")})
+                         "source_value": _snapshot(score.get("value"))})
     return rows
 
 
@@ -154,13 +166,39 @@ def _audit_receipt(evaluation: dict[str, Any], work: dict[str, Any],
     )
 
 
+def _access_component(task: dict[str, Any], trace: dict[str, Any],
+                      institutional_access: dict[str, Any],
+                      institutional_access_scope: dict[str, Any]) -> dict[str, Any]:
+    body = {
+        "schema": ACCESS_COMPONENT_SCHEMA,
+        "context": "synthetic_declared_access",
+        "assessment": assess_institutional_access(
+            institutional_access, scope=institutional_access_scope,
+            sources={"task": task, "trace": trace}),
+    }
+    return {**body, "component_sha256": canonical_sha256(body)}
+
+
+def _subject_digest(task_sha: str, trace_sha: str, eval_sha: str, work_sha: str,
+                    access_sha: str | None = None) -> str:
+    body = {"task_sha256": task_sha, "trace_sha256": trace_sha,
+            "evaluation_sha256": eval_sha, "work_receipt_sha256": work_sha}
+    if access_sha is not None:
+        body["institutional_access_sha256"] = access_sha
+    return canonical_sha256(body)
+
+
 def build_process_audit_packet(
     task: dict[str, Any],
     trace: dict[str, Any],
     *,
     supplied_evaluation: dict[str, Any] | None = None,
+    institutional_access: dict[str, Any] | None = None,
+    institutional_access_scope: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build the bounded process-audit packet for one incident-sim trace."""
+    task = _snapshot(task)
+    trace = _snapshot(trace)
     evaluation = evaluate_incident_sim(task, trace)
     blocked = work_blocking_reasons(evaluation["input_validation"])
     if blocked:
@@ -171,39 +209,45 @@ def build_process_audit_packet(
     actions = _action_receipts(trace)
     work = _work_receipt(task_sha, trace_sha, evaluation, trace)
     incident = _incident(task, task_sha, trace_sha)
-    subject = canonical_sha256({
-        "task_sha256": task_sha,
-        "trace_sha256": trace_sha,
-        "evaluation_sha256": eval_sha,
-        "work_receipt_sha256": work["seal"]["hex"],
-    })
+    access_component = None
+    if institutional_access is not None or institutional_access_scope is not None:
+        if institutional_access is None or institutional_access_scope is None:
+            raise IncidentSimValidationError("institutional_access requires institutional_access_scope")
+        access_component = _access_component(
+            task, trace, institutional_access, institutional_access_scope)
+    subject = _subject_digest(task_sha, trace_sha, eval_sha, work["seal"]["hex"],
+                              None if access_component is None else access_component["component_sha256"])
     audit = _audit_receipt(evaluation, work, subject, trace)
-    return {
+    source_values = _source_values(task, trace)
+    independence = {
+        "roles": _snapshot(task.get("roles", {})),
+        "shared_dependencies": _snapshot(task.get("shared_dependencies", [])),
+        "unknowns": [
+            "assessment independence is unknown for the local checker",
+            "evidence independence is limited to the submitted fixture",
+            "implementation independence is not established by this slice",
+        ],
+    }
+    supplied_check = _supplied_check(supplied_evaluation, evaluation)
+    receipt_verification = {
+        "actions": verify_chain(actions) if actions else {
+            "verdict": UNVERIFIABLE, "detail": "no action receipts", "receipts": []},
+        "work": verify_receipt(work),
+        "audit": verify_audit_receipt(audit, work),
+    }
+    packet = {
         "schema": SCHEMA,
         "task_sha256": task_sha,
         "trace_sha256": trace_sha,
         "evaluation_sha256": eval_sha,
         "evaluation": evaluation,
-        "supplied_evaluation_check": _supplied_check(supplied_evaluation, evaluation),
-        "source_values": _source_values(task, trace),
+        "supplied_evaluation_check": supplied_check,
+        "source_values": source_values,
         "observation_scope": "fixture_expected_actions_only",
-        "independence": {
-            "roles": task.get("roles", {}),
-            "shared_dependencies": task.get("shared_dependencies", []),
-            "unknowns": [
-                "assessment independence is unknown for the local checker",
-                "evidence independence is limited to the submitted fixture",
-                "implementation independence is not established by this slice",
-            ],
-        },
+        "independence": independence,
         "incident": incident,
         "receipts": {"actions": actions, "work": work, "audit": audit},
-        "receipt_verification": {
-            "actions": verify_chain(actions) if actions else {
-                "verdict": UNVERIFIABLE, "detail": "no action receipts", "receipts": []},
-            "work": verify_receipt(work),
-            "audit": verify_audit_receipt(audit, work),
-        },
+        "receipt_verification": receipt_verification,
         "receipt_limitations": [
             "Action receipts are reconstructed from a submitted trace; they do not prove the actions actually ran.",
             "Observation coverage is limited to fixture expected actions, not the whole workstation.",
@@ -213,3 +257,15 @@ def build_process_audit_packet(
             "No live agent execution, Inspect runtime, network, or EMET wire integration is included.",
         ],
     }
+    if access_component is not None:
+        packet["institutional_access"] = access_component
+    packet["section_sha256"] = packet_section_hashes({
+        "evaluation": evaluation,
+        "supplied_evaluation_check": supplied_check,
+        "source_values": source_values,
+        "independence": independence,
+        "incident": incident,
+        "receipt_verification": receipt_verification,
+    })
+    packet["packet_sha256"] = packet_body_sha256(packet)
+    return packet

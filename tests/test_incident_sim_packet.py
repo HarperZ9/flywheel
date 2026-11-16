@@ -1,5 +1,6 @@
 from harness.evidence_json import canonical_sha256
 from harness.incident_sim_input import IncidentSimValidationError
+from harness.institutional_access import access_scope
 from harness.incident_sim_eval import evaluate_incident_sim
 import harness.incident_sim_packet as packet_mod
 from harness.incident_sim_packet import build_process_audit_packet
@@ -154,3 +155,68 @@ def test_packet_is_bounded_json_not_a_command_or_network_runner():
     assert "emet_receipt" not in packet
     banned = {"command", "network", "url", "raw_prompt", "api_payload"}
     assert not (set(_keys(packet)) & banned)
+
+
+
+def _access_record(scope_doc):
+    return {
+        "schema": "flywheel.institutional-access/v1",
+        "scope_sha256": scope_doc["scope_sha256"],
+        "reviewer": {
+            "role": "external_evaluator",
+            "declared_conflicts": [],
+            "relationship_to_producer": "unknown",
+        },
+        "events": [
+            {
+                "event_id": "task-grant",
+                "sequence": 1,
+                "evidence_ref": "task",
+                "status": "granted",
+                "stated_reason": "synthetic fixture declared access",
+                "source_pointers": [{
+                    "source_ref": "task",
+                    "json_pointer": "/expected_final_state",
+                    "source_value": TASK["expected_final_state"],
+                }],
+                "redactions": [],
+            },
+            {
+                "event_id": "trace-grant",
+                "sequence": 2,
+                "evidence_ref": "trace",
+                "status": "granted",
+                "stated_reason": "synthetic fixture declared access",
+                "source_pointers": [{
+                    "source_ref": "trace",
+                    "json_pointer": "/final_state",
+                    "source_value": trace()["final_state"],
+                }],
+                "redactions": [],
+            },
+        ],
+    }
+
+
+def test_packet_default_has_no_institutional_access_assessment():
+    packet = build_process_audit_packet(TASK, trace())
+
+    assert "institutional_access" not in packet
+
+
+def test_packet_can_include_synthetic_declared_access_component():
+    good = trace()
+    scope_doc = access_scope("incident-sim-synthetic", {"claim-final-state": ["task", "trace"]},
+                             {"task": TASK, "trace": good})
+
+    packet = build_process_audit_packet(
+        TASK,
+        good,
+        institutional_access=_access_record(scope_doc),
+        institutional_access_scope=scope_doc,
+    )
+
+    component = packet["institutional_access"]
+    assert component["context"] == "synthetic_declared_access"
+    assert component["assessment"]["coverage_assessment"] == "complete"
+    assert "support" not in set(_keys(component))

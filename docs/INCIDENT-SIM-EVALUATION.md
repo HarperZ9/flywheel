@@ -24,7 +24,10 @@ flywheel incident-sim --task examples/evaluation/incident-sim/task.json --trace 
 
 The installed command also accepts local files outside a checkout. Add
 `--expected-task-sha256` and `--expected-trace-sha256` to compare the exact input
-bytes with previously recorded digests. Each input is bounded to 1 MiB.
+bytes with previously recorded digests. To attach declared institutional-access
+coverage, pass both `--institutional-access <json>` and
+`--institutional-access-scope <json>`. Supplying only one is rejected.
+Each input is bounded to 1 MiB.
 The command emits JSON to stdout, including raw input hashes and byte lengths,
 the evaluation and the process-audit packet. It posts nothing externally.
 
@@ -32,7 +35,31 @@ Exit `0` means the submitted trace matches the bounded fixture checks. Exit `1`
 means drift, `3` means an unverifiable result, and `2` rejects input. Neither
 exit zero nor an intact receipt proves that the submitted actions actually ran.
 Packet hashes bind canonical JSON values; command source hashes bind the original
-file bytes, including whitespace. Retain both files for review.
+file bytes, including whitespace. The packet verifier tolerates order-only JSON
+reserialization of receipt objects while still checking their fixed-schema-order
+seals. The reported packet source hash remains the exact file bytes supplied for
+review.
+
+The build command writes an outer `flywheel.incident-sim-command/v1` report. The
+packet verifier expects only the inner `audit_packet` object, not the whole
+command report. Extract the packet as UTF-8 JSON before recheck:
+
+```text
+python -c "import json,pathlib,sys; report=json.load(open(sys.argv[1], encoding='utf-8')); pathlib.Path(sys.argv[2]).write_text(json.dumps(report['audit_packet'], ensure_ascii=False), encoding='utf-8')" incident-command-report.json packet.json
+```
+
+Then recheck the saved process-audit packet offline:
+
+```text
+flywheel incident-sim --verify-packet packet.json
+```
+
+`--verify-packet` is mutually exclusive with `--task`, `--trace`, digest checks
+and institutional-access inputs. It returns `0` for packet-local `MATCH`, `1`
+for `DRIFT`, `3` for other verifier states and `2` for rejected input. The
+verification result is a packet-local digest and receipt check, not a semantic
+truth claim. The Python `verify_process_audit_packet()` helper and the command
+use the same packet-specific receipt order reconstruction.
 
 ## Python API behavior
 

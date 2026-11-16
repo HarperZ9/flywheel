@@ -60,9 +60,12 @@ For a real external assessment, the expanded audit record should identify:
 - How a reviewer can challenge a deciding source, submit counterevidence and
   retain a dissenting result without overwriting the original record.
 
-These are requirements for institutional assessment, not fields already enforced
-by the synthetic incident checker. Private information should be disclosed only
-through the agreed review scope; restricted access itself remains a visible
+These are requirements for institutional assessment. The first bounded
+implementation is `harness.institutional_access`, which checks declared access
+coverage against a caller-bound scope and retained source inventory. It does not
+turn complete access into semantic support, and a missing component means no
+institutional-access assessment exists. Private information should be disclosed
+only through the agreed review scope; restricted access itself remains a visible
 limitation on the conclusion.
 
 Portable artifacts and offline checks should let another assessor recheck the
