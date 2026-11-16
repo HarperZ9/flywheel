@@ -7,24 +7,29 @@ permission for another action.
 
 ## Desktop workflow
 
-1. Open Receipts and select **Select Inspect JSON**. Use a version 2 JSON export;
+1. Open or create an Evidence Journey. A fresh profile with no active Journey
+   must use the Journey view first; Receipts can also select a listed Journey
+   before approval.
+2. Open Receipts and select **Select Inspect JSON**. Use a version 2 JSON export;
    native `.eval` archives require conversion through Inspect first.
-2. Inspect the selected file's digest and byte length, then choose
+3. Inspect the selected file's digest and byte length, then choose
    **Request approval**. The existing Journey approval flow binds the operation
    to those exact bytes. Selecting a different file requires a new approval.
-3. Review the reported status together with assessment, invalidation, coverage
+4. Review the reported status together with assessment, invalidation, coverage
    and semantic verification. A run can report `success` while its assessment
    is `incomplete`, or while individual answers are incorrect.
-4. Expand a source row to inspect its JSON pointer and full selected value.
+5. Expand a source row to inspect its JSON pointer and full selected value.
    The pointer addresses the imported JSON, not the original `.eval` archive.
-5. Reopen saved reports from recent Inspect imports. This list shows the newest
+6. Reopen saved reports from recent Inspect imports. This list shows the newest
    ten imports; the API provides pagination for older records.
 
 Cancellation in the file picker does not upload anything. Denying approval
-prevents the import. The current proposal `reject` endpoint applies before
-approval; it does not withdraw an approval already issued. Changing the scope
-or uploaded bytes after approval is rejected at dispatch. Approval expiry and
-Journey binding still apply.
+prevents the import. A missing Journey is reported as `JOURNEY_REQUIRED`, not
+as a denied approval, and no grant is prepared or upload dispatched until an
+active Journey projection exists. The current proposal `reject` endpoint applies
+before approval; it does not withdraw an approval already issued. Changing the
+scope or uploaded bytes after approval is rejected at dispatch. Approval expiry
+and Journey binding still apply.
 
 ## What is retained
 
@@ -90,8 +95,15 @@ store tampering without contacting a model provider:
 python -m pytest tests/test_inspect_evidence_http.py -q
 ```
 
-The desktop tests cover file selection, approval, report parsing, source
-context, invalidation and saved-report reopening. Full desktop checks are:
+The desktop tests cover file selection, Journey prerequisite recovery, approval,
+report parsing, source context, invalidation and saved-report reopening.
+Focused Journey/import coverage:
+
+```text
+flutter test test/inspect_import_journey_prerequisite_test.dart
+```
+
+Full desktop checks are:
 
 ```text
 flutter analyze
