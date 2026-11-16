@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 
 import '../client/gateway_grants.dart';
+import 'journey_controller.dart';
 import '../models/gateway_grant_models.dart';
 export '../models/gateway_grant_models.dart'
     show GatewayDestination, GatewayJourneyBinding, GatewayOperation;
@@ -38,13 +39,14 @@ final class GatewayAuthorizationOutcome<T> {
 
 final class GatewayOperationScope extends InheritedWidget {
   const GatewayOperationScope(
-      {super.key, required this.authorize, required super.child});
+      {super.key, required this.authorize, this.journey, required super.child});
   final GatewayOperationAuthorizer authorize;
+  final JourneyController? journey;
   static GatewayOperationScope? maybeOf(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<GatewayOperationScope>();
   @override
   bool updateShouldNotify(GatewayOperationScope oldWidget) =>
-      authorize != oldWidget.authorize;
+      authorize != oldWidget.authorize || journey != oldWidget.journey;
 }
 
 final class GatewayOperationController extends ChangeNotifier {
