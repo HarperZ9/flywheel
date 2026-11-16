@@ -16,12 +16,26 @@ installation or security-sensitive interaction retains its own boundary.
 
 ## Current version boundary
 
-- Current source metadata is 0.7.0; it is not a 1.0 release.
+- This version-alignment branch declares source metadata for a 1.0.0 candidate.
+  That is not a release receipt and does not establish readiness by itself.
 - Latest published application release checked on September 13 is
   [0.6.2](https://github.com/HarperZ9/flywheel/releases/tag/v0.6.2).
 - An existing installed 0.6.2 client does not validate later source changes.
+- No 1.0.0 tag, GitHub Release, PyPI package, installer, or installed
+  acceptance receipt exists until the release workflow produces and verifies it.
 - Source checks, hosted CI, packaged artifacts, installed acceptance, publication,
   and external use require separate evidence.
+
+## Current candidate holds
+
+- Full Python acceptance must be rerun after the HTTP gateway-auth vendor MIME
+  regression is fixed.
+- Full Flutter acceptance on the candidate line must retain generated-file
+  reconciliation evidence when generated files change only by line endings.
+- The 1.0.0 candidate must produce source-bound app, engine, CRT, installer and
+  SHA256SUMS manifests before installed acceptance.
+- Installed acceptance must cover preflight, metadata, full engine restart, and
+  Inspect import/reopen receipts on the same candidate bytes.
 
 ## Acceptance matrix
 
