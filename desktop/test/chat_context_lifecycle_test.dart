@@ -19,6 +19,9 @@ part 'chat_context_lifecycle_harness.dart';
 const _a = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
 const _b = 'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 const _c = 'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+const _generation =
+    'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
+const _storeId = 'ctxstore_11111111111111111111111111111111';
 const _binding = GatewayJourneyBinding('jrn_$_a', '$_a$_a');
 const _prompt = 'Keep this original prompt';
 
@@ -45,6 +48,11 @@ void main() {
         .join('\n');
 
     expect(capture['project_ref'], 'mission-memory');
+    expect(h.body('/api/context-memory/preflight')['config_generation'],
+        _generation);
+    expect(h.body('/api/context-memory/preflight')['canon_store_id'], _storeId);
+    expect(capture['config_generation'], _generation);
+    expect(capture['canon_store_id'], _storeId);
     expect(event['event_id'], chat['client_request_id']);
     expect(event['attempt_ref'], event['event_id']);
     expect(event['source_app'], 'flywheel-desktop');

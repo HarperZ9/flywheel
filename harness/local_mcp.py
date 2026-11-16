@@ -145,7 +145,7 @@ def _call(params: dict, *, root=None, run_root=None) -> dict:
         if name in ("local-model.status", "local-model.doctor"):
             return _text(_lane_health(name == "local-model.doctor"))
         if name == "flywheel.context.health":
-            return _text(_context_memory_bridge().health())
+            return _text(_context_memory_bridge().health(owner_ref=args.get("owner_ref")))
         if name == "flywheel.context.capture":
             owner_ref = args.get("owner_ref")
             request = {k: v for k, v in args.items() if k != "owner_ref"}

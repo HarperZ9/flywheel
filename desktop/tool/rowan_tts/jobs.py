@@ -10,8 +10,6 @@ from typing import Any
 
 from .provenance import (
     DEFAULT_GENERATION,
-    DEFAULT_MODEL_REPO,
-    DEFAULT_MODEL_REVISION,
     DEFAULT_PROFILE,
     DEFAULT_VOICE_PROMPT,
     gpu_snapshot,
@@ -123,15 +121,21 @@ class RowanTtsState:
             raise ServiceError(400, "EMPTY_TEXT", "text is required")
         if len(text) > self.max_text_chars:
             raise ServiceError(413, "TEXT_TOO_LARGE", "text exceeds limit")
-        voice_prompt = payload.get("voice_prompt") or DEFAULT_VOICE_PROMPT
+        voice_prompt_provided = "voice_prompt" in payload and payload.get("voice_prompt") is not None
+        if voice_prompt_provided and not getattr(self.engine, "allow_voice_prompt", True):
+            raise ServiceError(400, "BAD_VOICE_PROMPT", "voice_prompt is not supported by this backend")
+        default_voice_prompt = getattr(self.engine, "default_voice_prompt", DEFAULT_VOICE_PROMPT)
+        voice_prompt = payload.get("voice_prompt") if voice_prompt_provided else default_voice_prompt
         if not isinstance(voice_prompt, str):
             raise ServiceError(400, "BAD_VOICE_PROMPT", "voice_prompt must be a string")
-        profile = payload.get("profile") or DEFAULT_PROFILE
+        profile = payload.get("profile") or getattr(self.engine, "default_profile", DEFAULT_PROFILE)
         if not isinstance(profile, str):
             raise ServiceError(400, "BAD_PROFILE", "profile must be a string")
         try:
             reject_source_tokens("text", text)
-            reject_source_tokens("voice_prompt", voice_prompt)
+            if voice_prompt:
+                reject_source_tokens("voice_prompt", voice_prompt)
+            self._validate_profile(profile)
             generation = sanitize_generation(payload.get("generation"))
         except ValueError as exc:
             raise ServiceError(400, "BAD_REQUEST", str(exc)) from exc
@@ -164,6 +168,15 @@ class RowanTtsState:
         with self._lock:
             if self._stop_requested or not self.accepting:
                 raise ServiceError(503, "SERVICE_STOPPING", "service is stopping")
+
+    def _validate_profile(self, profile: str) -> None:
+        validator = getattr(self.engine, "validate_profile", None)
+        if validator is None:
+            return
+        try:
+            validator(profile)
+        except ValueError as exc:
+            raise ServiceError(400, "BAD_PROFILE", str(exc)) from exc
 
     def get(self, job_id: str) -> TtsJob:
         with self._lock:
@@ -262,6 +275,7 @@ class RowanTtsState:
             job.engine_meta = self.engine.synthesize(
                 text=job.text,
                 voice_prompt=job.voice_prompt,
+                profile=job.profile,
                 seed=job.seed,
                 generation=job.generation,
                 output_path=output,
@@ -298,11 +312,11 @@ class RowanTtsState:
             "text": job.text,
             "voice_prompt": job.voice_prompt,
             "generation": job.generation,
-            "model": job.engine_meta
-            or {
-                "repo_id": DEFAULT_MODEL_REPO,
-                "revision": DEFAULT_MODEL_REVISION,
-            },
+            "model": job.engine_meta,
+            "model_observed": job.engine_meta is not None,
+            "model_observation_basis": (
+                "engine_metadata" if job.engine_meta is not None else "unobserved_engine_metadata"
+            ),
             "gpu_before": job.gpu_before,
             "gpu_after": job.gpu_after,
             "ram_before": job.ram_before,

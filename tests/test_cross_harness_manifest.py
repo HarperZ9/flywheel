@@ -3,7 +3,7 @@ import json
 from pathlib import Path, PurePosixPath
 
 import pytest
-from harness.cross_harness_manifest import _input_hashes, build_manifest, load_json, render_markdown
+from harness.cross_harness_manifest import PILOT_TASKS, _input_hashes, build_manifest, load_json, render_markdown
 from harness.cross_harness_cli import main as execute_main
 from scripts.run_cross_harness_manifest import DEFAULT_CONTRACT, main as manifest_main
 
@@ -203,15 +203,13 @@ def test_typed_drive_payload_rejection_is_platform_neutral(tmp_path, monkeypatch
     with pytest.raises(ValueError, match="required input"): _input_hashes(tmp_path, [ref], False)
 
 
-@pytest.mark.parametrize(("task_id", "checker"), [("agt-001-index-fallback-integrity", "index_fallback_integrity/v1"), ("agt-003-codex-flywheel-shared-task", "shared_task_artifact/v1"),
-                                                       ("agt-009-receipts-vs-guardrails-friction", "paired_friction/v1"), ("agt-010-documentation-schematic-maintenance", "documentation_maintenance/v1")])
+@pytest.mark.parametrize(("task_id", "checker"), [("agt-001-index-fallback-integrity", "index_fallback_integrity/v1"), ("agt-003-codex-flywheel-shared-task", "shared_task_artifact/v1"), ("agt-003-shared-task-artifact-v2-diagnostic", "shared_task_artifact/v2"), ("agt-009-receipts-vs-guardrails-friction", "paired_friction/v1"), ("agt-010-documentation-schematic-maintenance", "documentation_maintenance/v1")])
 @pytest.mark.parametrize("ref", ["workspace://a", "external://a", "operator://a"])
 def test_canonical_pilots_reject_typed_inputs(tmp_path, task_id, checker, ref):
     task_set = _task_set(); task_set["tasks"][0].update(id=task_id, required_inputs=[ref], oracle={"checker_id": checker})
     with pytest.raises(ValueError, match="required input"):
         build_manifest(task_set, _contract(), task_set_path=str(tmp_path / "benchmarks" / "tasks.json"))
-@pytest.mark.parametrize(("task_id", "checker"), [("renamed", "index_fallback_integrity/v1"),
-                                                     ("agt-001-index-fallback-integrity", "shared_task_artifact/v1")])
+@pytest.mark.parametrize(("task_id", "checker"), [("renamed", "index_fallback_integrity/v1"), ("agt-001-index-fallback-integrity", "shared_task_artifact/v1"), ("agt-003-shared-task-artifact-v2-diagnostic", "shared_task_artifact/v1")])
 def test_registered_checker_and_canonical_task_id_must_pair(tmp_path, task_id, checker):
     task_set = _task_set(); task_set["tasks"][0].update(id=task_id, oracle={"checker_id": checker})
     with pytest.raises(ValueError, match="checker"):
@@ -223,17 +221,19 @@ def test_frozen_pilot_contract_is_public_clean_and_replayable():
     contract = json.loads(contract_path.read_text(encoding="utf-8"))
     manifest = build_manifest(task_set, contract, task_set_path=str(task_path), source_root=str(ROOT))
     rows = {row["task_id"]: row for row in manifest["task_rows"]}
+    shared = ("codex_flywheel_shared_task_scorecard.json", "codex_flywheel_shared_task_scorecard.md")
     expected = {
-        "agt-001-index-fallback-integrity": ("index_fallback_integrity_report.json", "index_fallback_integrity_report.md"),
-        "agt-003-codex-flywheel-shared-task": ("codex_flywheel_shared_task_scorecard.json", "codex_flywheel_shared_task_scorecard.md"),
-        "agt-009-receipts-vs-guardrails-friction": ("receipts_vs_guardrails_friction.json", "receipts_vs_guardrails_friction.md"),
-        "agt-010-documentation-schematic-maintenance": ("documentation_schematic_maintenance_receipt.json", "documentation_schematic_maintenance_receipt.md"),
+        "agt-001-index-fallback-integrity": (("index_fallback_integrity_report.json", "index_fallback_integrity_report.md"), "index_fallback_integrity/v1"),
+        "agt-003-codex-flywheel-shared-task": (shared, "shared_task_artifact/v1"), "agt-003-shared-task-artifact-v2-diagnostic": (shared, "shared_task_artifact/v2"),
+        "agt-009-receipts-vs-guardrails-friction": (("receipts_vs_guardrails_friction.json", "receipts_vs_guardrails_friction.md"), "paired_friction/v1"),
+        "agt-010-documentation-schematic-maintenance": (("documentation_schematic_maintenance_receipt.json", "documentation_schematic_maintenance_receipt.md"), "documentation_maintenance/v1"),
     }
-    for task_id, basenames in expected.items():
+    assert all(PILOT_TASKS[checker] == task_id for task_id, (_, checker) in expected.items())
+    for task_id, (basenames, checker) in expected.items():
         row = rows[task_id]
         assert tuple(row["expected_artifacts"]) == basenames
         assert row["input_sha256s"] and set(row["input_sha256s"]) == set(row["required_inputs"])
-        assert row["oracle"]["checker_id"].endswith("/v1")
+        assert row["oracle"]["checker_id"] == checker
         assert "Response envelope (JSON only):" in row["raw_prompt"]
     serialized = json.dumps([task_set, contract])
     assert not any(value in serialized for value in ("C:/", "E:/", "C:\\\\", "AppData", "cross_harness_runs"))
