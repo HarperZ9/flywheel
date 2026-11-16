@@ -1,0 +1,35 @@
+{
+  "organ": "superstack",
+  "invoke": {
+    "exact_call": "python packages/superstack/examples/run_all.py"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/superstack"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "superstack",
+    "family": "render",
+    "home": "superframe packages/superstack",
+    "accepts": [
+      "seed",
+      "code"
+    ],
+    "returns": "canonical bytes and seed rule for renderers and sound engines, vectors in JS, Python, C++",
+    "angle": "check",
+    "agent_entry": "command line",
+    "exact_call": "python packages/superstack/examples/run_all.py",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

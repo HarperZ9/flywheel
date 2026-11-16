@@ -1,0 +1,44 @@
+{
+  "organ": "gather.web",
+  "invoke": {
+    "exact_call": "gather web URL | gather extract URL_OR_HTML | gather crawl URL | gather docs ..."
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/gather"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "gather web, extract, crawl, markdown, docs",
+    "family": "web and documents",
+    "home": "flywheel packages/gather",
+    "accepts": [
+      "web",
+      "html"
+    ],
+    "returns": "readable items with a sealed digest and ledger",
+    "angle": "see; remember",
+    "agent_entry": "command line; MCP (gather_docs, gather_run)",
+    "exact_call": "gather web URL | gather extract URL_OR_HTML | gather crawl URL | gather docs ...",
+    "verified": "listed from code (network needs a launch grant)",
+    "cost": "seconds per page",
+    "run": {
+      "cli": [
+        "gather",
+        "web",
+        "{item}"
+      ],
+      "forms": [
+        "url"
+      ]
+    },
+    "match_ext": [],
+    "network": true,
+    "budget": {
+      "time_s": 60.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

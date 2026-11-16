@@ -1,0 +1,36 @@
+{
+  "organ": "cleanroom",
+  "invoke": {
+    "exact_call": "python -I -B -m cleanroom ingest|decompose|blend|report|gate|lineage|stats ..."
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/cleanroom"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "cleanroom",
+    "family": "check",
+    "home": "superframe packages/cleanroom",
+    "accepts": [
+      "image",
+      "file",
+      "folder"
+    ],
+    "returns": "internal-copy vault, decompose, blend, difference report, lineage, release gate",
+    "angle": "compare; decompose; check",
+    "agent_entry": "command line",
+    "exact_call": "python -I -B -m cleanroom ingest|decompose|blend|report|gate|lineage|stats ...",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "organ": "file_intelligence.triage",
+  "invoke": {
+    "exact_call": "mcp file_triage {\"filepath\": P}"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "MCP file-intelligence"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "file-intelligence",
+    "family": "code",
+    "home": "MCP file-intelligence",
+    "accepts": [
+      "file",
+      "folder"
+    ],
+    "returns": "type, size, entropy, md5 and sha256, encoding; entropy map; strings; hex dump; inventory",
+    "angle": "see; measure",
+    "agent_entry": "MCP tool",
+    "exact_call": "mcp file_triage {\"filepath\": P}",
+    "verified": "verified 2026-11-16 on the example PNG: entropy 7.92, sha256 10f8fba3...",
+    "cost": "ms",
+    "run": {
+      "mcp": "file-intelligence",
+      "tool": "file_triage",
+      "args": {
+        "filepath": "{item}"
+      },
+      "forms": [
+        "path"
+      ]
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 15.0,
+      "memory_mb": 512
+    },
+    "writes": []
+  }
+}

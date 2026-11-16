@@ -42,6 +42,7 @@ class Manifest:
     consumes: list = field(default_factory=list)  # list[Port]
     evidence: list = field(default_factory=list)  # file paths the manifest was grounded on
     source: str = ""                              # provenance: "builtin:registry" or the file path read
+    sense: dict = field(default_factory=dict)     # input kinds, run block, budget (plexus.sense/1)
 
     @staticmethod
     def from_dict(d: dict) -> "Manifest":
@@ -60,16 +61,20 @@ class Manifest:
         # string that validate() reports; from_dict never raises on malformed input.
         return Manifest(organ=d.get("organ", ""), invoke=d.get("invoke", {}),
                         emits=ports("emits"), consumes=ports("consumes"),
-                        evidence=list(d.get("evidence", [])))
+                        evidence=list(d.get("evidence", [])),
+                        sense=dict(d.get("sense") or {}))
 
     def to_dict(self) -> dict:
         def dump(ports):
             return [{"capability": p.capability, "title": p.title, "module": p.module,
                      "summary": p.summary, "consumable_as": list(p.consumable_as)}
                     for p in ports]
-        return {"organ": self.organ, "invoke": self.invoke,
-                "emits": dump(self.emits), "consumes": dump(self.consumes),
-                "evidence": self.evidence}
+        out = {"organ": self.organ, "invoke": self.invoke,
+               "emits": dump(self.emits), "consumes": dump(self.consumes),
+               "evidence": self.evidence}
+        if self.sense:          # only sense manifests carry it, so older hashes hold
+            out["sense"] = self.sense
+        return out
 
 
 def content_hash(m) -> str:

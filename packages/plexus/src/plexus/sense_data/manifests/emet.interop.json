@@ -1,0 +1,35 @@
+{
+  "organ": "emet",
+  "invoke": {
+    "exact_call": "python -m emet ..."
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/emet"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "emet",
+    "family": "check",
+    "home": "flywheel packages/emet",
+    "accepts": [
+      "file",
+      "claim"
+    ],
+    "returns": "byte-hash anchor, verify, coherence, corroborate, audit",
+    "angle": "check",
+    "agent_entry": "command line (not on PATH)",
+    "exact_call": "python -m emet ...",
+    "verified": "listed from code",
+    "cost": "ms",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

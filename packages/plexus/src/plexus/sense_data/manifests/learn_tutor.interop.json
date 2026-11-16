@@ -1,0 +1,35 @@
+{
+  "organ": "learn_tutor",
+  "invoke": {
+    "exact_call": "mcp learn_tutor_plan | learn_tutor_misconceptions"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/learn (MCP learn)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "learn tutor",
+    "family": "check",
+    "home": "flywheel packages/learn (MCP learn)",
+    "accepts": [
+      "claim",
+      "prose"
+    ],
+    "returns": "study plans, mastery, misconceptions, proof lessons, schedules",
+    "angle": "remember; check",
+    "agent_entry": "MCP tool",
+    "exact_call": "mcp learn_tutor_plan | learn_tutor_misconceptions",
+    "verified": "listed from code",
+    "cost": "ms",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

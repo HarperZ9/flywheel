@@ -1,0 +1,35 @@
+{
+  "organ": "forum",
+  "invoke": {
+    "exact_call": "mcp forum_route | verify | forum_prose_contract"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/forum (MCP forum)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "forum",
+    "family": "check",
+    "home": "flywheel packages/forum (MCP forum)",
+    "accepts": [
+      "claim",
+      "prose"
+    ],
+    "returns": "rooms, gates, ledgers, verification of submitted work; prose contract and humanize",
+    "angle": "check",
+    "agent_entry": "MCP tool; command line",
+    "exact_call": "mcp forum_route | verify | forum_prose_contract",
+    "verified": "listed from code",
+    "cost": "ms",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

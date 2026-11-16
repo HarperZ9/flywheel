@@ -1,0 +1,34 @@
+{
+  "organ": "ear_identity",
+  "invoke": {
+    "exact_call": "node packages/ear/tools/identity.mjs report NOTES_DIR"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/ear"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "ear identity",
+    "family": "audio",
+    "home": "superframe packages/ear",
+    "accepts": [
+      "audio"
+    ],
+    "returns": "instrument identity against measured reference notes; confusion tables",
+    "angle": "hear; compare",
+    "agent_entry": "command line",
+    "exact_call": "node packages/ear/tools/identity.mjs report NOTES_DIR",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

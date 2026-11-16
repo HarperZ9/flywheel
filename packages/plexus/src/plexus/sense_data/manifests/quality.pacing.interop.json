@@ -1,0 +1,48 @@
+{
+  "organ": "quality.pacing",
+  "invoke": {
+    "exact_call": "cd packages/quality && python -m quality.pacing video CLIP.mp4   |   json RECORD.json"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/quality"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "quality.pacing",
+    "family": "video",
+    "home": "superframe packages/quality",
+    "accepts": [
+      "video",
+      "series"
+    ],
+    "returns": "frame-pacing report: duplicate and dropped frames, cadence",
+    "angle": "measure",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/quality && python -m quality.pacing video CLIP.mp4   |   json RECORD.json",
+    "verified": "listed from code",
+    "cost": "seconds per minute of video",
+    "run": {
+      "cli": [
+        "{python}",
+        "-m",
+        "quality.pacing",
+        "video",
+        "{item}"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe",
+      "cwd": "packages/quality"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 120.0,
+      "memory_mb": 2048
+    },
+    "writes": []
+  }
+}

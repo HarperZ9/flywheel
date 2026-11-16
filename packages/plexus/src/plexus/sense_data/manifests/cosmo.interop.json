@@ -1,0 +1,35 @@
+{
+  "organ": "cosmo",
+  "invoke": {
+    "exact_call": "python packages/cosmo/study/run_pk.py --n 128 --box 256 --backend numpy"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/cosmo"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "cosmo",
+    "family": "simulate",
+    "home": "superframe packages/cosmo",
+    "accepts": [
+      "law",
+      "seed"
+    ],
+    "returns": "particle-mesh N-body with Zel'dovich ICs, power spectrum against CAMB and halofit",
+    "angle": "simulate",
+    "agent_entry": "command line",
+    "exact_call": "python packages/cosmo/study/run_pk.py --n 128 --box 256 --backend numpy",
+    "verified": "listed from code",
+    "cost": "minutes, GPU optional",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

@@ -1,0 +1,45 @@
+{
+  "organ": "gather.arxiv",
+  "invoke": {
+    "exact_call": "gather arxiv ID | gather cite-check FILE"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/gather"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "gather arxiv, cite-check",
+    "family": "web and documents",
+    "home": "flywheel packages/gather",
+    "accepts": [
+      "paper",
+      "claim"
+    ],
+    "returns": "arXiv records; citation check of a draft against sources",
+    "angle": "see; check",
+    "agent_entry": "MCP gather_arxiv; command line",
+    "exact_call": "gather arxiv ID | gather cite-check FILE",
+    "verified": "listed from code",
+    "cost": "seconds",
+    "run": {
+      "cli": [
+        "gather",
+        "arxiv",
+        "{item}"
+      ],
+      "forms": [
+        "url",
+        "literal"
+      ]
+    },
+    "match_ext": [],
+    "network": true,
+    "budget": {
+      "time_s": 60.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

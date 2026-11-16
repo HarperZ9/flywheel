@@ -72,9 +72,18 @@ VENDORED = 'server/src/'
 SYNC_COMMAND = 'python scripts/build_client_package.py --sync-vendored'
 
 
+# The read-only server never imports these: `runner/` starts programs (fanout),
+# and SENSES.tsv is the source the sense manifests are generated from.
+NOT_VENDORED = ('runner/',)
+NOT_VENDORED_SUFFIXES = ('.tsv',)
+SOURCE_EXTENSIONS = frozenset({'.py', '.md', '.json', '.tsv'})
+
+
 def vendored():
     """The server code the source ZIP carries under server/src/, keyed by its path there."""
-    return {f'{TOOL}/{name}': data for name, data in entries(ROOT / 'src' / TOOL).items()}
+    found = entries(ROOT / 'src' / TOOL, SOURCE_EXTENSIONS)
+    return {f'{TOOL}/{name}': data for name, data in found.items()
+            if not name.startswith(NOT_VENDORED) and not name.endswith(NOT_VENDORED_SUFFIXES)}
 
 
 def client_entries():
@@ -164,7 +173,7 @@ def build(output, native=False, mode='dev'):
     if output.exists():
         raise FileExistsError('output must be a new directory')
     files = client_entries()
-    source = entries(ROOT / 'src' / TOOL)
+    source = entries(ROOT / 'src' / TOOL, SOURCE_EXTENSIONS)
     inputs = {f'src/{TOOL}/{name}': data for name, data in source.items()}
     inputs.update({f'client-plugin/{name}': data for name, data in files.items()})
     inputs.update({f'scripts/{name}': data for name, data in entries(ROOT / 'scripts', extensions={'.py', '.ps1', '.sh'}).items()})

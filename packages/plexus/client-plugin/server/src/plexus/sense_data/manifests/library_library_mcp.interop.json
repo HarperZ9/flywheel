@@ -1,0 +1,36 @@
+{
+  "organ": "library_library_mcp",
+  "invoke": {
+    "exact_call": "mcp library_query {\"text\": WORDS}; python -I packages/library/library.py COMMAND"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/library; MCP server library"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "library (superframe) / library MCP",
+    "family": "memory",
+    "home": "superframe packages/library; MCP server library",
+    "accepts": [
+      "file",
+      "folder",
+      "table"
+    ],
+    "returns": "SQLite catalogue of artifacts with path, kind, project, sha256; query by words",
+    "angle": "remember",
+    "agent_entry": "MCP tool; command line",
+    "exact_call": "mcp library_query {\"text\": WORDS}; python -I packages/library/library.py COMMAND",
+    "verified": "verified 2026-11-16: query for the example image returned 0 rows (the download folder not catalogued)",
+    "cost": "ms",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

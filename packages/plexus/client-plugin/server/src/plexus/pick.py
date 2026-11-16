@@ -40,6 +40,10 @@ def tool_document(manifest) -> list[str]:
     parts = [manifest.organ.replace("-", " ")]
     for port in list(manifest.emits) + list(manifest.consumes):
         parts.extend([port.title, port.summary, port.capability])
+    sense = getattr(manifest, "sense", None) or {}
+    if sense:                     # a sense manifest: what it takes and what it returns
+        parts.extend([sense.get("tool", ""), sense.get("family", ""), sense.get("returns", ""),
+                      sense.get("angle", ""), " ".join(sense.get("accepts", []))])
     return terms(" ".join(parts))
 
 

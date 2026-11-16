@@ -1,0 +1,36 @@
+{
+  "organ": "formula_registry",
+  "invoke": {
+    "exact_call": "cd packages && python -m kernels.formulas.check [--require-native]"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/kernels/formulas"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "formula registry (9 formulas: f-number, Airy radius, Beverloo, sRGB transfer, XYZ to Lab, Wilson, Benjamini-Hochberg, Spearman, AUROC)",
+    "family": "formula",
+    "home": "superframe packages/kernels/formulas",
+    "accepts": [
+      "formula",
+      "series",
+      "table"
+    ],
+    "returns": "reference value with checks and caught planted errors",
+    "angle": "check; measure",
+    "agent_entry": "command line",
+    "exact_call": "cd packages && python -m kernels.formulas.check [--require-native]",
+    "verified": "verified 2026-11-16: 9/9 PASS reference, 0/9 BuildLang compiled",
+    "cost": "3.5 s",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

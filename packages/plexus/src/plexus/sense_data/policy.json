@@ -1,0 +1,72 @@
+{
+  "schema": "plexus.senses-policy/1",
+  "about": "What fanout may run. Read by plexus.policy before any tool starts; a tool that breaks a rule is refused and the refusal is written to the bundle.",
+  "defaults": {
+    "time_s": 20,
+    "memory_mb": 1024
+  },
+  "ceiling": {
+    "time_s": 300,
+    "memory_mb": 4096
+  },
+  "network": {
+    "default": false,
+    "rule": "A tool may use the network only when its manifest declares network true AND the call grants that tool by id."
+  },
+  "kinds": {
+    "allowed": [
+      "file",
+      "web",
+      "html",
+      "post",
+      "feed",
+      "paper",
+      "pdf",
+      "archive",
+      "folder",
+      "image",
+      "vector",
+      "video",
+      "audio",
+      "voice",
+      "music",
+      "series",
+      "table",
+      "spectrum",
+      "field",
+      "colour",
+      "geometry",
+      "model3d",
+      "lens",
+      "circuit",
+      "material",
+      "code",
+      "repo",
+      "prose",
+      "symbols",
+      "claim",
+      "memory",
+      "formula",
+      "law",
+      "seed"
+    ],
+    "need_grant": {
+      "screen": "reads what is on the display; only on a request that grants it"
+    }
+  },
+  "refuse_tools": {
+    "chorus": "sends the item to several hosted models; costs money and leaves the machine",
+    "sovereign_router_route_request": "reports confidence 1 on wrong routes; not a sense until calibrated"
+  },
+  "read_paths": [
+    "{item}",
+    "{root}",
+    "{out}"
+  ],
+  "write_paths": [
+    "{out}"
+  ],
+  "outputs": {
+    "max_stdout_mb": 64
+  }
+}

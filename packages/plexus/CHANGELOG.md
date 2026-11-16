@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+- New `plexus fanout ITEM`: reads the item's input kinds, runs every tool whose manifest accepts one of them under a time and memory budget, and writes one bundle with every tool's output, time, peak memory, status and error, plus a receipt that `plexus fanout-verify` re-checks. Failed, refused and unreachable tools are rows with their reason. Details: `docs/SENSES.md`.
+- New `plexus kinds ITEM`: 35 input kinds read from file signatures, extensions, text, URL shape and literal form, with the evidence for each and `unknown` when nothing fits.
+- New sense catalogue: `src/plexus/sense_data/SENSES.tsv` (95 tools) and 67 manifests generated from it by `scripts/gen_senses.py`; a test fails when they differ.
+- New run policy as data: `src/plexus/sense_data/policy.json` (network off unless the manifest declares it and the call grants it, kinds that need a grant, a refuse list, budget ceilings, readable and writable paths). Enforced in `plexus.policy` before launch and by Job Objects or `RLIMIT_AS` while running.
+- MCP: `plexus_pick`, `plexus_kinds` and `plexus_senses` on the read-only server; `plexus mcp --run` adds `plexus_fanout`. The plugin's vendored copy leaves out `plexus.runner`, the only code that starts programs.
+- `plexus pick --senses` also ranks the sense manifests; the 0.23 threshold was calibrated without them.
+
 ## 0.4.0, 2026-10-03
 
 - New `plexus pick "REQUEST"` picks a tool for a plain-language request from what each manifest emits and consumes, with a probability for every tool, and abstains when no tool matches or the top probability is under `--threshold`. On a 51-request held-out set it picked the right tool 57% of the time, abstained on 10%, and abstained requests carried 2.7 times the error of picked ones. Details and the bar set before the run: `docs/PICK.md`.

@@ -1,0 +1,46 @@
+{
+  "organ": "quality.edges",
+  "invoke": {
+    "exact_call": "cd packages/quality && python -m quality.edges IMAGE"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/quality"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "quality.edges",
+    "family": "picture",
+    "home": "superframe packages/quality",
+    "accepts": [
+      "image"
+    ],
+    "returns": "edge count, width p50/p90, anti-aliased share, stair share",
+    "angle": "measure",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/quality && python -m quality.edges IMAGE",
+    "verified": "verified 2026-11-16: 1086 edges, aa_share 0.826",
+    "cost": "1 s",
+    "run": {
+      "cli": [
+        "{python}",
+        "-m",
+        "quality.edges",
+        "{item}"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe",
+      "cwd": "packages/quality"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 20.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

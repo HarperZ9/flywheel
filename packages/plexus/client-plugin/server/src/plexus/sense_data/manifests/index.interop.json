@@ -1,0 +1,36 @@
+{
+  "organ": "index",
+  "invoke": {
+    "exact_call": "mcp index_map | index_symbol-definition | index_context; index graph ROOT"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/index (MCP index, CLI index)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "index (graph, map, symbols, context, verify, wiki)",
+    "family": "code",
+    "home": "flywheel packages/index (MCP index, CLI index)",
+    "accepts": [
+      "code",
+      "repo",
+      "folder"
+    ],
+    "returns": "code graph, symbol definitions and references, focus slices, context envelope, wiki pack, verification record",
+    "angle": "decompose; remember",
+    "agent_entry": "MCP tool; command line",
+    "exact_call": "mcp index_map | index_symbol-definition | index_context; index graph ROOT",
+    "verified": "verified 2026-11-16 (index_router on the output folder; map empty for a non-repo folder)",
+    "cost": "seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

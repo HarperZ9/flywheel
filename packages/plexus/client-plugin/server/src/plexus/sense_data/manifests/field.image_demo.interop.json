@@ -1,0 +1,52 @@
+{
+  "organ": "field.image_demo",
+  "invoke": {
+    "exact_call": "FIELD_DEMO_IMAGE=PATH node -e \"require('./packages/field/demos/image.js').run()\""
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/field/demos/image.js"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "field image demo (image to spectrum)",
+    "family": "picture",
+    "home": "superframe packages/field/demos/image.js",
+    "accepts": [
+      "image",
+      "field"
+    ],
+    "returns": "luma, padding and 2D DFT chain with bits lost per step and a round-trip check; compression ratios",
+    "angle": "translate; measure",
+    "agent_entry": "node require with FIELD_DEMO_IMAGE",
+    "exact_call": "FIELD_DEMO_IMAGE=PATH node -e \"require('./packages/field/demos/image.js').run()\"",
+    "verified": "verified 2026-11-16: 0.9 s; luma loses 3.0 bits per pixel; DFT round trip 4e-13",
+    "cost": "1 s",
+    "run": {
+      "cli": [
+        "{node}",
+        "-e",
+        "require('./packages/field/demos/image.js').run().then(r=>{delete r.field;console.log(JSON.stringify(r))})"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe",
+      "env": {
+        "FIELD_DEMO_IMAGE": "{item}"
+      }
+    },
+    "match_ext": [
+      ".png",
+      ".jpg",
+      ".jpeg"
+    ],
+    "network": false,
+    "budget": {
+      "time_s": 30.0,
+      "memory_mb": 2048
+    },
+    "writes": []
+  }
+}

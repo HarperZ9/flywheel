@@ -1,0 +1,35 @@
+{
+  "organ": "kernels",
+  "invoke": {
+    "exact_call": "python packages/kernels/kernels.py check | bench | pipeline | list | formulas"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/kernels"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "kernels",
+    "family": "formula",
+    "home": "superframe packages/kernels",
+    "accepts": [
+      "field",
+      "series"
+    ],
+    "returns": "CPU and CUDA kernel equivalence, planted bad kernels, receipts",
+    "angle": "check",
+    "agent_entry": "command line",
+    "exact_call": "python packages/kernels/kernels.py check | bench | pipeline | list | formulas",
+    "verified": "listed from code",
+    "cost": "minutes (GPU optional)",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

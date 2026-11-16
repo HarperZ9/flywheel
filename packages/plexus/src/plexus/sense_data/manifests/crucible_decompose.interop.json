@@ -1,0 +1,35 @@
+{
+  "organ": "crucible_decompose",
+  "invoke": {
+    "exact_call": "crucible decompose FILE | crucible steelman ... | crucible pairwise ..."
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/crucible"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "crucible decompose, steelman, pairwise, recheck, drift, measurement-gate",
+    "family": "check",
+    "home": "flywheel packages/crucible",
+    "accepts": [
+      "claim",
+      "prose"
+    ],
+    "returns": "claims split out of text, steelman, pairwise comparison, rechecks, drift",
+    "angle": "decompose; compare; check",
+    "agent_entry": "command line; MCP (crucible_recheck, crucible_drift, crucible_measurement_gate)",
+    "exact_call": "crucible decompose FILE | crucible steelman ... | crucible pairwise ...",
+    "verified": "listed from code",
+    "cost": "ms to seconds",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

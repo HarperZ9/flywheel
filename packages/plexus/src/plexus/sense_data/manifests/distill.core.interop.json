@@ -1,0 +1,51 @@
+{
+  "organ": "distill.core",
+  "invoke": {
+    "exact_call": "node -e \"import('./world/site/distill/core.mjs').then(async m=>console.log(JSON.stringify(await m.distill(new Uint8Array(require('fs').readFileSync(PATH)),'name'))))\""
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "portfolio-site world/site/distill/core.mjs"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "Distill core.distill",
+    "family": "picture",
+    "home": "portfolio-site world/site/distill/core.mjs",
+    "accepts": [
+      "file",
+      "image",
+      "archive",
+      "audio",
+      "video",
+      "prose",
+      "pdf"
+    ],
+    "returns": "byte-level parts tree that adds up to the file, sha256, format facts, entropy map, coverage, notes for damaged input",
+    "angle": "decompose",
+    "agent_entry": "node import",
+    "exact_call": "node -e \"import('./world/site/distill/core.mjs').then(async m=>console.log(JSON.stringify(await m.distill(new Uint8Array(require('fs').readFileSync(PATH)),'name'))))\"",
+    "verified": "verified 2026-11-16: PNG in 15 ms, 5 parts, coverage 1.0, entropy 7.99",
+    "cost": "tens of ms",
+    "run": {
+      "cli": [
+        "{node}",
+        "-e",
+        "const fs=require('fs'),path=require('path');import('./world/site/distill/core.mjs').then(async m=>{const p=process.argv[1];const r=await m.distill(new Uint8Array(fs.readFileSync(p)),path.basename(p));console.log(JSON.stringify(r,(k,v)=>v instanceof Uint8Array?{bytes:v.length}:v))})",
+        "{item}"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "portfolio-site"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 20.0,
+      "memory_mb": 2048
+    },
+    "writes": []
+  }
+}

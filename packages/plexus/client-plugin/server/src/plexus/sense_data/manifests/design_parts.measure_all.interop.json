@@ -1,0 +1,45 @@
+{
+  "organ": "design_parts.measure_all",
+  "invoke": {
+    "exact_call": "python -c \"import sys; sys.path.insert(0,'packages/decompose/design_parts'); from design_parts.imageio import open_image,to_array; from design_parts.extract import measure_all; print(measure_all(to_array(open_image(PATH)))[0])\""
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/decompose/design_parts"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "design_parts.measure_all",
+    "family": "picture",
+    "home": "superframe packages/decompose/design_parts",
+    "accepts": [
+      "image"
+    ],
+    "returns": "74 features in 7 families: palette, hue harmony, value, primitives, symmetry, grid, proportion, focal point, rhythm, vanishing points, figure-ground",
+    "angle": "decompose; measure",
+    "agent_entry": "python import",
+    "exact_call": "python -c \"import sys; sys.path.insert(0,'packages/decompose/design_parts'); from design_parts.imageio import open_image,to_array; from design_parts.extract import measure_all; print(measure_all(to_array(open_image(PATH)))[0])\"",
+    "verified": "verified 2026-11-16 on the example image: 74 features in 4.4 s; rot_order 1 on a line drawing (see GAPS)",
+    "cost": "4 s, CPU",
+    "run": {
+      "cli": [
+        "{python}",
+        "-c",
+        "import sys,json; sys.path.insert(0,'packages/decompose/design_parts'); from design_parts.imageio import open_image,to_array; from design_parts.extract import measure_all; print(json.dumps(measure_all(to_array(open_image(sys.argv[1])))[0], default=float))",
+        "{item}"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 30.0,
+      "memory_mb": 2048
+    },
+    "writes": []
+  }
+}

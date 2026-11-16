@@ -1,0 +1,45 @@
+{
+  "organ": "gather.ocr",
+  "invoke": {
+    "exact_call": "gather ocr PATH [--lang eng] --json"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/gather"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "gather ocr",
+    "family": "picture",
+    "home": "flywheel packages/gather",
+    "accepts": [
+      "image",
+      "pdf"
+    ],
+    "returns": "text in a picture as an item",
+    "angle": "see",
+    "agent_entry": "command line",
+    "exact_call": "gather ocr PATH [--lang eng] --json",
+    "verified": "broken here 2026-11-16: tesseract not on PATH; no OCR engine found in PATH, Program Files, Python or local virtual environments",
+    "cost": "n/a",
+    "run": {
+      "cli": [
+        "gather",
+        "ocr",
+        "{item}",
+        "--json"
+      ],
+      "forms": [
+        "path"
+      ]
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 30.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

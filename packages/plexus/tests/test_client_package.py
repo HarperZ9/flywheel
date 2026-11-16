@@ -214,6 +214,8 @@ print(__import__('json').dumps({'reads': sorted(seen), 'answers': answers.count(
 def test_traced_environment_reads_are_the_disclosed_python_reads(packaged, tmp_path):
     calls = [('plexus_discover', {}), ('plexus_wiring', {}), ('plexus_plan', {'goal': 'crucible'}),
              ('plexus_route', {'source': 'gather', 'target': 'crucible'}),
+             ('plexus_pick', {'request': 'recall my stored notes'}),
+             ('plexus_kinds', {'item': '#b46f00'}), ('plexus_senses', {'item': 'requests.jsonl'}),
              ('plexus.status', {}), ('plexus.doctor', {})]
     rows = [request(1, 'initialize'), request(2, 'tools/list')]
     rows += [request(3 + i, 'tools/call', name=n, arguments=a) for i, (n, a) in enumerate(calls)]
@@ -281,7 +283,8 @@ def test_plugin_folder_alone_launches_with_the_claude_command(tmp_path):
     rows = [json.loads(line) for line in p.stdout.splitlines()]
     assert rows[0]['result']['serverInfo']['name'] == TOOL
     assert {t['name'] for t in rows[1]['result']['tools']} == {
-        'plexus_discover', 'plexus_wiring', 'plexus_plan', 'plexus_route', 'plexus.status', 'plexus.doctor'}
+        'plexus_discover', 'plexus_wiring', 'plexus_plan', 'plexus_route', 'plexus_pick',
+        'plexus_kinds', 'plexus_senses', 'plexus.status', 'plexus.doctor'}
     shutil.rmtree(plugin / 'server' / 'src')
     p = isolated_launch(plugin, tmp_path, [request(1, 'tools/list')])
     assert p.returncode == 1 and not p.stdout

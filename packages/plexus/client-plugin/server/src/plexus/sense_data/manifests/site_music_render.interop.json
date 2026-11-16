@@ -1,0 +1,35 @@
+{
+  "organ": "site_music_render",
+  "invoke": {
+    "exact_call": "node system/site-music/tools/render.mjs --out DIR [--piece ID] [--seed N]"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/site-music; portfolio-site system/site-music"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "site-music render, fit, segcheck",
+    "family": "audio",
+    "home": "superframe packages/site-music; portfolio-site system/site-music",
+    "accepts": [
+      "seed",
+      "music"
+    ],
+    "returns": "five pieces composed bar by bar, rendered to -14 LUFS; fits voices to measured instruments",
+    "angle": "render",
+    "agent_entry": "command line",
+    "exact_call": "node system/site-music/tools/render.mjs --out DIR [--piece ID] [--seed N]",
+    "verified": "listed from code",
+    "cost": "minutes",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "organ": "quality.banding",
+  "invoke": {
+    "exact_call": "cd packages/quality && python -m quality.banding IMAGE --json"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/quality"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "quality.banding",
+    "family": "picture",
+    "home": "superframe packages/quality",
+    "accepts": [
+      "image"
+    ],
+    "returns": "smooth tiles, banded share, worst band width, pass",
+    "angle": "check",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/quality && python -m quality.banding IMAGE --json",
+    "verified": "verified 2026-11-16: pass, 0 banded tiles",
+    "cost": "1 s",
+    "run": {
+      "cli": [
+        "{python}",
+        "-m",
+        "quality.banding",
+        "{item}",
+        "--json"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe",
+      "cwd": "packages/quality"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 20.0,
+      "memory_mb": 1024
+    },
+    "writes": []
+  }
+}

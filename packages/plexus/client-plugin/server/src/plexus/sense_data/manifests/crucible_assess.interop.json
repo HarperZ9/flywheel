@@ -1,0 +1,36 @@
+{
+  "organ": "crucible_assess",
+  "invoke": {
+    "exact_call": "mcp crucible_assess {\"thesis\": T.json, \"measurements\": M.json}; crucible assess ..."
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "flywheel packages/crucible (installed)"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "crucible assess",
+    "family": "check",
+    "home": "flywheel packages/crucible (installed)",
+    "accepts": [
+      "claim",
+      "series",
+      "table"
+    ],
+    "returns": "sealed verdicts MATCH, DRIFT or UNVERIFIABLE with margins and what evidence is missing",
+    "angle": "check",
+    "agent_entry": "MCP tool; command line",
+    "exact_call": "mcp crucible_assess {\"thesis\": T.json, \"measurements\": M.json}; crucible assess ...",
+    "verified": "verified 2026-11-16 on three claims from the example: 1 MATCH, 1 DRIFT, 1 UNVERIFIABLE",
+    "cost": "ms",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

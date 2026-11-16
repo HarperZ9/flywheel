@@ -1,0 +1,35 @@
+{
+  "organ": "calibrate_pro",
+  "invoke": {
+    "exact_call": "mcp calibrate-pro_panel-info"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "calibrate-pro MCP"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "calibrate-pro",
+    "family": "colour",
+    "home": "calibrate-pro MCP",
+    "accepts": [
+      "colour",
+      "screen"
+    ],
+    "returns": "panel info, targets, calibration status",
+    "angle": "measure",
+    "agent_entry": "MCP tool",
+    "exact_call": "mcp calibrate-pro_panel-info",
+    "verified": "listed from code",
+    "cost": "ms",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

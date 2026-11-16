@@ -1,0 +1,47 @@
+{
+  "organ": "remastering.condition",
+  "invoke": {
+    "exact_call": "cd packages/remastering && python -m remastering condition FILE"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/remastering"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "remastering condition",
+    "family": "audio",
+    "home": "superframe packages/remastering",
+    "accepts": [
+      "audio"
+    ],
+    "returns": "decode report: cutoff, lossy signature, resampling, clipping, holes, dropouts, clicks per minute",
+    "angle": "hear; measure",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/remastering && python -m remastering condition FILE",
+    "verified": "verified 2026-11-16 on Alarm01.wav: 10 s; no lossy signature; 388 clicks per minute read from the alarm's own transients",
+    "cost": "10 s",
+    "run": {
+      "cli": [
+        "{python}",
+        "-m",
+        "remastering",
+        "condition",
+        "{item}"
+      ],
+      "forms": [
+        "path"
+      ],
+      "root": "superframe",
+      "cwd": "packages/remastering"
+    },
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 60.0,
+      "memory_mb": 2048
+    },
+    "writes": []
+  }
+}

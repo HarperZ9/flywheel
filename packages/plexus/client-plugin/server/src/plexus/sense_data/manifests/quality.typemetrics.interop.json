@@ -1,0 +1,35 @@
+{
+  "organ": "quality.typemetrics",
+  "invoke": {
+    "exact_call": "cd packages/quality && python -m quality.typemetrics RECORD.json"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/quality"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "quality.typemetrics",
+    "family": "prose",
+    "home": "superframe packages/quality",
+    "accepts": [
+      "prose",
+      "table"
+    ],
+    "returns": "type rules: measure, leading, contrast from a type record",
+    "angle": "check",
+    "agent_entry": "command line",
+    "exact_call": "cd packages/quality && python -m quality.typemetrics RECORD.json",
+    "verified": "listed from code",
+    "cost": "1 s",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}

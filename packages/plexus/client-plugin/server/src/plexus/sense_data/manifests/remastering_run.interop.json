@@ -1,0 +1,34 @@
+{
+  "organ": "remastering_run",
+  "invoke": {
+    "exact_call": "python -m remastering run FILE --slug S [--preset streaming|dynamic|archival] | loudness FILE | diff SLUG A B"
+  },
+  "emits": [],
+  "consumes": [],
+  "evidence": [
+    "superframe packages/remastering"
+  ],
+  "sense": {
+    "schema": "plexus.sense/1",
+    "tool": "remastering run, loudness, diff",
+    "family": "audio",
+    "home": "superframe packages/remastering",
+    "accepts": [
+      "audio"
+    ],
+    "returns": "stems, restoration, resynthesis, mastering with a receipt per stage and an origin map",
+    "angle": "decompose; render",
+    "agent_entry": "command line",
+    "exact_call": "python -m remastering run FILE --slug S [--preset streaming|dynamic|archival] | loudness FILE | diff SLUG A B",
+    "verified": "listed from code",
+    "cost": "minutes",
+    "run": null,
+    "match_ext": [],
+    "network": false,
+    "budget": {
+      "time_s": 0.0,
+      "memory_mb": 0
+    },
+    "writes": []
+  }
+}
