@@ -235,6 +235,35 @@ void _codeGuardWidgetTests() {
     ).load(workspaceRef: ref);
     expect(stored.single.draft.text, 'new dirty text');
   });
+
+  testWidgets('accepted app exit stops an owned gateway before native teardown',
+      (tester) async {
+    final dir = Directory.systemTemp.createTempSync('gateway-exit-stop-');
+    addTearDown(() => dir.deleteSync(recursive: true));
+    var choice = CloseChoice.cancel;
+    final harness = ShellHarness(dir, closePrompt: (_) async => choice)
+      ..replyReady();
+    await tester.pumpWidget(harness.app());
+    await tester.pumpAndSettle();
+    _prepareShellCode(harness);
+    harness.process.owned = true;
+
+    expect(
+      await WidgetsBinding.instance.handleRequestAppExit(),
+      AppExitResponse.cancel,
+    );
+    expect(harness.process.ownedStops, 0);
+    expect(harness.process.owned, isTrue);
+
+    choice = CloseChoice.discard;
+    expect(
+      await WidgetsBinding.instance.handleRequestAppExit(),
+      AppExitResponse.exit,
+    );
+    expect(harness.process.ownedStops, 1);
+    expect(harness.process.owned, isFalse);
+    await unmount(tester);
+  });
 }
 
 Future<ShellHarness> _recoveryHarness(CodeRecoveryKind kind) async {
