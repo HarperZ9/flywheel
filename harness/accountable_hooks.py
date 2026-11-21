@@ -30,6 +30,12 @@ EVENTS = frozenset((
     "hook.registered",
     "lesson.admitted",
     "pack.admitted",
+    "session.start",
+    "prompt.submit",
+    "pre.tool_use",
+    "post.tool_use",
+    "pre.compact",
+    "session.stop",
 ))
 
 _SECRET_FRAGMENTS = ("api_key", "apikey", "token", "secret", "password",

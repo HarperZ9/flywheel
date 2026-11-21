@@ -161,6 +161,9 @@ EXEMPTIONS = (
     Exemption("home", ".custody-label-v1", f"marks the custody tree as labeled; {_NO_TRACE}"),
     Exemption("home", "owner.ref", f"owner identity; {_NO_TRACE}"),
     Exemption("home", "lanes.json", f"lane install registry; {_NO_TRACE}"),
+    Exemption("home", "policy.json", f"operator pre-tool policy rules; {_NO_TRACE}"),
+    Exemption("home", "instructions.md", f"operator global instructions; {_NO_TRACE}"),
+    Exemption("home", "settings.json", f"operator app settings and delegation profile; {_NO_TRACE}"),
     Exemption("home", "node_path", f"the node.exe chosen for the Node lanes, a local path "
               f"and its sha256; {_NO_TRACE}"),
     Exemption("home", "plugins.json", f"plugin configuration; {_NO_TRACE}"),

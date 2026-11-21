@@ -113,8 +113,7 @@ class _ShellRailState extends State<ShellRail> {
                     destinations: entry.value,
                     selected: widget.selected,
                     collapsed: widget.collapsed,
-                    foldable: !searching &&
-                        (widget.inDrawer || entry.key == advancedLabel),
+                    foldable: !searching,
                     initiallyFolded: !searching && entry.key == advancedLabel,
                     onSelect: widget.onGo,
                   ),
