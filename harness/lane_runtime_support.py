@@ -33,6 +33,9 @@ def resolve_repo(source_repo: str, repo: Path, environ: Mapping[str, str]) -> Pa
     explicit = environ.get("FLYWHEEL_WORKSPACE_ROOT", "").strip()
     if explicit:
         candidates.append(Path(explicit).expanduser() / source)
+    candidates.append(repo / source)
+    if source.name and source.name not in (".", ".."):
+        candidates.append(repo / "packages" / source.name)
     candidates.append(repo.parent / source)
     if source.parts and repo.parent.name == source.parts[0]:
         candidates.append(repo.parent.joinpath(*source.parts[1:]))

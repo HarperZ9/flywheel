@@ -66,6 +66,10 @@ class ToolGate:
                 return "exec disabled (pass --allow-exec)"
             if _DENY.search(args.get("cmd", "")):
                 return "command blocked by denylist"
+        from .native_policy import check_tool_call
+        hit = check_tool_call(name, args)
+        if hit is not None:
+            return f"policy [{hit['rule']}]: {hit['reason']}"
         return None
 
 
