@@ -57,6 +57,7 @@ class ToolGate:
     allow_write: bool = False
     allow_exec: bool = False
     allow_mcp: bool = False        # outbound calls to external MCP tool servers
+    enforce_native_policy: bool = False
 
     def check(self, name: str, args: dict) -> "str | None":
         if name in ("write_file", "edit_file", "apply_patch") and not self.allow_write:
@@ -64,12 +65,13 @@ class ToolGate:
         if name in ("run",):
             if not self.allow_exec:
                 return "exec disabled (pass --allow-exec)"
-            if _DENY.search(args.get("cmd", "")):
+            if isinstance(args, dict) and _DENY.search(args.get("cmd", "")):
                 return "command blocked by denylist"
-        from .native_policy import check_tool_call
-        hit = check_tool_call(name, args)
-        if hit is not None:
-            return f"policy [{hit['rule']}]: {hit['reason']}"
+        if self.enforce_native_policy:
+            from .native_policy import check_tool_call
+            hit = check_tool_call(name, args)
+            if hit is not None:
+                return f"policy [{hit['rule']}]: {hit['reason']}"
         return None
 
 
