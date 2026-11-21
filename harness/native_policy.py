@@ -190,6 +190,8 @@ def check_tool_call(
     """Return a block dict if the tool call violates policy, else None."""
     if os.environ.get("FLYWHEEL_POLICY_OFF") == "1" or os.environ.get("POLICY_GUARD_OFF") == "1":
         return None
+    if not isinstance(args, dict):
+        return None
     active = policy if policy is not None else load_policy(workspace=workspace)
     hit = _check_paths(name, args, active)
     if hit is not None:

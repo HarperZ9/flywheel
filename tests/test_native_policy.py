@@ -64,10 +64,11 @@ def test_loads_custom_user_and_workspace_policy(tmp_path):
 
 
 def test_tool_gate_enforces_native_policy():
-    gate = ToolGate(allow_write=True, allow_exec=True)
+    gate = ToolGate(allow_write=True, allow_exec=True, enforce_native_policy=True)
     reason = gate.check("run", {"cmd": "git push --force origin main"})
     assert reason is not None and "no-force-push" in reason
     assert gate.check("read_file", {"path": ".env"}) is not None
+    assert gate.check("read_file", "not-a-dict") is None
 
 
 def test_blocks_client_bundler_secret_prefixes_but_allows_public_config():
