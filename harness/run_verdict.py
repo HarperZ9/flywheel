@@ -33,3 +33,23 @@ def seal_verdict(ledger, result: dict) -> dict:
         "chain_head": ledger.checkpoint(),
         "integrity_sha256": integrity_report(flags)["flags_sha256"],
     }
+
+
+def seal_valve_verdict(ledger, result: dict, *, actor_id: str = "agent", policy=None) -> dict:
+    """Couple the re-derivable run verdict with the reseating-valve protocol.
+
+    Tampered graders or broken hash chains trip RUPTURE; intact-chain failures or
+    honest abstentions vent cleanly as VENTED; accepted runs seal as VERIFIED.
+    """
+    from .reseating_valve import ValveOutcome, evaluate_valve
+    verdict = seal_verdict(ledger, result)
+    outcome = ValveOutcome(
+        actor_id=actor_id,
+        verified=verdict["accepted"],
+        honest_exit=bool(verdict["chain_intact"] and verdict["integrity_clean"] and not verdict["accepted"]),
+        tampered=not verdict["integrity_clean"],
+        witness_bypassed=not verdict["chain_intact"],
+        reason="accepted" if verdict["accepted"] else ("integrity_or_chain_violation" if not (verdict["chain_intact"] and verdict["integrity_clean"]) else "honest_exit"),
+    )
+    verdict["valve"] = evaluate_valve(outcome, policy=policy)
+    return verdict

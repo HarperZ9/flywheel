@@ -61,6 +61,8 @@ def load_workspace_context(
     *,
     flywheel_home: Path | None = None,
     max_chars: int = DEFAULT_MAX_CHARS,
+    include_capsule: bool = False,
+    capsule_slots: int = 16,
 ) -> dict[str, Any]:
     """Read discovered instruction and memory files with per-file SHA-256 receipts."""
     ws = Path(workspace).resolve()
@@ -104,7 +106,7 @@ def load_workspace_context(
         })
 
     context_text = "\n\n".join(chunks)
-    return {
+    bundle: dict[str, Any] = {
         "schema": CONTEXT_SCHEMA,
         "workspace": str(ws),
         "sources": sources,
@@ -112,6 +114,26 @@ def load_workspace_context(
         "total_chars": len(context_text),
         "context_text": context_text,
     }
+    if include_capsule:
+        from .manifold_memory import ManifoldRecord, compile_memory_capsule
+        records = [
+            ManifoldRecord(
+                record_id=f"ctx:{i}:{Path(s['path']).name}",
+                manifold="rippled-1d",
+                coords=(float(i),),
+                summary=f"{s['kind']} {Path(s['path']).name}",
+                source_sha256=s["sha256"],
+                weight=1.0,
+            )
+            for i, s in enumerate(sources)
+        ]
+        bundle["manifold_capsule"] = compile_memory_capsule(
+            records,
+            query_manifold="rippled-1d",
+            query_coords=(0.0,),
+            budget_slots=capsule_slots,
+        )
+    return bundle
 
 
 def main(argv: list[str] | None = None) -> int:
