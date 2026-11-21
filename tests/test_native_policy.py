@@ -68,3 +68,23 @@ def test_tool_gate_enforces_native_policy():
     reason = gate.check("run", {"cmd": "git push --force origin main"})
     assert reason is not None and "no-force-push" in reason
     assert gate.check("read_file", {"path": ".env"}) is not None
+
+
+def test_blocks_client_bundler_secret_prefixes_but_allows_public_config():
+    hit = check_tool_call(
+        "write_file",
+        {"path": "src/config.ts", "content": "const k = import.meta.env.VITE_STRIPE_SECRET;\n"},
+    )
+    assert hit is not None and hit["rule"] == "bundler-secret-prefix"
+
+    hit2 = check_tool_call(
+        "edit_file",
+        {"path": "app/env.js", "old": "", "new": "process.env.NEXT_PUBLIC_OPENAI_API_KEY"},
+    )
+    assert hit2 is not None and hit2["rule"] == "bundler-secret-prefix"
+
+    ok = check_tool_call(
+        "write_file",
+        {"path": "src/config.ts", "content": "const url = import.meta.env.VITE_API_BASE_URL;\n"},
+    )
+    assert ok is None
