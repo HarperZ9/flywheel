@@ -80,7 +80,6 @@ class _ShellRailState extends State<ShellRail> {
     final q = _query.trim().toLowerCase();
     final searching = q.isNotEmpty;
     final advancedLabel = destinationGroupLabel(DestinationGroup.advanced);
-    final evidenceLabel = destinationGroupLabel(DestinationGroup.evidence);
     final groups = <String, List<DestinationSpec>>{};
     for (final spec in destinationCatalog) {
       if (destinationMatches(spec, q)) {
@@ -115,9 +114,7 @@ class _ShellRailState extends State<ShellRail> {
                     selected: widget.selected,
                     collapsed: widget.collapsed,
                     foldable: !searching,
-                    initiallyFolded: !searching &&
-                        (entry.key == advancedLabel ||
-                            entry.key == evidenceLabel),
+                    initiallyFolded: !searching && entry.key == advancedLabel,
                     onSelect: widget.onGo,
                   ),
                 if (groups.isEmpty)
