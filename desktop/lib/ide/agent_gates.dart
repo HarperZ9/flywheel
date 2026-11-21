@@ -63,10 +63,16 @@ class AgentGates extends StatelessWidget {
     final t = context.fw;
     final nativeCli = executionMode.isNativeCli;
     final visibleEndpoints = nativeCli
-        ? endpoints.where((endpoint) => endpoint.name == 'claude-cli').toList()
+        ? endpoints
+            .where((endpoint) => agentExecutionModeSupportsEndpoint(
+                  executionMode,
+                  endpoint.name,
+                ))
+            .toList()
         : endpoints;
     final endpointValue =
         visibleEndpoints.any((e) => e.name == endpoint) ? endpoint : null;
+    final hasCodexCli = visibleEndpoints.any((e) => e.name == 'codex');
     return Wrap(
       spacing: FwLayout.s3,
       runSpacing: FwLayout.s1,
@@ -84,6 +90,7 @@ class AgentGates extends StatelessWidget {
           onChanged: effortEnabled ? (value) => onExecutionMode(value!) : null,
         ),
         DropdownButton<String>(
+          key: const Key('agent-endpoint-picker'),
           value: endpointValue,
           underline: const SizedBox(),
           style: fwMono(t, size: 11.5, color: t.inkSoft),
@@ -91,7 +98,11 @@ class AgentGates extends StatelessWidget {
             for (final e in visibleEndpoints)
               DropdownMenuItem(
                 value: e.name,
-                child: Text('${e.name}${e.hasCredential ? '' : ' (no key)'}'),
+                child: Text(
+                  nativeCliEndpoints.contains(e.name)
+                      ? '${e.name} (CLI)'
+                      : '${e.name}${e.hasCredential ? '' : ' (no key)'}',
+                ),
               ),
           ],
           onChanged:
@@ -99,7 +110,9 @@ class AgentGates extends StatelessWidget {
         ),
         if (nativeCli)
           Text(
-            'CLI-owned auth; output tokens unsupported; Codex CLI unavailable',
+            hasCodexCli
+                ? 'Official CLI-owned auth (claude-cli, codex); output tokens unsupported'
+                : 'CLI-owned auth; output tokens unsupported; Codex CLI unavailable',
             style: fwMono(t, size: 10.5, color: t.inkFaint),
           ),
         if (endpointValue != null)

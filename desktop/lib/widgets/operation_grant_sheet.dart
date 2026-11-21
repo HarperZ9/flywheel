@@ -56,6 +56,9 @@ GatewayOperationAuthorizer journeyGatewayAuthorizer(
         _authorizeJourneyOperation(context, controller, journey, operation,
             currentOperation, dispatch);
 
+bool _canAutoBindWorkspaceJourney(GatewayOperation operation) =>
+    operation.action == 'agent.run' || operation.action.startsWith('agent.');
+
 Future<Object?> _authorizeJourneyOperation(
     BuildContext context,
     GatewayOperationController controller,
@@ -72,7 +75,18 @@ Future<Object?> _authorizeJourneyOperation(
         : GatewayJourneyBinding(active.journeyRef, active.eventHeadSha256);
   }
 
-  final binding = currentBinding();
+  var binding = currentBinding();
+  if (binding == null && _canAutoBindWorkspaceJourney(operation)) {
+    final goal = operation.operation['goal'];
+    await journey.ensureWorkspaceJourney(
+      goal: goal is String && goal.trim().isNotEmpty
+          ? goal.trim()
+          : 'Workspace coding session',
+      intakeRef: 'workspace-default',
+    );
+    if (!context.mounted) return const GatewayAuthorizationOutcome.denied();
+    binding = currentBinding();
+  }
   if (binding == null) {
     return const GatewayAuthorizationOutcome.failure(GatewayOperationFailure(
         'JOURNEY_REQUIRED', 'Select or create a Journey before approval.'));

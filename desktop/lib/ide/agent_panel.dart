@@ -100,8 +100,10 @@ class _AgentPanelState extends State<AgentPanel> {
   }
 
   String? _nativeCliEndpoint(List<EndpointRow> rows) {
-    for (final row in rows) {
-      if (row.name == 'claude-cli') return row.name;
+    for (final preferred in const ['claude-cli', 'codex']) {
+      for (final row in rows) {
+        if (row.name == preferred) return row.name;
+      }
     }
     return null;
   }
