@@ -146,25 +146,34 @@ class _AgentPanelState extends State<AgentPanel> {
       setState(() => _error = 'INVALID_CONTEXT');
       return;
     }
-    setState(() => _authorizing = true);
-    await authorizeGatewayStream(
+    setState(() {
+      _authorizing = true;
+      _error = null;
+    });
+    final outcome = await authorizeGatewayOperationDetailed<bool>(
       context,
       operation,
-      (body) {
-        if (!mounted) return;
+      (body) async {
+        if (!mounted) return false;
         _beginRun();
         _operationState.observe(
           _operations.start(body),
           onProgress: _onProgress,
           onInterrupted: _interrupted,
         );
-      },
-      () {
-        if (!mounted) return;
-        setState(() => _authorizing = false);
+        return true;
       },
       currentOperation: () => _agentOperation(this, request),
     );
+    if (!mounted) return;
+    if (outcome.value != true) {
+      setState(() {
+        _authorizing = false;
+        if (outcome.failure != null) {
+          _error = '${outcome.failure!.code}: ${outcome.failure!.message}';
+        }
+      });
+    }
   }
 
   void _onProgress(Map<String, dynamic> event) {
