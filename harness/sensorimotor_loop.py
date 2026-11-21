@@ -33,6 +33,9 @@ class SensoryObservation:
     visual_energy: float
     acoustic_energy: float
     haptic_force: float
+    joint_angles: tuple[float, ...] = ()
+    joint_torques: tuple[float, ...] = ()
+    balance_margin: float = 1.0
     betti0: int = 1
     betti1: int = 0
 
@@ -43,6 +46,9 @@ class SensoryObservation:
             self.visual_energy,
             self.acoustic_energy,
             self.haptic_force,
+            self.balance_margin,
+            *self.joint_angles,
+            *self.joint_torques,
         )
 
     def digest(self) -> str:
@@ -53,6 +59,9 @@ class SensoryObservation:
             "visual_energy": round(self.visual_energy, 6),
             "acoustic_energy": round(self.acoustic_energy, 6),
             "haptic_force": round(self.haptic_force, 6),
+            "joint_angles": [round(x, 6) for x in self.joint_angles],
+            "joint_torques": [round(x, 6) for x in self.joint_torques],
+            "balance_margin": round(self.balance_margin, 6),
             "betti0": self.betti0,
             "betti1": self.betti1,
         })

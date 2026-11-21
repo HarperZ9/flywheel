@@ -54,9 +54,21 @@ def test_sensorimotor_episode_scales_depth_records_negatives_and_seals_capsule()
     assert ep["trace"][2]["loop_depth"] > ep["trace"][0]["loop_depth"]
     assert verify_negative_cache(ep["negative_cache"])["verdict"] == "MATCH"
 
-    obs_hashes = {row["obs_sha256"] for row in ep["trace"]}
+    obs_hashes = {f"sim-01:s{row['step']}": row["obs_sha256"] for row in ep["trace"]}
     assert verify_capsule_provenance(ep["capsule"], obs_hashes)["verdict"] == "MATCH"
     assert len(ep["episode_sha256"]) == 64
+
+
+def test_proprioception_strain_drives_surprise_even_when_vision_is_static():
+    calm = SensoryObservation(
+        0, (0.0, 0.0, 0.0), 0.0, 0.5, 0.1, 0.0,
+        joint_angles=(0.1, 0.2), joint_torques=(0.5, 0.5), balance_margin=0.95,
+    )
+    strained = SensoryObservation(
+        0, (0.0, 0.0, 0.0), 0.0, 0.5, 0.1, 0.0,
+        joint_angles=(0.9, 1.4), joint_torques=(6.0, 7.5), balance_margin=0.12,
+    )
+    assert prediction_surprise(calm, strained) > 0.5
 
 
 def test_prediction_surprise_is_zero_on_exact_match_and_bounded():
