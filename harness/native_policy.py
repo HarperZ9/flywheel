@@ -23,6 +23,10 @@ _SECRET_NAMES = re.compile(
     r"id_rsa(\.pub)?|[^\\/\s]+\.(pem|key))$",
     re.IGNORECASE,
 )
+_BUNDLER_SECRET_PREFIX = re.compile(
+    r"\b(VITE|NEXT_PUBLIC|REACT_APP|NUXT_PUBLIC|EXPO_PUBLIC)_[A-Z0-9_]*"
+    r"(SECRET|PRIVATE_KEY|API_KEY|ACCESS_TOKEN|PASSWORD|CREDENTIAL)\b",
+)
 _FORCE_PUSH = re.compile(
     r"\bgit\s+push\b[^|;&]*(\s--force(-with-lease)?\b|\s-f\b|\s\+\S+:)"
 )
@@ -51,6 +55,7 @@ DEFAULT_POLICY: dict[str, Any] = {
     "block_chained_merge": True,
     "block_piped_tests": True,
     "block_unlinked_skips": True,
+    "block_bundler_secret_prefix": True,
     "deny_paths": [],
     "deny_terms_on_add": [],
 }
@@ -88,6 +93,7 @@ def load_policy(
             "block_chained_merge",
             "block_piped_tests",
             "block_unlinked_skips",
+            "block_bundler_secret_prefix",
         ):
             if isinstance(raw.get(key), bool):
                 merged[key] = raw[key]
@@ -128,6 +134,13 @@ def _check_text(
         rx = re.compile(term, re.IGNORECASE)
         if len(rx.findall(new)) > len(rx.findall(old)):
             return _deny("deny-term", f"change adds disallowed term matching {term!r}", tool)
+    if policy.get("block_bundler_secret_prefix") and _CODE_FILE.search(path or ""):
+        if len(_BUNDLER_SECRET_PREFIX.findall(new)) > len(_BUNDLER_SECRET_PREFIX.findall(old)):
+            return _deny(
+                "bundler-secret-prefix",
+                "public client-bundle env prefix (VITE_/NEXT_PUBLIC_/REACT_APP_) carries a secret name",
+                tool,
+            )
     if policy.get("block_unlinked_skips") and _CODE_FILE.search(path or ""):
         added = len(_SKIP_ADD.findall(new)) > len(_SKIP_ADD.findall(old))
         if added and len(_ISSUE_LINK.findall(new)) <= len(_ISSUE_LINK.findall(old)):

@@ -8,7 +8,7 @@ enum AgentExecutionMode {
     label: 'native CLI session',
     wire: 'native_cli_session',
     help:
-        'Run an owned official CLI session. CLI auth stays with the CLI, output tokens are unsupported, and Codex CLI is unavailable.',
+        'Run an owned official CLI session (claude-cli or codex). CLI auth stays with the vendor CLI and output tokens are unsupported.',
   );
 
   const AgentExecutionMode({
@@ -27,8 +27,10 @@ enum AgentExecutionMode {
       value == nativeCliSession.wire ? nativeCliSession : api;
 }
 
+const nativeCliEndpoints = {'claude-cli', 'codex'};
+
 bool agentExecutionModeSupportsEndpoint(
   AgentExecutionMode mode,
   String? endpoint,
 ) =>
-    !mode.isNativeCli || endpoint == 'claude-cli';
+    !mode.isNativeCli || nativeCliEndpoints.contains(endpoint);
