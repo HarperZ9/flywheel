@@ -1,9 +1,11 @@
 """Installed Inspect import/reopen acceptance phase helpers."""
 from __future__ import annotations
 
-import hashlib, json, re, sqlite3, sys
+import hashlib, json, logging, re, sqlite3, sys
 from pathlib import Path
 from typing import Any
+
+_LOG = logging.getLogger(__name__)
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -260,7 +262,8 @@ def _tamper(home: Path, owner: str, eid: str) -> bool:
             data = json.loads(row[0]); data["result"]["source"]["sha256"] = "0" * 64
             conn.execute("UPDATE entities SET data=? WHERE eid=?", (json.dumps(data), eid))
         return True
-    except Exception:
+    except (sqlite3.Error, OSError, TypeError, ValueError, KeyError) as exc:
+        _LOG.warning("failed to tamper inspect store %s for eid=%s: %s", db, eid, exc)
         return False
 
 

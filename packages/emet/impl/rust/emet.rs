@@ -4,6 +4,8 @@
 // Written against SPEC.md + conformance/vectors.json only. SHA-256 is hand-rolled;
 // its algorithm was verified against a reference on known vectors before transcription.
 
+#![forbid(unsafe_code)]
+
 use std::collections::BTreeMap;
 use std::env;
 use std::fs;
@@ -11,6 +13,7 @@ use std::fs::OpenOptions;
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{exit, Command, Stdio};
+use std::sync::atomic::{AtomicBool, Ordering};
 
 // ---------------- SHA-256 ----------------
 const K: [u32; 64] = [
@@ -351,16 +354,14 @@ fn jv_str(v: &JV) -> String {
 // ---- --json envelope (SPEC s.13). Global mode flag, set when --json is present. --
 // Canonical JSON identical to Python report.emit(): keys sorted, ", "/": "
 // separators, ensure_ascii; None-valued fields dropped so the shape is stable.
-static mut JSON_MODE: bool = false;
+static JSON_MODE: AtomicBool = AtomicBool::new(false);
 
 fn json_mode() -> bool {
-    unsafe { JSON_MODE }
+    JSON_MODE.load(Ordering::Relaxed)
 }
 
 fn enable_json() {
-    unsafe {
-        JSON_MODE = true;
-    }
+    JSON_MODE.store(true, Ordering::Relaxed);
 }
 
 // Emit one canonical envelope to stdout in --json mode (nothing otherwise), then
@@ -645,39 +646,41 @@ fn cmd_verify(paths: &[String]) -> i32 {
     code
 }
 
+fn read_coherence_pair(src: &str, view: &str) -> Result<(Vec<u8>, Vec<u8>), String> {
+    // machine reason code, never prose (s.9); Python form: source:<code> /
+    // view:<code>, source taking precedence when both fail.
+    let sb = read_raw(src).map_err(|e| format!("source:{}", e))?;
+    let vb = read_raw(view).map_err(|e| format!("view:{}", e))?;
+    Ok((sb, vb))
+}
+
 fn cmd_coherence(src: &str, view: &str) -> i32 {
-    let sb = read_raw(src);
-    let vb = read_raw(view);
-    if sb.is_err() || vb.is_err() {
-        // machine reason code, never prose (s.9); Python form: source:<code> /
-        // view:<code>, source taking precedence when both fail.
-        let why = if let Err(e) = &sb {
-            format!("source:{}", e)
-        } else {
-            format!("view:{}", vb.as_ref().err().unwrap())
-        };
-        say(&format!("result=UNVERIFIABLE reason={}", why));
-        record(
-            "coherence",
-            vec![
-                ("source", JV::S(src.to_string())),
-                ("result", JV::S("UNVERIFIABLE".to_string())),
-                ("reason", JV::S(why.clone())),
-            ],
-        );
-        emit_envelope(
-            "coherence",
-            Some("UNVERIFIABLE"),
-            2,
-            vec![
-                ("subject", JV::S(src.to_string())),
-                ("reason", JV::S(why)),
-            ],
-        );
-        return 2;
-    }
-    let s = sha256_hex(&sb.unwrap());
-    let v = sha256_hex(&vb.unwrap());
+    let (sb, vb) = match read_coherence_pair(src, view) {
+        Ok(pair) => pair,
+        Err(why) => {
+            say(&format!("result=UNVERIFIABLE reason={}", why));
+            record(
+                "coherence",
+                vec![
+                    ("source", JV::S(src.to_string())),
+                    ("result", JV::S("UNVERIFIABLE".to_string())),
+                    ("reason", JV::S(why.clone())),
+                ],
+            );
+            emit_envelope(
+                "coherence",
+                Some("UNVERIFIABLE"),
+                2,
+                vec![
+                    ("subject", JV::S(src.to_string())),
+                    ("reason", JV::S(why)),
+                ],
+            );
+            return 2;
+        }
+    };
+    let s = sha256_hex(&sb);
+    let v = sha256_hex(&vb);
     let ok = s == v;
     let res = if ok { "COHERENT" } else { "VIEW_DIFFERS_FROM_SOURCE" };
     say(&format!("source={}", s));
