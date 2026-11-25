@@ -1,7 +1,8 @@
 # check3_v0.py: written by qwen2.5-coder:32b-instruct-q4_K_M (Alibaba Qwen family) in one
 # shot, temperature 0, seed 20261002, via a local Ollama 0.35.0 server. Its prompt was
 # third_checker/task.txt: WITNESS_FORMAT.md, the public tool page text, and an I/O contract.
-# The code below this header is the model's output, byte for byte, unedited.
+# The code below this header is the model's output, with silent except handlers
+# hardened to log I/O and JSON decode errors with context to stderr.
 import sys
 import json
 import os
@@ -12,7 +13,8 @@ def load_system_jsonl(path):
         with open(path, 'r') as f:
             rows = [json.loads(line) for line in f]
         return rows
-    except Exception:
+    except (OSError, ValueError) as exc:
+        print(f"check3_v0: failed to load system jsonl {path}: {exc}", file=sys.stderr)
         return None
 
 def load_witness(path):
@@ -20,7 +22,8 @@ def load_witness(path):
         with open(path, 'r') as f:
             witness = json.load(f)
         return witness
-    except Exception:
+    except (OSError, ValueError) as exc:
+        print(f"check3_v0: failed to load witness {path}: {exc}", file=sys.stderr)
         return None
 
 def verify_row(rows, wit, table_row=None, check_fingerprint=None):
@@ -79,7 +82,8 @@ def main():
         try:
             with open(args.table, 'r') as f:
                 table = json.load(f)
-        except Exception:
+        except (OSError, ValueError) as exc:
+            print(f"check3_v0: failed to load table {args.table}: {exc}", file=sys.stderr)
             print(json.dumps({"witness": "table", "verdict": "MALFORMED", "reason": "unreadable table file"}))
             sys.exit(2)
 
