@@ -28,186 +28,78 @@ def _sha(body: str) -> str:
 def _planted_corpus() -> tuple[list[dict], list[dict]]:
     """Return (planted_defects, clean_controls) spanning Plates A, B, and C."""
     defects: list[dict] = [
-        # Plate A exclusive: overt proposer failure / unfinished TODO / traceback
-        {
-            "case_id": "a_proposer_fail",
-            "expected": "DRIFT",
-            "proposer_self_test_passed": False,
-            "claim_or_code": "Exit status 1 during local runner check.",
-        },
-        {
-            "case_id": "a_overt_traceback",
-            "expected": "DRIFT",
-            "claim_or_code": "Traceback (most recent call last):\nAssertionError: mismatch",
-        },
-        {
-            "case_id": "a_unfinished_todo",
-            "expected": "DRIFT",
-            "claim_or_code": "TODO_UNFINISHED implement signature verification",
-        },
-        # Plate B exclusive: stubbed proof, assumption mutation, AB520 secret, em-dash/slop, SHA drift
-        {
-            "case_id": "b_anygeometry_bypass",
-            "expected": "DRIFT",
-            "artifact_kind": "code",
-            "claim_or_code": "theorem witness (h : Anygeometry=true) : Goal := by trivial",
-        },
-        {
-            "case_id": "b_lean_sorry",
-            "expected": "DRIFT",
-            "artifact_kind": "code",
-            "claim_or_code": "lemma bound : x <= y := by\n  sorry",
-        },
-        {
-            "case_id": "b_tautological_assert",
-            "expected": "DRIFT",
-            "artifact_kind": "code",
-            "claim_or_code": "def test_invariant():\n    assert True",
-        },
-        {
-            "case_id": "b_assumption_mutation",
-            "expected": "DRIFT",
-            "artifact_kind": "code",
-            "claim_or_code": "Proof artifact checked cleanly under nominal test.",
-            "assumption_check": {
-                "hypothesis": "energy_conservation",
-                "passes_under_true_assumption": True,
-                "passes_under_mutated_assumption": True,
-            },
-        },
-        {
-            "case_id": "b_ab520_vite_openai",
-            "expected": "DRIFT",
-            "artifact_kind": "code",
-            "claim_or_code": "VITE_OPENAI_API_KEY=synth_placeholder\nconst k = import.meta.env.VITE_OPENAI_API_KEY;",
-        },
-        {
-            "case_id": "b_ab520_next_public_secret",
-            "expected": "DRIFT",
-            "artifact_kind": "code",
-            "claim_or_code": "const secret = process.env.NEXT_PUBLIC_STRIPE_SECRET;",
-        },
-        {
-            "case_id": "b_em_dash_prose",
-            "expected": "DRIFT",
-            "artifact_kind": "prose",
-            "claim_or_code": f"Three-plate verification catches defects{EM_DASH}before release.",
-        },
-        {
-            "case_id": "b_slop_prose",
-            "expected": "DRIFT",
-            "artifact_kind": "prose",
-            "claim_or_code": "In this report, we delve into the rich tapestry of verification.",
-        },
-        {
-            "case_id": "b_sha256_drift",
-            "expected": "DRIFT",
-            "claim_or_code": "Artifact hash matches recorded release digest.",
-            "source_body": "observed_pass_rate=0.985",
-            "claimed_source_sha256": _sha("observed_pass_rate=0.985 TAMPERED"),
-        },
-        # Plate C exclusive: IEEE-754 formula drift, protected numbers, echo chamber, arithmetic, missing witness
-        {
-            "case_id": "c_fresnel_drift",
-            "expected": "DRIFT",
-            "claim_or_code": "Fresnel normal reflectance for n=1.5 is 0.08.",
-            "formula_oracle": {
-                "formula_id": "OPT-002",
-                "params": {"n1": 1.0, "n2": 1.5, "cos_i": 1.0},
-                "claimed_value": 0.08,
-            },
-        },
-        {
-            "case_id": "c_srgb_naive_gamma",
-            "expected": "DRIFT",
-            "claim_or_code": "sRGB 0.5 linearizes to 0.25.",
-            "formula_oracle": {
-                "formula_id": "COL-001",
-                "params": {"v": 0.5},
-                "claimed_value": 0.25,
-            },
-        },
-        {
-            "case_id": "c_protected_number_mutated",
-            "expected": "DRIFT",
-            "artifact_kind": "prose",
-            "protected_source_text": "Articulate passed 2096 tests with 0 failures.",
-            "claim_or_code": "Articulate passed 2100 tests with 0 failures.",
-        },
-        {
-            "case_id": "c_swarm_echo_chamber",
-            "expected": "DRIFT",
-            "claim_or_code": "Swarm passed 96% of self-generated unit checks.",
-            "self_test_score": 0.96,
-            "hidden_test_score": 0.58,
-            "max_allowed_echo_gap": 0.15,
-        },
-        {
-            "case_id": "c_arithmetic_sum_drift",
-            "expected": "DRIFT",
-            "claim_or_code": "Total modules reported as 270.",
-            "arithmetic_check": {"op": "sum", "values": [81, 187], "claimed": 270.0},
-        },
-        {
-            "case_id": "c_missing_witness",
-            "expected": "UNVERIFIABLE",
-            "claim_or_code": "External claim: 99.1% on private unseen split.",
-            "witness_missing": True,
-        },
+        # Plate A exclusive
+        {"case_id": "a_proposer_fail", "expected": "DRIFT", "proposer_self_test_passed": False,
+         "claim_or_code": "Exit status 1 during local runner check."},
+        {"case_id": "a_overt_traceback", "expected": "DRIFT",
+         "claim_or_code": "Traceback (most recent call last):\nAssertionError: mismatch"},
+        {"case_id": "a_unfinished_todo", "expected": "DRIFT",
+         "claim_or_code": "TODO_UNFINISHED implement signature verification"},
+        # Plate B exclusive
+        {"case_id": "b_anygeometry_bypass", "expected": "DRIFT", "artifact_kind": "code",
+         "claim_or_code": "theorem witness (h : Anygeometry=true) : Goal := by trivial"},
+        {"case_id": "b_lean_sorry", "expected": "DRIFT", "artifact_kind": "code",
+         "claim_or_code": "lemma bound : x <= y := by\n  sorry"},
+        {"case_id": "b_tautological_assert", "expected": "DRIFT", "artifact_kind": "code",
+         "claim_or_code": "def test_invariant():\n    assert True"},
+        {"case_id": "b_assumption_mutation", "expected": "DRIFT", "artifact_kind": "code",
+         "claim_or_code": "Proof artifact checked cleanly under nominal test.",
+         "assumption_check": {"hypothesis": "energy_conservation",
+                              "passes_under_true_assumption": True,
+                              "passes_under_mutated_assumption": True}},
+        {"case_id": "b_ab520_vite_openai", "expected": "DRIFT", "artifact_kind": "code",
+         "claim_or_code": "VITE_OPENAI_API_KEY=synth_placeholder\nconst k = import.meta.env.VITE_OPENAI_API_KEY;"},
+        {"case_id": "b_ab520_next_public_secret", "expected": "DRIFT", "artifact_kind": "code",
+         "claim_or_code": "const secret = process.env.NEXT_PUBLIC_STRIPE_SECRET;"},
+        {"case_id": "b_em_dash_prose", "expected": "DRIFT", "artifact_kind": "prose",
+         "claim_or_code": f"Three-plate verification catches defects{EM_DASH}before release."},
+        {"case_id": "b_slop_prose", "expected": "DRIFT", "artifact_kind": "prose",
+         "claim_or_code": "In this report, we delve into the rich tapestry of verification."},
+        {"case_id": "b_sha256_drift", "expected": "DRIFT",
+         "claim_or_code": "Artifact hash matches recorded release digest.",
+         "source_body": "observed_pass_rate=0.985",
+         "claimed_source_sha256": _sha("observed_pass_rate=0.985 TAMPERED")},
+        # Plate C exclusive
+        {"case_id": "c_fresnel_drift", "expected": "DRIFT",
+         "claim_or_code": "Fresnel normal reflectance for n=1.5 is 0.08.",
+         "formula_oracle": {"formula_id": "OPT-002", "params": {"n1": 1.0, "n2": 1.5, "cos_i": 1.0}, "claimed_value": 0.08}},
+        {"case_id": "c_srgb_naive_gamma", "expected": "DRIFT",
+         "claim_or_code": "sRGB 0.5 linearizes to 0.25.",
+         "formula_oracle": {"formula_id": "COL-001", "params": {"v": 0.5}, "claimed_value": 0.25}},
+        {"case_id": "c_protected_number_mutated", "expected": "DRIFT", "artifact_kind": "prose",
+         "protected_source_text": "Articulate passed 2096 tests with 0 failures.",
+         "claim_or_code": "Articulate passed 2100 tests with 0 failures."},
+        {"case_id": "c_swarm_echo_chamber", "expected": "DRIFT",
+         "claim_or_code": "Swarm passed 96% of self-generated unit checks.",
+         "self_test_score": 0.96, "hidden_test_score": 0.58, "max_allowed_echo_gap": 0.15},
+        {"case_id": "c_arithmetic_sum_drift", "expected": "DRIFT",
+         "claim_or_code": "Total modules reported as 270.",
+         "arithmetic_check": {"op": "sum", "values": [81, 187], "claimed": 270.0}},
+        {"case_id": "c_missing_witness", "expected": "UNVERIFIABLE",
+         "claim_or_code": "External claim: 99.1% on private unseen split.", "witness_missing": True},
     ]
 
     clean_body = "Verified OPT-002 normal incidence reflectance = 0.04"
     controls: list[dict] = [
-        {
-            "case_id": "clean_fresnel_full",
-            "expected": "MATCH",
-            "claim_or_code": clean_body,
-            "formula_oracle": {
-                "formula_id": "OPT-002",
-                "params": {"n1": 1.0, "n2": 1.5, "cos_i": 1.0},
-                "claimed_value": 0.04,
-            },
-            "source_body": clean_body,
-            "claimed_source_sha256": _sha(clean_body),
-            "assumption_check": {
-                "hypothesis": "fresnel_boundary_conditions",
-                "passes_under_true_assumption": True,
-                "passes_under_mutated_assumption": False,
-            },
-        },
-        {
-            "case_id": "clean_public_vite_url",
-            "expected": "MATCH",
-            "artifact_kind": "code",
-            "claim_or_code": "const apiBase = import.meta.env.VITE_API_BASE_URL; // non-secret public URL",
-        },
-        {
-            "case_id": "clean_public_next_url",
-            "expected": "MATCH",
-            "artifact_kind": "code",
-            "claim_or_code": "const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;",
-        },
-        {
-            "case_id": "clean_protected_numbers",
-            "expected": "MATCH",
-            "artifact_kind": "prose",
-            "protected_source_text": "Suite verified 287 formulas with 0.04 reflectance.",
-            "claim_or_code": "Suite verified 287 formulas with 0.04 reflectance.",
-        },
-        {
-            "case_id": "clean_swarm_aligned",
-            "expected": "MATCH",
-            "claim_or_code": "Swarm scored 92% local and 90% hidden.",
-            "self_test_score": 0.92,
-            "hidden_test_score": 0.90,
-            "max_allowed_echo_gap": 0.15,
-        },
-        {
-            "case_id": "clean_arithmetic_sum",
-            "expected": "MATCH",
-            "claim_or_code": "Universe totals 268 files (81 passing, 187 failing).",
-            "arithmetic_check": {"op": "sum", "values": [81, 187], "claimed": 268.0},
-        },
+        {"case_id": "clean_fresnel_full", "expected": "MATCH", "claim_or_code": clean_body,
+         "formula_oracle": {"formula_id": "OPT-002", "params": {"n1": 1.0, "n2": 1.5, "cos_i": 1.0}, "claimed_value": 0.04},
+         "source_body": clean_body, "claimed_source_sha256": _sha(clean_body),
+         "assumption_check": {"hypothesis": "fresnel_boundary_conditions",
+                              "passes_under_true_assumption": True,
+                              "passes_under_mutated_assumption": False}},
+        {"case_id": "clean_public_vite_url", "expected": "MATCH", "artifact_kind": "code",
+         "claim_or_code": "const apiBase = import.meta.env.VITE_API_BASE_URL; // non-secret public URL"},
+        {"case_id": "clean_public_next_url", "expected": "MATCH", "artifact_kind": "code",
+         "claim_or_code": "const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;"},
+        {"case_id": "clean_protected_numbers", "expected": "MATCH", "artifact_kind": "prose",
+         "protected_source_text": "Suite verified 287 formulas with 0.04 reflectance.",
+         "claim_or_code": "Suite verified 287 formulas with 0.04 reflectance."},
+        {"case_id": "clean_swarm_aligned", "expected": "MATCH",
+         "claim_or_code": "Swarm scored 92% local and 90% hidden.",
+         "self_test_score": 0.92, "hidden_test_score": 0.90, "max_allowed_echo_gap": 0.15},
+        {"case_id": "clean_arithmetic_sum", "expected": "MATCH",
+         "claim_or_code": "Universe totals 268 files (81 passing, 187 failing).",
+         "arithmetic_check": {"op": "sum", "values": [81, 187], "claimed": 268.0}},
     ]
     return defects, controls
 
@@ -231,8 +123,7 @@ def test_three_plate_catches_all_planted_defects_with_zero_clean_false_positives
         assert isinstance(v, ThreePlateVerdict)
         assert v.verdict == case["expected"], f"{case['case_id']}: got {v.verdict}, defects={v.all_defects}"
         assert v.verdict != "MATCH"
-        payload = v.to_dict()
-        assert payload["verdict"] == case["expected"]
+        assert v.to_dict()["verdict"] == case["expected"]
 
     for case in controls:
         v = verify_case(case)
@@ -248,24 +139,17 @@ def test_disabling_any_plate_strictly_drops_planted_defect_recall() -> None:
 
     def recall(enable_a: bool, enable_b: bool, enable_c: bool) -> float:
         caught = sum(
-            1
-            for case in defects
+            1 for case in defects
             if verify_case(case, enable_a=enable_a, enable_b=enable_b, enable_c=enable_c).verdict != "MATCH"
         )
         return caught / total
 
     full_recall = recall(True, True, True)
-    without_a = recall(False, True, True)
-    without_b = recall(True, False, True)
-    without_c = recall(True, True, False)
-    only_a = recall(True, False, False)
-    only_ab = recall(True, True, False)
-
     assert full_recall == 1.0
-    assert without_a < full_recall, "disabling Plate A must drop recall on Plate-A planted defects"
-    assert without_b < full_recall, "disabling Plate B must drop recall on Plate-B planted defects"
-    assert without_c < full_recall, "disabling Plate C must drop recall on Plate-C planted defects"
-    assert only_a < only_ab < full_recall
+    assert recall(False, True, True) < full_recall, "disabling Plate A must drop recall"
+    assert recall(True, False, True) < full_recall, "disabling Plate B must drop recall"
+    assert recall(True, True, False) < full_recall, "disabling Plate C must drop recall"
+    assert recall(True, False, False) < recall(True, True, False) < full_recall
 
 
 @pytest.mark.parametrize(
@@ -287,10 +171,8 @@ def test_disabling_any_plate_strictly_drops_planted_defect_recall() -> None:
     ],
 )
 def test_ab520_bundler_secret_guard_rejects_leaks(snippet: str) -> None:
-    hits = scan_bundler_secrets(snippet)
-    assert hits, f"AB520 guard missed leak: {snippet}"
-    report = run_plate_b({"claim_or_code": snippet, "artifact_kind": "code"})
-    assert not report.passed
+    assert scan_bundler_secrets(snippet), f"AB520 guard missed leak: {snippet}"
+    assert not run_plate_b({"claim_or_code": snippet, "artifact_kind": "code"}).passed
 
 
 @pytest.mark.parametrize(
@@ -304,8 +186,7 @@ def test_ab520_bundler_secret_guard_rejects_leaks(snippet: str) -> None:
 )
 def test_ab520_bundler_secret_guard_accepts_non_secret_public_vars(clean_snippet: str) -> None:
     assert scan_bundler_secrets(clean_snippet) == []
-    report = run_plate_b({"claim_or_code": clean_snippet, "artifact_kind": "code"})
-    assert report.passed
+    assert run_plate_b({"claim_or_code": clean_snippet, "artifact_kind": "code"}).passed
 
 
 @pytest.mark.parametrize(
