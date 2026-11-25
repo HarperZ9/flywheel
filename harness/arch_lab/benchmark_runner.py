@@ -21,6 +21,11 @@ from .jepa_fwp import (
     cosine_similarity,
     generate_rotational_dynamics,
 )
+from .omni_modal import (
+    DOMAIN_14_LANES,
+    OmniModalJEPAProjector,
+    generate_paired_omnimodal_states,
+)
 from .verifiable_rl import (
     RLTask,
     TaskSubmission,
@@ -153,12 +158,33 @@ def run_verifiable_rl_controls() -> dict[str, Any]:
     }
 
 
+def run_omnimodal_alignment_check() -> dict[str, Any]:
+    dims, batch = generate_paired_omnimodal_states(n_samples=36, latent_dim=6, seed=2026)
+    proj = OmniModalJEPAProjector(dims, latent_dim=6, seed=77)
+    before = proj.evaluate(batch)
+    for _ in range(30):
+        proj.train_alignment_step(batch, lr=0.45)
+    after = proj.evaluate(batch)
+    passed = after.passed and (after.mean_cross_modal_cosine > before.mean_cross_modal_cosine + 0.5)
+    return {
+        "name": "omnimodal_5stream_jepa_alignment",
+        "passed": passed,
+        "modalities": len(dims),
+        "domains_wired": len(DOMAIN_14_LANES),
+        "initial_cross_modal_cosine": round(before.mean_cross_modal_cosine, 6),
+        "final_cross_modal_cosine": round(after.mean_cross_modal_cosine, 6),
+        "vicreg_verdict": after.vicreg_verdict,
+        "min_dim_std": round(after.min_dim_std, 6),
+    }
+
+
 def run_all() -> dict[str, Any]:
     checks = [
         run_jepa_convergence_check(),
         run_planted_collapse_control(),
         run_fast_weight_recall_ablation(),
         run_verifiable_rl_controls(),
+        run_omnimodal_alignment_check(),
     ]
     return {"all_passed": all(c["passed"] for c in checks), "checks": checks}
 

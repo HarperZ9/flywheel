@@ -9,8 +9,11 @@ import math
 from pathlib import Path
 
 from harness.arch_lab import (
+    DOMAIN_14_LANES,
+    MODALITIES,
     FastWeightDeltaMemory,
     LatentJEPAFastWeightModel,
+    OmniModalJEPAProjector,
     PowerPlayCurriculum,
     RLTask,
     StaticMemoryBaseline,
@@ -18,6 +21,7 @@ from harness.arch_lab import (
     ThreePlateVerifiableRLEnv,
     VICRegMonitor,
     cosine_similarity,
+    generate_paired_omnimodal_states,
     generate_rotational_dynamics,
     load_ds02_buildlang_tasks,
     load_ds03_physics_tasks,
@@ -168,10 +172,32 @@ def test_custom_jsonl_ds02_and_ds03_loaders(tmp_path: Path) -> None:
     assert ds02[0].required_effects == ("io",)
 
 
+def test_omnimodal_5stream_jepa_alignment_and_14_domain_registry() -> None:
+    dims, batch = generate_paired_omnimodal_states(n_samples=36, latent_dim=6, seed=2026)
+    proj = OmniModalJEPAProjector(dims, latent_dim=6, seed=77)
+    before = proj.evaluate(batch)
+    for _ in range(30):
+        proj.train_alignment_step(batch, lr=0.45)
+    after = proj.evaluate(batch)
+
+    assert len(DOMAIN_14_LANES) == 14
+    assert all(m in MODALITIES for _, _, mods in DOMAIN_14_LANES for m in mods)
+    assert after.passed is True
+    assert after.vicreg_verdict == "HEALTHY"
+    assert after.mean_cross_modal_cosine > before.mean_cross_modal_cosine + 0.5
+
+    # Planted collapse control: zeroing modality weights collapses latent variance -> REJECT
+    for m in proj.encoders:
+        proj.encoders[m] = [[0.0] * len(row) for row in proj.encoders[m]]
+    collapsed = proj.evaluate(batch)
+    assert collapsed.passed is False
+    assert collapsed.vicreg_verdict == "REJECT"
+
+
 def test_benchmark_runner_and_maintainability_gate() -> None:
     report = run_all()
     assert report["all_passed"] is True
-    assert len(report["checks"]) == 4
+    assert len(report["checks"]) == 5
 
     root = Path(__file__).resolve().parent.parent / "harness" / "arch_lab"
     modules = {p.name: p.read_text(encoding="utf-8") for p in sorted(root.glob("*.py"))}

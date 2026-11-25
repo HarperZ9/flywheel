@@ -19,6 +19,13 @@ from .jepa_fwp import (
     generate_rotational_dynamics,
     sinkhorn_doubly_stochastic,
 )
+from .omni_modal import (
+    DOMAIN_14_LANES,
+    MODALITIES,
+    OmniModalJEPAProjector,
+    OmniModalReport,
+    generate_paired_omnimodal_states,
+)
 from .verifiable_rl import (
     CompressionProgressTracker,
     EpisodeMetrics,
@@ -33,9 +40,13 @@ from .verifiable_rl import (
 
 __all__ = [
     "CompressionProgressTracker",
+    "DOMAIN_14_LANES",
     "EpisodeMetrics",
     "FastWeightDeltaMemory",
     "LatentJEPAFastWeightModel",
+    "MODALITIES",
+    "OmniModalJEPAProjector",
+    "OmniModalReport",
     "PowerPlayCurriculum",
     "RLTask",
     "StaticMemoryBaseline",
@@ -46,6 +57,7 @@ __all__ = [
     "VICRegReport",
     "compute_vicreg_loss",
     "cosine_similarity",
+    "generate_paired_omnimodal_states",
     "generate_rotational_dynamics",
     "load_ds02_buildlang_tasks",
     "load_ds03_physics_tasks",
