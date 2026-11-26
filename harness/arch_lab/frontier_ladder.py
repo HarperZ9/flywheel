@@ -115,6 +115,7 @@ def _run_cuda_probe() -> dict[str, Any]:
     if not torch.cuda.is_available():
         return {"cuda_available": False, "reason": "torch.cuda.is_available() is False"}
     dev = torch.device("cuda:0")
+    _ = torch.empty(1, device=dev)
     torch.cuda.reset_peak_memory_stats(dev)
     props = torch.cuda.get_device_properties(dev)
     w_fp16 = torch.randn((4096, 4096), device=dev, dtype=torch.float16)
