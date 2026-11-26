@@ -105,15 +105,20 @@ def _effective_limits(launch: LaunchSpec) -> dict[str, bool]:
     }
 
 
+_MCP_TOOL_KEYS = frozenset({"name", "description", "inputSchema", "title", "annotations"})
+
+
 def _normalize_tools(tools: object, selected: list[str]) -> list[dict]:
     if type(tools) is not list or not tools:
         raise ValueError
     rows = []
     for tool in tools:
-        if (type(tool) is not dict or set(tool) - {"name", "description", "inputSchema"}
+        if (type(tool) is not dict or set(tool) - _MCP_TOOL_KEYS
                 or not _RAW_TOOL.fullmatch(tool.get("name", ""))
                 or type(tool.get("description", "")) is not str
-                or type(tool.get("inputSchema")) is not dict):
+                or type(tool.get("inputSchema")) is not dict
+                or ("title" in tool and type(tool["title"]) is not str)
+                or ("annotations" in tool and type(tool["annotations"]) is not dict)):
             raise ValueError
         rows.append({"name": tool["name"],
                      "description": str(tool.get("description", "")),

@@ -7,6 +7,7 @@ import re
 import shutil
 import struct
 import subprocess
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -88,6 +89,63 @@ def compute_motion_law_stats(frame_luminances: list[list[float]]) -> dict[str, A
     }
 
 
+def read_pgm_luminance(path: Path) -> list[float]:
+    """Read binary P5 or ASCII P2 PGM image into normalized [0.0, 1.0] luminance floats."""
+    raw = path.read_bytes()
+    tokens: list[bytes] = []
+    idx, n = 0, len(raw)
+    while idx < n and len(tokens) < 4:
+        while idx < n and raw[idx] in b" \t\r\n":
+            idx += 1
+        if idx < n and raw[idx] == ord("#"):
+            while idx < n and raw[idx] != ord("\n"):
+                idx += 1
+            continue
+        start = idx
+        while idx < n and raw[idx] not in b" \t\r\n#":
+            idx += 1
+        if idx > start:
+            tokens.append(raw[start:idx])
+    if len(tokens) < 4 or tokens[0] not in (b"P5", b"P2"):
+        return []
+    w, h, maxval = int(tokens[1]), int(tokens[2]), max(1, int(tokens[3]))
+    count = w * h
+    if tokens[0] == b"P5":
+        while idx < n and raw[idx] in b" \t\r\n":
+            idx += 1
+        return [b / float(maxval) for b in raw[idx:idx + count]]
+    vals = [int(t) for t in raw[idx:].split()[:count]]
+    return [v / float(maxval) for v in vals]
+
+
+def compute_motion_law_from_frames(frame_paths: list[Path]) -> dict[str, Any]:
+    """Compute motion-law stats from ordered PGM frame files."""
+    lums = [g for p in frame_paths if (g := read_pgm_luminance(p))]
+    return compute_motion_law_stats(lums)
+
+
+def _extract_video_frame_luminances(
+    path: Path, ffmpeg: str | None, out_dir: Path | None, *, max_frames: int = 24,
+) -> list[list[float]]:
+    if not ffmpeg:
+        return []
+    with tempfile.TemporaryDirectory() as td:
+        target = out_dir if out_dir is not None else Path(td)
+        pattern = target / f"{path.stem}_frame_%04d.pgm"
+        ext = subprocess.run(
+            [
+                ffmpeg, "-y", "-v", "quiet", "-i", str(path),
+                "-vf", "fps=2,scale=32:18:flags=area",
+                "-frames:v", str(max_frames), str(pattern),
+            ],
+            capture_output=True, text=True, timeout=60, check=False,
+        )
+        if ext.returncode != 0:
+            return []
+        frame_files = sorted(target.glob(f"{path.stem}_frame_*.pgm"))
+        return [g for p in frame_files if (g := read_pgm_luminance(p))]
+
+
 def _probe_video(path: Path, out_dir: Path | None) -> dict[str, Any]:
     raw = path.read_bytes()
     sha = "sha256:" + hashlib.sha256(raw).hexdigest()
@@ -115,6 +173,7 @@ def _probe_video(path: Path, out_dir: Path | None) -> dict[str, Any]:
         )
         if ext.returncode == 0 and wav_path.is_file():
             audio_out = deconstruct_audio(wav_path, out_dir=out_dir)
+    frame_lums = _extract_video_frame_luminances(path, ffmpeg, out_dir)
     return {
         "kind": "video", "source_path": path.name, "source_sha256": sha, "bytes": len(raw),
         "ffprobe_available": True, "ffmpeg_available": ffmpeg is not None,
@@ -122,7 +181,7 @@ def _probe_video(path: Path, out_dir: Path | None) -> dict[str, Any]:
         "width": int(vstream.get("width", 0) or 0),
         "height": int(vstream.get("height", 0) or 0),
         "duration_s": float((info.get("format") or {}).get("duration", 0.0) or 0.0),
-        "motion": compute_motion_law_stats([]),
+        "motion": compute_motion_law_stats(frame_lums),
         "audio": audio_out,
     }
 

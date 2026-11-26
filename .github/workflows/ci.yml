@@ -267,8 +267,13 @@ jobs:
       - name: Test-only dependencies
         shell: bash
         run: |
-          LANE_PINS=$(python scripts/ci_lane_pins.py index)
-          python -m pip install pytest pytest-timeout pynacl pillow numpy scipy "setuptools>=68" wheel $LANE_PINS
+          LANE_PINS=$(python scripts/ci_lane_pins.py index --local)
+          python -m pip install pytest pytest-timeout pynacl pillow numpy scipy "setuptools>=68" wheel hatchling
+          if [[ "$LANE_PINS" == ./packages/* ]]; then
+            python -m pip install --no-index --no-build-isolation --no-deps $LANE_PINS
+          else
+            python -m pip install $LANE_PINS
+          fi
       - name: Every test, no file list to fall behind
         shell: bash
         run: |
