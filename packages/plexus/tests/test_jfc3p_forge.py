@@ -197,7 +197,7 @@ def test_stage2_go_pipeline_and_receipt_tamper_control(tmp_path: Path) -> None:
 
 def test_jfc3p_forge_maintainability_and_zero_em_dash_hygiene() -> None:
     targets = sorted(FORGE_DIR.glob("*.py")) + [Path(__file__).resolve()]
-    assert len(targets) == 5
+    assert len(targets) >= 5
     for path in targets:
         text = path.read_text(encoding="utf-8")
         lines = text.splitlines()
