@@ -169,17 +169,28 @@ def extract_buildlang_tool_call(response: str) -> str | None:
     return None
 
 
+def format_arm_c_prompt(task: EvalTask) -> str:
+    """Build non-contradictory FCA + BuildLang tool-calling prompt for Arm C."""
+    header = build_fca_recall_header(task)
+    body = task.prompt
+    if task.domain == "DS-03":
+        body = body.split("Reply with a single final line")[0].strip()
+        body += " Reply ONLY with one line: `BUILDLANG_F64: <valid BuildLang f64 expression>`."
+    return f"{header}\n\nTask:\n{body}"
+
+
 def evaluate_arm_c_attempt(
     task: EvalTask, response: str, *, use_live_buildc: bool
 ) -> tuple[bool, str, bool]:
-    """Verify Arm C response, executing BuildLang f64 tool live on DS-03 calls."""
+    """Verify Arm C response, requiring live BuildLang f64 tool execution on DS-03."""
     if task.domain == "DS-03":
         expr = extract_buildlang_tool_call(response)
-        if expr is not None:
-            res = exec_buildlang_f64(expr, use_live_buildc=use_live_buildc)
-            if not res.ok or res.value is None:
-                return False, f"buildlang_tool_error: {res.error}", True
-            ok, diag = verify_task_output(task, f"ANSWER: {res.value:.15g}", use_live_buildc=use_live_buildc)
-            return ok, (f"MATCH({res.mode})" if ok else f"{diag} [buildc_val={res.value:.6g}]"), True
+        if expr is None:
+            return False, "tool_not_called: reply with `BUILDLANG_F64: <expr>` (no mental math)", False
+        res = exec_buildlang_f64(expr, use_live_buildc=use_live_buildc)
+        if not res.ok or res.value is None:
+            return False, f"buildlang_tool_error: {res.error}", True
+        ok, diag = verify_task_output(task, f"ANSWER: {res.value:.15g}", use_live_buildc=use_live_buildc)
+        return ok, (f"MATCH({res.mode})" if ok else f"{diag} [buildc_val={res.value:.6g}]"), True
     ok, diag = verify_task_output(task, response, use_live_buildc=use_live_buildc)
     return ok, diag, False

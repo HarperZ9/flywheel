@@ -20,7 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
-from .arm_c_buildlang_tool import build_fca_recall_header, evaluate_arm_c_attempt
+from .arm_c_buildlang_tool import evaluate_arm_c_attempt, format_arm_c_prompt
 from .eval_tasks import EvalTask, build_eval_tasks, verify_task_output
 from .local_backends import MockBackend, make_backend
 
@@ -96,8 +96,7 @@ def _run_arm_b_task(
 def _run_arm_c_task(
     backend: Any, task: EvalTask, *, max_iters: int, use_live_buildc: bool
 ) -> tuple[TaskRunRecord, int]:
-    header = build_fca_recall_header(task)
-    base_prompt = f"{header}\n\nTask:\n{task.prompt}"
+    base_prompt = format_arm_c_prompt(task)
     prompt = base_prompt
     tps_vals: list[float] = []
     vram_vals: list[float] = []
