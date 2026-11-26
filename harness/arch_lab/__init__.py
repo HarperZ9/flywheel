@@ -26,6 +26,13 @@ from .omni_modal import (
     OmniModalReport,
     generate_paired_omnimodal_states,
 )
+from .arm_c_buildlang_tool import (
+    BuildLangExecResult,
+    build_fca_recall_header,
+    evaluate_arm_c_attempt,
+    exec_buildlang_f64,
+    extract_buildlang_tool_call,
+)
 from .eval_tasks import EvalTask, build_eval_tasks, verify_task_output
 from .frontier_ladder import LadderRungResult, eval_frontier_ladder, eval_rung_l0
 from .local_backends import GenerationResult, MockBackend, OllamaHTTPBackend, Transformers4BitBackend
@@ -63,6 +70,7 @@ from .verifiable_rl import (
 
 __all__ = [
     "BitNetQuantizedMatrix",
+    "BuildLangExecResult",
     "CompressionProgressTracker",
     "DOMAIN_14_LANES",
     "Eagle3SpeculativeVerifier",
@@ -92,12 +100,16 @@ __all__ = [
     "VICRegReport",
     "bitnet_matvec",
     "build_eval_tasks",
+    "build_fca_recall_header",
     "compute_vicreg_loss",
     "cosine_similarity",
     "dequantize_bitnet_158",
     "dequantize_int4_groupwise",
     "eval_frontier_ladder",
     "eval_rung_l0",
+    "evaluate_arm_c_attempt",
+    "exec_buildlang_f64",
+    "extract_buildlang_tool_call",
     "generate_paired_omnimodal_states",
     "generate_rotational_dynamics",
     "int4_matvec",
