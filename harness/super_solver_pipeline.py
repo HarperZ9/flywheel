@@ -265,6 +265,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     """CLI entrypoint for `flywheel super-solver`."""
     ap = argparse.ArgumentParser(prog="flywheel super-solver", description="Run or verify the Super Solver pipeline.")
     ap.add_argument("--bench", action="store_true", help="Run the 6-fault-class adversarial benchmark.")
+    ap.add_argument("--search-bench", action="store_true", help="Run Wave 26B PUCT tree search + Merkle trace compression proof suite.")
     ap.add_argument("--verify", type=Path, help="Verify a saved super-solver receipt JSON offline.")
     ap.add_argument("--json", action="store_true", help="Emit JSON output.")
     args = ap.parse_args(list(argv) if argv is not None else None)
@@ -273,7 +274,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         ok, errs = verify_super_solver_receipt(data)
         print(json.dumps({"ok": ok, "verdict": data.get("verdict"), "errors": errs}, indent=2))
         return 0 if (ok and data.get("verdict") == "MATCH") else 1
+    if args.search_bench:
+        from .oracle_tree_search import run_planted_search_demo
+        from .trace_compressor import run_compression_benchmark
+        s_rep, c_rep = run_planted_search_demo(), run_compression_benchmark()
+        out = {"search": s_rep, "compression": c_rep, "all_passed": bool(s_rep["oracle_beat_prior_bias"] and c_rep["all_passed"])}
+        print(json.dumps(out, indent=2 if args.json else None, sort_keys=True))
+        return 0 if out["all_passed"] else 1
     from .super_solver_bench import run_adversarial_benchmark
     report = run_adversarial_benchmark()
     print(json.dumps(report, indent=2 if args.json else None, sort_keys=True))
     return 0 if report["all_passed"] else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
