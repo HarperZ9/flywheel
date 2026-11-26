@@ -7,6 +7,7 @@ from collections.abc import Callable
 
 def add_extension_parsers(sub, add_common: Callable) -> None:
     from gather.decompose_cmd import add_decompose_parsers
+    from gather.deconstruct.cmd import add_deconstruct_parser
     from gather.ledger_cmd import add_ledger_parser
     from gather.reddit_cmd import add_reddit_parser
     from gather.report_cmd import add_report_parsers
@@ -23,3 +24,4 @@ def add_extension_parsers(sub, add_common: Callable) -> None:
     add_ledger_parser(sub)
     add_saves_parser(sub)
     add_decompose_parsers(sub)
+    add_deconstruct_parser(sub)
