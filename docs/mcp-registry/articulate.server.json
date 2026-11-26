@@ -1,0 +1,43 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.harperz9/articulate",
+  "title": "Articulate Local Prose Checker MCP",
+  "description": "Local prose checker that flags writing patterns with line numbers and CI register profiles.",
+  "version": "0.19.1",
+  "websiteUrl": "https://harperz9.github.io/tools.html",
+  "repository": {
+    "url": "https://github.com/HarperZ9/articulate",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "articulate-writing",
+      "version": "0.19.1",
+      "runtimeHint": "uvx",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--from",
+          "value": "articulate-writing==0.19.1"
+        },
+        {
+          "type": "positional",
+          "value": "articulate-mcp"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "license": "FSL-1.1-MIT",
+      "consoleScripts": [
+        "articulate-mcp"
+      ]
+    }
+  }
+}

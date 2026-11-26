@@ -1,0 +1,31 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.harperz9/index",
+  "title": "Index Offline Repo Atlas MCP",
+  "description": "Offline repository and documentation graph atlas with file and line evidence.",
+  "version": "2.16.0",
+  "websiteUrl": "https://harperz9.github.io/tools.html",
+  "repository": {
+    "url": "https://github.com/HarperZ9/flywheel",
+    "source": "github",
+    "subfolder": "packages/index"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "index-graph",
+      "version": "2.16.0",
+      "runtimeHint": "uvx",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "license": "FSL-1.1-MIT",
+      "standaloneMirror": "https://github.com/HarperZ9/index"
+    }
+  }
+}

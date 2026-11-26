@@ -2,9 +2,9 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 type: software
 title: "Flywheel"
-abstract: "Run AI tasks on any hosted or local model, check answers against the sources that decide them, and keep a record of every step."
+abstract: "Flywheel (v2.0.0) is a model-neutral AI gateway, Rowan provider router, Three-Plate and PUCT oracle verification harness with Merkle trace compression, full-track Welch PSD audio and motion-law video deconstructor, local RTX 4090 and Colab RLVR model forge, and offline-verifiable engine-receipt/1 ledger recheckable with Python's standard library alone."
 version: "2.0.0"
-date-released: 2026-11-15
+date-released: 2026-11-26
 authors:
   - family-names: "Harper"
     given-names: "Zain Dana"
@@ -14,10 +14,13 @@ url: "https://harperz9.github.io/flywheel.html"
 license-url: "https://github.com/HarperZ9/flywheel/blob/main/LICENSE"
 keywords:
   - ai-agent
-  - llm-router
-  - local-llm
-  - offline
-  - receipts
-  - zero-dependency
   - ai-evaluation
   - llm-evaluation
+  - llm-router
+  - local-llm
+  - rlvr
+  - receipts
+  - offline-verification
+  - zero-dependency
+  - mcp
+  - fsl-1.1-mit
