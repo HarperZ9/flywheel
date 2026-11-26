@@ -12,7 +12,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/classifier_friction_bench.py | 454 |
 | harness/cross_harness_manifest.py | 342 |
 | harness/endpoints.py | 466 |
-| harness/gateway.py | 2337 |
+| harness/gateway.py | 686 |
 | harness/governed_agent_bench.py | 734 |
 | harness/lanes.py | 361 |
 | harness/local_agent.py | 360 |
@@ -30,7 +30,7 @@ Enforced by scripts/check_file_gate.py and tests/test_file_gate.py.
 | harness/tool_call_receipt.py | 347 |
 | harness/unisonai_stateful_bench.py | 559 |
 
-Total: 21 files, 12005 lines over a 300-line gate.
+Total: 21 files, 10354 lines over a 300-line gate.
 
 
 Merge note, 2026-07-28 (p1/tail x main): tasks_physics.py and
@@ -55,3 +55,8 @@ into `harness/lane_console_route.py`, and `--desktop-launch` registers through
 Shrink note, 2026-09-26 (feat/lanes-operational, WP10): gateway.py moves 2358 to 2357.
 The stop step that closes the lane sessions moved into
 `gateway_lane_calls._stop_serving` with the operation service and socket close.
+
+Shrink note, 2026-11-25 (Wave 2 gateway decomposition): gateway.py moves 2337 to 686.
+Non-dispatch bodies moved into focused <= 300-line modules (`gateway_state.py`,
+`gateway_get_handlers.py`, `gateway_post_custody.py`, `gateway_post_core.py`,
+`gateway_post_studio.py`, `gateway_cli.py`), loaded lazily from `gateway.py`.
