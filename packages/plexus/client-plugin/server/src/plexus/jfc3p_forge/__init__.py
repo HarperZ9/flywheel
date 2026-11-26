@@ -11,6 +11,14 @@ from .colab_h100_runner import (
     run_colab_forge_pipeline,
     verify_forge_receipt,
 )
+from .fresco_molt_bridge import (
+    FRESCOOrthogonalProjector,
+    KVEntry,
+    MoLTCrossLoopKVCache,
+    PlatoKeyLatentCodec,
+    fused_single_pass_loopcd,
+    run_ablation_a5_fresco_molt,
+)
 from .model_carving_arch import (
     BuildLangOracleHead,
     CarvedSublayerGate,
@@ -124,4 +132,6 @@ __all__ = [
     "MetamerPair", "MetamerSplitRewardScorer", "PlatoKeyProcrustesBridge", "AVTR4RouteController",
     "one_pass_online_reverse_kl", "run_ablation_a1_metamer_rlvb_armc", "run_ablation_a3_plato_key",
     "run_ablation_a4_avtr_4r", "run_wave15_colab_ablations",
+    "FRESCOOrthogonalProjector", "KVEntry", "MoLTCrossLoopKVCache", "PlatoKeyLatentCodec",
+    "fused_single_pass_loopcd", "run_ablation_a5_fresco_molt",
 ]

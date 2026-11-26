@@ -75,7 +75,7 @@ def test_ablation_a3_plato_key_and_a4_avtr_4r() -> None:
 def test_wave15_colab_ablation_runner_all_and_receipt_tamper_control(tmp_path: Path) -> None:
     res = run_wave15_colab_ablations(ablation="all", gpu_name="H100", out_dir=tmp_path)
     assert res["ok"] is True
-    assert set(res["results"]) == {"A1", "A2", "A3", "A4"}
+    assert {"A1", "A2", "A3", "A4", "A5"} <= set(res["results"])
     assert res["gpu_config"]["gpu_profile"] == "H100-80GB"
 
     rec = json.loads((tmp_path / "engine_receipt.json").read_text(encoding="utf-8"))

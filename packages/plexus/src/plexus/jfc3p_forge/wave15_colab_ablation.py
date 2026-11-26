@@ -18,6 +18,7 @@ import random
 from typing import Any, Sequence
 
 from .colab_h100_runner import build_forge_receipt, dense_exact_reverse_kl
+from .fresco_molt_bridge import run_ablation_a5_fresco_molt
 from .noh4_living_world import evaluate_noh4_vs_noh3_vs_flat
 from .rtx4090_armc_eval import evaluate_armc_holdout
 from .rtx4090_model_forge import adapt_colab_gpu_profile
@@ -246,11 +247,11 @@ def run_ablation_a4_avtr_4r() -> dict[str, Any]:
 
 
 def run_wave15_colab_ablations(*, ablation: str = "all", gpu_name: str = "L4", out_dir: Path | None = None) -> dict[str, Any]:
-    """Run selected Wave 15A/15B ablations (A1..A4 or all) and emit canonical engine-receipt/1."""
-    selected = ("A1", "A2", "A3", "A4") if ablation == "all" else (ablation,)
+    """Run selected Wave 15A/15B/21B ablations (A1..A5 or all) and emit canonical engine-receipt/1."""
+    selected = ("A1", "A2", "A3", "A4", "A5") if ablation == "all" else (ablation,)
     runners = {
         "A1": run_ablation_a1_metamer_rlvb_armc, "A2": evaluate_noh4_vs_noh3_vs_flat,
-        "A3": run_ablation_a3_plato_key, "A4": run_ablation_a4_avtr_4r,
+        "A3": run_ablation_a3_plato_key, "A4": run_ablation_a4_avtr_4r, "A5": run_ablation_a5_fresco_molt,
     }
     results = {key: runners[key]() for key in selected}
     ok = all(bool(r["ok"]) for r in results.values())
@@ -271,8 +272,8 @@ def run_wave15_colab_ablations(*, ablation: str = "all", gpu_name: str = "L4", o
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Wave 15B Colab H100/A100/L4 & CPU Ablation Runner")
-    parser.add_argument("--ablation", choices=("all", "A1", "A2", "A3", "A4"), default="all")
+    parser = argparse.ArgumentParser(description="Wave 15B/21B Colab H100/A100/L4 & CPU Ablation Runner")
+    parser.add_argument("--ablation", choices=("all", "A1", "A2", "A3", "A4", "A5"), default="all")
     parser.add_argument("--gpu", default="L4")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
