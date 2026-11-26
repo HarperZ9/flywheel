@@ -33,7 +33,7 @@ jobs:
           cat dist/SHA256SUMS
       - name: Smoke-test 1-command install from freshly built wheel
         run: |
-          sh install.sh --from-dir dist --method venv --install-dir "$RUNNER_TEMP/fw-smoke" --no-path
+          sh install.sh --from-dir dist --method venv --install-dir "$RUNNER_TEMP/fw-smoke/venv" --bin-dir "$RUNNER_TEMP/fw-smoke/bin" --no-path
           "$RUNNER_TEMP/fw-smoke/bin/flywheel" gate
       - name: Upload release assets artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

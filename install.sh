@@ -1,30 +1,56 @@
-#!/usr/bin/env sh
-# Zero-friction 1-command installer for Flywheel (flywheel-verify) with fail-closed SHA256SUMS verification.
-# Supports uv tool, pipx, or standalone venv install with zero manual toolchain setup.
-# Usage:
+#!/bin/sh
+# Install the flywheel command for this user on macOS or Linux.
+#
 #   curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh
-#   sh install.sh --self-test
+#
+# Fetches the release wheel + SHA256SUMS from GitHub Releases, verifies SHA-256
+# fail-closed before installing, and installs via uv tool, pipx, or a private
+# virtual environment (linking `flywheel` into ~/.local/bin). Needs Python 3.11+.
+# Settings:
+#   FLYWHEEL_VERSION=2.0.0   install that version (default: latest)
+#   FLYWHEEL_SOURCE=path     install from a local checkout or wheel
+#   FLYWHEEL_FROM_DIR=dir    install a release wheel + SHA256SUMS from a local dir
+#   FLYWHEEL_INSTALL_METHOD  auto | uv | pipx | venv (default: auto)
+#   FLYWHEEL_INSTALL_DIR     where the environment goes
+#   FLYWHEEL_BIN_DIR         where the command is linked
+#   FLYWHEEL_FROM_PYPI=1     install flywheel-verify directly from PyPI
 set -eu
 
 REPO="HarperZ9/flywheel"
 VERSION="${FLYWHEEL_VERSION:-latest}"
-INSTALL_DIR="${FLYWHEEL_INSTALL_DIR:-$HOME/.flywheel}"
+DEST="${FLYWHEEL_INSTALL_DIR:-$HOME/.local/share/flywheel/venv}"
+BIN="${FLYWHEEL_BIN_DIR:-$HOME/.local/bin}"
 FROM_DIR="${FLYWHEEL_FROM_DIR:-}"
 METHOD="${FLYWHEEL_INSTALL_METHOD:-auto}"
+FROM_PYPI="${FLYWHEEL_FROM_PYPI:-0}"
 NO_PATH=0
 SELF_TEST=0
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     --version) VERSION="$2"; shift 2 ;;
-    --install-dir) INSTALL_DIR="$2"; shift 2 ;;
+    --install-dir) DEST="$2"; shift 2 ;;
+    --bin-dir) BIN="$2"; shift 2 ;;
     --from-dir) FROM_DIR="$2"; shift 2 ;;
     --method) METHOD="$2"; shift 2 ;;
+    --from-pypi) FROM_PYPI=1; shift ;;
     --no-path) NO_PATH=1; shift ;;
     --self-test) SELF_TEST=1; shift ;;
     *) echo "Unknown argument: $1" >&2; exit 2 ;;
   esac
 done
+
+find_python311() {
+  for candidate in python3.13 python3.12 python3.11 python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1 &&
+       "$candidate" -c 'import sys; raise SystemExit(sys.version_info < (3, 11))' 2>/dev/null; then
+      printf '%s\n' "$candidate"
+      return 0
+    fi
+  done
+  echo "flywheel needs Python 3.11 or newer; install it and run this again." >&2
+  return 1
+}
 
 sha256_file() {
   if command -v sha256sum >/dev/null 2>&1; then
@@ -33,7 +59,7 @@ sha256_file() {
     shasum -a 256 "$1" | awk '{print tolower($1)}'
   else
     echo "Refusing install: sha256sum or shasum is required." >&2
-    exit 1
+    return 1
   fi
 }
 
@@ -57,7 +83,7 @@ verify_checksum() {
     echo "Refusing install: $asset_name is missing from SHA256SUMS." >&2
     return 1
   fi
-  actual="$(sha256_file "$file_path")"
+  actual="$(sha256_file "$file_path")" || return 1
   if [ "$actual" != "$expected" ]; then
     echo "Refusing install: SHA-256 mismatch for $asset_name (expected $expected, got $actual)." >&2
     return 1
@@ -72,9 +98,33 @@ find_sums() {
   return 1
 }
 
+install_venv() {
+  spec="$1"
+  target_venv="$2"
+  target_bin="$3"
+  offline="$4"
+  py="$(find_python311)" || return 1
+  mkdir -p "$(dirname "$target_venv")" "$target_bin"
+  "$py" -m venv "$target_venv"
+  if [ "$offline" -eq 1 ]; then
+    "$target_venv/bin/python" -m pip install --quiet --disable-pip-version-check --no-deps --no-index --force-reinstall "$spec"
+  else
+    "$target_venv/bin/python" -m pip install --quiet --disable-pip-version-check --upgrade "$spec"
+  fi
+  ln -sf "$target_venv/bin/flywheel" "$target_bin/flywheel"
+  if [ "$NO_PATH" -eq 0 ] && [ -n "${HOME:-}" ]; then
+    for rc in "$HOME/.profile" "$HOME/.bashrc" "$HOME/.zshrc"; do
+      if [ -f "$rc" ] && ! grep -Fq "$target_bin" "$rc"; then
+        printf '\nexport PATH="%s:$PATH"\n' "$target_bin" >> "$rc"
+      fi
+    done
+  fi
+}
+
 install_wheel() {
   wheel="$1"
-  target="$2"
+  target_venv="$2"
+  target_bin="$3"
   mode="$METHOD"
   if [ "$mode" = "auto" ]; then
     if command -v uv >/dev/null 2>&1; then mode="uv"
@@ -82,42 +132,18 @@ install_wheel() {
     else mode="venv"
     fi
   fi
-
   case "$mode" in
-    uv)
-      uv tool install --force "$wheel"
-      echo "Flywheel installed via uv tool."
-      ;;
-    pipx)
-      pipx install --force "$wheel"
-      echo "Flywheel installed via pipx."
-      ;;
-    venv)
-      py="python3"
-      command -v python3 >/dev/null 2>&1 || py="python"
-      mkdir -p "$target/bin"
-      "$py" -m venv "$target/venv"
-      "$target/venv/bin/python" -m pip install --quiet --no-deps --no-index --force-reinstall "$wheel"
-      ln -sf "$target/venv/bin/flywheel" "$target/bin/flywheel"
-      if [ "$NO_PATH" -eq 0 ] && [ -n "${HOME:-}" ]; then
-        for rc in "$HOME/.profile" "$HOME/.bashrc" "$HOME/.zshrc"; do
-          if [ -f "$rc" ] && ! grep -Fq "$target/bin" "$rc"; then
-            printf '\nexport PATH="%s/bin:$PATH"\n' "$target" >> "$rc"
-          fi
-        done
-      fi
-      echo "Flywheel installed in standalone venv: $target/bin/flywheel"
-      ;;
-    *)
-      echo "Unsupported install method: $mode (use auto, uv, pipx, or venv)" >&2
-      return 2
-      ;;
+    uv) uv tool install --force "$wheel" ;;
+    pipx) pipx install --force "$wheel" ;;
+    venv) install_venv "$wheel" "$target_venv" "$target_bin" 1 ;;
+    *) echo "Unsupported install method: $mode" >&2; return 2 ;;
   esac
 }
 
 install_from_stage() {
   stage="$1"
-  target="$2"
+  target_venv="$2"
+  target_bin="$3"
   sums="$(find_sums "$stage")" || return 1
   wheel=""
   for cand in "$stage"/flywheel_verify-*.whl; do
@@ -125,20 +151,21 @@ install_from_stage() {
   done
   [ -n "$wheel" ] || { echo "Refusing install: no flywheel_verify wheel found in $stage." >&2; return 1; }
   verify_checksum "$wheel" "$(basename "$wheel")" "$sums" || return 1
-  install_wheel "$wheel" "$target" || return 1
-  mkdir -p "$target"
-  cp "$sums" "$target/SHA256SUMS"
+  install_wheel "$wheel" "$target_venv" "$target_bin" || return 1
+  mkdir -p "$target_venv"
+  cp "$sums" "$target_venv/SHA256SUMS"
   echo "Flywheel verified (SHA256SUMS OK)."
 }
 
 run_self_test() {
+  py="$(find_python311)" || exit 1
   tmp="$(mktemp -d 2>/dev/null || mktemp -d -t flywheel-selftest)"
   trap 'rm -rf "$tmp"' EXIT INT TERM
   stage="$tmp/stage"
   mkdir -p "$stage"
   whl="$stage/flywheel_verify-0.0.1-py3-none-any.whl"
 
-  python3 -c '
+  "$py" -c '
 import sys, zipfile
 with zipfile.ZipFile(sys.argv[1], "w") as z:
     z.writestr("flywheel_selftest/__init__.py", "VERSION = \"0.0.1\"\n")
@@ -153,12 +180,11 @@ with zipfile.ZipFile(sys.argv[1], "w") as z:
 
   METHOD="venv"
   NO_PATH=1
-  install_from_stage "$stage" "$tmp/dest_ok"
+  install_from_stage "$stage" "$tmp/dest_ok/venv" "$tmp/dest_ok/bin"
   out="$("$tmp/dest_ok/bin/flywheel")"
   printf '%s\n' "$out" | grep -q "flywheel selftest ok" || { echo "Self-test failed: unexpected CLI output." >&2; exit 1; }
 
-  # Planted 1-byte tamper control: must fail closed before installing.
-  python3 -c '
+  "$py" -c '
 import sys
 p = sys.argv[1]
 b = bytearray(open(p, "rb").read())
@@ -166,7 +192,7 @@ b[-1] ^= 0x01
 open(p, "wb").write(b)
 ' "$whl"
 
-  if install_from_stage "$stage" "$tmp/dest_bad" >/dev/null 2>&1; then
+  if install_from_stage "$stage" "$tmp/dest_bad/venv" "$tmp/dest_bad/bin" >/dev/null 2>&1; then
     echo "Self-test failed: tampered wheel was not refused." >&2
     exit 1
   fi
@@ -179,8 +205,25 @@ if [ "$SELF_TEST" -eq 1 ]; then
   exit 0
 fi
 
+if [ -n "${FLYWHEEL_SOURCE:-}" ]; then
+  install_venv "$FLYWHEEL_SOURCE" "$DEST" "$BIN" 0
+  "$BIN/flywheel" --version
+  exit 0
+fi
+
+if [ "$FROM_PYPI" = "1" ]; then
+  if [ "$VERSION" != "latest" ]; then
+    req="flywheel-verify==${VERSION#v}"
+  else
+    req="flywheel-verify"
+  fi
+  install_venv "$req" "$DEST" "$BIN" 0
+  "$BIN/flywheel" --version
+  exit 0
+fi
+
 if [ -n "$FROM_DIR" ]; then
-  install_from_stage "$FROM_DIR" "$INSTALL_DIR"
+  install_from_stage "$FROM_DIR" "$DEST" "$BIN"
   exit 0
 fi
 
@@ -191,12 +234,13 @@ else
   api="https://api.github.com/repos/$REPO/releases/tags/$tag"
 fi
 
+py="$(find_python311)" || exit 1
 tmp="$(mktemp -d 2>/dev/null || mktemp -d -t flywheel-install)"
 trap 'rm -rf "$tmp"' EXIT INT TERM
 meta="$tmp/release.json"
 curl -fsSL -H "Accept: application/vnd.github+json" -H "User-Agent: flywheel-installer" "$api" -o "$meta"
 
-urls="$(python3 -c '
+urls="$("$py" -c '
 import json, re, sys
 assets = json.load(open(sys.argv[1], encoding="utf-8")).get("assets", [])
 by_name = {a["name"]: a["browser_download_url"] for a in assets}
@@ -216,4 +260,4 @@ for n, u in pick:
 printf '%s\n' "$urls" | while IFS='	' read -r name url; do
   [ -n "$name" ] && curl -fsSL "$url" -o "$tmp/$name"
 done
-install_from_stage "$tmp" "$INSTALL_DIR"
+install_from_stage "$tmp" "$DEST" "$BIN"
