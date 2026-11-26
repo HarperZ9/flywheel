@@ -59,5 +59,14 @@ def test_a_lane_that_pip_cannot_install_is_refused():
 def test_the_whole_suite_job_installs_index_from_the_registry():
     job = _whole_suite_job()
     assert "python scripts/ci_lane_pins.py index" in job
+    assert "--local" in job and "--no-index" in job
     assert re.search(r"index-graph\s*==", CI.read_text(encoding="utf-8")) is None, (
         "ci.yml names an index-graph version by hand; read it from the registry")
+
+
+def test_local_flag_resolves_in_repo_index_package_without_pypi():
+    completed = subprocess.run(
+        [sys.executable, "-S", str(SCRIPT), "index", "--local"], cwd=ROOT,
+        capture_output=True, text=True, timeout=60)
+    assert completed.returncode == 0, completed.stderr
+    assert completed.stdout.strip() == "./packages/index"
