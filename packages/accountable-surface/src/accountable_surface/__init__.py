@@ -52,6 +52,10 @@ from .browser_effector import (
     FakeBrowserDriver,
 )
 from .web_effector import FakePageDriver, WebAction, WebEffector
+from .operator_backends import LocalSafeBackend, RollbackSnapshot, SimulatedWorkstationBackend
+from .operator_policy import AuthorityGate, AuthorityGrant, GateVerdict, OperatorAction, WorkstationObservation
+from .operator_receipt import emit_operator_engine_receipt, verify_operator_engine_receipt
+from .workstation_operator import OperatorSession, OperatorStepRecord, ReplayReport, verify_action_journal
 
 __all__ = [
     "AccountableSurface",
@@ -101,5 +105,19 @@ __all__ = [
     "ActionReceiptReceptor",
     "receipt_from_outcome",
     "verify_receipts",
+    "AuthorityGate",
+    "AuthorityGrant",
+    "GateVerdict",
+    "OperatorAction",
+    "WorkstationObservation",
+    "RollbackSnapshot",
+    "SimulatedWorkstationBackend",
+    "LocalSafeBackend",
+    "OperatorSession",
+    "OperatorStepRecord",
+    "ReplayReport",
+    "verify_action_journal",
+    "emit_operator_engine_receipt",
+    "verify_operator_engine_receipt",
 ]
 __version__ = "0.3.1"
