@@ -5,7 +5,7 @@
 
 # flywheel
 
-Run AI tasks on any hosted or local model, check answers against the sources that decide them, and keep a record of every step.
+Accountable AI evaluation, verification, multimodal deconstruction (`gather`), cryptographic `engine-receipt/1` trails, and the `plexus` local RTX 4090 and Colab model forge (`JFC3P`, `NOH-3`/`NOH-4`, Arm C deterministic tool verification). Run AI tasks on any hosted or local model, check answers against the sources that decide them, and keep a tamper-evident record of every step.
 
 ```
 python -m pip install flywheel-verify
@@ -324,8 +324,20 @@ uplift is claimed.
 <p align="center"><img src="docs/schematics/architecture.svg" alt="The browser shell, the command line, curl and MCP clients all reach one gateway on localhost, which routes to a local model or an external check and writes a receipt either way, escalating only what does not pass." width="100%"></p>
 
 - **`harness/`** is the Python engine. It runs tasks, checks tool requests,
-  writes run records, discovers companion tools, and serves the localhost API.
-  The installed runtime uses only the Python standard library.
+  enforces the Three-Plate Verification Oracle (`harness/three_plate_oracle.py`),
+  hosts the local model architecture lab (`harness/arch_lab/`), writes run
+  records, discovers companion tools, and serves the localhost API. The
+  installed runtime uses only the Python standard library.
+- **`packages/`** holds the consolidated companion tools and MCP servers in one
+  monorepo, including `packages/gather` (research capture and multimodal
+  deconstruction under `gather/deconstruct/`), `packages/plexus` (tool discovery
+  plus the local RTX 4090 / Colab `jfc3p_forge` Arm C tool-loop evaluator and
+  `JFC3P-Oracle-v2` Reverse-KL trainer), `packages/accountable-surface`
+  (fail-closed workstation operator policy and replay), `packages/emet`
+  (4-language byte-witness verifier with `#![forbid(unsafe_code)]` Rust core),
+  `packages/crucible`, `packages/forum`, `packages/mneme`, `packages/canon`,
+  `packages/articulate`, `packages/index`, `packages/relay`, `packages/chorus`,
+  `packages/learn`, and `packages/bulletin`. See [packages/README.md](packages/README.md).
 - **`desktop/`** is the Flutter client. It talks to the gateway over localhost
   and can launch the bundled engine on Windows without a separate Python
   install. Its assistant, **Rowan**, runs on the model you choose.
@@ -389,6 +401,22 @@ unverifiable.
 
 ## Recent additions
 
+- **Local model forge and Arm C tool verification (`packages/plexus/src/plexus/jfc3p_forge/`).**
+  Deterministic RTX 4090 Arm C tool-loop evaluator (`rtx4090_armc_eval.py`) over
+  local loopback OpenAI-compatible servers, paired with the `JFC3P-Oracle-v2`
+  Reverse-KL trainer spec (`v2_reverse_kl_trainer.py`) and `NOH-3` living-world
+  scaffolding (`noh3_living_world.py`), all sealed with canonical `engine-receipt/1`
+  records.
+- **Three-Plate Verification Oracle and `engine-receipt/1` trails (`harness/three_plate_oracle.py`, `harness/receipt_envelope.py`).**
+  Separates claim extraction, independent oracle execution, and fail-closed
+  verdict sealing so planted-error controls fail loudly instead of passing on
+  surface plausibility.
+- **Workstation operator authority gate (`packages/accountable-surface/src/accountable_surface/operator_policy.py`).**
+  Default-deny `ALLOW | DENY | NEEDS_HUMAN` gating with path containment,
+  observation SHA-256 binding, and tamper-evident action journals.
+- **Multimodal deconstruction (`packages/gather/src/gather/deconstruct/`).**
+  Extracts stems, LUFS, spectral metrics, video contact frames, and structured
+  metadata locally for repeatable archival indexing.
 - **Signed citations.** `harness/grounding_signatures.py` reads an Ed25519
   sidecar beside a receipt and reports it absent, invalid or valid. An unsigned
   store behaves as before.
