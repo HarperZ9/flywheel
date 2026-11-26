@@ -72,6 +72,7 @@ INVENTORY = {
                    "machine", "tests/test_gateway_route_reach.py", True),
     "local_agent.py": (LOCAL, "the serve and Ollama backends of the local lane", "", True),
     "model_ollama.py": (LOCAL, "an Ollama daemon on this machine", "", False),
+    "arch_lab/local_backends.py": (LOCAL, "local Ollama HTTP backend for arch_lab frontier eval", "", False),
     "trace_observation/behavioral/subject.py": (LOCAL, "a model under a behavioral test", "", False),
     "trace_observation/openweight/capture_local.py": (LOCAL, "a local Ollama model", "", False),
     "monitor_gate/monitors.py": (LOCAL, "an Ollama monitor a gate run names", "", False),

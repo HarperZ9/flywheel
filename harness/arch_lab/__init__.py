@@ -26,7 +26,16 @@ from .omni_modal import (
     OmniModalReport,
     generate_paired_omnimodal_states,
 )
+from .eval_tasks import EvalTask, build_eval_tasks, verify_task_output
 from .frontier_ladder import LadderRungResult, eval_frontier_ladder, eval_rung_l0
+from .local_backends import GenerationResult, MockBackend, OllamaHTTPBackend, Transformers4BitBackend
+from .local_frontier_eval import (
+    TaskRunRecord,
+    mcnemar_exact_p,
+    run_arm_comparison,
+    run_planted_false_accept_control,
+    wilson_ci_95,
+)
 from .quant_speculative import (
     BitNetQuantizedMatrix,
     Eagle3SpeculativeVerifier,
@@ -58,11 +67,15 @@ __all__ = [
     "DOMAIN_14_LANES",
     "Eagle3SpeculativeVerifier",
     "EpisodeMetrics",
+    "EvalTask",
     "FastWeightDeltaMemory",
+    "GenerationResult",
     "Int4QuantizedMatrix",
     "LadderRungResult",
     "LatentJEPAFastWeightModel",
     "MODALITIES",
+    "MockBackend",
+    "OllamaHTTPBackend",
     "OmniModalJEPAProjector",
     "OmniModalReport",
     "PowerPlayCurriculum",
@@ -70,12 +83,15 @@ __all__ = [
     "RLTask",
     "SpeculativeDecodeReport",
     "StaticMemoryBaseline",
+    "TaskRunRecord",
     "TaskSubmission",
     "ThreePlateStepVerdict",
     "ThreePlateVerifiableRLEnv",
+    "Transformers4BitBackend",
     "VICRegMonitor",
     "VICRegReport",
     "bitnet_matvec",
+    "build_eval_tasks",
     "compute_vicreg_loss",
     "cosine_similarity",
     "dequantize_bitnet_158",
@@ -87,7 +103,12 @@ __all__ = [
     "int4_matvec",
     "load_ds02_buildlang_tasks",
     "load_ds03_physics_tasks",
+    "mcnemar_exact_p",
     "quantize_bitnet_158",
     "quantize_int4_groupwise",
+    "run_arm_comparison",
+    "run_planted_false_accept_control",
     "sinkhorn_doubly_stochastic",
+    "verify_task_output",
+    "wilson_ci_95",
 ]
