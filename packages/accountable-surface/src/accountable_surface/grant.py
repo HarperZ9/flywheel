@@ -13,6 +13,8 @@ same grant, and they have no meaning inside proof-surface's schema:
                            the exact action kinds the operator lets act without a
                            rollback (see ``irreversible_granted``). A list of kind
                            strings; no wildcard, boolean, or string form counts.
+  ``target_tiers``         the read / click / full tier per origin or window that the
+                           actuation policy check reads (see ``tiers.py``).
 
 Strip them before handing any grant to propose() or actuate() so the schema check
 never sees them.
@@ -24,7 +26,7 @@ boundary that calls into proof-surface (world/session.py, server.py, …).
 from __future__ import annotations
 
 LOCAL_SCOPE_FIELDS = ("allowed_perceptions", "allowed_bounds", "allowed_reads",
-                      "allowed_irreversible_actions")
+                      "allowed_irreversible_actions", "target_tiers")
 
 
 def irreversible_granted(grant, action_kind: str) -> bool:
