@@ -1,4 +1,4 @@
-"""JFC-3P Stage-1 Curation, Model-Carving/mHC, NOH-3, Colab/RTX 4090 Forge, Arm C Eval & v2 Reverse-KL.
+"""JFC-3P Stage-1 Curation, Model-Carving/mHC, NOH-3/NOH-4, Colab/RTX 4090 Forge, Arm C, v2 KL & Wave 15 Ablations.
 
 Pure Python 3.11+ stdlib package with zero runtime dependencies.
 """
@@ -31,6 +31,12 @@ from .noh3_living_world import (
     ImmuneEvent,
     NOH3LivingWorldOrganism,
     evaluate_noh3_suite,
+)
+from .noh4_living_world import (
+    NOH4LivingWorldOrganism,
+    ReseatingCODITValve,
+    ValveEvent,
+    evaluate_noh4_vs_noh3_vs_flat,
 )
 from .rtx4090_armc_eval import (
     eval_safe_f64_expr,
@@ -80,6 +86,17 @@ from .v2_reverse_kl_trainer import (
     rebalance_domain_mix,
     validate_v2_regression_guard,
 )
+from .wave15_colab_ablation import (
+    AVTR4RouteController,
+    MetamerPair,
+    MetamerSplitRewardScorer,
+    PlatoKeyProcrustesBridge,
+    one_pass_online_reverse_kl,
+    run_ablation_a1_metamer_rlvb_armc,
+    run_ablation_a3_plato_key,
+    run_ablation_a4_avtr_4r,
+    run_wave15_colab_ablations,
+)
 
 __all__ = [
     "TIER_A_LICENSES", "LANE_14_SPECS", "FROZEN_DS_HOLDOUTS",
@@ -95,6 +112,7 @@ __all__ = [
     "run_colab_forge_pipeline",
     "ORGANELLE_NAMES", "ENV_NAMES", "ImmuneEvent", "BuckinghamPiNormalizer",
     "CausticTickGate", "CODITImmuneOrgan", "NOH3LivingWorldOrganism", "evaluate_noh3_suite",
+    "ValveEvent", "ReseatingCODITValve", "NOH4LivingWorldOrganism", "evaluate_noh4_vs_noh3_vs_flat",
     "BaseModelSpec", "APACHE2_BASE_MODELS", "TIER_A_TRAIN_SOURCES",
     "adapt_colab_gpu_profile", "build_oracle_training_mix", "build_rtx4090_serving_spec",
     "evaluate_oracle_verifiable_suite", "run_rtx4090_forge",
@@ -103,4 +121,7 @@ __all__ = [
     "DEFAULT_V2_REPLAY_RATIOS", "LONGPPL_BASE_FLOOR", "V2_DEFAULT_BETA_KL",
     "V2ReverseKLResult", "V2RegressionGuard", "compute_v2_reverse_kl_loss",
     "rebalance_domain_mix", "validate_v2_regression_guard", "format_avtr_sample", "build_v2_training_spec",
+    "MetamerPair", "MetamerSplitRewardScorer", "PlatoKeyProcrustesBridge", "AVTR4RouteController",
+    "one_pass_online_reverse_kl", "run_ablation_a1_metamer_rlvb_armc", "run_ablation_a3_plato_key",
+    "run_ablation_a4_avtr_4r", "run_wave15_colab_ablations",
 ]
