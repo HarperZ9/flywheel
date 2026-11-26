@@ -12,6 +12,18 @@ python -m pip install flywheel-verify
 flywheel gate
 ```
 
+One-command release install (verifies `SHA256SUMS` fail-closed, installs via `uv tool`, `pipx`, or isolated venv):
+
+```powershell
+# Windows (PowerShell)
+irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex
+```
+
+```sh
+# Linux / macOS
+curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh
+```
+
 [![version: 2.0.0](https://img.shields.io/badge/version-2.0.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
 [![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel/blob/main/LICENSE)
