@@ -34,6 +34,7 @@ GROUPS = (
         "verify-share": "verified share over time and the cost to verify",
         "report": "report calls that reached past what was allowed",
         "behavior-check": "replay scripted sessions on two builds and compare",
+        "super-solver": "run the unified Rowan verification pipeline and adversarial proof suite",
         "corpus-export": "export sealed envelopes as a JSONL corpus",
     }),
     ("Extend the coding session", {
