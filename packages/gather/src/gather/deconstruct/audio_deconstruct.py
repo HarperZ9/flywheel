@@ -5,7 +5,6 @@ adapters for ffmpeg transcoding and external demucs stem separation when install
 """
 from __future__ import annotations
 
-import cmath
 import hashlib
 import math
 import shutil
@@ -16,15 +15,17 @@ import wave
 from pathlib import Path
 from typing import Any
 
-AUDIO_SCHEMA = "audio-deconstruction/1"
-BANDS: tuple[tuple[str, float, float], ...] = (
-    ("sub_bass", 20.0, 60.0),
-    ("bass", 60.0, 250.0),
-    ("low_mid", 250.0, 500.0),
-    ("mid", 500.0, 2000.0),
-    ("presence", 2000.0, 6000.0),
-    ("air", 6000.0, 20000.0),
+from gather.deconstruct.audio_welch import (
+    BANDS as WELCH_BANDS,
 )
+from gather.deconstruct.audio_welch import (
+    compute_low_end_phase_correlation,
+    compute_macro_dynamic_range_db,
+    welch_spectral_analysis,
+)
+
+AUDIO_SCHEMA = "audio-deconstruction/1"
+BANDS: tuple[tuple[str, float, float], ...] = tuple((name, lo, hi) for name, _, lo, hi in WELCH_BANDS)
 
 
 def _db(linear: float, floor: float = -120.0) -> float:
@@ -60,21 +61,6 @@ def _write_mono_wav(path: Path, sr: int, samples: list[float]) -> dict[str, Any]
         wf.writeframes(struct.pack(f"<{len(clamped)}h", *clamped))
     data = path.read_bytes()
     return {"file": path.name, "sha256": "sha256:" + hashlib.sha256(data).hexdigest(), "bytes": len(data)}
-
-
-def _fft(xs: list[complex]) -> list[complex]:
-    n = len(xs)
-    if n <= 1:
-        return xs
-    even = _fft(xs[0::2])
-    odd = _fft(xs[1::2])
-    out = [0j] * n
-    half = n // 2
-    for k in range(half):
-        tw = cmath.exp(-2j * math.pi * k / n) * odd[k]
-        out[k] = even[k] + tw
-        out[k + half] = even[k] - tw
-    return out
 
 
 def _k_weighted_lufs(mono: list[float], sr: int) -> float:
@@ -118,43 +104,18 @@ def _mastering_telemetry(sr: int, ch: int, bits: int, left: list[float], right: 
         "integrated_lufs_est": _k_weighted_lufs(mono, sr),
         "crest_factor_db": round(peak_db - rms_db, 4),
         "dynamic_range_db": round(max(0.0, peak_db - rms_db), 4),
+        "macro_dynamic_range_db": compute_macro_dynamic_range_db(mono, sr),
         "dc_offset": round(dc, 6),
         "stereo_width": round(side_rms / (mid_rms + side_rms), 6) if (mid_rms + side_rms) > 1e-12 else 0.0,
         "phase_correlation": round(max(-1.0, min(1.0, corr)), 6),
+        "low_end_phase_correlation": compute_low_end_phase_correlation(left, right, sr, ch),
         "clipping_samples": clipping,
         "clipping_detected": clipping > 0,
     }
 
 
 def _spectral_analysis(mono: list[float], sr: int) -> dict[str, Any]:
-    n_fft = 1024
-    frame = mono[:n_fft] if len(mono) >= n_fft else mono + [0.0] * (n_fft - len(mono))
-    time_energy = sum(x * x for x in frame)
-    spec = _fft([complex(x, 0.0) for x in frame])
-    freq_energy = sum(abs(c) ** 2 for c in spec) / n_fft
-    parseval_err = abs(time_energy - freq_energy) / max(1e-12, time_energy)
-
-    half = n_fft // 2
-    mags2 = [(abs(spec[k]) ** 2) * (1.0 if k in (0, half) else 2.0) / (n_fft * n_fft) for k in range(half + 1)]
-    freqs = [k * sr / n_fft for k in range(half + 1)]
-    total_p = sum(mags2) or 1e-12
-    bands: dict[str, dict[str, float]] = {}
-    for name, lo, hi in BANDS:
-        e = sum(p for f, p in zip(freqs, mags2) if lo <= f < hi)
-        bands[name] = {"energy": round(e, 8), "share": round(e / total_p, 6), "db": _db(math.sqrt(e))}
-    centroid = sum(f * p for f, p in zip(freqs, mags2)) / total_p
-    pos = [max(p, 1e-15) for p in mags2[1:]]
-    geom = math.exp(sum(math.log(p) for p in pos) / len(pos))
-    arith = sum(pos) / len(pos)
-    return {
-        "fft_size": n_fft,
-        "bands": bands,
-        "spectral_centroid_hz": round(centroid, 3),
-        "spectral_flatness": round(geom / max(1e-15, arith), 6),
-        "parseval_time_energy": round(time_energy, 8),
-        "parseval_freq_energy": round(freq_energy, 8),
-        "parseval_rel_error": round(parseval_err, 12),
-    }
+    return welch_spectral_analysis(mono, sr)
 
 
 def _estimate_tempo_and_onsets(mono: list[float], sr: int) -> dict[str, Any]:
