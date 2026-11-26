@@ -1,0 +1,106 @@
+{
+  "$schema": "https://fundingjson.org/schema/v1.0.0.json",
+  "version": "v1.0.0",
+  "entity": {
+    "type": "individual",
+    "role": "owner",
+    "name": "Zain Dana Harper",
+    "email": "17142659+HarperZ9@users.noreply.github.com",
+    "description": "Independent researcher and toolmaker operating as a sole proprietor in Kent, Washington. Builds verifiable local-first compilers, AI evaluation harnesses, rendering engines, and open archival tools, publishing methods, data, and null results openly.",
+    "webpageUrl": {
+      "url": "https://harperz9.github.io/",
+      "wellKnown": "https://harperz9.github.io/.well-known/funding-manifest-urls"
+    }
+  },
+  "projects": [
+    {
+      "guid": "flywheel",
+      "name": "Flywheel",
+      "description": "Local-first accountable AI evaluation and verification workbench: model-neutral OpenAI-compatible gateway, Rowan multi-provider router, Three-Plate verification oracle, cryptographic engine-receipt/1 trails, default-deny agent grants (accountable-surface), multimodal intake (gather), unsafe-free Rust byte witnesses (emet), and single-GPU local model forge (plexus). Source-available under FSL-1.1-MIT (converts to MIT after two years).",
+      "webpageUrl": {
+        "url": "https://harperz9.github.io/flywheel.html",
+        "wellKnown": "https://harperz9.github.io/.well-known/funding-manifest-urls"
+      },
+      "repositoryUrl": {
+        "url": "https://github.com/HarperZ9/flywheel",
+        "wellKnown": "https://raw.githubusercontent.com/HarperZ9/flywheel/main/.well-known/funding-manifest-urls"
+      },
+      "licenses": [
+        "spdx:FSL-1.1-MIT"
+      ],
+      "tags": [
+        "artificial-intelligence",
+        "machine-learning",
+        "developer-tools",
+        "security",
+        "cryptography",
+        "science",
+        "data-science",
+        "software-engineering"
+      ]
+    }
+  ],
+  "funding": {
+    "channels": [
+      {
+        "guid": "github-sponsors",
+        "type": "payment-provider",
+        "address": "https://github.com/sponsors/HarperZ9",
+        "description": "GitHub Sponsors for Zain Dana Harper. Supports one-time or recurring sponsorship with full public disclosure on https://harperz9.github.io/income-ledger.html."
+      },
+      {
+        "guid": "direct-grant",
+        "type": "bank",
+        "address": "US wire or ACH grant transfer (sole proprietor, Kent, WA; contact via https://harperz9.github.io/hire.html)",
+        "description": "Direct bank transfer for institutional research grants, evaluation tooling sponsorships, and fellowships. Account details provided directly on award."
+      }
+    ],
+    "plans": [
+      {
+        "guid": "community-any",
+        "status": "active",
+        "name": "Community support (any amount)",
+        "description": "Flexible support for Flywheel verification suites, offline receipt tooling, and PyPI release maintenance.",
+        "amount": 0,
+        "currency": "USD",
+        "frequency": "one-time",
+        "channels": [
+          "github-sponsors"
+        ]
+      },
+      {
+        "guid": "monthly-maintainer",
+        "status": "active",
+        "name": "Monthly evaluation harness maintenance",
+        "description": "Recurring support for cross-model evaluation harnesses, adversarial verifier tests, and reproducible benchmarks.",
+        "amount": 50,
+        "currency": "USD",
+        "frequency": "monthly",
+        "channels": [
+          "github-sponsors"
+        ]
+      },
+      {
+        "guid": "infra-grant-flywheel",
+        "status": "active",
+        "name": "Independent AI verification infrastructure grant",
+        "description": "Scoped milestone grant funding neutral offline verification benchmarks, Three-Plate oracle datasets, and single-GPU RLVR reproducibility runs. Note: Flywheel uses FSL-1.1-MIT (source-available, converts to MIT after two years).",
+        "amount": 25000,
+        "currency": "USD",
+        "frequency": "one-time",
+        "channels": [
+          "direct-grant",
+          "github-sponsors"
+        ]
+      }
+    ],
+    "history": [
+      {
+        "year": 2026,
+        "income": 0,
+        "currency": "USD",
+        "description": "Self-funded sole proprietorship with zero external grants, sponsors, or paid clients to date. Full public disclosure at https://harperz9.github.io/income-ledger.html."
+      }
+    ]
+  }
+}
