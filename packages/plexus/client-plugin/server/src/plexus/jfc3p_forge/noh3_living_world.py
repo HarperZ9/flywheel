@@ -131,20 +131,25 @@ class NOH3LivingWorldOrganism:
         self.tick_gate = CausticTickGate(n_organelles=4, threshold=tick_threshold)
         self.immune = CODITImmuneOrgan()
         self.fast_w: list[list[float]] = [[0.0] * (state_dim + action_dim) for _ in range(state_dim)]
+        self.prev_deep_latent: list[float] = [0.0] * state_dim
+        self.alf_gain = 0.15
         self.step_count = 0
 
     def _fast_delta(self, feat: Sequence[float]) -> list[float]:
-        return [sum(w * f for w, f in zip(row, feat)) for row in self.fast_w]
+        raw = [sum(w * f for w, f in zip(row, feat)) for row in self.fast_w]
+        return [r + self.alf_gain * p for r, p in zip(raw, self.prev_deep_latent)]
+
+    def sleep_consolidate(
+        self, episodes: Sequence[tuple[Sequence[float], Sequence[float], Sequence[float], Sequence[float], BuckinghamPiNormalizer]],
+        *, passes: int = 2, lr: float = 0.25,
+    ) -> dict[str, Any]:
+        """Loop-1 Sleep offline consolidation keeping live decode strictly 1-pass."""
+        losses = [self.adapt_online(s, a, n, p, nm, lr=lr) for _ in range(max(1, passes)) for s, a, n, p, nm in episodes]
+        return {"passes": max(1, passes), "updates": len(losses), "final_pi_mse": round(losses[-1], 6) if losses else 0.0}
 
     def predict_next(
-        self,
-        state: Sequence[float],
-        action: Sequence[float],
-        prior_delta: Sequence[float],
-        normalizer: BuckinghamPiNormalizer,
-        *,
-        surprise_pi: float = 0.05,
-        fault_streams: dict[int, Sequence[float]] | None = None,
+        self, state: Sequence[float], action: Sequence[float], prior_delta: Sequence[float], normalizer: BuckinghamPiNormalizer,
+        *, surprise_pi: float = 0.05, fault_streams: dict[int, Sequence[float]] | None = None,
         fault_quats: dict[int, Sequence[float]] | None = None,
     ) -> tuple[list[float], dict[str, Any]]:
         self.step_count += 1
@@ -171,22 +176,19 @@ class NOH3LivingWorldOrganism:
         routed = self.router.route(streams, mode="mhc")
         mix_delta = [sum(routed["outputs"][k][d] for k in range(4)) / 4.0 for d in range(self.state_dim)]
         combined_pi = normalizer.bound_pi_delta([0.75 * p + 0.25 * m for p, m in zip(pi_prior, mix_delta)], cap=2.0)
+        self.prev_deep_latent = [0.0] * self.state_dim if 3 in self.immune.quarantined else list(combined_pi)
         phys_delta = normalizer.from_pi_state(combined_pi)
         next_state = [float(s) + float(d) for s, d in zip(state, phys_delta)]
         return next_state, {
             "mhc_row_err": routed["max_row_sum_err"],
             "quarantined_count": len(self.immune.quarantined),
             "held_tick_ratio": round(self.tick_gate.held_ratio, 4),
+            "alf_latent_norm": round(math.sqrt(sum(v * v for v in self.prev_deep_latent)), 6),
         }
 
     def adapt_online(
-        self,
-        state: Sequence[float],
-        action: Sequence[float],
-        true_next: Sequence[float],
-        prior_delta: Sequence[float],
-        normalizer: BuckinghamPiNormalizer,
-        lr: float = 0.65,
+        self, state: Sequence[float], action: Sequence[float], true_next: Sequence[float],
+        prior_delta: Sequence[float], normalizer: BuckinghamPiNormalizer, lr: float = 0.65,
     ) -> float:
         pred, _ = self.predict_next(state, action, prior_delta, normalizer, surprise_pi=1.0)
         pi_err = normalizer.to_pi_state([t - p for t, p in zip(true_next, pred)])

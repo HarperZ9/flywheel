@@ -40,7 +40,13 @@ APACHE2_BASE_MODELS: dict[str, BaseModelSpec] = {
     "qwen2.5-14b": BaseModelSpec(
         "qwen2.5-14b", "Qwen/Qwen2.5-14B-Instruct", "Apache-2.0", 14.8, 9.0, 10.5, False, "Qwen/Qwen2.5-0.5B-Instruct",
     ),
+    "qwen3.5-35b-a3b": BaseModelSpec(
+        "qwen3.5-35b-a3b", "Qwen/Qwen3.5-35B-A3B", "Apache-2.0", 35.0, 18.2, 19.8, False, "Qwen/Qwen2.5-Coder-0.5B-Instruct",
+    ),
 }
+
+FUSED_KL_ADDMM_HINT = "torch.addmm(grad_w, grad_s.T, h, out_dtype=torch.float32)"
+AVTR_MULTIMODAL_ROUTES: tuple[str, ...] = ("direct", "imagine", "think", "imagine_then_think")
 
 TIER_A_TRAIN_SOURCES: tuple[dict[str, str], ...] = (
     {"source_id": "lean_workbook", "hf_repo": "internlm/Lean-Workbook", "license": "Apache-2.0", "oracle": "lean4_kernel"},
@@ -115,18 +121,21 @@ def build_oracle_training_mix(
 
 
 def build_rtx4090_serving_spec(
-    base_key: str = "qwen2.5-coder-7b", *, quant: str = "Q4_K_M", ctx_size: int = 16_384,
+    base_key: str = "qwen2.5-coder-7b", *, quant: str = "Q4_K_M", ctx_size: int = 16_384, kv_quant: str = "q8_0",
 ) -> dict[str, Any]:
     """Generate optimal 24 GB RTX 4090 llama.cpp / Ollama / SGLang serving flags and VRAM budget."""
     if base_key not in APACHE2_BASE_MODELS:
         raise ValueError(f"unsupported base model: {base_key}")
-    if quant not in {"Q4_K_M", "Q5_K_M"}:
+    if quant not in {"Q4_K_M", "Q5_K_M", "IQ4_XS"}:
         raise ValueError(f"unsupported GGUF quant: {quant}")
+    if kv_quant not in {"q8_0", "q4_0"}:
+        raise ValueError(f"unsupported KV cache quant: {kv_quant}")
     spec = APACHE2_BASE_MODELS[base_key]
-    weights_gb = spec.q4_km_gb if quant == "Q4_K_M" else spec.q5_km_gb
-    kv_q8_gb = round((ctx_size / 16_384.0) * (1.2 if spec.params_b <= 9.0 else 2.2), 2)
+    weights_gb = spec.q5_km_gb if quant == "Q5_K_M" else spec.q4_km_gb
+    kv_mult = 0.55 if kv_quant == "q4_0" else 1.0
+    kv_gb = round((ctx_size / 16_384.0) * (1.2 if spec.params_b <= 9.0 else 2.2) * kv_mult, 2)
     draft_gb = 0.45
-    used_gb = round(weights_gb + kv_q8_gb + draft_gb, 2)
+    used_gb = round(weights_gb + kv_gb + draft_gb, 2)
     headroom_gb = round(24.0 - used_gb, 2)
     gguf_name = f"jfc3p-{spec.key}-oracle-v1.{quant.lower()}.gguf"
     modelfile = "\n".join([
@@ -137,11 +146,15 @@ def build_rtx4090_serving_spec(
         "SYSTEM You are JFC3P-Oracle-v1. Never fabricate numeric outputs; verify with deterministic BuildLang/kcore/Three-Plate tools.",
     ]) + "\n"
     return {
-        "base_model": spec.hf_repo, "license": spec.license_id, "quant": quant, "gguf_filename": gguf_name,
-        "vram_budget_gb": {"total_vram_gb": 24.0, "model_weights_gb": weights_gb, "kv_cache_q8_gb": kv_q8_gb, "draft_model_gb": draft_gb, "used_gb": used_gb, "headroom_for_engines_gb": headroom_gb},
-        "fits_rtx4090_24gb": headroom_gb >= 6.0,
+        "base_model": spec.hf_repo, "license": spec.license_id, "quant": quant, "kv_quant": kv_quant, "gguf_filename": gguf_name,
+        "vram_budget_gb": {"total_vram_gb": 24.0, "model_weights_gb": weights_gb, "kv_cache_gb": kv_gb, "draft_model_gb": draft_gb, "used_gb": used_gb, "headroom_for_engines_gb": headroom_gb},
+        "fits_rtx4090_24gb": headroom_gb >= (2.0 if spec.params_b >= 30.0 else 6.0),
+        "fused_kl_kernel_hint": FUSED_KL_ADDMM_HINT,
+        "loopcd_speculative_guard": {"loopcd_logits_omega_max": 0.5, "loopcd_hidden_r2_allowed": False, "control_tokens_untouched": True},
+        "avtr_multimodal_routes": list(AVTR_MULTIMODAL_ROUTES) if spec.multimodal else [],
+        "info_theoretic_lora_guard": {"reverse_kl_anchor_required": True, "tracepress_rollout_audit": True},
         "llama_cpp_flags": [
-            "--flash-attn", "--cache-type-k", "q8_0", "--cache-type-v", "q8_0",
+            "--flash-attn", "--cache-type-k", kv_quant, "--cache-type-v", kv_quant,
             "--ctx-size", str(ctx_size), "--n-gpu-layers", "99", "--model", gguf_name,
             "--model-draft", f"{spec.draft_hf_repo.split('/')[-1].lower()}.q4_k_m.gguf", "--draft-max", "8",
         ],
@@ -232,7 +245,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--mode", choices=("train_7b", "train_noh3", "bench_4090", "export_gguf"), default="bench_4090")
     parser.add_argument("--base-model", choices=tuple(APACHE2_BASE_MODELS), default="qwen2.5-coder-7b")
     parser.add_argument("--gpu", default="L4")
-    parser.add_argument("--quant", choices=("Q4_K_M", "Q5_K_M"), default="Q4_K_M")
+    parser.add_argument("--quant", choices=("Q4_K_M", "Q5_K_M", "IQ4_XS"), default="Q4_K_M")
     parser.add_argument("--out", type=Path, default=None)
     args = parser.parse_args(argv)
     res = run_rtx4090_forge(mode=args.mode, base_model=args.base_model, gpu_name=args.gpu, quant=args.quant, out_dir=args.out)

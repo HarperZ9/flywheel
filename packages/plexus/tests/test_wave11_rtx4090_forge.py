@@ -83,15 +83,31 @@ def test_colab_gpu_auto_adaptation_and_rtx4090_serving_specs() -> None:
     assert cpu["gpu_profile"] == "CPU-SMOKE"
 
     for key in APACHE2_BASE_MODELS:
-        spec = build_rtx4090_serving_spec(key, quant="Q4_K_M")
+        kv_q = "q4_0" if key == "qwen3.5-35b-a3b" else "q8_0"
+        spec = build_rtx4090_serving_spec(key, quant="Q4_K_M", kv_quant=kv_q)
         assert spec["license"] == "Apache-2.0"
         assert spec["fits_rtx4090_24gb"] is True
         assert spec["vram_budget_gb"]["used_gb"] <= 24.0
         assert "--flash-attn" in spec["llama_cpp_flags"]
-        assert "q8_0" in spec["llama_cpp_flags"]
+        assert kv_q in spec["llama_cpp_flags"]
+        assert "torch.addmm" in spec["fused_kl_kernel_hint"]
+        assert spec["loopcd_speculative_guard"]["loopcd_hidden_r2_allowed"] is False
+        assert spec["loopcd_speculative_guard"]["loopcd_logits_omega_max"] == 0.5
         assert "FROM ./" in spec["modelfile"]
+    vl_spec = build_rtx4090_serving_spec("qwen2.5-vl-7b", quant="Q4_K_M")
+    assert vl_spec["avtr_multimodal_routes"] == ["direct", "imagine", "think", "imagine_then_think"]
     coder_q4 = build_rtx4090_serving_spec("qwen2.5-coder-7b", quant="Q4_K_M")
     assert coder_q4["vram_budget_gb"]["headroom_for_engines_gb"] >= 16.0
+
+
+def test_alf_latent_feedback_and_loop1_sleep_consolidation() -> None:
+    org = NOH3LivingWorldOrganism(state_dim=4, action_dim=2)
+    norm = BuckinghamPiNormalizer([1.0, 1.0, 1.0, 1.0], [1.0, 1.0])
+    ep = ([1.0, 0.5, 0.2, -0.1], [0.1, 0.0], [1.03, 0.49, 0.21, -0.1], [0.02, -0.01, 0.01, 0.0], norm)
+    _, d1 = org.predict_next(ep[0], ep[1], ep[3], norm)
+    assert d1["alf_latent_norm"] > 0.0
+    sleep = org.sleep_consolidate([ep], passes=3, lr=0.35)
+    assert sleep["passes"] == 3 and sleep["updates"] == 3 and sleep["final_pi_mse"] >= 0.0
 
 
 def test_oracle_training_mix_zero_leak_and_planted_nc_rejection() -> None:
