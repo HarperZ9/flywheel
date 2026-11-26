@@ -35,7 +35,7 @@ TRACE_CUSTODY_HIDDEN_IMPORTS = (
     # the command line
     "harness.trace_cli", "harness.trace_cli_capture", "harness.trace_cli_delete",
     "harness.trace_cli_export", "harness.trace_cli_import", "harness.trace_cli_presence",
-    "harness.trace_cli_retention", "harness.trace_cli_text",
+    "harness.trace_cli_retention", "harness.trace_cli_text", "harness.trace_compressor",
     # custody ledger, lock and deletion
     "harness.trace_custody_ledger", "harness.trace_custody_lock",
     "harness.trace_delete_adapters_enc", "harness.trace_delete_adapters_import",
