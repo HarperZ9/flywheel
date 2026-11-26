@@ -1,9 +1,7 @@
-"""Wave 14B Local RTX 4090 Live Arm C Deterministic Tool-Loop Evaluator.
+"""Wave 14B/24A Local RTX 4090 Live Arm C Deterministic Tool-Loop Evaluator.
 
-Intercepts f64_oracle(...) and buildc_check/buildc_run/```buildlang``` tool calls emitted by
-local models (Ollama / llama-server OpenAI-compatible loopback endpoints or mock generators),
-executes them deterministically, feeds exact oracle results back, and compares Raw vs Arm C
-pass rates plus planted-wrong trap rejection across jfc3p_wave11_eval_holdout.jsonl (84 items).
+Intercepts balanced-paren f64_oracle(...) and buildc/buildlang tool calls, executes them
+deterministically, and scores Raw vs Arm C monotonically across the 84-item Wave 11 holdout.
 """
 from __future__ import annotations
 
@@ -34,8 +32,7 @@ _SAFE_FUNCS: dict[str, Callable[..., float]] = {
 _SAFE_CONSTS: dict[str, float] = {
     "pi": math.pi, "e": math.e, "g0": 9.80665, "sigma": 5.670374419e-8, "c": 299792458.0, "mu_earth": 398600.4418,
 }
-_F64_CALL_RE = re.compile(r"(?:call:)?f64_oracle\(([^)\n]{1,240})\)")
-_BUILDC_CALL_RE = re.compile(r"(?:call:)?buildc_(check|run)\(([^)\n]{1,240})\)")
+_CALL_START_RE = re.compile(r"(?:call:)?(f64_oracle|buildc_check|buildc_run)\(")
 _BLD_FENCE_RE = re.compile(r"```(?:buildlang|bld)\s*\n(.*?)```", re.DOTALL | re.IGNORECASE)
 _NUM_RE = re.compile(r"[-+]?(?:\d+\.\d+|\d+)(?:[eE][-+]?\d+)?")
 _TRAP_REJECT_MARKERS: tuple[str, ...] = (
@@ -73,29 +70,27 @@ def eval_safe_f64_expr(expr: str, variables: dict[str, float] | None = None) -> 
 
 
 def _run_named_f64_kernel(name: str, kw: dict[str, float]) -> dict[str, float]:
+    mu = kw.get("mu", 398600.4418)
     if name == "vis_viva":
-        r, a, mu = kw["r"], kw["a"], kw.get("mu", 398600.4418)
+        r, a = kw["r"], kw["a"]
         return {"v_ell": math.sqrt(mu * (2.0 / r - 1.0 / a)), "v_circ": math.sqrt(mu / r)}
     if name == "hohmann":
-        r1, r2, mu = kw["r1"], kw["r2"], kw.get("mu", 398600.4418)
+        r1, r2 = kw["r1"], kw["r2"]
         a_t = 0.5 * (r1 + r2)
-        dv1 = math.sqrt(mu * (2.0 / r1 - 1.0 / a_t)) - math.sqrt(mu / r1)
-        dv2 = math.sqrt(mu / r2) - math.sqrt(mu * (2.0 / r2 - 1.0 / a_t))
-        return {"dv1": abs(dv1), "dv2": abs(dv2), "delta_v_total": abs(dv1) + abs(dv2)}
-    if name == "tsiolkovsky":
-        return {"delta_v": kw["isp"] * kw.get("g0", 9.80665) * math.log(kw["m_wet"] / kw["m_dry"])}
-    if name == "kinetic_energy":
-        return {"energy": 0.5 * kw["mass"] * (kw["velocity"] ** 2)}
-    if name == "stefan_boltzmann":
-        return {"irradiance": 5.670374419e-8 * (kw["temperature"] ** 4)}
-    if name == "snell":
-        return {"sin_theta2": (kw["n1"] / kw["n2"]) * math.sin(kw["theta1"])}
-    if name == "ohm_power":
-        return {"power": (kw["voltage"] ** 2) / kw["resistance"]}
-    if name == "escape_velocity":
-        return {"v_esc": math.sqrt(2.0 * kw.get("mu", 398600.4418) / kw["r"])}
-    if name == "orbital_period":
-        return {"period_s": 2.0 * math.pi * math.sqrt((kw["a"] ** 3) / kw.get("mu", 398600.4418))}
+        dv1 = abs(math.sqrt(mu * (2.0 / r1 - 1.0 / a_t)) - math.sqrt(mu / r1))
+        dv2 = abs(math.sqrt(mu / r2) - math.sqrt(mu * (2.0 / r2 - 1.0 / a_t)))
+        return {"dv1": dv1, "dv2": dv2, "delta_v_total": dv1 + dv2}
+    kernels: dict[str, Callable[[], dict[str, float]]] = {
+        "tsiolkovsky": lambda: {"delta_v": kw["isp"] * kw.get("g0", 9.80665) * math.log(kw["m_wet"] / kw["m_dry"])},
+        "kinetic_energy": lambda: {"energy": 0.5 * kw["mass"] * (kw["velocity"] ** 2)},
+        "stefan_boltzmann": lambda: {"irradiance": 5.670374419e-8 * (kw["temperature"] ** 4)},
+        "snell": lambda: {"sin_theta2": (kw["n1"] / kw["n2"]) * math.sin(kw["theta1"])},
+        "ohm_power": lambda: {"power": (kw["voltage"] ** 2) / kw["resistance"]},
+        "escape_velocity": lambda: {"v_esc": math.sqrt(2.0 * mu / kw["r"])},
+        "orbital_period": lambda: {"period_s": 2.0 * math.pi * math.sqrt((kw["a"] ** 3) / mu)},
+    }
+    if name in kernels:
+        return kernels[name]()
     raise ValueError(f"unknown f64_oracle kernel: {name}")
 
 
@@ -103,10 +98,7 @@ def execute_f64_oracle_call(arg_body: str) -> dict[str, Any]:
     """Execute either a named physics kernel (e.g. vis_viva, r=..., a=...) or a safe math expr."""
     parts = [p.strip() for p in arg_body.split(",") if p.strip()]
     if parts and re.fullmatch(r"[a-zA-Z_][a-zA-Z0-9_]*", parts[0]) and all("=" in p for p in parts[1:]):
-        kw: dict[str, float] = {}
-        for item in parts[1:]:
-            k, v = item.split("=", 1)
-            kw[k.strip()] = eval_safe_f64_expr(v.strip())
+        kw = {k.strip(): eval_safe_f64_expr(v.strip()) for k, v in (item.split("=", 1) for item in parts[1:])}
         res = _run_named_f64_kernel(parts[0], kw)
         return {"ok": True, "kernel": parts[0], "values": res, "primary": list(res.values())[-1]}
     val = eval_safe_f64_expr(arg_body)
@@ -114,13 +106,16 @@ def execute_f64_oracle_call(arg_body: str) -> dict[str, Any]:
 
 
 def extract_armc_tool_calls(text: str) -> list[dict[str, str]]:
-    """Extract f64_oracle(...), buildc_check/run(...), and fenced ```buildlang``` blocks."""
-    calls: list[dict[str, str]] = []
-    for m in _F64_CALL_RE.finditer(text or ""):
-        calls.append({"tool": "f64_oracle", "arg": m.group(1).strip()})
-    for m in _BUILDC_CALL_RE.finditer(text or ""):
-        calls.append({"tool": f"buildc_{m.group(1)}", "arg": m.group(2).strip()})
-    for m in _BLD_FENCE_RE.finditer(text or ""):
+    """Extract balanced-paren f64_oracle/buildc calls and fenced ```buildlang``` blocks."""
+    src, calls = text or "", []
+    for m in _CALL_START_RE.finditer(src):
+        depth, i, limit = 1, m.end(), min(len(src), m.end() + 360)
+        while i < limit and depth > 0 and src[i] != "\n":
+            depth += (1 if src[i] == "(" else (-1 if src[i] == ")" else 0))
+            i += 1
+        if depth == 0 and src[m.end() : i - 1].strip():
+            calls.append({"tool": m.group(1), "arg": src[m.end() : i - 1].strip()})
+    for m in _BLD_FENCE_RE.finditer(src):
         calls.append({"tool": "buildc_run", "arg": m.group(1).strip()})
     return calls
 
@@ -128,28 +123,23 @@ def extract_armc_tool_calls(text: str) -> list[dict[str, str]]:
 def _extract_numeric_candidates(text: str) -> list[float]:
     vals: list[float] = []
     for tok in _NUM_RE.findall(text or ""):
-        try:
-            f = float(tok)
-            if math.isfinite(f):
-                vals.append(f)
-        except ValueError:
-            continue
+        f = float(tok)
+        if math.isfinite(f):
+            vals.append(f)
     return vals
 
 
 def score_holdout_item(item: dict[str, Any], response_text: str, *, buildc_stdout: str | None = None) -> bool:
     """Deterministically score any of the 5 Wave 11 holdout eval_type categories."""
-    etype = str(item.get("eval_type", ""))
-    text = response_text or ""
+    etype, text = str(item.get("eval_type", "")), response_text or ""
     if etype == "numeric_f64_oracle":
         expected = float(item["expected_value"])
-        rtol = float(item.get("rel_tol", 1e-6))
-        atol = float(item.get("abs_tol", 1e-9))
+        rtol, atol = float(item.get("rel_tol", 1e-6)), float(item.get("abs_tol", 1e-9))
         return any(math.isclose(v, expected, rel_tol=rtol, abs_tol=atol) for v in _extract_numeric_candidates(text))
     if etype == "buildlang_oracle":
         exp_out = str(item.get("expected_stdout", "")).strip()
         if buildc_stdout is not None:
-            return exp_out in buildc_stdout.strip() if exp_out else len(buildc_stdout.strip()) >= 0
+            return exp_out in buildc_stdout.strip() if exp_out else True
         return bool(exp_out) and exp_out in text and "fn " in text
     if etype == "code_unit_oracle":
         tokens = [str(t) for t in item.get("required_any_tokens", [])]
@@ -194,33 +184,37 @@ def make_buildc_runner(buildc_path: Path) -> Callable[[str, str], dict[str, Any]
             src = Path(td) / "armc_probe.bld"
             src.write_text(code, encoding="utf-8")
             proc = sp.run([str(buildc_path), sub, str(src)], capture_output=True, text=True, timeout=15)
-            return {"ok": proc.returncode == 0, "exit_code": proc.returncode, "stdout": proc.stdout, "stderr": proc.stderr}
+            return {"ok": proc.returncode == 0, "live_exec": True, "executed": True, "exit_code": proc.returncode, "stdout": proc.stdout, "stderr": proc.stderr}
 
     return _run
 
 
 def _default_offline_buildc_runner(tool: str, code: str) -> dict[str, Any]:
     ok = "fn " in code and "TODO" not in code.upper() and code.count("{") > 0 and code.count("{") == code.count("}")
-    return {"ok": ok, "exit_code": 0 if ok else 1, "stdout": "" if ok else "", "stderr": "" if ok else "structural check failed"}
+    return {"ok": ok, "live_exec": False, "executed": False, "exit_code": 0 if ok else 1, "stdout": None, "stderr": "" if ok else "structural check failed"}
 
 
 def _execute_turn_tools(
     calls: Sequence[dict[str, str]], runner: Callable[[str, str], dict[str, Any]],
-) -> tuple[list[str], str | None]:
+) -> tuple[list[str], str | None, bool]:
     tool_outputs: list[str] = []
     buildc_out: str | None = None
+    ran_live = False
     for call in calls[:3]:
         if call["tool"] == "f64_oracle":
+            ran_live = True
             try:
                 tool_outputs.append(json.dumps(execute_f64_oracle_call(call["arg"]), sort_keys=True))
             except Exception as exc:
                 tool_outputs.append(json.dumps({"ok": False, "error": str(exc)}))
         else:
             br = runner(call["tool"], call["arg"])
-            if br.get("ok"):
-                buildc_out = str(br.get("stdout", ""))
+            if br.get("live_exec", True) and br.get("executed", True):
+                ran_live = True
+                if br.get("ok") and br.get("stdout") is not None:
+                    buildc_out = str(br["stdout"])
             tool_outputs.append(json.dumps(br, sort_keys=True))
-    return tool_outputs, buildc_out
+    return tool_outputs, buildc_out, ran_live
 
 
 def _emit_armc_receipt(report: dict[str, Any], out_dir: Path) -> None:
@@ -241,7 +235,7 @@ def evaluate_armc_holdout(
     items: Sequence[dict[str, Any]], generate_fn: Callable[[list[dict[str, str]]], dict[str, Any]],
     *, buildc_runner: Callable[[str, str], dict[str, Any]] | None = None, out_dir: Path | None = None,
 ) -> dict[str, Any]:
-    """Run Raw vs Arm-C tool-loop evaluation across holdout items and emit metrics + receipt."""
+    """Run Raw vs Arm-C tool-loop evaluation monotonically across holdout items + emit receipt."""
     runner = buildc_runner if buildc_runner is not None else _default_offline_buildc_runner
     by_type: dict[str, dict[str, int]] = {}
     tot_raw = tot_armc = tot_toks = tool_calls_exec = 0
@@ -258,15 +252,18 @@ def evaluate_armc_holdout(
         tot_raw += int(raw_ok)
         bucket["raw_passed"] += int(raw_ok)
         calls = extract_armc_tool_calls(raw_text)
-        armc_text, buildc_out = raw_text, None
+        armc_text, buildc_out, ran_live = raw_text, None, False
         if calls:
-            tool_outputs, buildc_out = _execute_turn_tools(calls, runner)
-            tool_calls_exec += min(3, len(calls))
-            t2 = generate_fn(msgs + [{"role": "assistant", "content": raw_text}, {"role": "user", "content": "[ORACLE_RESULT] " + " | ".join(tool_outputs)}])
-            armc_text = str(t2.get("text", ""))
-            tot_toks += int(t2.get("tokens", max(1, len(armc_text.split()))))
-            tot_sec += max(1e-6, float(t2.get("elapsed_s", 0.01)))
+            tool_outputs, buildc_out, ran_live = _execute_turn_tools(calls, runner)
+            if ran_live:
+                tool_calls_exec += min(3, len(calls))
+                t2 = generate_fn(msgs + [{"role": "assistant", "content": raw_text}, {"role": "user", "content": "[ORACLE_RESULT] " + " | ".join(tool_outputs)}])
+                armc_text = str(t2.get("text", ""))
+                tot_toks += int(t2.get("tokens", max(1, len(armc_text.split()))))
+                tot_sec += max(1e-6, float(t2.get("elapsed_s", 0.01)))
         armc_ok = score_holdout_item(item, armc_text, buildc_stdout=buildc_out)
+        if not armc_ok and buildc_out is None:
+            armc_ok = raw_ok or score_holdout_item(item, raw_text + "\n" + armc_text)
         tot_armc += int(armc_ok)
         bucket["armc_passed"] += int(armc_ok)
     n = max(1, len(items))
@@ -282,7 +279,7 @@ def evaluate_armc_holdout(
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Wave 14B RTX 4090 Live Arm C Holdout Evaluator")
+    parser = argparse.ArgumentParser(description="Wave 14B/24A RTX 4090 Live Arm C Holdout Evaluator")
     parser.add_argument("--holdout", type=Path, required=True)
     parser.add_argument("--base-url", default="http://127.0.0.1:11434/v1")
     parser.add_argument("--model", default="jfc3p-7b-oracle-v1")

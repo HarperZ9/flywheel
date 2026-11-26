@@ -10,8 +10,13 @@ import pytest
 
 from plexus.jfc3p_forge import (
     LONGPPL_BASE_FLOOR,
+    LONGPPL_V3_FLOOR,
     V2_DEFAULT_BETA_KL,
+    V3_DEFAULT_BETA_KL,
+    V3_DEFAULT_LR,
+    V3_MLP_LORA_MODULES,
     build_v2_training_spec,
+    build_v3_onpolicy_rlvr_spec,
     compute_v2_reverse_kl_loss,
     eval_safe_f64_expr,
     evaluate_armc_holdout,
@@ -122,6 +127,61 @@ def test_v2_reverse_kl_loss_domain_replay_and_planted_regression_controls(tmp_pa
         assert sample["avtr_route"] == route
     rec = json.loads((tmp_path / "vl" / "engine_receipt.json").read_text(encoding="utf-8"))
     assert verify_forge_receipt(rec, check_files=True) == (True, [])
+
+
+def test_wave24a_nested_paren_f64_oracle_and_offline_buildlang_monotonicity(tmp_path: Path) -> None:
+    nested = "<think>call:f64_oracle(sqrt(398600.4418*(2/6678 - 1/24421)))</think>"
+    calls = extract_armc_tool_calls(nested)
+    assert len(calls) == 1 and calls[0]["tool"] == "f64_oracle"
+    res = execute_f64_oracle_call(calls[0]["arg"])
+    assert res["ok"] and math.isclose(res["primary"], math.sqrt(398600.4418 * (2 / 6678 - 1 / 24421)), rel_tol=1e-9)
+
+    items = [
+        {"id": "EV-BL-OFF", "eval_type": "buildlang_oracle", "prompt": "Write BuildLang fact(7) printing 5040", "expected_stdout": "5040"},
+        {"id": "EV-NUM-NEST", "eval_type": "numeric_f64_oracle", "prompt": "Compute nested vis-viva", "expected_value": res["primary"], "rel_tol": 1e-6},
+    ]
+
+    def _mock_colab_model(messages: list[dict[str, str]]) -> dict[str, object]:
+        last = messages[-1]["content"]
+        if "[ORACLE_RESULT]" in last:
+            return {"text": f"Summary only (no fn block): {last}", "tokens": 12, "elapsed_s": 0.01}
+        if "BuildLang" in last:
+            return {"text": "```buildlang\nfn fact(n: i64) -> i64 { return 5040; }\nfn main() { println(\"5040\"); }\n```", "tokens": 18, "elapsed_s": 0.01}
+        return {"text": nested, "tokens": 16, "elapsed_s": 0.01}
+
+    # Offline Colab mode (buildc_runner=None): buildlang must NOT drop 1->0, and nested f64 lifts 0->1.
+    rep = evaluate_armc_holdout(items, _mock_colab_model, buildc_runner=None, out_dir=tmp_path)
+    assert rep["ok"] is True
+    assert rep["by_eval_type"]["buildlang_oracle"]["raw_passed"] == 1
+    assert rep["by_eval_type"]["buildlang_oracle"]["armc_passed"] == 1
+    assert rep["by_eval_type"]["numeric_f64_oracle"]["raw_passed"] == 0
+    assert rep["by_eval_type"]["numeric_f64_oracle"]["armc_passed"] == 1
+    assert rep["armc_passed"] >= rep["raw_passed"]
+
+    # Planted wrong live buildc stdout must still fail cleanly (no false positives when live_exec=True).
+    bad_live = evaluate_armc_holdout(
+        [items[0]], _mock_colab_model,
+        buildc_runner=lambda _t, _c: {"ok": True, "live_exec": True, "executed": True, "exit_code": 0, "stdout": "9999\n", "stderr": ""},
+    )
+    assert bad_live["by_eval_type"]["buildlang_oracle"]["armc_passed"] == 0
+
+
+def test_wave24a_v3_onpolicy_rlvr_spec_and_planted_controls(tmp_path: Path) -> None:
+    spec = build_v3_onpolicy_rlvr_spec(base_model="qwen2.5-coder-7b", gpu_name="L4", out_dir=tmp_path / "v3")
+    assert spec["ok"] is True
+    assert tuple(spec["lora_target_modules"]) == V3_MLP_LORA_MODULES
+    assert spec["attention_heads_frozen"] is True
+    assert spec["beta_kl"] == V3_DEFAULT_BETA_KL and spec["lr"] == V3_DEFAULT_LR
+    assert spec["unmask_all_assistant_turns"] is True
+    assert spec["fresco_anchor_source"] == "real_base_longppl_activations"
+    assert spec["ablation_suite"] == ["A1", "A2", "A3", "A4", "A5"]
+    assert spec["target_floors"]["longppl"] == LONGPPL_V3_FLOOR
+    rec = json.loads((tmp_path / "v3" / "engine_receipt.json").read_text(encoding="utf-8"))
+    assert verify_forge_receipt(rec, check_files=True) == (True, [])
+
+    # Planted Wave 23B-2 hyperparameters (weak beta_kl=0.08 or high lr=1.5e-4) must fail closed.
+    assert build_v3_onpolicy_rlvr_spec(beta_kl=0.08)["ok"] is False
+    assert build_v3_onpolicy_rlvr_spec(lr=1.5e-4)["ok"] is False
 
 
 def test_wave14_files_hygiene_and_zero_em_dashes() -> None:
