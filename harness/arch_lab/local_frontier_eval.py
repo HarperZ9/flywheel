@@ -20,6 +20,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
+from .arm_c_buildlang_tool import build_fca_recall_header, evaluate_arm_c_attempt
 from .eval_tasks import EvalTask, build_eval_tasks, verify_task_output
 from .local_backends import MockBackend, make_backend
 
@@ -92,6 +93,40 @@ def _run_arm_b_task(
     )
 
 
+def _run_arm_c_task(
+    backend: Any, task: EvalTask, *, max_iters: int, use_live_buildc: bool
+) -> tuple[TaskRunRecord, int]:
+    header = build_fca_recall_header(task)
+    base_prompt = f"{header}\n\nTask:\n{task.prompt}"
+    prompt = base_prompt
+    tps_vals: list[float] = []
+    vram_vals: list[float] = []
+    tool_calls = 0
+    diag = "unrun"
+    for it in range(max_iters):
+        res = backend.generate(prompt, max_new_tokens=384, iteration=it)
+        tps_vals.append(res.tokens_per_sec)
+        if res.peak_vram_gb is not None:
+            vram_vals.append(res.peak_vram_gb)
+        ok, diag, used_tool = evaluate_arm_c_attempt(task, res.text, use_live_buildc=use_live_buildc)
+        tool_calls += 1 if used_tool else 0
+        if ok:
+            rec = TaskRunRecord(
+                task.task_id, task.domain, True, it + 1,
+                sum(tps_vals) / len(tps_vals), max(vram_vals) if vram_vals else None, diag,
+            )
+            return rec, tool_calls
+        prompt = (
+            f"{base_prompt}\n\nPrevious attempt failed independent verification:\n"
+            f"{diag}\nFix the defect and reply in the exact required format."
+        )
+    rec = TaskRunRecord(
+        task.task_id, task.domain, False, max_iters,
+        sum(tps_vals) / max(1, len(tps_vals)), max(vram_vals) if vram_vals else None, diag,
+    )
+    return rec, tool_calls
+
+
 def _summarize_arm(records: Sequence[TaskRunRecord]) -> dict[str, Any]:
     n = len(records)
     k = sum(1 for r in records if r.passed)
@@ -149,20 +184,43 @@ def _paired_stats(
     }
 
 
+def _per_task_rows(
+    arm_a: Sequence[TaskRunRecord],
+    arm_b: Sequence[TaskRunRecord],
+    arm_c: Sequence[TaskRunRecord] | None = None,
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for idx, (a, b) in enumerate(zip(arm_a, arm_b)):
+        row: dict[str, Any] = {
+            "task_id": a.task_id, "domain": a.domain,
+            "arm_a_pass": a.passed, "arm_b_pass": b.passed,
+            "arm_b_iters": b.iterations_used,
+            "arm_a_diag": a.last_diagnostic[:120], "arm_b_diag": b.last_diagnostic[:120],
+        }
+        if arm_c is not None:
+            c = arm_c[idx]
+            row["arm_c_pass"] = c.passed
+            row["arm_c_iters"] = c.iterations_used
+            row["arm_c_diag"] = c.last_diagnostic[:120]
+        rows.append(row)
+    return rows
+
+
 def run_arm_comparison(
     backend: Any,
     tasks: Sequence[EvalTask] | None = None,
     *,
     max_iters_b: int = 3,
     use_live_buildc: bool = True,
+    include_arm_c: bool = False,
 ) -> dict[str, Any]:
-    """Execute preregistered Arm A vs Arm B paired comparison + false-accept control."""
+    """Execute preregistered Arm A vs Arm B (and optional Arm C) comparison."""
     eval_tasks = list(tasks) if tasks is not None else build_eval_tasks()
     control = run_planted_false_accept_control(eval_tasks, use_live_buildc=use_live_buildc)
     arm_a = [_run_arm_a_task(backend, t, use_live_buildc=use_live_buildc) for t in eval_tasks]
     arm_b = [_run_arm_b_task(backend, t, max_iters=max_iters_b, use_live_buildc=use_live_buildc) for t in eval_tasks]
     sum_a, sum_b = _summarize_arm(arm_a), _summarize_arm(arm_b)
-    payload = {
+    payload: dict[str, Any] = {
         "schema": "jfc3p-local-frontier-eval/1",
         "backend": getattr(backend, "name", "unknown"),
         "task_count": len(eval_tasks),
@@ -171,20 +229,20 @@ def run_arm_comparison(
         "arm_a_single_shot": sum_a,
         "arm_b_jfc3p_loop": sum_b,
         "paired_mcnemar": _paired_stats(arm_a, arm_b, sum_a["pass_rate"], sum_b["pass_rate"]),
-        "per_task": [
-            {
-                "task_id": a.task_id, "domain": a.domain,
-                "arm_a_pass": a.passed, "arm_b_pass": b.passed,
-                "arm_b_iters": b.iterations_used, "arm_a_diag": a.last_diagnostic[:120],
-                "arm_b_diag": b.last_diagnostic[:120],
-            }
-            for a, b in zip(arm_a, arm_b)
-        ],
     }
-    digest = "sha256:" + hashlib.sha256(
+    arm_c: list[TaskRunRecord] | None = None
+    if include_arm_c:
+        c_pairs = [_run_arm_c_task(backend, t, max_iters=max_iters_b, use_live_buildc=use_live_buildc) for t in eval_tasks]
+        arm_c = [p[0] for p in c_pairs]
+        sum_c = _summarize_arm(arm_c)
+        sum_c["buildlang_tool_invocations"] = sum(p[1] for p in c_pairs)
+        payload["arm_c_buildlang_tool"] = sum_c
+        payload["paired_mcnemar_c_vs_a"] = _paired_stats(arm_a, arm_c, sum_a["pass_rate"], sum_c["pass_rate"])
+        payload["paired_mcnemar_c_vs_b"] = _paired_stats(arm_b, arm_c, sum_b["pass_rate"], sum_c["pass_rate"])
+    payload["per_task"] = _per_task_rows(arm_a, arm_b, arm_c)
+    payload["report_sha256"] = "sha256:" + hashlib.sha256(
         json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
-    payload["report_sha256"] = digest
     return payload
 
 
@@ -208,15 +266,24 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--model", default="mock-local-14b")
     ap.add_argument("--base-url", default="http://127.0.0.1:11434")
     ap.add_argument("--max-iters-b", type=int, default=3)
+    ap.add_argument("--include-arm-c", action="store_true")
     ap.add_argument("--offline-buildc", action="store_true")
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args(argv)
     backend = MockBackend(_default_mock_responder) if args.backend == "mock" else make_backend(args.backend, args.model, base_url=args.base_url)
-    report = run_arm_comparison(backend, max_iters_b=args.max_iters_b, use_live_buildc=not args.offline_buildc)
+    report = run_arm_comparison(
+        backend, max_iters_b=args.max_iters_b,
+        use_live_buildc=not args.offline_buildc, include_arm_c=args.include_arm_c,
+    )
     ctrl_ok = report["oracle_false_accept_control"]["passed"]
     tag = "[PASS]" if ctrl_ok else "[FAIL]"
     print(f"{tag} oracle_false_accept_control :: {json.dumps(report['oracle_false_accept_control'], sort_keys=True)}")
-    print(f"[PASS] arm_a_vs_arm_b :: {json.dumps({'arm_a': report['arm_a_single_shot'], 'arm_b': report['arm_b_jfc3p_loop'], 'paired': report['paired_mcnemar']}, sort_keys=True)}")
+    summary = {"arm_a": report["arm_a_single_shot"], "arm_b": report["arm_b_jfc3p_loop"], "paired_b_vs_a": report["paired_mcnemar"]}
+    if args.include_arm_c:
+        summary["arm_c"] = report["arm_c_buildlang_tool"]
+        summary["paired_c_vs_a"] = report["paired_mcnemar_c_vs_a"]
+        summary["paired_c_vs_b"] = report["paired_mcnemar_c_vs_b"]
+    print(f"[PASS] arm_comparison :: {json.dumps(summary, sort_keys=True)}")
     if args.out is not None:
         args.out.parent.mkdir(parents=True, exist_ok=True)
         args.out.write_text(json.dumps(report, indent=2, sort_keys=True) + "\n", encoding="utf-8")
