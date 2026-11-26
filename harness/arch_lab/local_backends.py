@@ -15,6 +15,9 @@ import urllib.request
 from dataclasses import dataclass
 from typing import Any, Callable
 
+from .. import safe_program
+from ..http_no_redirect import open_request
+
 
 @dataclass(frozen=True)
 class GenerationResult:
@@ -29,11 +32,10 @@ class GenerationResult:
 def query_nvidia_vram_gb() -> float | None:
     """Best-effort nvidia-smi query returning current GPU VRAM used in GB."""
     try:
-        out = subprocess.check_output(
-            ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
-            text=True,
-            timeout=5,
-        ).strip()
+        cmd, env = safe_program.launch(
+            ["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"]
+        )
+        out = subprocess.check_output(cmd, env=env, text=True, timeout=5).strip()
         first = out.splitlines()[0].strip()
         return round(float(first) / 1024.0, 3)
     except Exception:
@@ -80,7 +82,7 @@ class OllamaHTTPBackend:
             headers={"Content-Type": "application/json"},
         )
         t0 = time.perf_counter()
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+        with open_request(req, timeout=self.timeout) as resp:
             data = json.loads(resp.read().decode("utf-8"))
         dt = max(1e-6, time.perf_counter() - t0)
         ctok = int(data.get("eval_count") or max(1, len(str(data.get("response", "")).split())))

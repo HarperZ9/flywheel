@@ -8,11 +8,12 @@ from __future__ import annotations
 
 import math
 import re
-import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+
+from .. import safe_program
 
 _BYPASS_RE = re.compile(
     r"(?i)\b(?:assert\s+(?:True|1\s*==\s*1)|skip_oracle\s*=\s*True|anygeometry\s*=\s*true)\b"
@@ -167,16 +168,18 @@ def _verify_ds02(task: EvalTask, response: str, *, use_live_buildc: bool) -> tup
     code = _extract_bld(response)
     if "fn main" not in code or code.count("{") != code.count("}"):
         return False, "plate_c:missing_main_or_unbalanced_braces"
-    buildc_bin = shutil.which("buildc") if use_live_buildc else None
+    buildc_bin = safe_program.which("buildc") if use_live_buildc else None
     if buildc_bin:
         with tempfile.TemporaryDirectory(prefix="jfc3p_bld_") as td:
             src = Path(td) / f"{task.task_id}.bld"
             src.write_text(code + "\n", encoding="utf-8")
-            chk = subprocess.run([buildc_bin, "check", str(src)], capture_output=True, text=True, timeout=20)
+            chk_cmd, chk_env = safe_program.launch([buildc_bin, "check", str(src)])
+            chk = subprocess.run(chk_cmd, env=chk_env, capture_output=True, text=True, timeout=20)
             if chk.returncode != 0:
                 err = (chk.stderr or chk.stdout or "check failed").strip()[:280]
                 return False, f"plate_c:buildc_check_failed: {err}"
-            run = subprocess.run([buildc_bin, "run", str(src)], capture_output=True, text=True, timeout=25)
+            run_cmd, run_env = safe_program.launch([buildc_bin, "run", str(src)])
+            run = subprocess.run(run_cmd, env=run_env, capture_output=True, text=True, timeout=25)
             if run.returncode != 0:
                 err = (run.stderr or run.stdout or "run failed").strip()[:280]
                 return False, f"plate_c:buildc_run_failed: {err}"
