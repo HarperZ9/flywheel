@@ -33,7 +33,11 @@ DEFAULT_V2_REPLAY_RATIOS: dict[str, float] = {
     "trap_resistance": 0.15,
 }
 V2_DEFAULT_BETA_KL = 0.10
+V3_DEFAULT_BETA_KL = 0.30
+V3_DEFAULT_LR = 3e-5
+V3_MLP_LORA_MODULES: tuple[str, ...] = ("gate_proj", "up_proj", "down_proj")
 LONGPPL_BASE_FLOOR = 13
+LONGPPL_V3_FLOOR = 14
 LONGPPL_TOTAL_TASKS = 15
 V2_SUPPORTED_BASES: tuple[str, ...] = ("qwen2.5-coder-7b", "qwen2.5-vl-7b")
 
@@ -211,6 +215,55 @@ def build_v2_training_spec(
             task_id=f"wave14b-v2-spec-{base_model}", artifact_paths=[sp_path],
             oracle_exit_code=0 if ok else 1,
             oracle_stdout="[PASS] v2 reverse-kl trainer spec verified\n" if ok else "[FAIL] v2 guard blocked\n",
+            oracle_command=["python", "-m", "plexus.jfc3p_forge.v2_reverse_kl_trainer", "--base-model", base_model], root=out_dir,
+        )
+        (out_dir / "engine_receipt.json").write_text(json.dumps(rec, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        payload["receipt_envelope_sha256"] = rec["digests"]["envelope_sha256"]
+    return payload
+
+
+def build_v3_onpolicy_rlvr_spec(
+    *,
+    base_model: str = "qwen2.5-coder-7b",
+    gpu_name: str = "L4",
+    beta_kl: float = V3_DEFAULT_BETA_KL,
+    lr: float = V3_DEFAULT_LR,
+    out_dir: Path | None = None,
+) -> dict[str, Any]:
+    """Build Wave 24A JFC3P-Oracle-v3 zero-regression on-policy RLVR + MLP-only FRESCO spec."""
+    if base_model not in V2_SUPPORTED_BASES:
+        raise ValueError(f"v3 trainer supports {V2_SUPPORTED_BASES}, got {base_model}")
+    kl_ok = 0.25 <= beta_kl <= 0.50
+    lr_ok = 1e-6 <= lr <= 5e-5
+    guard = validate_v2_regression_guard(longppl_passed=LONGPPL_V3_FLOOR, beta_kl=beta_kl, longppl_floor=LONGPPL_V3_FLOOR)
+    spec = APACHE2_BASE_MODELS[base_model]
+    payload: dict[str, Any] = {
+        "ok": bool(kl_ok and lr_ok and guard.ok),
+        "version": "JFC3P-Oracle-v3",
+        "base_model": spec.hf_repo,
+        "gpu_config": adapt_colab_gpu_profile(gpu_name),
+        "lora_target_modules": list(V3_MLP_LORA_MODULES),
+        "attention_heads_frozen": True,
+        "lora_rank": 16,
+        "beta_kl": beta_kl,
+        "lr": lr,
+        "lr_schedule": "cosine",
+        "unmask_all_assistant_turns": True,
+        "base_self_distilled_anchors": ["longppl_multihop", "buildlang_oracle"],
+        "fresco_anchor_source": "real_base_longppl_activations",
+        "advantage_weighting": {"grpo": True, "metamer_split": True, "rlvb_open_belief": True},
+        "ablation_suite": ["A1", "A2", "A3", "A4", "A5"],
+        "target_floors": {"overall": 56, "longppl": LONGPPL_V3_FLOOR, "trap": 22, "numeric_f64_armc": 12, "buildlang": 6},
+        "regression_guard": guard.__dict__,
+    }
+    if out_dir is not None:
+        out_dir.mkdir(parents=True, exist_ok=True)
+        p = out_dir / "v3_rlvr_spec.json"
+        p.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        rec = build_forge_receipt(
+            task_id=f"wave24a-v3-spec-{base_model}", artifact_paths=[p],
+            oracle_exit_code=0 if payload["ok"] else 1,
+            oracle_stdout="[PASS] v3 on-policy rlvr spec verified\n" if payload["ok"] else "[FAIL] v3 spec guard blocked\n",
             oracle_command=["python", "-m", "plexus.jfc3p_forge.v2_reverse_kl_trainer", "--base-model", base_model], root=out_dir,
         )
         (out_dir / "engine_receipt.json").write_text(json.dumps(rec, indent=2, sort_keys=True) + "\n", encoding="utf-8")
