@@ -58,7 +58,7 @@ TRACE_CUSTODY_HIDDEN_IMPORTS = (
     "harness.trace_inventory", "harness.trace_inventory_entries",
     "harness.trace_inventory_entries_ext", "harness.trace_inventory_scan",
     "harness.trace_keystore", "harness.trace_keystore_adapters",
-    "harness.trace_meta_adapters", "harness.trace_presence",
+    "harness.trace_layers", "harness.trace_meta_adapters", "harness.trace_presence",
     "harness.trace_presence_summary", "harness.trace_presence_verifiers",
     # redaction, residue, retention and routes
     "harness.trace_redact", "harness.trace_redact_finders", "harness.trace_redact_json",
