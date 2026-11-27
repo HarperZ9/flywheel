@@ -74,6 +74,7 @@ include = [
   "/docs/**",
   "/examples/**",
   "/interop/**",
+  "/native/**",
   "/project-docs/**",
   "/src/**",
   "/tests/**",

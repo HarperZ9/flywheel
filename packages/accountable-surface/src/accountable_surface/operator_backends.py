@@ -213,3 +213,14 @@ class LocalSafeBackend:
         run_cwd = self._resolve_in_scope(action.target) if action.target else self.cwd
         proc = subprocess.run(argv, cwd=str(run_cwd), capture_output=True, text=True, shell=False, timeout=self.timeout_seconds)
         return {"ok": proc.returncode == 0, "exit_code": proc.returncode, "stdout": proc.stdout, "stderr": proc.stderr}
+
+
+def create_native_win32_backend(
+    cwd: str | Path,
+    grant: AuthorityGrant,
+    **kwargs: Any,
+) -> WorkstationBackend:
+    """Factory returning NativeWin32Backend with automatic non-Windows/missing-DLL fallback."""
+    from .native_win32_backend import NativeWin32Backend
+
+    return NativeWin32Backend(cwd, grant, **kwargs)
