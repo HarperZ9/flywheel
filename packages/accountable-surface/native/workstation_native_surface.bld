@@ -1,0 +1,128 @@
+// workstation_native_surface.bld
+// BuildLang FFI binding matching packages/accountable-surface/native/win32_surface.h.
+// Enforces the same status codes and fail-closed safety invariants at the FFI boundary.
+
+const WS_ABI_VERSION: i32 = 1;
+
+const WS_OK: i32 = 0;
+const WS_DRY_RUN_PLANNED: i32 = 1;
+const WS_ERR_INVALID_ARG: i32 = -1;
+const WS_REFUSED_NO_GRANT: i32 = -2;
+const WS_REFUSED_EXCLUDED_WINDOW: i32 = -3;
+const WS_REFUSED_TARGET_NOT_ALLOWLISTED: i32 = -4;
+const WS_REFUSED_OUT_OF_BOUNDS: i32 = -5;
+const WS_ERR_CAPTURE_FAILED: i32 = -6;
+const WS_ERR_DISPATCH_FAILED: i32 = -7;
+
+const WS_INPUT_FOCUS: i32 = 1;
+const WS_INPUT_MOVE: i32 = 2;
+const WS_INPUT_LEFT_CLICK: i32 = 3;
+const WS_INPUT_KEY_TAP: i32 = 4;
+
+struct WsRect {
+    left: i32,
+    top: i32,
+    right: i32,
+    bottom: i32,
+}
+
+struct WsInputPlan {
+    target_hwnd: u64,
+    action_kind: i32,
+    x: i32,
+    y: i32,
+    vk_code: u32,
+    grant_verified: i32,
+    dry_run: i32,
+    bounds: WsRect,
+}
+
+struct WsDispatchSummary {
+    status_code: i32,
+    executed: i32,
+    dry_run: i32,
+    events_sent: u32,
+}
+
+extern "C" {
+    fn ws_is_excluded_title(title: *const u8) -> i32;
+    fn ws_hash_frame_fnv1a64(data: *const u8, len: usize) -> u64;
+    fn ws_observe_desktop(out_obs: *mut u8) -> i32;
+    fn ws_plan_and_dispatch_input(req: *const u8, out_res: *mut u8) -> i32;
+}
+
+fn ws_rect_is_valid(r: WsRect) -> bool {
+    return r.right > r.left && r.bottom > r.top;
+}
+
+fn ws_point_in_rect(x: i32, y: i32, r: WsRect) -> bool {
+    return x >= r.left && x < r.right && y >= r.top && y < r.bottom;
+}
+
+fn ws_preflight_plan(plan: WsInputPlan) -> i32 {
+    if plan.grant_verified != 1 {
+        return WS_REFUSED_NO_GRANT;
+    }
+    if !ws_rect_is_valid(plan.bounds) {
+        return WS_REFUSED_OUT_OF_BOUNDS;
+    }
+    if plan.action_kind == WS_INPUT_MOVE || plan.action_kind == WS_INPUT_LEFT_CLICK {
+        if !ws_point_in_rect(plan.x, plan.y, plan.bounds) {
+            return WS_REFUSED_OUT_OF_BOUNDS;
+        }
+    }
+    if plan.dry_run != 0 {
+        return WS_DRY_RUN_PLANNED;
+    }
+    return WS_OK;
+}
+
+fn ws_status_is_refusal(code: i32) -> bool {
+    return code == WS_REFUSED_NO_GRANT
+        || code == WS_REFUSED_EXCLUDED_WINDOW
+        || code == WS_REFUSED_TARGET_NOT_ALLOWLISTED
+        || code == WS_REFUSED_OUT_OF_BOUNDS;
+}
+
+fn main() -> i32 {
+    let bounds = WsRect {
+        left: 0,
+        top: 0,
+        right: 800,
+        bottom: 600,
+    };
+    let denied = WsInputPlan {
+        target_hwnd: 0,
+        action_kind: WS_INPUT_LEFT_CLICK,
+        x: 120,
+        y: 80,
+        vk_code: 0,
+        grant_verified: 0,
+        dry_run: 1,
+        bounds: bounds,
+    };
+    let rc_denied = ws_preflight_plan(denied);
+    if !ws_status_is_refusal(rc_denied) {
+        return 1;
+    }
+    let dry = WsInputPlan {
+        target_hwnd: 0,
+        action_kind: WS_INPUT_LEFT_CLICK,
+        x: 120,
+        y: 80,
+        vk_code: 0,
+        grant_verified: 1,
+        dry_run: 1,
+        bounds: WsRect {
+            left: 0,
+            top: 0,
+            right: 800,
+            bottom: 600,
+        },
+    };
+    let rc_dry = ws_preflight_plan(dry);
+    if rc_dry != WS_DRY_RUN_PLANNED {
+        return 2;
+    }
+    return 0;
+}
