@@ -118,7 +118,12 @@ Claude Code and Anthropic SDK clients can use it as their base URL.
 Flywheel puts those pieces in one local tool. It has no evaluation task library
 of its own and no hosted gateway.
 
-## Limits
+## Verified and Scope Limits
+
+- **Live `origin/main` anchor (`77004316`, `F1`, `G9`, `N49`, `N52`, `N53`, `I16`):** 31 consolidated packages under `packages/` plus merged `#574..#587` accountability, governance, and attestation modules (`#585` `CODE_OF_CONDUCT.md`, `#586` `rsi_guard`, `tail_fuzzer`, `proof_mutator`, and `#587` `buildos_attest`, `crypto_attest`, `gpu_cert_bridge`, `wasm_attest`, `sbom_gate`, `benchmark_gate`) verified in `O(N)` scan time via `SHA-256` `engine-receipt/1` and `SIG-058` checks on a single CPU (`< 256 MB` RAM, `< 15 s` wall clock, zero outbound egress), bound alongside `buildlang`, `superframe`, and `cmmns` in the unified 15-repo SBOM. Planted failing test and negative controls reject tampered receipts, `NaN`/`Inf` floats, and secret-prefix tokens fail-closed.
+- **Staging boundary:** Graduation PRs `#588` (`surpass_gate`, `ideas_audit_bridge`, `renderer_parity_gate`, `zero_c_os_verifier`) and `#589` (`dataset_attest`, `paper_citation_gate`) remain open in CI review and are not claimed as live on `main`.
+
+Operational and measurement limits:
 
 - `check-output` uses the authorities you supply. The finance, medicine and law
   packs ship field shapes and arithmetic, and no domain data.
@@ -413,6 +418,7 @@ unverifiable.
 
 ## Recent additions
 
+- **Pure-OSI `MIT` Accountability, Attestation, Data Forge, and Zero-Egress Packages (`#574..#587`, `origin/main` `77004316`):** Relicensed core code from `FSL-1.1-MIT` to pure OSI `MIT` (`#574`, while `packages/emet` keeps `AGPL-3.0-only`) and merged 19 stdlib-first modules plus repository governance: 6-stage Proof-Carrying Data Forge (`#575`, native `SIG-058` scanning `> 150x` faster than Python regex baselines), Articulate `personal_email` profile (`#576`), `fsp` TPM Stage L/F fail-safe governance protocol with 29 red-team tests (`#577`), zero-dependency epigenetics and checked-claim economy (`#578`), remedy receipt `I11` and weight-manifest integrity scanner `I13` (`#579`), `harness/accountability_floor/` (`#580`), `search-forge` provenance (`#581`), `zero-egress-enclave` (`#582`), `meta-verifier` (`#583`), `governance-bridge` (`#584`), `CODE_OF_CONDUCT.md` (`#585`), `rsi_guard`, `tail_fuzzer`, and `proof_mutator` (`#586`), plus `buildos_attest`, `crypto_attest`, `gpu_cert_bridge`, `wasm_attest`, `sbom_gate`, and `benchmark_gate` (`#587`).
 - **Local model forge and Arm C tool verification (`packages/plexus/src/plexus/jfc3p_forge/`).**
   Deterministic RTX 4090 Arm C tool-loop evaluator (`rtx4090_armc_eval.py`) over
   local loopback OpenAI-compatible servers, paired with the `JFC3P-Oracle-v2`
@@ -421,7 +427,7 @@ unverifiable.
   records.
 - **Three-Plate Verification Oracle and `engine-receipt/1` trails (`harness/three_plate_oracle.py`, `harness/receipt_envelope.py`).**
   Separates claim extraction, independent oracle execution, and fail-closed
-  verdict sealing so planted-error controls fail loudly instead of passing on
+  verdict sealing so planted-error controls fail loudly with zero silent passes on
   surface plausibility.
 - **Workstation operator authority gate (`packages/accountable-surface/src/accountable_surface/operator_policy.py`).**
   Default-deny `ALLOW | DENY | NEEDS_HUMAN` gating with path containment,
