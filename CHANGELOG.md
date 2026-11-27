@@ -7,6 +7,8 @@ lists the changes in each release with the pull request that made them.
 
 ## 2.1.0 (2026-11-27)
 
+Flywheel 2.1.0 graduates ten pure-stdlib MIT verification harnesses for offline BuildOS, cryptography, MIR assurance, GPU shader, and SBOM auditing, removes personal email metadata from `pyproject.toml`, and aligns the engine and desktop installer on `2.1.0`.
+
 - Graduated ten pure-stdlib MIT verification harnesses covering BuildOS zero-C 5-ISA attestation, post-quantum enclave quote verification, QUIC-Lite capability firewall attestation, BFT consensus, Pedersen and Schnorr ZK proofs, 4-pillar MIR assurance, GPU shader suites, and SBOM integrity (`#588..#596`).
 - Removed personal email metadata from `pyproject.toml` packaging fields for zero-PII distribution parity (`#591`).
 - Synchronized desktop manifest `desktop/pubspec.yaml` to `2.1.0+42`.
