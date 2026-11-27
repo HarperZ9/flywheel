@@ -24,7 +24,7 @@ irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex
 curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh
 ```
 
-[![version: 2.0.0](https://img.shields.io/badge/version-2.0.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
+[![version: 2.1.0](https://img.shields.io/badge/version-2.1.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
 [![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
 [![license](https://img.shields.io/badge/license-MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel/blob/main/LICENSE)
 ![python 3.11+](https://img.shields.io/badge/python-3.11%2B-e6e1d6?style=flat-square&labelColor=1a1712)
