@@ -39,6 +39,8 @@ Verification and evidence
 - [remedy-and-weight-audit](remedy-and-weight-audit.md): Check-Contest-Obtain-Remedy
   receipt chains (`harness.remedy`) and local weight/binary integrity and egress
   auditing (`harness.weight_audit`).
+- [epigenetics-economy](epigenetics-economy.md): zero-inference LoRA weight-spectrum
+  forensics, oracle-gated SHA-256 checked-claim economy, and 48-byte latent handoff.
 
 Knowledge, memory, continuity
 - [index](index.md): workspace map, symbol graph, and verified wiki.
