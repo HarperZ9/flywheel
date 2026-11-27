@@ -87,6 +87,8 @@ def test_tools_list_advertises_every_tool():
         "accountable-surface.actuate", "accountable-surface.device_ls",
         "accountable-surface.journal", "accountable-surface.receipt",
         "accountable-surface.status", "accountable-surface.doctor",
+        "accountable-surface.workspace_status", "accountable-surface.workspace_plan",
+        "accountable-surface.workspace_verify_session",
     }
 
 

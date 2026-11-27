@@ -188,6 +188,12 @@ def _tool_defs() -> list[dict]:
         _tool("status", "Network-free identity: name, version, tools, primitives. A fast liveness probe."),
         _tool("doctor", "Readiness: identity, tools, the runtime dependency probe, the hard exclusions, "
               "and (when the runtime loads) grants, wired safe verbs, and the receipt store."),
+        _tool("workspace_status", "Read-only inspection of an AgentWorkspace directory (journal, receipt, checkpoint presence).",
+              {"workspace_dir": _STR}, ["workspace_dir"]),
+        _tool("workspace_plan", "Dry-run dependency order, approval-valve, and hard-exclusion validation for a workspace plan. Never acts.",
+              {"steps": {"type": "array", "items": {"type": "object"}}}, ["steps"]),
+        _tool("workspace_verify_session", "Offline verification of a workspace-session-receipt/v1 and optional journal.jsonl chain.",
+              {"receipt_path": _STR, "journal_path": _STR}, ["receipt_path"]),
     ]
 
 
@@ -200,6 +206,18 @@ def call_tool(name: str, args: dict) -> tuple[Any, bool]:
         return status_payload(), False
     if short == "doctor":
         return doctor_payload(), False
+    if short in ("workspace_status", "workspace_plan", "workspace_verify_session"):
+        from accountable_surface.agent_workspace import (
+            mcp_workspace_plan,
+            mcp_workspace_status,
+            mcp_workspace_verify_session,
+        )
+
+        if short == "workspace_status":
+            return mcp_workspace_status(str(args["workspace_dir"])), False
+        if short == "workspace_plan":
+            return mcp_workspace_plan(list(args.get("steps") or [])), False
+        return mcp_workspace_verify_session(str(args["receipt_path"]), args.get("journal_path")), False
     try:
         from accountable_surface.interop_runtime import default_interop
 

@@ -1,0 +1,145 @@
+// agent_workspace.bld
+// BuildLang mirror of DelegatedMandate, ValveCheckpoint, and WorkspaceReceipt
+// invariants for packages/accountable-surface (Wave 36A).
+
+const MANDATE_OK: i32 = 0;
+const MANDATE_ERR_EXPIRED: i32 = -1;
+const MANDATE_ERR_REVOKED: i32 = -2;
+const MANDATE_ERR_BUDGET: i32 = -3;
+const MANDATE_ERR_WIDENED: i32 = -4;
+const MANDATE_ERR_EXCLUDED: i32 = -5;
+
+const VALVE_PENDING: i32 = 1;
+const VALVE_APPROVED: i32 = 2;
+const VALVE_DENIED: i32 = 3;
+
+const RECEIPT_COMPLETED: i32 = 0;
+const RECEIPT_ROLLED_BACK: i32 = 1;
+const RECEIPT_REFUSED: i32 = 2;
+
+struct DelegatedMandate {
+    issued_at: i64,
+    expires_at: i64,
+    max_actions: i32,
+    max_mutations: i32,
+    max_budget_units: i32,
+    actions_used: i32,
+    mutations_used: i32,
+    budget_used: i32,
+    revoked: i32,
+}
+
+struct ValveCheckpoint {
+    step_index: i32,
+    completed_count: i32,
+    remaining_count: i32,
+    status: i32,
+}
+
+struct WorkspaceReceipt {
+    steps_total: i32,
+    steps_verified: i32,
+    rolled_back_count: i32,
+    status: i32,
+}
+
+fn mandate_authorize(m: DelegatedMandate, now: i64, mutates: i32, cost: i32, excluded: i32) -> i32 {
+    if excluded != 0 {
+        return MANDATE_ERR_EXCLUDED;
+    }
+    if m.revoked != 0 {
+        return MANDATE_ERR_REVOKED;
+    }
+    if now >= m.expires_at {
+        return MANDATE_ERR_EXPIRED;
+    }
+    if m.actions_used + 1 > m.max_actions {
+        return MANDATE_ERR_BUDGET;
+    }
+    if mutates != 0 && m.mutations_used + 1 > m.max_mutations {
+        return MANDATE_ERR_BUDGET;
+    }
+    if m.budget_used + cost > m.max_budget_units {
+        return MANDATE_ERR_BUDGET;
+    }
+    return MANDATE_OK;
+}
+
+fn sub_delegate_is_narrower(parent: DelegatedMandate, child: DelegatedMandate) -> i32 {
+    if child.expires_at > parent.expires_at {
+        return MANDATE_ERR_WIDENED;
+    }
+    if child.max_actions > parent.max_actions {
+        return MANDATE_ERR_WIDENED;
+    }
+    if child.max_mutations > parent.max_mutations {
+        return MANDATE_ERR_WIDENED;
+    }
+    if child.max_budget_units > parent.max_budget_units {
+        return MANDATE_ERR_WIDENED;
+    }
+    return MANDATE_OK;
+}
+
+fn valve_can_resume(cp: ValveCheckpoint) -> bool {
+    return cp.status == VALVE_APPROVED && cp.remaining_count > 0;
+}
+
+fn receipt_is_clean(r: WorkspaceReceipt) -> bool {
+    return r.status == RECEIPT_COMPLETED
+        && r.rolled_back_count == 0
+        && r.steps_verified == r.steps_total;
+}
+
+fn main() -> i32 {
+    let parent = DelegatedMandate {
+        issued_at: 1000,
+        expires_at: 4600,
+        max_actions: 10,
+        max_mutations: 5,
+        max_budget_units: 50,
+        actions_used: 0,
+        mutations_used: 0,
+        budget_used: 0,
+        revoked: 0,
+    };
+    let wider = DelegatedMandate {
+        issued_at: 1000,
+        expires_at: 4600,
+        max_actions: 12,
+        max_mutations: 5,
+        max_budget_units: 50,
+        actions_used: 0,
+        mutations_used: 0,
+        budget_used: 0,
+        revoked: 0,
+    };
+    if sub_delegate_is_narrower(parent, wider) != MANDATE_ERR_WIDENED {
+        return 1;
+    }
+    if mandate_authorize(parent, 1500, 1, 5, 1) != MANDATE_ERR_EXCLUDED {
+        return 2;
+    }
+    if mandate_authorize(parent, 1500, 1, 5, 0) != MANDATE_OK {
+        return 3;
+    }
+    let cp = ValveCheckpoint {
+        step_index: 2,
+        completed_count: 2,
+        remaining_count: 1,
+        status: VALVE_APPROVED,
+    };
+    if !valve_can_resume(cp) {
+        return 4;
+    }
+    let rcpt = WorkspaceReceipt {
+        steps_total: 3,
+        steps_verified: 3,
+        rolled_back_count: 0,
+        status: RECEIPT_COMPLETED,
+    };
+    if !receipt_is_clean(rcpt) {
+        return 5;
+    }
+    return 0;
+}
