@@ -96,6 +96,34 @@ from .native_win32_backend import NativeWin32Backend, compile_win32_surface_dll,
 from .operator_policy import AuthorityGate, AuthorityGrant, GateVerdict, OperatorAction, WorkstationObservation
 from .operator_receipt import emit_operator_engine_receipt, verify_operator_engine_receipt
 from .operator_workflows import run_workstation_routine, stage_application_packet, stage_outreach_draft
+from .agent_workspace import (
+    WORKSPACE_RECEIPT_SCHEMA,
+    AgentWorkspace,
+    CallableEffectorAdapter,
+    FilesystemStepAdapter,
+    WorkspaceStep,
+    order_plan_steps,
+    verify_workspace_session_receipt,
+)
+from .approval_valve import (
+    CHECKPOINT_SCHEMA,
+    CheckpointTamperError,
+    ValveCheckpoint,
+    create_valve_checkpoint,
+    load_valve_checkpoint,
+    resolve_valve_checkpoint,
+    save_valve_checkpoint,
+)
+from .delegation import (
+    MANDATE_SCHEMA,
+    DelegatedMandate,
+    MandateEnforcer,
+    MandateError,
+    MandateScopeError,
+    is_hard_excluded_action,
+    issue_mandate,
+    sub_delegate_mandate,
+)
 from .workstation_operator import OperatorSession, OperatorStepRecord, ReplayReport, verify_action_journal
 
 __all__ = [
@@ -195,5 +223,27 @@ __all__ = [
     "stage_outreach_draft",
     "stage_application_packet",
     "run_workstation_routine",
+    "MANDATE_SCHEMA",
+    "MandateError",
+    "MandateScopeError",
+    "DelegatedMandate",
+    "MandateEnforcer",
+    "issue_mandate",
+    "sub_delegate_mandate",
+    "is_hard_excluded_action",
+    "CHECKPOINT_SCHEMA",
+    "CheckpointTamperError",
+    "ValveCheckpoint",
+    "create_valve_checkpoint",
+    "resolve_valve_checkpoint",
+    "save_valve_checkpoint",
+    "load_valve_checkpoint",
+    "WORKSPACE_RECEIPT_SCHEMA",
+    "WorkspaceStep",
+    "FilesystemStepAdapter",
+    "CallableEffectorAdapter",
+    "AgentWorkspace",
+    "order_plan_steps",
+    "verify_workspace_session_receipt",
 ]
 __version__ = "0.3.1"
