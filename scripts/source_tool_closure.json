@@ -70,7 +70,7 @@
   "harness/scope.py": "1e5c4708465fb09678af76cdcba332d69225a97621bafe2b9f4a54b62449ebae",
   "harness/secret_file_label.py": "1337b0298e69c17e462b44cc7697432b6801bd03571dee65847508fe3771a797",
   "harness/skill_resources.py": "6a18e4edbb7f45592cfcc6759985829d1f6cd1cfc759d4baa66ea62c45d4da5d",
-  "harness/skill_resources/flywheel-evidence-task/SKILL.md": "92b0b4c3deb3f8fbfe15e12b123006cd98e9c2037cf4fe134960c79c5971d55d",
+  "harness/skill_resources/flywheel-evidence-task/SKILL.md": "41c9f6d23556cc84e3c76124cc9bf2a0ffe2f3a1a218f27ca4058c67d7af4538",
   "harness/skill_resources/flywheel-evidence-task/references/constraints.md": "28d7ac577a3205c59d35fc0f42d801c8ad9aefb584c602797351a236d43a1966",
   "harness/structured_finalizer.py": "2e9c72c4179e89b53c5c3e44bf8898ea8e0a1b52f785f3f5fc6137e4b3c7e4ce",
   "harness/task.py": "f1645685f9049d490d8e8b834dc5dbed7fa359f0182d287d2870548e8ff7f9eb",
