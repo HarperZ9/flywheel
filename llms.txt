@@ -1,6 +1,6 @@
 # Flywheel
 
-> Model-neutral AI gateway, Rowan provider router, Three-Plate and PUCT oracle verification harness with Merkle trace compression, full-track Welch PSD audio and video motion-law deconstructor, local RTX 4090 / Colab RLVR model forge, and offline-verifiable `engine-receipt/1` ledger (`v2.0.0`). Open source under the MIT License (`CC-BY-4.0` for essays and research notes).
+> Model-neutral AI gateway, Rowan provider router, Three-Plate and PUCT oracle verification harness with Merkle trace compression, full-track Welch PSD audio and video motion-law deconstructor, local RTX 4090 / Colab RLVR model forge, and offline-verifiable `engine-receipt/1` ledger (`v2.1.0`). Open source under the MIT License (`CC-BY-4.0` for essays and research notes).
 
 - Homepage: https://harperz9.github.io/flywheel.html
 - Models & local forge: https://harperz9.github.io/models.html
