@@ -231,6 +231,16 @@ def apply_payload(profile, payload):
     return out
 
 
+_DECLARED_TAG = re.compile(r"^\s*(?:<!--\s*|%\s*)?writing-profile:\s*([a-z][a-z_-]*)",
+                           re.MULTILINE)
+
+
+def _declared_profile(text):
+    head = "\n".join((text or "").splitlines()[:10])
+    m = _DECLARED_TAG.search(head)
+    return m.group(1) if m else profiles.declared_profile(text or "")
+
+
 def choose(path, text, *, profile=None, mode=None, cfg=None):
     """(name, why): --mode, else --profile, else an in-file tag, else the
     config's glob, else path inference, else the default."""
@@ -238,7 +248,7 @@ def choose(path, text, *, profile=None, mode=None, cfg=None):
         return mode, "--mode"
     if profile:
         return profile, "--profile"
-    tag = profiles.declared_profile(text or "")
+    tag = _declared_profile(text)
     if tag:
         return tag, "in-file writing-profile tag"
     has_path = bool(path) and path != "<stdin>"

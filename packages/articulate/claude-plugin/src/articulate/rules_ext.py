@@ -104,11 +104,11 @@ def option_choices():
 
 def _register():
     from . import (pack_analogy_map, pack_bcp14, pack_claims, pack_controlled, pack_devices,
-                   pack_note, pack_plain, pack_privacy, pack_product, pack_review, pack_structure,
-                   pack_ux)
+                   pack_note, pack_personal_email, pack_plain, pack_privacy, pack_product,
+                   pack_review, pack_structure, pack_ux)
     for pack in (pack_ux, pack_review, pack_plain, pack_bcp14, pack_controlled, pack_claims,
-                 pack_product, pack_note, pack_devices, pack_analogy_map, pack_privacy,
-                 pack_structure):
+                 pack_product, pack_note, pack_personal_email, pack_devices, pack_analogy_map,
+                 pack_privacy, pack_structure):
         PACKS[pack.NAME] = pack
 
 

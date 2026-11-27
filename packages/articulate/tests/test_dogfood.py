@@ -29,7 +29,8 @@ MODULES = ["cli.py", "editor.py", "bench.py", "pangram_records.py", "mcp_server.
            "campaign_persona.py", "campaign_cluster.py", "campaign_corpus.py",
            "campaign_bench.py", "cli_campaign.py", "imagery_lex.py", "device_function.py",
            "voice_register.py", "pack_claims.py", "pack_product.py", "pack_note.py",
-           "pack_devices.py", "analogy.py", "pack_analogy_map.py", "pack_privacy.py"]
+           "pack_personal_email.py", "pack_devices.py", "analogy.py", "pack_analogy_map.py",
+           "pack_privacy.py"]
 
 
 def _gate(path, text):
