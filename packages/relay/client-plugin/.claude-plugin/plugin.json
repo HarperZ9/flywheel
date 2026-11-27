@@ -16,7 +16,7 @@
     "verification",
     "mcp"
   ],
-  "license": "FSL-1.1-MIT",
+  "license": "MIT",
   "name": "relay-local",
   "privacyPolicyUrl": "https://harperz9.github.io/plugins/relay/privacy.html",
   "repository": "https://github.com/HarperZ9/relay",

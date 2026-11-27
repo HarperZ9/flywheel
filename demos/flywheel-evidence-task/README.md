@@ -11,7 +11,7 @@ Turn a claim into a source-linked evidence packet.
 /plugin marketplace add HarperZ9/flywheel-evidence-task
 ```
 
-[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel-evidence-task/blob/main/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel-evidence-task/blob/main/LICENSE)
 
 A skill that turns a claim into a source-linked evidence packet. Give it a claim
 about Flywheel or Bulletin, the sources it may use, and the decision the answer
@@ -19,7 +19,7 @@ should inform. It returns what was checked, what was only reported, what stays
 unknown, the measurements behind each verdict, and a false-success control that
 would have caught a wrong answer.
 
-Version 0.2.0. License: [FSL-1.1-MIT](LICENSE).
+Version 0.2.0. License: [MIT](LICENSE).
 
 ## Try it
 

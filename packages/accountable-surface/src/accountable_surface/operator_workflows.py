@@ -157,7 +157,7 @@ def stage_application_packet(
     out_dir: str | Path, flags: Mapping[str, bool] | None = None, licenses: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     """Bind applicant profile, honest license tags, and field budgets; halt at NEEDS_HUMAN on CAPTCHA/legal/AI-ban."""
-    lic_map = dict(licenses or {"buildlang": "AGPL-3.0-only", "flywheel": "FSL-1.1-MIT"})
+    lic_map = dict(licenses or {"buildlang": "AGPL-3.0-only", "flywheel": "MIT"})
     bad = [f"{k}={v}" for k, v in lic_map.items() if v not in HONEST_SPDX_LICENSES]
     if not lic_map or bad:
         return {"status": "REFUSED_LICENSE", "staged": False, "needs_human": False, "errors": [f"unverified license tag: {x}" for x in bad] or ["missing license tags"]}

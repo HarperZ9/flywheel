@@ -127,7 +127,7 @@ def manifests(version, native):
     config = {'mcpServers': {TOOL: {'command': command, 'args': args, 'env': env, 'type': 'stdio'}}}
     plugin = {'name': TOOL + '-local', 'version': version,
               'description': DESCRIPTION,
-              'author': {'name': 'Zain Dana Harper'}, 'license': 'FSL-1.1-MIT'}
+              'author': {'name': 'Zain Dana Harper'}, 'license': 'MIT'}
     files = {'plugin.json': encoded(plugin), '.claude-plugin/plugin.json': encoded(listing(plugin)),
              '.codex-plugin/plugin.json': encoded({**plugin, 'skills': './skills/', 'mcpServers': './mcp.json'}),
              'mcp.json': encoded(config), '.mcp.json': encoded(config).replace(b'${PLUGIN_ROOT}', b'${CLAUDE_PLUGIN_ROOT}')}

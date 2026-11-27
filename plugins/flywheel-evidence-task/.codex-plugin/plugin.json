@@ -8,7 +8,7 @@
   },
   "homepage": "https://github.com/HarperZ9/flywheel",
   "repository": "https://github.com/HarperZ9/flywheel",
-  "license": "FSL-1.1-MIT",
+  "license": "MIT",
   "keywords": [
     "flywheel",
     "bulletin",

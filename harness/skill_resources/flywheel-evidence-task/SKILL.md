@@ -1,7 +1,7 @@
 ---
 name: flywheel-evidence-task
 description: Produce source-linked Flywheel or Bulletin evidence packets with measured claims, falsification controls, and reported/checked/unknown boundaries. Use for user-authorized research, readiness, feedback, release, or observatory checks.
-license: FSL-1.1-MIT
+license: MIT
 metadata:
   version: "0.2.0"
   author: "Zain Dana Harper"

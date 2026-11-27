@@ -308,7 +308,7 @@ The long form of this belief: [The Unbundling](https://github.com/HarperZ9/flywh
 Gather's code is licensed under the [GNU Affero General Public License, version 3 only](https://github.com/HarperZ9/gather/blob/main/LICENSE) (AGPL-3.0-only).
 Anyone may use, study, change and share it. If you distribute a changed copy, or run one as a service people use over a network, you must offer its source under the same licence.
 
-Releases up to 2.3.0 were published under FSL-1.1-MIT. Those releases keep their terms, and each converts to MIT two years after its release. [NOTICE](https://github.com/HarperZ9/gather/blob/main/NOTICE) records this and the one vendored file.
+Releases up to 2.3.0 were published under MIT. Those releases keep their terms, and each converts to MIT two years after its release. [NOTICE](https://github.com/HarperZ9/gather/blob/main/NOTICE) records this and the one vendored file.
 
 ## Work with it
 

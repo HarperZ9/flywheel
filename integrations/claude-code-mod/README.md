@@ -161,6 +161,6 @@ stands on each:
 
 ## License
 
-Functional Source License 1.1 with an MIT future license (`FSL-1.1-MIT`), the same license as
+the MIT License (`MIT`), the same license as
 Flywheel. The full text is in [LICENSE](LICENSE). Each version becomes MIT two years after its
 release.

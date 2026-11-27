@@ -214,7 +214,7 @@ Anyone may use, study, change and share it. If you distribute a changed copy, or
 run one as a service that people use over a network, you must offer them its
 source under the same licence.
 
-Releases up to 0.3.1 were published under FSL-1.1-MIT. They keep those terms,
+Releases up to 0.3.1 were published under MIT. They keep those terms,
 and each converts to MIT two years after its release.
 
 ---

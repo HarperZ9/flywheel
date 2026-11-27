@@ -9,7 +9,7 @@
   },
   "homepage": "https://harperz9.github.io/flywheel.html",
   "repository": "https://github.com/HarperZ9/flywheel-evidence-task",
-  "license": "FSL-1.1-MIT",
+  "license": "MIT",
   "keywords": [
     "evidence",
     "verification",

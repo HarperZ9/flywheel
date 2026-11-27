@@ -147,7 +147,7 @@ def manifests(version, native):
     config = {'mcpServers': {TOOL: {'command': command, 'args': args, 'env': env, 'type': 'stdio'}}}
     plugin = {'name': TOOL + '-local', 'version': version,
               'description': DESCRIPTION,
-              'author': {'name': 'Zain Dana Harper'}, 'license': 'FSL-1.1-MIT'}
+              'author': {'name': 'Zain Dana Harper'}, 'license': 'MIT'}
     grant_args = ['--write=${user_config.write}', '--exec=${user_config.exec}']
     claude_args = ([a.replace('${PLUGIN_ROOT}', '${CLAUDE_PLUGIN_ROOT}') for a in args] + grant_args + HOSTED_ARGS
                    + ['--no-cli-tiers'])

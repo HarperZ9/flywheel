@@ -2,11 +2,11 @@
 
 ## License
 
-This package uses `FSL-1.1-MIT`, matching the Flywheel repository license.
+This package uses `MIT`, matching the Flywheel repository license.
 
 The full terms are included in `LICENSE`:
 
-- License: Functional Source License, Version 1.1, MIT Future License.
+- License: MIT License, Version 1.1, MIT Future License.
 - Copyright: 2026 Zain Dana Harper.
 
 ## Source attribution

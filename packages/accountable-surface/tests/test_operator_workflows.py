@@ -246,12 +246,12 @@ def test_application_packet_budgets_honest_licenses_and_captcha_halt(tmp_path):
         field_limits={"summary": {"max_chars": 120, "max_words": 15}},
         out_dir=tmp_path / "apps",
         flags={"captcha_present": True, "legal_attestation_required": True, "ai_generation_banned": False},
-        licenses={"buildlang": "AGPL-3.0-only", "flywheel": "FSL-1.1-MIT"},
+        licenses={"buildlang": "AGPL-3.0-only", "flywheel": "MIT"},
     )
     assert res["staged"] and res["needs_human"] and res["status"] == "NEEDS_HUMAN"
     assert "captcha_present" in res["halt_reasons"] and "legal_attestation_required" in res["halt_reasons"]
     packet = json.loads(Path(res["packet_path"]).read_text(encoding="utf-8"))
-    assert packet["licenses"] == {"buildlang": "AGPL-3.0-only", "flywheel": "FSL-1.1-MIT"}
+    assert packet["licenses"] == {"buildlang": "AGPL-3.0-only", "flywheel": "MIT"}
     j_ok, j_errs, _ = verify_action_journal(journal)
     assert j_ok and not j_errs
 

@@ -23,7 +23,7 @@ DEVICE = re.compile(r"(?i)^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$")
 JUNK = {".ds_store", "thumbs.db", "desktop.ini", "__macosx"}
 POLICY_TOPICS = ("Data collected", "Use and storage", "Third-party sharing", "Retention",
                  "Contact")
-LICENSE_ID = "FSL-1.1-MIT"
+LICENSE_ID = "MIT"
 # The directory reads these from the Claude manifest only; Claude Code ignores them,
 # so they stay out of the portable and Codex manifests.
 LISTING_URLS = ("documentationUrl", "supportUrl", "privacyPolicyUrl", "termsOfServiceUrl")
@@ -341,8 +341,8 @@ def check_docs(root):
             text = path.read_text(encoding="utf-8")
             if EM_DASH in text:
                 problems.append(f"{rel}: em dash in public text")
-            if re.search(r"(?i)\bopen[- ]source\b", text):
-                problems.append(f"{rel}: says open source; the license is source-available")
+            if re.search(r"(?i)\bFSL-1\.1-MIT\b", text):
+                problems.append(f"{rel}: stale FSL-1.1-MIT license reference; the license is MIT")
             if LOCAL_PATH.search(text):
                 problems.append(f"{rel}: local file path in public text")
     return problems

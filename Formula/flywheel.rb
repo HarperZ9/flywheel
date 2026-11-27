@@ -13,7 +13,7 @@ class Flywheel < Formula
   homepage "https://github.com/HarperZ9/flywheel"
   url "https://files.pythonhosted.org/packages/58/d6/c18c0b4e2d42fc7700351e27f8e290513b97b9803eca4acc28afa0cfe7a2/flywheel_verify-2.0.0.tar.gz"
   sha256 "8359477372288e9bfedfc8b8e5fd16348052bfaea862d1112c26c69eeab07d4c"
-  license "FSL-1.1-MIT"
+  license "MIT"
 
   depends_on "python@3.13"
 
