@@ -36,6 +36,9 @@ Verification and evidence
   validation (HIPAA Safe Harbor, SI physics), and RFC 6962 Merkle sealing.
 - [tpm-failsafe](tpm-failsafe.md): Stage L / Stage F governance attestation,
   monotonic policy clock, and 29 red-team replay/rollback/fork controls.
+- [remedy-and-weight-audit](remedy-and-weight-audit.md): Check-Contest-Obtain-Remedy
+  receipt chains (`harness.remedy`) and local weight/binary integrity and egress
+  auditing (`harness.weight_audit`).
 
 Knowledge, memory, continuity
 - [index](index.md): workspace map, symbol graph, and verified wiki.
