@@ -1,0 +1,44 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.harperz9/flywheel",
+  "title": "Flywheel Verification & Writing MCP",
+  "description": "Model-neutral AI gateway, Rowan routing, and offline-verifiable engine-receipt/1 verification.",
+  "version": "2.0.0",
+  "websiteUrl": "https://harperz9.github.io/flywheel.html",
+  "repository": {
+    "url": "https://github.com/HarperZ9/flywheel",
+    "source": "github"
+  },
+  "packages": [
+    {
+      "registryType": "pypi",
+      "registryBaseUrl": "https://pypi.org",
+      "identifier": "flywheel-verify",
+      "version": "2.0.0",
+      "runtimeHint": "uvx",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "--from",
+          "value": "flywheel-verify==2.0.0"
+        },
+        {
+          "type": "positional",
+          "value": "flywheel-writing-workspace-mcp"
+        }
+      ],
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ],
+  "_meta": {
+    "io.modelcontextprotocol.registry/publisher-provided": {
+      "license": "FSL-1.1-MIT",
+      "consoleScripts": [
+        "flywheel-writing-lint-mcp",
+        "flywheel-writing-workspace-mcp"
+      ]
+    }
+  }
+}

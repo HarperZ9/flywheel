@@ -1,0 +1,45 @@
+# Flywheel
+
+> Model-neutral AI gateway, Rowan provider router, Three-Plate and PUCT oracle verification harness with Merkle trace compression, full-track Welch PSD audio and video motion-law deconstructor, local RTX 4090 / Colab RLVR model forge, and offline-verifiable `engine-receipt/1` ledger (`v2.0.0`). Source-available under `FSL-1.1-MIT` (converts to MIT two years after release).
+
+- Homepage: https://harperz9.github.io/flywheel.html
+- Models & local forge: https://harperz9.github.io/models.html
+- Security & agent grants: https://harperz9.github.io/security.html
+- PyPI package: https://pypi.org/project/flywheel-verify/
+- Repository: https://github.com/HarperZ9/flywheel
+
+## One-Command Install
+
+- PyPI: `python -m pip install flywheel-verify`
+- Windows PowerShell (fail-closed `SHA256SUMS`): `irm https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.ps1 | iex`
+- Linux / macOS (fail-closed `SHA256SUMS`): `curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh | sh`
+
+## Key Commands
+
+- Run verification gate: `flywheel gate`
+- Run Super Solver 6-fault adversarial proof suite: `flywheel super-solver --bench`
+- Run PUCT oracle tree search and 34.99x Merkle trace compression proof suite: `flywheel super-solver --search-bench`
+- Check model answer values against deciding source: `flywheel check-output`
+- Deconstruct audio (4096-pt Hann Welch PSD, spectral tilt, macro DR, <120 Hz phase correlation) and video (frame-to-frame motion-law stats): `gather deconstruct <file>`
+- Start writing-lint MCP server: `flywheel-writing-lint-mcp`
+- Start writing-workspace MCP server: `flywheel-writing-workspace-mcp`
+
+## Official MCP Registry Manifests (`2025-12-11`)
+
+- [docs/mcp-registry/flywheel.server.json](docs/mcp-registry/flywheel.server.json): `io.github.harperz9/flywheel`
+- [docs/mcp-registry/articulate.server.json](docs/mcp-registry/articulate.server.json): `io.github.harperz9/articulate`
+- [docs/mcp-registry/gather.server.json](docs/mcp-registry/gather.server.json): `io.github.harperz9/gather`
+- [docs/mcp-registry/index.server.json](docs/mcp-registry/index.server.json): `io.github.harperz9/index`
+- [docs/mcp-registry/canon.server.json](docs/mcp-registry/canon.server.json): `io.github.harperz9/canon`
+
+## Honest Capability Note
+
+The single capability comparison on record scored 9 of 10 for verified inference against 8 of 10 for single-shot (95% difference interval -0.236 to +0.420, includes zero; retired because both arms shared their first attempt). Flywheel provides verifiable provenance, default-deny grants, deterministic execution oracles, and offline receipt checking; it claims no accuracy boost.
+
+## Core Files
+
+- [README.md](README.md): Architecture, quickstart, Rowan routing, and package index
+- [CITATION.cff](CITATION.cff): Citation metadata
+- [codemeta.json](codemeta.json): Schema.org `SoftwareSourceCode` metadata
+- [SECURITY.md](SECURITY.md): Vulnerability disclosure policy
+- [CONTRIBUTING.md](CONTRIBUTING.md): Contribution guide

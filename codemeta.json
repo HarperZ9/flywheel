@@ -1,0 +1,45 @@
+{
+  "@context": "https://doi.org/10.5063/schema/codemeta-2.0",
+  "@type": "SoftwareSourceCode",
+  "name": "Flywheel",
+  "version": "2.0.0",
+  "description": "Model-neutral AI gateway, Rowan provider router, Three-Plate and PUCT oracle verification harness with Merkle trace compression, full-track Welch PSD audio and video motion-law deconstruction, local RTX 4090 and Colab RLVR model forge, and offline-verifiable engine-receipt/1 ledger.",
+  "license": "https://github.com/HarperZ9/flywheel/blob/main/LICENSE",
+  "codeRepository": "https://github.com/HarperZ9/flywheel",
+  "issueTracker": "https://github.com/HarperZ9/flywheel/issues",
+  "url": "https://harperz9.github.io/flywheel.html",
+  "downloadUrl": "https://pypi.org/project/flywheel-verify/",
+  "programmingLanguage": [
+    "Python",
+    "Rust"
+  ],
+  "operatingSystem": [
+    "Windows",
+    "macOS",
+    "Linux"
+  ],
+  "applicationCategory": "DeveloperApplication",
+  "author": [
+    {
+      "@type": "Person",
+      "@id": "https://orcid.org/0009-0001-7175-5393",
+      "givenName": "Zain Dana",
+      "familyName": "Harper",
+      "url": "https://harperz9.github.io/"
+    }
+  ],
+  "datePublished": "2026-11-15",
+  "dateModified": "2026-11-26",
+  "keywords": [
+    "ai-agent",
+    "ai-evaluation",
+    "llm-router",
+    "rlvr",
+    "offline-verification",
+    "engine-receipt",
+    "merkle-trace",
+    "welch-psd",
+    "mcp",
+    "fsl-1.1-mit"
+  ]
+}
