@@ -32,6 +32,8 @@ Verification and evidence
   claim-scope refusal.
 - [proof-surface](proof-surface.md): stdlib contract validators and domain proof-packet
   wedges; one re-derivable proof packet per action (composed via accountable-surface).
+- [data-forge](data-forge.md): six-stage fail-closed dataset synthesis, domain
+  validation (HIPAA Safe Harbor, SI physics), and RFC 6962 Merkle sealing.
 
 Knowledge, memory, continuity
 - [index](index.md): workspace map, symbol graph, and verified wiki.
