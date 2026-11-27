@@ -2,7 +2,7 @@
 
 Flywheel routes a task to the local or hosted model and tools you choose, then
 keeps a **receipt you can re-check yourself** for every accepted answer. The
-current release is `2.0.0`. The browser shell below is the fallback surface, and
+current release is `2.1.0`. The browser shell below is the fallback surface, and
 the native Windows app is the current user-facing client.
 
 ## Run it now
