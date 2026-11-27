@@ -34,5 +34,9 @@
   "chat/flagged.md": {"profile": "chat",
     "expect": ["structure-anaphora", "structure-landing", "structure-parallel",
                "structure-parataxis", "structure-pin", "structure-pointer", "structure-triad"]},
-  "chat/clean.md": {"profile": "chat", "expect": []}
+  "chat/clean.md": {"profile": "chat", "expect": []},
+  "personal_email/flagged.md": {"profile": "personal_email",
+    "expect": ["bulleted_personal_email", "enumeration_crutch", "parenthetical_metric_stuffing",
+               "stiff_template_opener", "symmetrical_pr_closer"]},
+  "personal_email/clean.md": {"profile": "personal_email", "expect": []}
 }

@@ -88,6 +88,18 @@ DOMAINS = {
     "outbound": {"base": "chat", "slop": "flavored", "keep": (),
                  "register": ("outbound", "recipient", "message"),
                  "rule_packs": ("privacy",), "gate_promote": ("private-email", "local-path")},
+    "personal_email": {
+        "base": "chat", "slop": "flavored", "keep": (),
+        "register": ("personal", "peer", "email"),
+        "rule_packs": ("personal_email", "privacy"),
+        "gate_promote": (
+            "bulleted_personal_email",
+            "stiff_template_opener",
+            "enumeration_crutch",
+            "symmetrical_pr_closer",
+            "parenthetical_metric_stuffing",
+        ),
+    },
     # The published `chat` register profile, with the structure pack added. The
     # name resolves here first, so the register profile itself stays as published.
     "chat": {"base": "chat", "slop": "flavored", "keep": (), "register": None,
