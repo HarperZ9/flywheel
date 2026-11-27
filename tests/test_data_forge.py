@@ -6,9 +6,9 @@ import gzip
 import importlib.util
 import json
 import re
-import shutil
 from pathlib import Path
 
+from harness import safe_program
 from harness.data_forge import (
     BUILTIN_SFTS_RECORDS,
     FLYWHEEL_MODULES_LINKED,
@@ -128,7 +128,7 @@ def test_stage4_oracle_synthesis_and_planted_fault_rejection() -> None:
         ok, reason = validate_oracle_candidate(row, buildc_runner=_mock_typecheck)
         assert ok and reason == "OK", f"oracle row {row['id']} failed: {reason}"
 
-    if shutil.which("buildc"):
+    if safe_program.which("buildc"):
         bld_row = rows[-1]
         ok_live, reason_live = validate_oracle_candidate(bld_row)
         assert ok_live and reason_live == "OK"

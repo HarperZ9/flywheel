@@ -5,13 +5,13 @@ from __future__ import annotations
 import hashlib
 import math
 import re
-import shutil
 import subprocess
 import tempfile
 from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from harness import safe_program
 from harness.verifier_sanitizer import audit_verifier_planted_wrong
 
 BUILTIN_SFTS_RECORDS: tuple[tuple[str, str, str, str, str, str], ...] = (
@@ -56,14 +56,14 @@ BUILTIN_SFTS_RECORDS: tuple[tuple[str, str, str, str, str, str], ...] = (
 
 def _run_buildc_check(bld_code: str) -> bool:
     """Invoke buildc check on a temporary BuildLang source file if installed."""
-    buildc_bin = shutil.which("buildc")
-    if not buildc_bin:
+    if not safe_program.which("buildc"):
         return False
     with tempfile.NamedTemporaryFile(mode="w", suffix=".bld", delete=False, encoding="utf-8") as tmp:
         tmp.write(bld_code)
         tmp_path = Path(tmp.name)
     try:
-        proc = subprocess.run([buildc_bin, "check", str(tmp_path)], capture_output=True, text=True, check=False)
+        cmd, env = safe_program.launch(["buildc", "check", str(tmp_path)])
+        proc = subprocess.run(cmd, env=env, capture_output=True, text=True, check=False)
         return proc.returncode == 0
     except OSError:
         return False
@@ -104,7 +104,7 @@ def validate_oracle_candidate(
         code = str(cand.get("reference_code", ""))
         runner = buildc_runner
         if runner is None:
-            if not shutil.which("buildc"):
+            if not safe_program.which("buildc"):
                 return False, "BUILDC_NOT_INSTALLED"
             runner = _run_buildc_check
         if not runner(code):
@@ -236,7 +236,7 @@ def synthesize_oracle_verified_rows(
             "target": f"FINAL_F64={val:.15f}",
             "_source_corpus": "data_forge_oracle_synth",
         })
-    emit_bld = (shutil.which("buildc") is not None) if include_buildlang is None else include_buildlang
+    emit_bld = (safe_program.which("buildc") is not None) if include_buildlang is None else include_buildlang
     if emit_bld:
         bld_snippet = (
             "fn stable_sigmoid(x: f64) -> f64 {\n"
