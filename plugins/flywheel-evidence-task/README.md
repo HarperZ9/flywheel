@@ -9,7 +9,7 @@ engine. This package exports the evidence-task workflow to an existing host;
 it does not install that application or supply a model. See the repository's
 `docs/CLIENT-AND-TOOL-ARCHITECTURE.md` for the client and tool boundaries.
 
-Version: 0.2.0. License: [FSL-1.1-MIT](LICENSE).
+Version: 0.2.0. License: [MIT](LICENSE).
 
 ## Try it
 

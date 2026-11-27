@@ -16,7 +16,7 @@
     "manifests",
     "local-first"
   ],
-  "license": "FSL-1.1-MIT",
+  "license": "MIT",
   "name": "plexus-local",
   "privacyPolicyUrl": "https://harperz9.github.io/plugins/plexus/privacy.html",
   "repository": "https://github.com/HarperZ9/plexus",

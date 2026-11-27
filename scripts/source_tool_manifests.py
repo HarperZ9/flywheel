@@ -12,7 +12,7 @@ def manifests(version, *, dev=False):
         'Public evidence-task resources and local receipt membership checks. '
         'Requires Python 3.11 or later; no model, network, process or write grants.')
     base = {'name': 'flywheel-tools', 'version': version, 'description': description,
-            'author': {'name': 'Zain Dana Harper'}, 'license': 'FSL-1.1-MIT',
+            'author': {'name': 'Zain Dana Harper'}, 'license': 'MIT',
             'repository': 'https://github.com/HarperZ9/flywheel'}
     config = {
         'workspace': {'type': 'directory', 'title': 'Workspace folder', 'required': True,

@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "Independent synthetic ServiceDesk incident environment product."
 readme = "README.md"
 requires-python = ">=3.11"
-license = "FSL-1.1-MIT"
+license = "MIT"
 authors = [{ name = "Zain" }]
 dependencies = ["flywheel-verify>=0.6.1,<0.7"]
 

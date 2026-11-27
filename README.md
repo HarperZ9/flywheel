@@ -26,7 +26,7 @@ curl -fsSL https://raw.githubusercontent.com/HarperZ9/flywheel/main/install.sh |
 
 [![version: 2.0.0](https://img.shields.io/badge/version-2.0.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/flywheel-verify/)
 [![CI](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/flywheel/actions/workflows/ci.yml)
-[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel/blob/main/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel/blob/main/LICENSE)
 ![python 3.11+](https://img.shields.io/badge/python-3.11%2B-e6e1d6?style=flat-square&labelColor=1a1712)
 
 Docs: https://harperz9.github.io/flywheel/docs/
@@ -480,10 +480,10 @@ parts of development and documentation.
 
 ## License
 
-Text: CC BY 4.0. Code: FSL-1.1-MIT.
+Text: CC BY 4.0. Code: MIT.
 
 The essays in [`docs/essays/`](docs/essays/) and the research notes in
 `docs/research/`, `project-docs/research/` and `tasks/research/` are licensed
 CC BY 4.0. Share and adapt them with credit to Zain Dana Harper; the terms are
 in [`LICENSE-TEXT`](LICENSE-TEXT). The code and the software documentation are
-FSL-1.1-MIT (Functional Source License). See [LICENSE](LICENSE).
+licensed under the MIT License. See [LICENSE](LICENSE).

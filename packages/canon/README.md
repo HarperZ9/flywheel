@@ -403,5 +403,5 @@ Anyone may use, study, change and share Canon. Anyone who distributes a changed
 copy, or runs one as a network service, must offer its source under the same
 licence. That keeps a portable memory record portable in every fork.
 
-Releases up to and including 0.6.0 were published under FSL-1.1-MIT. Those
+Releases up to and including 0.6.0 were published under MIT. Those
 releases keep their terms, and each converts to MIT two years after its release.

@@ -16,7 +16,7 @@
     {
       "guid": "flywheel",
       "name": "Flywheel",
-      "description": "Local-first accountable AI evaluation and verification workbench: model-neutral OpenAI-compatible gateway, Rowan multi-provider router, Three-Plate verification oracle, cryptographic engine-receipt/1 trails, default-deny agent grants (accountable-surface), multimodal intake (gather), unsafe-free Rust byte witnesses (emet), and single-GPU local model forge (plexus). Source-available under FSL-1.1-MIT (converts to MIT after two years).",
+      "description": "Local-first accountable AI evaluation and verification workbench: model-neutral OpenAI-compatible gateway, Rowan multi-provider router, Three-Plate verification oracle, cryptographic engine-receipt/1 trails, default-deny agent grants (accountable-surface), multimodal intake (gather), unsafe-free Rust byte witnesses (emet), and single-GPU local model forge (plexus). Open source under the MIT License.",
       "webpageUrl": {
         "url": "https://harperz9.github.io/flywheel.html",
         "wellKnown": "https://harperz9.github.io/.well-known/funding-manifest-urls"
@@ -26,7 +26,7 @@
         "wellKnown": "https://raw.githubusercontent.com/HarperZ9/flywheel/main/.well-known/funding-manifest-urls"
       },
       "licenses": [
-        "spdx:FSL-1.1-MIT"
+        "spdx:MIT"
       ],
       "tags": [
         "artificial-intelligence",
@@ -84,7 +84,7 @@
         "guid": "infra-grant-flywheel",
         "status": "active",
         "name": "Independent AI verification infrastructure grant",
-        "description": "Scoped milestone grant funding neutral offline verification benchmarks, Three-Plate oracle datasets, and single-GPU RLVR reproducibility runs. Note: Flywheel uses FSL-1.1-MIT (source-available, converts to MIT after two years).",
+        "description": "Scoped milestone grant funding neutral offline verification benchmarks, Three-Plate oracle datasets, and single-GPU RLVR reproducibility runs. Flywheel is open source under the OSI-approved MIT License.",
         "amount": 25000,
         "currency": "USD",
         "frequency": "one-time",

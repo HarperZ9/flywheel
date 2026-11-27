@@ -11,7 +11,7 @@ Run a re-derivable receipt in one command and catch a forged one.
 pip install flywheel-verify pytest
 ```
 
-[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel-receipt-demo/blob/main/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/flywheel-receipt-demo/blob/main/LICENSE)
 
 Run Flywheel's re-derivable receipt path in one command, and see how it composes
 with hardware-attested inference.
@@ -127,6 +127,6 @@ proposal, not shipped work. `FLYWHEEL-TOOLS-EXPLAINED.md` states what stands whe
 
 ## License
 
-Source-available under the Functional Source License (FSL-1.1-MIT). See `LICENSE`.
+Open source under the MIT License. See `LICENSE`.
 The engine installs from PyPI as `flywheel-verify`, and the source is at
 github.com/HarperZ9/flywheel.

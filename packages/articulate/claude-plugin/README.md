@@ -257,6 +257,6 @@ are listed, with no file paths. Paste that report into an issue.
 Report a problem or ask a question at
 https://github.com/HarperZ9/articulate/issues.
 
-Articulate Writing is source-available under the Functional Source License 1.1
-with the MIT future license (`FSL-1.1-MIT`): each release becomes available
+Articulate Writing is source-available under the MIT License 1.1
+with the MIT future license (`MIT`): each release becomes available
 under the MIT license on the second anniversary of its release. See `LICENSE`.

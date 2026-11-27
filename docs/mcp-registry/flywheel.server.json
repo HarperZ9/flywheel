@@ -34,7 +34,7 @@
   ],
   "_meta": {
     "io.modelcontextprotocol.registry/publisher-provided": {
-      "license": "FSL-1.1-MIT",
+      "license": "MIT",
       "consoleScripts": [
         "flywheel-writing-lint-mcp",
         "flywheel-writing-workspace-mcp"

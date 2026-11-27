@@ -13,7 +13,7 @@ git clone https://github.com/HarperZ9/coherence-membrane
 
 [![version: 0.2.0](https://img.shields.io/badge/version-0.2.0-e6e1d6?style=flat-square&labelColor=1a1712)](https://pypi.org/project/coherence-membrane/)
 [![CI](https://github.com/HarperZ9/coherence-membrane/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/coherence-membrane/actions/workflows/ci.yml)
-[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/coherence-membrane/blob/main/LICENSE)
+[![license](https://img.shields.io/badge/license-MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/coherence-membrane/blob/main/LICENSE)
 ![python 3.10+](https://img.shields.io/badge/python-3.10%2B-e6e1d6?style=flat-square&labelColor=1a1712)
 
 Coherence Membrane gives AI agents real eyes on local state: it perceives files, PNGs, screen captures, and context records into structured observations with exact hashes, dimensions, and perceptual fingerprints. Live screen capture goes straight through the OS compositor via stdlib `ctypes`, so it works across D3D, Vulkan, OpenGL, Metal, and software renderers with zero third-party dependencies. Baseline comparison returns a closed MATCH / DRIFT / UNVERIFIABLE verdict that never silently matches on difference, and it composes with a write-gate through a shared JSON shape. Every observation is receipt-shaped and re-derivable, so an agent can re-check what it saw.
@@ -221,7 +221,7 @@ Everything above is re-derivable rather than asserted: 914 tests pass (3 skipped
 
 ## License
 
-From v0.2.0, code is licensed FSL-1.1-MIT. Earlier releases remain under MIT. FSL-1.1-MIT is the Functional Source License, Version 1.1, with MIT as the future licence: each release becomes available under MIT two years after it is made available. See [LICENSE](LICENSE). Release 0.1.0 on PyPI is MIT. Every commit in this repository is by the author.
+From v0.2.0, code is licensed MIT. Earlier releases remain under MIT. MIT is the MIT License, Version 1.1, with MIT as the future licence: each release becomes available under MIT two years after it is made available. See [LICENSE](LICENSE). Release 0.1.0 on PyPI is MIT. Every commit in this repository is by the author.
 
 ---
 **Zain Dana Harper**, small tools with explicit edges.

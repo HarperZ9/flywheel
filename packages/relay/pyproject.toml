@@ -8,7 +8,7 @@ version = "0.7.0"
 description = "A zero-dependency coding agent for local models (Ollama), subscription CLIs or provider API keys, with ordered failover, a permission-checked tool loop, and a hash-chained run log you can verify offline."
 readme = "README.md"
 requires-python = ">=3.11"
-license = "LicenseRef-FSL-1.1-MIT"
+license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "Zain Dana Harper" }]
 keywords = ["coding-agent", "local-llm", "ollama", "llm-router", "failover", "mcp", "offline", "agent"]

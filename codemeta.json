@@ -4,7 +4,7 @@
   "name": "Flywheel",
   "version": "2.0.0",
   "description": "Model-neutral AI gateway, Rowan provider router, Three-Plate and PUCT oracle verification harness with Merkle trace compression, full-track Welch PSD audio and video motion-law deconstruction, local RTX 4090 and Colab RLVR model forge, and offline-verifiable engine-receipt/1 ledger.",
-  "license": "https://github.com/HarperZ9/flywheel/blob/main/LICENSE",
+  "license": "https://spdx.org/licenses/MIT.html",
   "codeRepository": "https://github.com/HarperZ9/flywheel",
   "issueTracker": "https://github.com/HarperZ9/flywheel/issues",
   "url": "https://harperz9.github.io/flywheel.html",
@@ -40,6 +40,6 @@
     "merkle-trace",
     "welch-psd",
     "mcp",
-    "fsl-1.1-mit"
+    "mit"
   ]
 }

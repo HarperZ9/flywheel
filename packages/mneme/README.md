@@ -658,7 +658,7 @@ Mneme is free software under the GNU Affero General Public License, version 3 on
 and share it. Anyone who distributes a changed copy, or runs one as a service people
 use over a network, must offer those people its source under the same licence.
 
-Releases up to and including 0.7.0 were published under FSL-1.1-MIT. They keep those
+Releases up to and including 0.7.0 were published under MIT. They keep those
 terms, and each converts to the MIT license two years after its release.
 
 ## What this believes

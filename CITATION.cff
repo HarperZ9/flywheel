@@ -11,6 +11,7 @@ authors:
     orcid: "https://orcid.org/0009-0001-7175-5393"
 repository-code: "https://github.com/HarperZ9/flywheel"
 url: "https://harperz9.github.io/flywheel.html"
+license: MIT
 license-url: "https://github.com/HarperZ9/flywheel/blob/main/LICENSE"
 keywords:
   - ai-agent
@@ -23,4 +24,4 @@ keywords:
   - offline-verification
   - zero-dependency
   - mcp
-  - fsl-1.1-mit
+  - mit
