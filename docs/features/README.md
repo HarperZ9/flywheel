@@ -34,6 +34,8 @@ Verification and evidence
   wedges; one re-derivable proof packet per action (composed via accountable-surface).
 - [data-forge](data-forge.md): six-stage fail-closed dataset synthesis, domain
   validation (HIPAA Safe Harbor, SI physics), and RFC 6962 Merkle sealing.
+- [tpm-failsafe](tpm-failsafe.md): Stage L / Stage F governance attestation,
+  monotonic policy clock, and 29 red-team replay/rollback/fork controls.
 
 Knowledge, memory, continuity
 - [index](index.md): workspace map, symbol graph, and verified wiki.
