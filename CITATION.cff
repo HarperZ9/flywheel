@@ -2,9 +2,9 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 type: software
 title: "Flywheel"
-abstract: "Flywheel (v2.0.0) is a model-neutral AI gateway, Rowan provider router, Three-Plate and PUCT oracle verification harness with Merkle trace compression, full-track Welch PSD audio and motion-law video deconstructor, local RTX 4090 and Colab RLVR model forge, and offline-verifiable engine-receipt/1 ledger recheckable with Python's standard library alone."
-version: "2.0.0"
-date-released: 2026-11-26
+abstract: "Flywheel (v2.1.0) is a model-neutral AI gateway, Rowan provider router, Three-Plate and PUCT oracle verification harness with Merkle trace compression, pure-stdlib MIT verification harnesses (BuildOS, crypto, GPU, WASM, SBOM, MIR assurance, and ZK attestation), local RTX 4090 and Colab RLVR model forge, and offline-verifiable engine-receipt/1 ledger recheckable with Python's standard library alone."
+version: "2.1.0"
+date-released: 2026-11-27
 authors:
   - family-names: "Harper"
     given-names: "Zain Dana"

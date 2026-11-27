@@ -5,6 +5,12 @@ lists the changes in each release with the pull request that made them.
 
 ## Unreleased
 
+## 2.1.0 (2026-11-27)
+
+- Graduated ten pure-stdlib MIT verification harnesses covering BuildOS zero-C 5-ISA attestation, post-quantum enclave quote verification, QUIC-Lite capability firewall attestation, BFT consensus, Pedersen and Schnorr ZK proofs, 4-pillar MIR assurance, GPU shader suites, and SBOM integrity (`#588..#596`).
+- Removed personal email metadata from `pyproject.toml` packaging fields for zero-PII distribution parity (`#591`).
+- Synchronized desktop manifest `desktop/pubspec.yaml` to `2.1.0+42`.
+
 - `chorus --version` and `relay --version` print the package version and exit 0 (`packages/chorus`, `packages/relay`). Both commands had no version flag and answered with a usage error and exit 2.
 - `packages/mneme` now holds Mneme `main` at `160df160` (schema 6): audit rows name a random alias, `forget` removes the export files Mneme wrote and overwrites the files it deletes, and `mneme forget-subject` erases one user's records with a receipt that `mneme verify-erasure` checks. The version stays 0.7.0. Use one Mneme version per database file: an older Mneme that reopens a schema 6 store writes rows with its older guarantees.
 - `scripts/check_data_location_copy.py` gains proof pointers: a sentence can pass by naming the tests that hold the tool to it and the limit a reader needs, and the check fails when a named test is gone. Three Mneme sentences moved from the allow-list to proof pointers, and one new changelog sentence joined them.
