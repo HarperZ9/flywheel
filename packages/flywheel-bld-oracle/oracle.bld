@@ -1,0 +1,114 @@
+// SPDX-FileCopyrightText: 2026 Zain Dana Harper
+// SPDX-License-Identifier: MIT
+//
+// Wave 182: Pure-MIT BuildLang Flywheel Oracle Core
+//   - FNV-1a 32-bit receipt & Merkle accumulator
+//   - Tolerance and control-gap validator
+//   - Fail-closed planted-control verdict engine
+
+pub fn fnv1a_init() -> i64 {
+    2166136261i64
+}
+
+pub fn fnv1a_byte(acc: i64, b: i64) -> i64 {
+    ((acc ^ (b & 255i64)) * 16777619i64) & 4294967295i64
+}
+
+pub fn fnv1a_step(acc: i64, word: i64) -> i64 {
+    let h0 = fnv1a_byte(acc, word & 255i64);
+    let h1 = fnv1a_byte(h0, (word >> 8i64) & 255i64);
+    let h2 = fnv1a_byte(h1, (word >> 16i64) & 255i64);
+    fnv1a_byte(h2, (word >> 24i64) & 255i64)
+}
+
+pub fn merkle_combine(left: i64, right: i64) -> i64 {
+    let h0 = fnv1a_byte(fnv1a_init(), 1i64);
+    let h1 = fnv1a_step(h0, left);
+    fnv1a_step(h1, right)
+}
+
+pub fn verify_receipt_digest(computed: i64, expected: i64) -> i32 {
+    if computed <= 0i64 || expected <= 0i64 {
+        return -301;
+    }
+    if computed != expected {
+        return -301;
+    }
+    1
+}
+
+pub fn check_tolerance(actual_err: f64, max_tol: f64) -> i32 {
+    if max_tol < 0.0 || actual_err < 0.0 {
+        return -201;
+    }
+    if actual_err > max_tol {
+        return -201;
+    }
+    1
+}
+
+pub fn check_control_gap(control_val: f64, candidate_val: f64, min_gap: f64) -> i32 {
+    if min_gap <= 0.0 {
+        return -202;
+    }
+    let gap = candidate_val - control_val;
+    if gap < min_gap {
+        return -202;
+    }
+    1
+}
+
+// Fail-closed planted-control verdict engine:
+//   Returns  1 on verified PASS
+//   Returns -101 if planted_total <= 0 (missing planted control)
+//   Returns -102 if planted_caught < planted_total (planted control passed)
+//   Returns -103 if receipt_ok != 1 (tampered or invalid receipt)
+//   Returns -104 if tol_ok != 1 (tolerance exceeded)
+//   Returns -105 if gap_ok != 1 (control gap insufficient)
+//   Returns -106 if candidate_passed != 1 (candidate failed)
+pub fn evaluate_verdict(
+    planted_total: i32,
+    planted_caught: i32,
+    candidate_passed: i32,
+    tol_ok: i32,
+    gap_ok: i32,
+    receipt_ok: i32,
+) -> i32 {
+    if planted_total <= 0 {
+        return -101;
+    }
+    if planted_caught < planted_total {
+        return -102;
+    }
+    if receipt_ok != 1 {
+        return -103;
+    }
+    if tol_ok != 1 {
+        return -104;
+    }
+    if gap_ok != 1 {
+        return -105;
+    }
+    if candidate_passed != 1 {
+        return -106;
+    }
+    1
+}
+
+pub fn main() -> i32 {
+    let leaf_a = fnv1a_step(fnv1a_init(), 42i64);
+    let leaf_b = fnv1a_step(fnv1a_init(), 99i64);
+    let root = merkle_combine(leaf_a, leaf_b);
+    let rec_ok = verify_receipt_digest(root, root);
+    let rec_bad = verify_receipt_digest(root, root ^ 1i64);
+    let tol_ok = check_tolerance(0.0001, 0.001);
+    let gap_ok = check_control_gap(0.25, 0.85, 0.20);
+    let pass_v = evaluate_verdict(3, 3, 1, tol_ok, gap_ok, rec_ok);
+    let miss_v = evaluate_verdict(0, 0, 1, tol_ok, gap_ok, rec_ok);
+    let leak_v = evaluate_verdict(3, 2, 1, tol_ok, gap_ok, rec_ok);
+    let tamp_v = evaluate_verdict(3, 3, 1, tol_ok, gap_ok, rec_bad);
+    if pass_v == 1 && miss_v == -101 && leak_v == -102 && tamp_v == -103 {
+        return 0;
+    }
+    1
+}
